@@ -1,0 +1,1 @@
+{"name": "Minha Carteira", "short_name": "Carteira", "start_url": "./", "display": "standalone", "background_color": "#f2f5f4", "theme_color": "#0b5d5a", "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]}
