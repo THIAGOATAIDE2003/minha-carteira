@@ -191,7 +191,7 @@ textarea{width:100%;min-height:90px;background:var(--bg);border:1px solid var(--
           <button class="btn ghost small" id="bk-copy" type="button">Copiar backup</button>
           <button class="btn ghost small" id="bk-load" type="button">Restaurar do texto acima</button>
           <button class="btn ghost small" id="bk-down" type="button">Baixar arquivo de backup</button>
-          <label class="btn small" for="bkfile" style="cursor:pointer">Importar arquivo de backup</label><input id="bkfile" type="file" accept=".json,application/json,text/plain" hidden>
+          <label class="btn small" for="bkfile" style="cursor:pointer">Importar arquivo de backup</label><input id="bkfile" type="file" hidden>
           
         </div>
         <div class="msg" id="bkmsg"></div>
@@ -396,7 +396,9 @@ function renderTrades(){
   }).join('');
 }
 
+var PEND=null;
 function renderBanner(){
+  if(PEND){$('banner').innerHTML='<div class="banner"><span>Importar sua carteira com '+PEND.n+' lançamentos? Isso substitui o que estiver neste aparelho.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="impok" type="button">Importar</button><button class="btn ghost small" id="impno" type="button">Cancelar</button></span></div>';return}
   $('banner').innerHTML=S.example?'<div class="banner"><span>Você está vendo dados de exemplo, não são seus.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="goimp" type="button">Importar meu backup</button><button class="btn ghost small" id="clrex" type="button">Limpar exemplo</button></span></div>':'';
 }
 
@@ -499,7 +501,9 @@ syncForm();
 /* cliques */
 document.addEventListener('click',function(e){
   var t=e.target;
-  if(t.id==='ex')loadExample();
+  if(t.id==='impok'){var tx=PEND&&PEND.txt;PEND=null;if(tx)bkApply(tx);renderBanner()}
+  else if(t.id==='impno'){PEND=null;renderBanner()}
+  else if(t.id==='ex')loadExample();
   else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');var dd=$('bk').closest('details');if(dd)dd.open=true;$('bkfile').scrollIntoView()}
   else if(t.id==='seed2'){if(t.dataset.arm){loadSeed()}else{t.dataset.arm='1';t.textContent='Substituir tudo? Toque de novo';setTimeout(function(){if(t.isConnected){delete t.dataset.arm;t.textContent='Recarregar carteira das notas da Nubank'}},3000)}}
   else if(t.id==='clrex'){S.trades=[];S.quotes={};S.fx=null;S.example=false;save();render()}
@@ -550,14 +554,30 @@ $('bk-copy').addEventListener('click',function(){
 });
 function bkText(){return JSON.stringify({trades:S.trades,cambio:S.cambio||[],quotes:S.quotes,fx:S.fx})}
 function bkApply(txt){
-  var m=$('bkmsg');
-  try{var d=JSON.parse(txt);if(!d||!Array.isArray(d.trades))throw 0;
-    S.trades=d.trades;S.cambio=Array.isArray(d.cambio)?d.cambio:(S.cambio||[]);S.quotes=d.quotes||{};S.fx=d.fx||null;S.example=false;save();render();
-    m.textContent='Dados restaurados: '+S.trades.length+' lançamentos.';doRefresh(true)}
-  catch(e){m.textContent='Backup inválido. Use o arquivo ou o texto completo.'}
+  var m=$('bkmsg'),st=$('status');
+  try{txt=String(txt||'').replace(/^\uFEFF/,'').trim();var i=txt.indexOf('{');if(i>0)txt=txt.slice(i);
+    var d=JSON.parse(txt);if(!d||!Array.isArray(d.trades))throw 0;
+    S.trades=d.trades;S.cambio=Array.isArray(d.cambio)?d.cambio:(S.cambio||[]);S.quotes=d.quotes||{};S.fx=d.fx||null;S.example=false;save();
+    try{location.hash='resumo'}catch(e){}showTab('resumo');render();
+    m.textContent='Dados restaurados: '+S.trades.length+' lançamentos.';
+    st.className='msg muted';st.textContent='Pronto! Importei '+S.trades.length+' lançamentos. Buscando preços e dólar...';
+    doRefresh(true);return true}
+  catch(e){m.className='msg err';m.textContent='Esse arquivo não é o backup da carteira. Escolha o arquivo backup-minha-carteira.json.';warnIn(m.textContent);return false}
 }
 $('bk-load').addEventListener('click',function(){bkApply($('bk').value)});
-$('bkfile').addEventListener('change',function(){var f=this.files&&this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){bkApply(String(r.result))};r.readAsText(f);this.value=''});
+$('bkfile').addEventListener('change',function(){var inp=this,f=inp.files&&inp.files[0];if(!f)return;$('bkmsg').textContent='Lendo '+(f.name||'arquivo')+'...';
+  var done=function(t){bkApply(t);try{inp.value=''}catch(e){}};
+  if(f.text){f.text().then(done,function(){warnIn('Não consegui ler o arquivo. Tente de novo ou use o link de importação.')})}
+  else{var r=new FileReader();r.onload=function(){done(r.result)};r.onerror=function(){warnIn('Não consegui ler o arquivo.')};r.readAsText(f)}});
+/* importar por link: #importar=<base64> */
+(function(){var h=location.hash||'';if(h.indexOf('#importar=')!==0)return;
+  try{var b=h.slice(10).replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';
+    var bytes=Uint8Array.from(atob(b),function(c){return c.charCodeAt(0)});var txt=new TextDecoder().decode(bytes);
+    try{history.replaceState(null,'',location.pathname)}catch(e){}
+    var d=JSON.parse(txt);var n=(d.trades||[]).length;
+    PEND={n:n,txt:txt};renderBanner();
+  }catch(e){warnIn('O link de importação veio incompleto. Copie o link inteiro de novo.')}
+})();
 $('bk-down').addEventListener('click',function(){
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bkText()],{type:'application/json'}));a.download='backup-minha-carteira-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();
   $('bkmsg').textContent='Arquivo de backup baixado.';
@@ -615,7 +635,7 @@ function showTab(n){
 }
 Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.addEventListener('click',function(){try{location.hash=b.dataset.go}catch(e){}showTab(b.dataset.go)})});
 window.addEventListener('hashchange',function(){showTab((location.hash||'').replace('#',''))});
-showTab((location.hash||'').replace('#',''));
+showTab((location.hash||'').indexOf('#importar=')===0?'resumo':(location.hash||'').replace('#',''));
 var firstRun=false;
 var migrate=false&&S.seedVer!==6&&S.trades.length>0&&S.trades.every(function(t){return /^[in]\d{3}$/.test(t.id)});
 if(firstRun){if(S.example)S.fx=null;S.trades=SEED.map(function(x){return Object.assign({},x)});S.quotes={};S.example=false;S.seedAuto=1;S.seedVer=6;save()}
