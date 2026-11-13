@@ -612,10 +612,13 @@ function doRefresh(silent){
       jobs.push(getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(d&&d.c>0){S.quotes[tk]={price:d.c,prev:d.pc>0?d.pc:null,at:Date.now(),src:'auto'};okc++}else fails.push(tk)}).catch(function(){fails.push(tk)}));
     }else br.push(tk);
   });
-  br.forEach(function(tk){
-    if(!S.keys.brapi){fails.push(tk+' (falta o token brapi)');return}
-    jobs.push(getJSON('https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?token='+encodeURIComponent(S.keys.brapi)).then(function(d){var q=d&&d.results&&d.results[0];if(q&&q.regularMarketPrice>0){S.quotes[tk]={price:q.regularMarketPrice,prev:q.regularMarketPreviousClose>0?q.regularMarketPreviousClose:null,at:Date.now(),src:'auto'};okc++}else fails.push(tk)}).catch(function(){fails.push(tk)}));
-  });
+  if(br.length&&!S.keys.brapi){br.forEach(function(tk){fails.push(tk+' (falta o token brapi)')});br=[]}
+  var wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+  var one=function(tk,tries){
+    return getJSON('https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?token='+encodeURIComponent(S.keys.brapi)).then(function(d){var q=d&&d.results&&d.results[0];if(q&&q.regularMarketPrice>0){S.quotes[tk]={price:q.regularMarketPrice,prev:q.regularMarketPreviousClose>0?q.regularMarketPreviousClose:null,at:Date.now(),src:'auto'};okc++}else throw 0})
+      .catch(function(){if(tries>0)return wait(1500).then(function(){return one(tk,tries-1)});fails.push(tk)});
+  };
+  jobs.push(br.reduce(function(p,tk,i){return p.then(function(){return i?wait(700):null}).then(function(){return one(tk,2)})},Promise.resolve()));
   Promise.all(jobs).then(function(){
     RF.busy=false;RF.last=Date.now();save();render();btn.disabled=false;
     if(okc===0){RF.err='Não consegui buscar os preços agora. Confira a internet e as chaves em Ajustes.';if(!silent){st.className='msg err';st.textContent=RF.err}}
