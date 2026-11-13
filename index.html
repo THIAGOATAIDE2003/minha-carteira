@@ -555,7 +555,9 @@ $('bk-copy').addEventListener('click',function(){
 function bkText(){return JSON.stringify({trades:S.trades,cambio:S.cambio||[],quotes:S.quotes,fx:S.fx})}
 function bkApply(txt){
   var m=$('bkmsg'),st=$('status');
-  try{txt=String(txt||'').replace(/^\uFEFF/,'').trim();var i=txt.indexOf('{');if(i>0)txt=txt.slice(i);
+  try{txt=String(txt||'').replace(/^\uFEFF/,'').trim();
+    var k=txt.indexOf('importar=');if(k>=0){var b=txt.slice(k+9).replace(/\s/g,'').replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';txt=new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0)}))}
+    var i=txt.indexOf('{');if(i>0)txt=txt.slice(i);
     var d=JSON.parse(txt);if(!d||!Array.isArray(d.trades))throw 0;
     S.trades=d.trades;S.cambio=Array.isArray(d.cambio)?d.cambio:(S.cambio||[]);S.quotes=d.quotes||{};S.fx=d.fx||null;S.example=false;save();
     try{location.hash='resumo'}catch(e){}showTab('resumo');render();
