@@ -442,9 +442,9 @@ function renderDivPanel(){
     return '<div class="dvbar" title="'+MESES[i]+': recebido '+brl.format(v)+(p?', a receber '+brl.format(p):'')+'"><i class="r" style="height:'+(v/mx*100)+'%"></i><i class="p" style="height:'+(p/mx*100)+'%;'+(p?'':'border:0')+'"></i></div>'}).join('')+'</div>';
   h+='<div class="dvlbl">'+MESES.map(function(m){return '<span>'+m.charAt(0)+'</span>'}).join('')+'</div>';
   h+='<div class="dvleg"><span>Recebido</span><span class="p">A receber</span></div>';
-  var acc=0;
+  var acc=0,fi=0;while(fi<11&&!R0[fi]&&!P0[fi])fi++;
   h+='<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Recebido</th><th>A receber</th><th>Acumulado</th></tr></thead><tbody>'+
-    R0.map(function(v,i){var p=P0[i];acc+=v+p;if(!v&&!p)return '<tr class="muted"><td>'+MESES[i]+'</td><td>—</td><td>—</td><td>'+(acc?brl.format(acc):'—')+'</td></tr>';
+    R0.map(function(v,i){var p=P0[i];acc+=v+p;if(i<fi)return '';if(!v&&!p)return '<tr class="muted"><td>'+MESES[i]+'</td><td>—</td><td>—</td><td>'+(acc?brl.format(acc):'—')+'</td></tr>';
       return '<tr><td>'+MESES[i]+'</td><td class="'+(v?'gain':'')+'">'+(v?brl.format(v):'—')+'</td><td>'+(p?brl.format(p):'—')+'</td><td>'+brl.format(acc)+'</td></tr>'}).join('')+
     '<tr class="tot"><td>'+DVY+'</td><td class="gain">'+brl.format(tr)+'</td><td>'+brl.format(tp)+'</td><td>'+brl.format(tr+tp)+'</td></tr></tbody></table></div></div>';
   var ups=DV.up.filter(function(u){return u.pay&&u.pay.slice(0,4)===DVY}).concat(DVY===cy?tbd:[]);
