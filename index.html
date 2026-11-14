@@ -596,7 +596,11 @@ function vsBars(a,la,b,lb){var mx=Math.max(Math.abs(a),Math.abs(b),0.0001),w=fun
 function dayLbl(){var b=brt();
   if(b.wd>=1&&b.wd<=5&&b.min>=600)return {t:'hoje',b:'Quanto suas ações e o VT subiram ou caíram hoje, comparando o preço de agora com o fechamento do pregão anterior.'};
   var d=new Date(lastClose()-3*3600000),dn=['domingo','segunda','terça','quarta','quinta','sexta','sábado'][d.getUTCDay()];
-  return {t:'no último pregão ('+dn+')',b:'A bolsa está fechada agora. Esse é quanto suas ações e o VT subiram ou caíram no último dia de negociação ('+dn+'), comparado com o fechamento do dia anterior. Volta a mexer quando a bolsa abrir.'}}
+  return {d:dn,t:'no último pregão ('+dn+')',b:'A bolsa está fechada agora. Esse é quanto suas ações e o VT subiram ou caíram no último dia de negociação ('+dn+'), comparado com o fechamento do dia anterior. Volta a mexer quando a bolsa abrir.'}}
+/* valorização só pelo preço (VT pelo dólar de hoje, sem câmbio) + proventos recebidos */
+function valoriz(R){var T=R.tot,fx=T.fxNow||1,pv=0,base=0;
+  R.held.forEach(function(x){if(x.p.market==='US'){pv+=(x.p.qty*x.P1-x.p.cN)*fx;base+=x.p.cN*fx}else{pv+=x.v-x.p.cB;base+=x.p.cB}});
+  pv+=T.rfV-T.rfC;base+=T.rfC;var g=pv+T.div;return {pv:pv,div:T.div,g:g,base:base,p:base?g/base:0}}
 function renderSummary(R){
   var T=R.tot,el=$('summary');
   if(!S.trades.length){
@@ -604,12 +608,12 @@ function renderSummary(R){
     return;
   }
   var times=Object.keys(S.quotes).map(function(k){return S.quotes[k].at}).filter(Boolean);times.sort();
-  var dn=0,dp=0,dok=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,Fp=us?(S.fx&&S.fx.prev?S.fx.prev:F):1;dn+=x.p.qty*q.price*F;dp+=x.p.qty*q.prev*Fp;dok++});
-  var pa0=T.uA+T.rfU;
+  var dn=0,dp=0,dok=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var F=x.p.market==='US'?T.fxNow:1;dn+=x.p.qty*q.price*F;dp+=x.p.qty*q.prev*F;dok++});
+  var VZ=valoriz(R),dl=dayLbl();
   var h='<div class="patr"><span class="lbl">Patrimônio</span><div class="big">'+brl.format(T.value+T.cash)+'</div>'+
-    '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>'+dayLbl().t+' '+bal(dayLbl().b)+'</span>':'')+(times.length&&dayLbl().t==='hoje'?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
-    '<div class="duo"><div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início '+bal('Tudo que você ganhou desde o começo: preço das ações, dólar, vendas já feitas e proventos, menos as taxas. A conta completa está em "De onde vem o lucro total".')+'</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre '+brl.format(T.contrib)+' aplicados do bolso</small></div>'+
-    '<div><small>Preço das ações agora (sem o dólar) '+bal('Quanto as ações que você tem hoje subiram ou caíram desde que você comprou, comparando o preço de agora com o preço médio. Não conta o dólar do VT, vendas antigas nem proventos.')+'</small><b class="'+cls(pa0)+'">'+sgn(pa0)+'</b><small>'+pct(T.cost?pa0/T.cost:0)+' sobre o que você pagou</small></div>'+
+    (times.length&&dl.t==='hoje'?'<div class="day"><span>Preços de '+hm(times[times.length-1])+'</span></div>':'')+
+    '<div class="duo"><div><small>'+(dl.t==='hoje'?'Hoje':'Último pregão ('+dl.d+')')+' '+bal(dl.t==='hoje'?'Quanto todas as suas ações (Brasil e VT) subiram ou caíram hoje, só pelo preço. O VT entra convertido pelo dólar de hoje, sem a variação do dólar.':'A bolsa está fechada agora. Esse é quanto todas as suas ações (Brasil e VT) subiram ou caíram no último dia de negociação ('+dl.d+'), só pelo preço, sem a variação do dólar.')+'</small>'+(dok&&dp>0?'<b class="'+cls(dn-dp)+'">'+sgn(dn-dp)+'</b><small>'+pct((dn-dp)/dp)+'</small>':'<b class="muted">—</b><small>esperando os preços</small>')+'</div>'+
+    '<div><small>Valorização total '+bal('Quanto o preço de tudo que você tem subiu ou caiu desde a compra, mais os proventos que você já recebeu. O VT entra convertido pelo dólar de hoje, sem o ganho do câmbio. Câmbio e vendas ficam em Carteira → Desempenho.')+'</small><b class="'+cls(VZ.g)+'">'+sgn(VZ.g)+'</b><small>'+pct(VZ.p)+(VZ.div>0.005?' · com '+brl.format(VZ.div)+' de proventos':'')+'</small></div>'+
     '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   h+=metasHtml(R);
@@ -620,35 +624,18 @@ function renderSummary(R){
   var res=function(v,c,f){var g=v-c;return '<span class="num small '+cls(g)+'">'+(f||sgn)(g)+' ('+pct(c?g/c:0)+')</span>'};
   var sgu=function(g){return (g>=0?'+':'−')+usd.format(Math.abs(g))};
   var nRF=(R.rfs||[]).filter(function(c){return !c.rs}).length;
-  if(nBR||nUS||nRF){var vt=vBR+vUS+T.rfV,ct=cBR+cUS+T.rfC;
+  if(nBR||nUS||nRF){var vt=vBR+vUS+T.rfV,ct=cBR+cUS+T.rfC,ctp=cBR+cUSu*T.fxNow+T.rfC,vtp=vBR+vUSu*T.fxNow+T.rfV;
     h+='<div class="panel"><h2>Carteira hoje</h2><ul class="calc">'+
     (nBR?'<li><span>Brasil <span class="muted small">Nubank</span><br>'+res(vBR,cBR)+'</span><span class="num">'+brl.format(vBR)+'</span></li>':'')+
-    (nUS?'<li><span>EUA <span class="muted small">Inter</span><br>'+bal('Em reais: '+sgn(vUS-cUS)+' ('+pct(cUS?(vUS-cUS)/cUS:0)+'), com o dólar a R$ '+num(T.fxNow,4)+'. Você tem '+usd.format(vUSu)+' no VT.',res(vUSu,cUSu,sgu).replace('class="num small','class="num small u'))+'</span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
+    (nUS?'<li><span>EUA <span class="muted small">Inter</span><br>'+bal('Em dólar: '+sgu(vUSu-cUSu)+' ('+pct(cUSu?(vUSu-cUSu)/cUSu:0)+'), você tem '+usd.format(vUSu)+'. Convertido pelo dólar de hoje (R$ '+num(T.fxNow,4)+'). Com o ganho do câmbio, ficaria '+sgn(vUS-cUS)+'.',res(vUSu*T.fxNow,cUSu*T.fxNow).replace('class="num small','class="num small u'))+'</span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
     (nRF?'<li><span>Renda fixa <span class="muted small">líquido</span><br>'+res(T.rfV,T.rfC)+'</span><span class="num">'+brl.format(T.rfV)+'</span></li>':'')+
-    '<li class="tot"><span>Total<br>'+res(vt,ct)+' '+bal('Quanto o que você tem hoje vale a mais (ou a menos) do que você pagou por ele, pelo preço médio. Não conta o lucro de ações que você já vendeu nem os proventos: esses entram no Lucro total.')+'</span><span class="num">'+brl.format(vt)+'</span></li></ul></div>';
+    '<li class="tot"><span>Total<br>'+res(vtp,ctp)+' '+bal('Quanto o preço de tudo que você tem hoje está acima (ou abaixo) do que você pagou, pelo preço médio. Sem câmbio, sem vendas antigas e sem proventos.')+'</span><span class="num">'+brl.format(vt)+'</span></li></ul></div>';
     var dA=ct-T.contrib;
     h+='<div class="panel"><h2>Quanto você investiu</h2><ul class="calc">'+
       '<li><span>Valor investido<br><span class="muted small">o que você pagou pelo que tem hoje (preço médio × quantidade), como no Nubank e no Inter</span></span><span class="num">'+brl.format(ct)+'</span></li>'+
       '<li><span>Aplicado do seu bolso<br><span class="muted small">dinheiro novo que saiu da sua conta para investir, menos o que você retirou</span></span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
       '<li class="tot"><span>Diferença</span><span class="num">'+brl.format(Math.abs(dA))+'</span></li></ul>'+
       '<p class="note exp">'+(dA>=0?'O valor investido é maior porque parte das compras foi paga com lucro de vendas e com proventos, e não com dinheiro novo do seu bolso.':'O valor investido é menor porque parte do dinheiro aplicado ainda está parada, ou foi perdida em vendas com prejuízo.')+' O lucro total é calculado sobre o aplicado do seu bolso.</p></div>'}
-
-  var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR;
-  var wfi=[['Preço das ações que você tem',pz]];if(nUS||Math.abs(T.uF)>0.005)wfi.push(['Dólar (sobre o VT que você tem)',T.uF]);wfi.push(['Vendas já feitas',rz],['Proventos recebidos',T.div]);if(T.fees>0.005)wfi.push(['Taxas da B3 pagas nas notas',-T.fees]);
-  var wmx=Math.max.apply(null,wfi.map(function(w){return Math.abs(w[1])}))||1;
-  h+='<div class="panel"><h2>De onde vem o '+(T.gain>=0?'lucro':'prejuízo')+' total</h2><ul class="calc wf">'+
-    wfi.map(function(w){return '<li><span>'+w[0]+'</span><span class="num '+cls(w[1])+'">'+sgn(w[1])+'</span><span class="trk"><i class="'+(w[1]>=0?'g':'l')+'" style="width:'+Math.max(1.5,Math.abs(w[1])/wmx*100).toFixed(1)+'%"></i></span></li>'}).join('')+
-    '<li class="tot"><span>'+(T.gain>=0?'Lucro':'Prejuízo')+' total</span><span class="num '+cls(T.gain)+'">'+sgn(T.gain)+'</span></li></ul>'+
-    '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Rentabilidade simples '+bal('O lucro total dividido pelo que saiu do seu bolso. Ex.: aplicou R$ 100 e ganhou R$ 7, rendeu 7%. Não importa quando cada aporte entrou.')+'</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div>'+
-    '<div><span class="lbl">Anualizada (XIRR) '+bal('Quanto a carteira renderia em 1 ano inteiro no ritmo atual, levando em conta a data de cada compra e venda. Com menos de 1 ano de carteira, esse número exagera: olhe mais a simples.')+'</span><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div></div>'+
-    '<details><summary>Como a conta é feita</summary><ul class="calc small" style="margin-top:12px">'+
-    '<li><span>Valor atual dos ativos</span><span class="num">'+brl.format(T.value)+'</span></li>'+
-    '<li><span>+ Saldo parado (vendas e proventos não reinvestidos)</span><span class="num">'+brl.format(T.cash)+'</span></li>'+
-    '<li><span>− Aplicado do seu bolso</span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
-    '<li class="tot"><span>= Resultado</span><span class="num '+cls(T.gain)+'">'+sgn(T.check)+'</span></li></ul>'+
-    '<p class="note"><b>Aplicado do seu bolso</b> é o dinheiro novo que você colocou. Se você vende uma ação e compra outra com o dinheiro da venda, isso não conta como aporte novo.<br><b>Simples</b> é o resultado dividido pelo aplicado do seu bolso. Não considera quando cada aporte entrou.<br><b>XIRR</b> considera a data de cada compra e venda e mostra o ritmo anual equivalente'+(T.days<365?'. Com menos de 1 ano de carteira ('+T.days+' dias) esse número exagera, então olhe mais a simples.':'.')+'</p>'+
-    (Math.abs(T.check-T.gain)>0.01?'<p class="warn">A conta não fecha em '+brl.format(Math.abs(T.check-T.gain))+'. Revise os lançamentos.</p>':'')+
-    '</details></div>';
 
   if(T.value>0){
     var cs=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
@@ -664,6 +651,23 @@ function renderSummary(R){
 
 function perfHtml(R){
   var T=R.tot,h='',bm=cdiBench(R),nBR=R.held.some(function(x){return x.p.market==='BR'}),nUS=R.held.some(function(x){return x.p.market==='US'});
+  var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR;
+  var VZ=valoriz(R),fxp=pz+T.uF-VZ.pv;var wfi=[['Preço das ações que você tem',VZ.pv]];if(nUS||Math.abs(fxp)>0.005)wfi.push(['Dólar (sobre o VT que você tem)',fxp]);wfi.push(['Vendas já feitas',rz],['Proventos recebidos',T.div]);if(T.fees>0.005)wfi.push(['Taxas da B3 pagas nas notas',-T.fees]);
+  var wmx=Math.max.apply(null,wfi.map(function(w){return Math.abs(w[1])}))||1;
+  h+='<div class="panel"><h2>Tudo que você já '+(T.gain>=0?'lucrou':'perdeu')+'</h2><p class="note" style="margin:-6px 0 12px">Se vendesse tudo hoje, juntando preço, dólar, vendas e proventos.</p><ul class="calc wf">'+
+    wfi.map(function(w){return '<li><span>'+w[0]+'</span><span class="num '+cls(w[1])+'">'+sgn(w[1])+'</span><span class="trk"><i class="'+(w[1]>=0?'g':'l')+'" style="width:'+Math.max(1.5,Math.abs(w[1])/wmx*100).toFixed(1)+'%"></i></span></li>'}).join('')+
+    '<li class="tot"><span>'+(T.gain>=0?'Lucro':'Prejuízo')+' total</span><span class="num '+cls(T.gain)+'">'+sgn(T.gain)+'</span></li></ul>'+
+    '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Rentabilidade simples '+bal('O lucro total dividido pelo que saiu do seu bolso. Ex.: aplicou R$ 100 e ganhou R$ 7, rendeu 7%. Não importa quando cada aporte entrou.')+'</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div>'+
+    '<div><span class="lbl">Anualizada (XIRR) '+bal('Quanto a carteira renderia em 1 ano inteiro no ritmo atual, levando em conta a data de cada compra e venda. Com menos de 1 ano de carteira, esse número exagera: olhe mais a simples.')+'</span><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div></div>'+
+    '<details><summary>Como a conta é feita</summary><ul class="calc small" style="margin-top:12px">'+
+    '<li><span>Valor atual dos ativos</span><span class="num">'+brl.format(T.value)+'</span></li>'+
+    '<li><span>+ Saldo parado (vendas e proventos não reinvestidos)</span><span class="num">'+brl.format(T.cash)+'</span></li>'+
+    '<li><span>− Aplicado do seu bolso</span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
+    '<li class="tot"><span>= Resultado</span><span class="num '+cls(T.gain)+'">'+sgn(T.check)+'</span></li></ul>'+
+    '<p class="note"><b>Aplicado do seu bolso</b> é o dinheiro novo que você colocou. Se você vende uma ação e compra outra com o dinheiro da venda, isso não conta como aporte novo.<br><b>Simples</b> é o resultado dividido pelo aplicado do seu bolso. Não considera quando cada aporte entrou.<br><b>XIRR</b> considera a data de cada compra e venda e mostra o ritmo anual equivalente'+(T.days<365?'. Com menos de 1 ano de carteira ('+T.days+' dias) esse número exagera, então olhe mais a simples.':'.')+'</p>'+
+    (Math.abs(T.check-T.gain)>0.01?'<p class="warn">A conta não fecha em '+brl.format(Math.abs(T.check-T.gain))+'. Revise os lançamentos.</p>':'')+
+    '</details></div>';
+
   var sb=nBR?benchSeg('BR','BOVA11'):null,su=nUS?benchSeg('US','IVVB11'):null;
   if(sb||su){var ln=function(lab,a,bl,b){var d=a.gP-a.gB;return '<li class="vsli"><span><b>'+lab+'</b></span><span class="num '+cls(d)+'">'+sgn(d)+'</span>'+vsBars(a.pP,'Você',a.pB,bl)+'</li>'};
     h+='<div class="panel"><h2>Sua carteira contra o mercado</h2><ul class="calc">'+(sb?ln('Ações do Brasil',sb,'Ibovespa'):'')+(su?ln('VT (em reais)',su,'S&P 500'):'')+'</ul>'+
