@@ -57,7 +57,7 @@ button{cursor:pointer}
 .brand h1{font:700 21px/1 var(--disp);letter-spacing:-.02em}
 .pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-width:0}
 .pill{font-size:12px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.pill:empty{display:none}
+.pill:empty{display:none}.pill.perr{color:var(--loss);border-color:var(--loss);font-weight:600}
 .msg{font-size:13px}
 .msg:empty{display:none}
 .msg.err{color:var(--loss)}
@@ -227,7 +227,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 <div class="wrap">
   <header class="top">
     <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0f2a3f"/><path d="M120 356l92-104 68 60 112-148" fill="none" stroke="#f4f8fb" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="392" cy="164" r="34" fill="#e3b657"/></svg><h1>Aporte</h1></div>
-    <div class="pills"><span class="pill" id="pill-fx"></span><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button></div>
+    <div class="pills"><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button></div>
   </header>
   <div class="msg muted" id="status" role="status"></div>
   <div id="banner"></div>
@@ -735,7 +735,6 @@ function render(){
   var R=compute();
   renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
   $('divtab').innerHTML=renderDivPanel()||'<div class="panel"><p class="muted">Nenhum provento ainda. Quando cair o primeiro, ele aparece aqui.</p></div>';
-  var f0=fxToday();$('pill-fx').textContent=f0?'Dólar R$ '+num(f0.rate,4):'';
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
   $('c-fx').placeholder=S.fx&&S.fx.src==='auto'?String(S.fx.rate).replace('.',','):(MK.fxLatest?String(MK.fxLatest).replace('.',','):'5,35');
   var ft=fxToday();
@@ -1429,12 +1428,12 @@ function ghSync(manual){
 function renderSync(){
   var n=(S.pend||[]).length,hm=function(t){return new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})},txt,bar='';
   if(!S.keys.gh){txt='Seus dados estão só neste aparelho. Cole a chave do GitHub para salvar tudo na nuvem automaticamente.';bar=''}
-  else if(GH.busy){txt='Sincronizando com '+esc(ghRepo())+'...';bar='☁ Sincronizando'}
+  else if(GH.busy){txt='Sincronizando com '+esc(ghRepo())+'...';bar=''}
   else if(GH.err){txt=esc(GH.err)+(n?' ('+n+(n>1?' alterações esperando':' alteração esperando')+')':'');bar='⚠ '+(n?n+(n>1?' alterações não salvas na nuvem':' alteração não salva na nuvem'):'Nuvem desconectada')}
-  else if(GH.last){txt='Tudo salvo na nuvem ('+esc(ghRepo())+'). Última sincronização às '+hm(GH.last)+'. Lançou ou excluiu, salva sozinho.';bar='☁ Salvo '+hm(GH.last)}
+  else if(GH.last){txt='Tudo salvo na nuvem ('+esc(ghRepo())+'). Última sincronização às '+hm(GH.last)+'. Lançou ou excluiu, salva sozinho.';bar=''}
   else{txt='Conectando...';bar=''}
   if($('syncinfo'))$('syncinfo').innerHTML=txt;
-  if($('syncbar'))$('syncbar').textContent=bar;
+  if($('syncbar')){$('syncbar').textContent=bar;$('syncbar').className='pill'+(bar?' perr':'')}
 }
 setTimeout(function(){ghSync()},300);
 try{if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js')}catch(e){}
