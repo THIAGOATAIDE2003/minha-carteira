@@ -24,6 +24,7 @@ Key pieces inside the script:
 - **Cloud sync**: `ghSync()` reads/writes `carteira.json` in the private repo `THIAGOATAIDE2003/minha-carteira-dados` via the GitHub contents API with the user's fine-grained token (`S.keys.gh`); local edits queue in `S.pend` (add/del ops) and are replayed on the latest remote on conflict.
 - **Evolução**: `evoData()` replays trades up to each month end; prices come from brapi daily history (`loadHist`, cached in `minha-carteira-v1-hist`) or `fechamentos` in the cloud file (month closes; the app records the current month's auto quotes as `px` ops, once a day), falling back to average cost (marked *).
 - **Aporte**: `S.alvos` `{classes:{BR,US,RF}, br:{ticker:%}}` synced as a `cfg` op (`applyCfg`); `splitNeed` sends new money to what is furthest below target, never sells.
+- **Mercado**: `loadBench` caches BOVA11/IVVB11 daily closes (`minha-carteira-v1-bench`); `benchSeg(mk,etf)` replays each segment's buys/sells into the ETF on the same dates and compares gains (portfolio side includes dividends).
 - **Metas**: `S.metas` `{pat:{valor,data}, renda:{valor}}` synced as a `cfg` op; `metasHtml` (Início) shows progress, the monthly contribution needed at the CDI rate, and time to goal at the recent contribution pace.
 - **Imposto**: `irData()` replays BR buys/sells (average cost) per month: ações isentas até R$ 20 mil de vendas no mês, senão 15%; FIIs (`FIIS` list) 20%; prejuízo carried per category. `bensEm(date)` gives Bens e Direitos cost at 31/12; proventos split by `tipo` (JCP/Dividendo) and exterior (`bruto`, `irExt`).
 

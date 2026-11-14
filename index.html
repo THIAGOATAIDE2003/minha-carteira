@@ -528,6 +528,11 @@ function renderSummary(R){
     (Math.abs(T.check-T.gain)>0.01?'<p class="warn">A conta não fecha em '+brl.format(Math.abs(T.check-T.gain))+'. Revise os lançamentos.</p>':'')+
     '</details></div>';
 
+  var sb=nBR?benchSeg('BR','BOVA11'):null,su=nUS?benchSeg('US','IVVB11'):null;
+  if(sb||su){var ln=function(lab,a,bl,b){var d=a.gP-a.gB;return '<li><span><b>'+lab+'</b><br><span class="muted small">você '+pct(a.pP)+' · '+bl+' '+pct(a.pB)+'</span></span><span class="num '+cls(d)+'">'+sgn(d)+'</span></li>'};
+    h+='<div class="panel"><h2>Sua carteira contra o mercado</h2><ul class="calc">'+(sb?ln('Ações do Brasil',sb,'Ibovespa'):'')+(su?ln('VT (em reais)',su,'S&P 500'):'')+'</ul>'+
+      '<p class="note">Valor em reais: quanto você ganhou a mais (+) ou a menos (−) do que teria ganho se, em cada compra e venda, tivesse comprado e vendido o índice no mesmo dia. Ibovespa pelo BOVA11 e S&P 500 pelo IVVB11, que já inclui o dólar. Inclui seus proventos; os ETFs não pagam proventos. As porcentagens são sobre o total que você comprou em cada parte.</p></div>'}
+  else if(S.keys.brapi&&(nBR||nUS)&&!BX.at)h+='<div class="panel"><h2>Sua carteira contra o mercado</h2><p class="muted small">'+(BX.err?esc(BX.err):'Buscando Ibovespa e S&P 500...')+'</p></div>';
   if(bm){var dif=(T.value+T.cash)-bm.val;
     h+='<div class="panel"><h2>Sua carteira contra o CDI</h2><ul class="calc">'+
       '<li><span>Sua carteira hoje</span><span class="num">'+brl.format(T.value+T.cash)+'</span></li>'+
@@ -691,6 +696,7 @@ function render(){
     if(hasUS)rows.push(row('Ações dos EUA (Finnhub)',!S.keys.finnhub?'off':!RF.last?'wait':usF.length?'err':'ok',!S.keys.finnhub?'Falta a chave Finnhub abaixo.':usF.length?'Sem preço para '+esc(usF.join(', ')):RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
     rows.push(row('Proventos automáticos (brapi)',!S.keys.brapi?'off':DV.err?'err':DV.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':DV.err?esc(DV.err):DV.at?'Conferidos às '+hhm(DV.at)+'. Lança sozinho os pagos a partir de '+fmtDate(S.divFrom)+'.':'Confere de hora em hora.'));
     rows.push(row('Histórico de preços (brapi)',!S.keys.brapi?'off':HI.err&&!Object.keys(HI.px).length?'err':HI.at?(HI.err?'err':'ok'):'wait',!S.keys.brapi?'Falta o token brapi.':HI.err?esc(HI.err)+' Esses meses usam o preço médio na Evolução.':HI.at?'Preços de fechamento de '+Object.keys(HI.px).length+' ativos para a Evolução.':'Busca uma vez por dia.'));
+    rows.push(row('Ibovespa e S&P 500 (brapi)',!S.keys.brapi?'off':BX.err?'err':BX.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':BX.err?esc(BX.err):BX.at?'BOVA11 e IVVB11, atualizados 2 vezes por dia.':'Busca ao abrir o app.'));
     rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'err':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
     si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
@@ -1175,6 +1181,38 @@ function rfCalc(t,rs){
     realized:rs?rs.price-t.price:0,stale:!CDI.dates.length};
 }
 
+
+/* comparação com o mercado: BOVA11 (Ibovespa) e IVVB11 (S&P 500 em reais), cotados no brapi */
+var BX={px:{},at:0,busy:false,err:''};
+try{var bx0=JSON.parse(localStorage.getItem(LS+'-bench')||'null');if(bx0){BX.px=bx0.px||{};BX.at=bx0.at||0}}catch(e){}
+function loadBench(force){
+  if(!S.keys.brapi||BX.busy||!S.trades.length)return Promise.resolve();
+  if(!force&&Date.now()-BX.at<12*3600000)return Promise.resolve();
+  BX.busy=true;var fails=0,wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+  var one=function(tk,ranges){if(!ranges.length){fails++;return Promise.resolve()}
+    return getJSON('https://brapi.dev/api/quote/'+tk+'?range='+ranges[0]+'&interval=1d&token='+encodeURIComponent(S.keys.brapi)).then(function(d){
+      var r=d&&d.results&&d.results[0],a=r&&r.historicalDataPrice;if(!a||!a.length)throw 0;var px={};
+      a.forEach(function(x){if(x.close>0)px[new Date((x.date>1e12?x.date:x.date*1000)-3*3600000).toISOString().slice(0,10)]=x.close});
+      if(r.regularMarketPrice>0)px[today()]=r.regularMarketPrice;BX.px[tk]=px;
+    }).catch(function(){return wait(800).then(function(){return one(tk,ranges.slice(1))})})};
+  return one('BOVA11',['1y','6mo','3mo']).then(function(){return wait(700)}).then(function(){return one('IVVB11',['1y','6mo','3mo'])}).then(function(){
+    BX.at=Date.now();BX.err=fails?'Sem histórico do '+(fails>1?'BOVA11 e do IVVB11':'índice')+' no brapi.':'';BX.busy=false;
+    try{localStorage.setItem(LS+'-bench',JSON.stringify({px:BX.px,at:BX.at}))}catch(e){}render();
+  });
+}
+function pxOn(tk,d){var px=BX.px[tk];if(!px)return null;var ks=Object.keys(px).sort(),best=null;for(var i=0;i<ks.length;i++){if(ks[i]<=d)best=px[ks[i]];else break}return best||(ks.length&&ks[0]>d?px[ks[0]]:null)}
+function benchSeg(mk,etf){
+  var px=BX.px[etf];if(!px)return null;var ks=Object.keys(px).sort(),pT=px[ks[ks.length-1]];
+  var units=0,buys=0,proc=0,divs=0,miss=false;
+  S.trades.forEach(function(t){if(t.market!==mk)return;var F=mk==='US'?t.fx:1,v=t.qty*t.price*F;
+    if(t.side==='div'){divs+=t.price*F;return}if(t.side!=='buy'&&t.side!=='sell')return;
+    var p=pxOn(etf,t.date);if(!p){miss=true;return}
+    if(t.side==='buy'){units+=v/p;buys+=v}else{units-=v/p;proc+=v}});
+  if(!buys||miss)return null;
+  var R=compute(),val=0;R.held.forEach(function(x){if(x.p.market===mk)val+=x.v});
+  var gP=val+proc+divs-buys,gB=units*pT+proc-buys;
+  return {gP:gP,gB:gB,pP:gP/buys,pB:gB/buys,last:ks[ks.length-1]};
+}
 function cdiBench(){
   if(!CDI.dates.length)return null;
   var ds=CDI.dates,n=ds.length,suf=new Array(n+1);suf[n]=1;for(var i=n-1;i>=0;i--)suf[i]=suf[i+1]*(1+CDI.s[ds[i]]/100);
@@ -1340,6 +1378,7 @@ setTimeout(function(){doRefresh(true)},600);
 setTimeout(function(){loadCDI()},900);
 setTimeout(function(){loadDivs()},2500);
 setTimeout(function(){loadHist()},5000);
+setTimeout(function(){loadBench()},3500);
 setInterval(function(){if(!document.hidden)loadDivs()},60*60000);
 setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
 var TABS=['resumo','ativos','proventos','lancamentos','mais'],MAISV='cambio',CARV='pos';
