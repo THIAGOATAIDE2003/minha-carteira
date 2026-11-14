@@ -1022,7 +1022,7 @@ function renderIR(){
     '<h3 style="margin:16px 0 6px">Tributação exclusiva (JCP)</h3>'+(byT.jcp?'<ul class="calc">'+lst(byT.jcp,function(r){return brl.format(r.v)})+'<li class="tot"><span>Total líquido</span><span class="num">'+brl.format(tot(byT.jcp,function(r){return r.v}))+'</span></li></ul><p class="note">Valor líquido, como caiu na conta. O informe de rendimentos da corretora traz o valor bruto, que é o que vai na declaração.</p>':'<p class="muted small">Nenhum.</p>')+
     (byT.ext?'<h3 style="margin:16px 0 6px">Dividendos do exterior</h3><ul class="calc">'+lst(byT.ext,function(r){return brl.format(r.b)+' bruto · '+brl.format(r.ir)+' retido nos EUA'})+'</ul><p class="note">Declarados na ficha de aplicações no exterior. O imposto retido nos EUA (30%) é maior que os 15% do Brasil, então normalmente não sobra nada a pagar aqui.</p>':'')+
     '</div>';
-  h+='<p class="note" style="margin:0 4px">Regras usadas: ações à vista com isenção para vendas de até R$ 20 mil no mês e 15% acima disso; FIIs sem isenção, 20%; prejuízo descontado de lucros futuros do mesmo tipo. O custo não inclui as taxas da corretora (centavos). Os informes da Nubank e do Inter valem como fonte oficial. Isto é um apoio, não substitui um contador.</p>';
+  h+='<p class="note" style="margin:0 4px">Regras usadas: ações à vista com isenção para vendas de até R$ 20 mil no mês e 15% acima disso; FIIs sem isenção, 20%; prejuízo descontado de lucros futuros do mesmo tipo. O custo inclui as taxas da B3 das notas (somadas na compra e descontadas na venda), como pede a Receita. Os informes da Nubank e do Inter valem como fonte oficial. Isto é um apoio, não substitui um contador.</p>';
   el.innerHTML=h;
 }
 
