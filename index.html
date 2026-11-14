@@ -379,6 +379,10 @@ function renderSummary(R){
     '<div><span class="lbl">Efeito do câmbio</span><span class="num '+cls(T.uF+T.rF)+'">'+sgn(T.uF+T.rF)+'</span></div>'+
     '<div><span class="lbl">Já realizado (vendas)</span><span class="num '+cls(T.rA+T.rF)+'">'+sgn(T.rA+T.rF)+'</span></div>'+
     '<div><span class="lbl">Proventos recebidos</span><span class="num '+cls(T.div)+'">'+sgn(T.div)+'</span></div></div>';
+  if(DV.up.length){h+='<div class="panel" style="margin-top:16px"><h2 style="margin:0 0 10px">Proventos a receber</h2><ul class="calc" style="margin:0;font-size:15px">'+
+    DV.up.map(function(u){return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+u.tipo+' · data-com '+fmtDate(u.dc)+' · '+(u.pay?'paga em '+fmtDate(u.pay):'data de pagamento a definir')+'</span></span><span class="num '+cls(1)+'">'+brl.format(u.val)+'</span></li>'}).join('')+
+    '<li class="tot"><span>Total a receber</span><span class="num">'+brl.format(DV.up.reduce(function(a,u){return a+u.val},0))+'</span></li></ul>'+
+    '<p class="note" style="margin:10px 0 0">Quando chegar a data de pagamento, o app lança sozinho na carteira. JCP já vem com os 15% de IR descontados.</p></div>'}
   if(R.held.length&&T.value>0){
     var cs=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
     var hs=R.held.slice().sort(function(a,b){return b.v-a.v});
@@ -456,7 +460,7 @@ function renderTrades(){
   el.innerHTML=ts.map(function(t){
     var us=t.market==='US',cur=us?usd:brl,tot=t.qty*t.price*(us?t.fx:1);
     return '<div class="tr"><span class="side '+(t.side==='sell'||t.side==='out'||t.side==='rfout'?'s':'b')+'">'+(t.side==='buy'?'COMPRA':t.side==='sell'?'VENDA':t.side==='out'?'RETIRADA':t.side==='rf'?'APLICAÇÃO':t.side==='rfout'?'RESGATE':'PROVENTO')+'</span><span><b>'+esc(t.side==='out'?(t.note||'Dinheiro retirado da corretora'):t.ticker)+'</b> <span class="d">'+fmtDate(t.date)+'</span></span><span class="num">'+brl.format(tot)+'</span>'+
-      '<div class="x"><span class="num">'+(t.side==='rf'?num(t.pct,2)+'% do CDI'+(t.isento?' · isento':'')+' · ':'')+(t.side==='div'||t.side==='out'||t.side==='rf'||t.side==='rfout'?'':num(t.qty)+' × ')+cur.format(t.price)+(us?' · dólar '+brl.format(t.fx):'')+'</span><button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></div></div>';
+      '<div class="x"><span class="num">'+(t.auto?'automático · ':'')+(t.side==='rf'?num(t.pct,2)+'% do CDI'+(t.isento?' · isento':'')+' · ':'')+(t.side==='div'||t.side==='out'||t.side==='rf'||t.side==='rfout'?'':num(t.qty)+' × ')+cur.format(t.price)+(us?' · dólar '+brl.format(t.fx):'')+'</span><button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></div></div>';
   }).join('');
 }
 
@@ -516,6 +520,7 @@ function render(){
   if(si){var ps=[];
     ps.push('Preços e dólar são buscados sozinhos ao abrir o app e a cada 15 minutos enquanto ele estiver aberto.');
     ps.push(RF.last?'Última busca às '+new Date(RF.last).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.'+(RF.err?' '+esc(RF.err):''):'Ainda não busquei nesta sessão.');
+    ps.push(!S.keys.brapi?'Proventos automáticos: precisa do token brapi.':DV.err?'Proventos automáticos: '+esc(DV.err):DV.at?'Proventos automáticos: conferidos às '+new Date(DV.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'. Lanço sozinho os pagos a partir de '+fmtDate(S.divFrom)+' (ações do Brasil).':'Proventos automáticos: buscando...');
     if(S.trades.some(function(t){return t.side==='rf'}))ps.push(CDI.dates.length?'CDI: Banco Central, '+CDI.dates.length+' dias úteis até '+fmtDate(CDI.dates[CDI.dates.length-1])+(CDI.err?' ('+esc(CDI.err)+')':'.'):(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...'));
     if(MK.fxDates.length)ps.push('Histórico do dólar: '+MK.fxDates.length+' dias, de '+fmtDate(MK.fxDates[0])+' a '+fmtDate(MK.fxLatestDate)+' (AwesomeAPI).');
     si.innerHTML=ps.join('<br>')}
@@ -640,6 +645,54 @@ document.addEventListener('change',function(e){
 });
 
 var SEED=[];
+
+/* proventos automáticos (ações do Brasil, via brapi) */
+var DV={up:[],at:0,err:'',added:0,busy:false};
+try{var d0=JSON.parse(localStorage.getItem(LS+'-divs')||'null');if(d0){DV.up=d0.up||[];DV.at=d0.at||0}}catch(e){}
+if(!S.divFrom){S.divFrom=today();save()}
+function qtyOn(tk,date){var q=0;S.trades.forEach(function(t){if(t.ticker===tk&&t.market==='BR'&&t.date<=date){if(t.side==='buy')q+=t.qty;else if(t.side==='sell')q-=t.qty}});return q>1e-9?q:0}
+function divList(j){
+  var out=[];
+  var push=function(sym,d){if(d&&d.rate>0)out.push({tk:String(sym||d.symbol||d.ticker||'').toUpperCase(),pay:(d.paymentDate||'').slice(0,10),dc:(d.lastDatePrior||'').slice(0,10),ex:(d.exDate||'').slice(0,10),rate:+d.rate,label:String(d.label||'DIVIDENDO').toUpperCase()})};
+  var walk=function(o,sym){
+    if(Array.isArray(o)){o.forEach(function(x){walk(x,sym)});return}
+    if(!o||typeof o!=='object')return;
+    var sy=o.symbol||o.ticker||sym;
+    if('rate' in o&&('paymentDate' in o||'lastDatePrior' in o)){push(sy,o);return}
+    Object.keys(o).forEach(function(k){if(o[k]&&typeof o[k]==='object')walk(o[k],sy)});
+  };
+  walk(j,'');return out;
+}
+function loadDivs(force){
+  if(!S.keys.brapi||DV.busy)return Promise.resolve();
+  if(!force&&Date.now()-DV.at<6*3600000)return Promise.resolve();
+  var tks={};S.trades.forEach(function(t){if(t.market==='BR'&&(t.side==='buy'||t.side==='sell'))tks[t.ticker]=1});
+  var list=Object.keys(tks).filter(function(k){return qtyOn(k,'9999-12-31')>0||true});if(!list.length)return Promise.resolve();
+  var start=new Date(Date.now()-120*864e5).toISOString().slice(0,10);
+  DV.busy=true;
+  return getJSON('https://brapi.dev/api/v2/stocks/dividends?symbols='+encodeURIComponent(list.join(','))+'&startDate='+start+'&token='+encodeURIComponent(S.keys.brapi)).then(function(j){
+    var ds=divList(j),up=[],add=[],td=today();
+    ds.forEach(function(d){
+      if(!d.tk||!tks[d.tk])return;
+      var dc=d.dc||(d.ex?new Date(Date.parse(d.ex)-864e5).toISOString().slice(0,10):'');if(!dc)return;
+      var q=qtyOn(d.tk,dc);if(!q)return;
+      var jcp=/JCP|JURO/.test(d.label),val=Math.round(q*d.rate*(jcp?0.85:1)*100)/100;if(!(val>0))return;
+      var item={tk:d.tk,tipo:jcp?'JCP':'Dividendo',dc:dc,pay:d.pay,val:val,q:q};
+      if(!d.pay||d.pay>td){up.push(item);return}
+      if(d.pay<S.divFrom)return;
+      var id='a-'+d.tk+'-'+d.pay+'-'+(jcp?'J':'D')+'-'+Math.round(d.rate*1e6);
+      if(S.trades.some(function(t){return t.id===id}))return;
+      if(S.trades.some(function(t){return t.side==='div'&&t.ticker===d.tk&&Math.abs(dayDiff(t.date,d.pay))<=5&&Math.abs(t.price-val)<=Math.max(0.1,val*0.02)}))return;
+      add.push({id:id,side:'div',market:'BR',ticker:d.tk,date:d.pay,qty:1,price:val,fx:1,auto:1,note:item.tipo+' automático ('+num(q)+' × '+num(d.rate,6)+(jcp?' − 15% IR':'')+')'});
+    });
+    up.sort(function(a,b){return (a.pay||'9')<(b.pay||'9')?-1:1});
+    DV.up=up;DV.at=Date.now();DV.err='';DV.added+=add.length;
+    try{localStorage.setItem(LS+'-divs',JSON.stringify({up:up,at:DV.at}))}catch(e){}
+    if(add.length){add.forEach(function(t){S.trades.push(t);S.pend.push({t:'add',tr:t})});save();ghSync();
+      $('status').className='msg muted';$('status').textContent='Caiu provento: '+add.map(function(t){return t.ticker+' '+brl.format(t.price)}).join(', ')+'. Já lancei na carteira.'}
+    render();
+  }).catch(function(e){DV.err=String(e&&e.message)==='403'?'Seu plano do brapi não libera proventos.':'Não consegui buscar os proventos agora.';render()}).then(function(){DV.busy=false});
+}
 
 /* renda fixa: CDI diário do Banco Central (SGS série 12) */
 var CDI={s:{},dates:[],at:0,start:'',err:''};
@@ -839,6 +892,8 @@ setInterval(function(){if(!document.hidden)doRefresh(true)},15*60000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-RF.last>15*60000)doRefresh(true)});
 setTimeout(function(){doRefresh(true)},600);
 setTimeout(function(){loadCDI()},900);
+setTimeout(function(){loadDivs()},2500);
+setInterval(function(){if(!document.hidden)loadDivs()},60*60000);
 setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
 MK.dbOk=true;
 var TABS=['resumo','ativos','lancamentos','cambio','ajustes'];
