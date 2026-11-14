@@ -682,13 +682,13 @@ function render(){
     var row=function(name,st,txt){return '<li><span><b>'+name+'</b><br><span class="muted small">'+txt+'</span></span><span class="stt '+st+'">'+(st==='ok'?'Funcionando':st==='err'?'Com problema':st==='wait'?'Aguardando':'Desligado')+'</span></li>'};
     var rows=[];
     rows.push(row('Dólar (AwesomeAPI)',!RF.last?'wait':fl.indexOf('dólar')>-1?'err':'ok',RF.last?(fl.indexOf('dólar')>-1?'Não respondeu na última busca.':'Atualizado às '+hhm(RF.last)+'.'):'Busca ao abrir o app.'));
-    if(hasBR)rows.push(row('Ações do Brasil (brapi)',!S.keys.brapi?'off':!RF.last?'wait':brF.length?'err':'ok',!S.keys.brapi?'Falta o token brapi abaixo.':brF.length?'Sem preço para '+esc(brF.join(', ')):RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
+    if(hasBR)rows.push(row('Ações do Brasil (brapi)',!S.keys.brapi?'off':!RF.last?'wait':brF.length?'err':'ok',!S.keys.brapi?'Falta o token brapi abaixo.':brF.length?'Sem preço para '+esc(brF.join(', ')):!mktOpen()?'Bolsa fechada: mostrando o preço de fechamento. Volta a atualizar às 10h do próximo dia útil.':RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
     if(hasUS)rows.push(row('Ações dos EUA (Finnhub)',!S.keys.finnhub?'off':!RF.last?'wait':usF.length?'err':'ok',!S.keys.finnhub?'Falta a chave Finnhub abaixo.':usF.length?'Sem preço para '+esc(usF.join(', ')):RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
     rows.push(row('Proventos automáticos (brapi)',!S.keys.brapi?'off':DV.err?'err':DV.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':DV.err?esc(DV.err):DV.at?'Conferidos às '+hhm(DV.at)+'. Lança sozinho os pagos a partir de '+fmtDate(S.divFrom)+'.':'Confere de hora em hora.'));
     rows.push(row('Histórico de preços (brapi)',!S.keys.brapi?'off':HI.err&&!Object.keys(HI.px).length?'err':HI.at?(HI.err?'err':'ok'):'wait',!S.keys.brapi?'Falta o token brapi.':HI.err?esc(HI.err)+' Esses meses usam o preço médio na Evolução.':HI.at?'Preços de fechamento de '+Object.keys(HI.px).length+' ativos para a Evolução.':'Busca uma vez por dia.'));
     rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'err':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
-    si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
+    si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
   $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
   if(document.activeElement!==$('bk'))$('bk').value=bkText();
   syncForm();
@@ -925,7 +925,7 @@ function brHeldTickers(){
 }
 function loadHist(force){
   if(!S.keys.brapi||HI.busy)return Promise.resolve();
-  if(!force&&Date.now()-HI.at<12*3600000)return Promise.resolve();
+  if(!force&&Date.now()-HI.at<24*3600000)return Promise.resolve();
   var tks=brHeldTickers();if(!tks.length)return Promise.resolve();
   HI.busy=true;var fails=0,wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
   var one=function(tk,ranges){
@@ -1020,7 +1020,7 @@ function divList(j){
 }
 function loadDivs(force){
   if(!S.keys.brapi||DV.busy)return Promise.resolve();
-  if(!force&&Date.now()-DV.at<6*3600000)return Promise.resolve();
+  if(!force&&Date.now()-DV.at<12*3600000)return Promise.resolve();
   var tks={};S.trades.forEach(function(t){if(t.market==='BR'&&(t.side==='buy'||t.side==='sell'))tks[t.ticker]=1});
   var list=Object.keys(tks).filter(function(k){return /^[A-Z0-9]{4}\d{1,2}$/.test(k)});if(!list.length)return Promise.resolve();
   var start=new Date(Date.now()-60*864e5).toISOString().slice(0,10);
@@ -1238,6 +1238,13 @@ function loadFxHistory(){
     if(Object.keys(ser).length>5){ingestFx({series:ser,source:'AwesomeAPI'});try{localStorage.setItem(LS+'-fxh',JSON.stringify({at:Date.now(),ser:ser}))}catch(e){}}
   }).catch(function(){});
 }
+/* bolsa: 10h às 18h15 (Brasília), dias úteis. Fora disso, o preço não muda e não gasto a cota grátis do brapi. */
+function brt(){var d=new Date(Date.now()-3*3600000);return {wd:d.getUTCDay(),min:d.getUTCHours()*60+d.getUTCMinutes(),d:d}}
+function mktOpen(){var b=brt();return b.wd>=1&&b.wd<=5&&b.min>=600&&b.min<1095}
+function lastClose(){var b=brt(),d=new Date(b.d.getTime());
+  if(!(b.wd>=1&&b.wd<=5&&b.min>=1095)){do{d.setUTCDate(d.getUTCDate()-1)}while(d.getUTCDay()===0||d.getUTCDay()===6)}
+  d.setUTCHours(18,15,0,0);return d.getTime()+3*3600000}
+function needQuote(tk){if(mktOpen())return true;var q=S.quotes[tk];return !q||q.src!=='auto'||!(q.at>=lastClose())}
 function doRefresh(silent){
   var btn=$('refresh'),st=$('status'),R=compute();
   if(RF.busy)return;
@@ -1253,6 +1260,7 @@ function doRefresh(silent){
       jobs.push(getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(d&&d.c>0){S.quotes[tk]={price:d.c,prev:d.pc>0?d.pc:null,at:Date.now(),src:'auto'};okc++}else fails.push(tk)}).catch(function(){fails.push(tk)}));
     }else br.push(tk);
   });
+  var skipped=0;br=br.filter(function(tk){if(needQuote(tk))return true;skipped++;return false});RF.closed=skipped>0&&!mktOpen();
   if(br.length&&!S.keys.brapi){br.forEach(function(tk){fails.push(tk+' (falta o token brapi)')});br=[]}
   var wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
   var one=function(tk,tries){
