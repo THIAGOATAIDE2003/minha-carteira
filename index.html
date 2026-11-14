@@ -293,6 +293,8 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
           <input id="k-fh" placeholder="cole sua chave" autocomplete="off">
           <label class="small muted" for="k-br">Token brapi (ações do Brasil e proventos, grátis em brapi.dev)</label>
           <input id="k-br" placeholder="cole seu token" autocomplete="off">
+          <label class="small muted" for="k-av">Chave Alpha Vantage (dividendos do VT, grátis em alphavantage.co)</label>
+          <input id="k-av" placeholder="cole sua chave" autocomplete="off">
         </div>
       </div>
     </section>
@@ -451,7 +453,7 @@ function renderDivPanel(){
     '<tr class="tot"><td>'+DVY+'</td><td class="gain">'+brl.format(tr)+'</td><td>'+brl.format(tp)+'</td><td>'+brl.format(tr+tp)+'</td></tr></tbody></table></div></div>';
   var ups=DV.up.filter(function(u){return u.pay&&u.pay.slice(0,4)===DVY}).concat(DVY===cy?tbd:[]);
   if(ups.length)h+='<div class="panel"><h2>A receber em '+DVY+'</h2><ul class="calc">'+ups.map(function(u){
-    return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+u.tipo+', '+num(u.q)+' ações na data-com '+fmtDate(u.dc)+'. '+(u.pay?'Paga em '+fmtDate(u.pay):'Pagamento a definir')+'</span></span><span class="num">'+brl.format(u.val)+'</span></li>'}).join('')+
+    return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+u.tipo+(u.us?' de '+usd.format(u.usd)+' (já sem os 30% dos EUA)':'')+', '+num(u.q,u.us?4:0)+(u.us?' cotas':' ações')+' na data-com '+fmtDate(u.dc)+'. '+(u.pay?'Paga em '+fmtDate(u.pay):'Pagamento a definir')+'</span></span><span class="num">'+brl.format(u.val)+'</span></li>'}).join('')+
     '<li class="tot"><span>Total</span><span class="num">'+brl.format(ups.reduce(function(a,u){return a+u.val},0))+'</span></li></ul></div>';
   h+=divPorAtivo();
   var got=S.trades.filter(function(t){return t.side==='div'&&t.date.slice(0,4)===DVY}).sort(function(a,b){return a.date<b.date?1:-1});
@@ -705,12 +707,13 @@ function render(){
     if(hasBR)rows.push(row('Ações do Brasil (brapi)',!S.keys.brapi?'off':!RF.last?'wait':brF.length?'err':'ok',!S.keys.brapi?'Falta o token brapi abaixo.':brF.length?'Sem preço para '+esc(brF.join(', ')):!mktOpen()?'Bolsa fechada: mostrando o preço de fechamento. Volta a atualizar às 10h do próximo dia útil.':RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
     if(hasUS)rows.push(row('Ações dos EUA (Finnhub)',!S.keys.finnhub?'off':!RF.last?'wait':usF.length?'err':'ok',!S.keys.finnhub?'Falta a chave Finnhub abaixo.':usF.length?'Sem preço para '+esc(usF.join(', ')):RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
     rows.push(row('Proventos automáticos (brapi)',!S.keys.brapi?'off':DV.err?'err':DV.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':DV.err?esc(DV.err):DV.at?'Conferidos às '+hhm(DV.at)+'. Lança sozinho os pagos a partir de '+fmtDate(S.divFrom)+'.':'Confere de hora em hora.'));
+    if(hasUS)rows.push(row('Dividendos do VT (Alpha Vantage)',!S.keys.av?'off':DU.err?'err':DU.at?'ok':'wait',!S.keys.av?'Falta a chave da Alpha Vantage.':DU.err?esc(DU.err):DU.at?'Conferidos às '+hhm(DU.at)+'. '+(DU.up.length?DU.up.length+' anunciado'+(DU.up.length>1?'s':'')+' a receber.':'Nenhum anunciado agora.')+' Lança sozinho no dia do pagamento.':'Confere 2 vezes por dia.'));
     rows.push(row('Histórico de preços (brapi)',!S.keys.brapi?'off':HI.err&&!Object.keys(HI.px).length?'err':HI.at?(HI.err?'err':'ok'):'wait',!S.keys.brapi?'Falta o token brapi.':HI.err?esc(HI.err)+' Esses meses usam o preço médio na Evolução.':HI.at?'Preços de fechamento de '+Object.keys(HI.px).length+' ativos para a Evolução.':'Busca uma vez por dia.'));
     rows.push(row('Ibovespa e S&P 500 (brapi)',!S.keys.brapi?'off':BX.err?'err':BX.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':BX.err?esc(BX.err):BX.at?'BOVA11 e IVVB11, atualizados 2 vezes por dia.':'Busca ao abrir o app.'));
     rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'err':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
     si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
-  $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
+  $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
   syncForm();
 }
 
@@ -844,8 +847,9 @@ document.addEventListener('change',function(e){
     var r=parseNum(t.value);
     if(r>0&&(r<3||r>10)){warnIn('O dólar digitado ('+num(r,2)+') parece errado. Confira a vírgula, por exemplo 5,58.');t.value=S.fx&&S.fx.rate?String(S.fx.rate).replace('.',','):'';return}
     S.fx=r>0?{rate:r,at:Date.now(),src:'manual'}:null;save();$('status').textContent='';render();
-  }else if(t.id==='k-fh'||t.id==='k-br'){
-    S.keys.finnhub=$('k-fh').value.trim();S.keys.brapi=$('k-br').value.trim();save();
+  }else if(t.id==='k-fh'||t.id==='k-br'||t.id==='k-av'){
+    var av0=S.keys.av;S.keys.finnhub=$('k-fh').value.trim();S.keys.brapi=$('k-br').value.trim();S.keys.av=$('k-av').value.trim();save();
+    if(S.keys.av&&S.keys.av!==av0){DU.at=0;loadDivsUS(true)}
   }else if(t.id==='k-gh'||t.id==='k-repo'){
     var was=S.keys.gh;S.keys.gh=$('k-gh').value.replace(/\s/g,'');S.keys.repo=$('k-repo').value.trim();save();
     if(S.keys.gh&&S.keys.gh!==was)S.ghInit=false;ghSync(true);
@@ -1124,10 +1128,49 @@ function renderEvo(){
 }
 
 /* proventos automáticos (ações do Brasil, via brapi) */
-var DV={up:[],at:0,err:'',added:0,busy:false};
-try{var d0=JSON.parse(localStorage.getItem(LS+'-divs')||'null');if(d0){DV.up=d0.up||[];DV.at=d0.at||0}}catch(e){}
+var DV={up:[],br:[],at:0,err:'',added:0,busy:false};
+try{var d0=JSON.parse(localStorage.getItem(LS+'-divs')||'null');if(d0){DV.br=(d0.up||[]).filter(function(u){return !u.us});DV.at=d0.at||0}}catch(e){}
+setTimeout(function(){mergeUp();render()},0);
 if(!S.divFrom){S.divFrom=today();save()}
-function qtyOn(tk,date){var q=0;S.trades.forEach(function(t){if(t.ticker===tk&&t.market==='BR'&&t.date<=date){if(t.side==='buy')q+=t.qty;else if(t.side==='sell')q-=t.qty}});return q>1e-9?q:0}
+function qtyOn(tk,date,mk){var q=0;S.trades.forEach(function(t){if(t.ticker===tk&&t.market===(mk||'BR')&&t.date<=date){if(t.side==='buy')q+=t.qty;else if(t.side==='sell')q-=t.qty}});return q>1e-9?q:0}
+/* dividendos do VT (e outros dos EUA) pela Alpha Vantage: anúncio, data-com e pagamento; líquido dos 30% retidos nos EUA */
+var DU={up:[],at:0,err:'',busy:false};
+try{var du0=JSON.parse(localStorage.getItem(LS+'-divus')||'null');if(du0){DU.up=du0.up||[];DU.at=du0.at||0}}catch(e){}
+function mergeUp(){DV.up=(DV.br||[]).concat(DU.up).sort(function(a,b){return (a.pay||'9')<(b.pay||'9')?-1:1})}
+function loadDivsUS(force){
+  if(!S.keys.av||DU.busy)return Promise.resolve();
+  if(!force&&Date.now()-DU.at<12*3600000)return Promise.resolve();
+  var tks={};S.trades.forEach(function(t){if(t.market==='US'&&(t.side==='buy'||t.side==='sell'))tks[t.ticker]=1});
+  var list=Object.keys(tks);if(!list.length)return Promise.resolve();
+  DU.busy=true;var up=[],add=[],td=today(),errs=[];
+  var cut=new Date(Date.now()-120*864e5).toISOString().slice(0,10);
+  return list.reduce(function(p,tk,i){return p.then(function(){return i?new Promise(function(r){setTimeout(r,1500)}):null}).then(function(){
+    return getJSON('https://www.alphavantage.co/query?function=DIVIDENDS&symbol='+encodeURIComponent(tk)+'&apikey='+encodeURIComponent(S.keys.av)).then(function(j){
+      if(!j||!Array.isArray(j.data)){errs.push(j&&(j.Information||j.Note||j['Error Message'])?'lim':'fmt');return}
+      j.data.forEach(function(x){
+        var ok=function(v){return /^\d{4}-\d{2}-\d{2}$/.test(v||'')?v:''};
+        var ex=ok(x.ex_dividend_date),pay=ok(x.payment_date),amt=parseFloat(x.amount);if(!ex||!(amt>0)||ex<cut)return;
+        var dc=new Date(Date.parse(ex)-864e5).toISOString().slice(0,10),q=qtyOn(tk,dc,'US');if(!q)return;
+        var gross=Math.round(q*amt*100)/100,irx=Math.round(gross*0.30*100)/100,net=Math.round((gross-irx)*100)/100;if(!(net>0))return;
+        var ft=fxToday(),rate=ft?ft.rate:(S.fx&&S.fx.rate)||0;
+        if(!pay||pay>td){up.push({tk:tk,tipo:'Dividendo',dc:dc,pay:pay,val:Math.round(net*rate*100)/100,q:q,us:1,usd:net});return}
+        if(pay<S.divFrom)return;
+        var id='a-'+tk+'-'+pay+'-D-'+Math.round(amt*1e6);
+        if(S.trades.some(function(t){return t.id===id}))return;
+        if(S.trades.some(function(t){return t.side==='div'&&t.ticker===tk&&Math.abs(dayDiff(t.date,pay))<=7&&Math.abs(t.price-net)<=Math.max(0.1,net*0.03)}))return;
+        var fo=fxOn(pay);
+        add.push({id:id,side:'div',market:'US',ticker:tk,date:pay,qty:1,price:net,fx:fo?fo.rate:rate,auto:1,tipo:'Dividendo',bruto:gross,irExt:irx,note:'Dividendo automático'});
+      });
+    }).catch(function(e){errs.push(String(e&&e.message))})})},Promise.resolve()).then(function(){
+    if(errs.length===list.length){var c=errs[0];DU.err=c==='lim'?'A Alpha Vantage recusou a consulta (chave errada ou limite do dia).':'Não consegui buscar os dividendos agora'+(c&&c!=='fmt'&&c!=='0'?' (código '+c+')':'')+'.';render();return}
+    DU.up=up;DU.at=Date.now();DU.err='';
+    try{localStorage.setItem(LS+'-divus',JSON.stringify({up:up,at:DU.at}))}catch(e){}
+    mergeUp();
+    if(add.length){add.forEach(function(t){S.trades.push(t);S.pend.push({t:'add',tr:t})});save();ghSync();
+      $('status').className='msg muted';$('status').textContent='Caiu provento: '+add.map(function(t){return t.ticker+' '+usd.format(t.price)}).join(', ')+'. Já lancei na carteira.'}
+    render();
+  }).then(function(){DU.busy=false});
+}
 function divList(j){
   var out=[];
   var push=function(sym,d){if(d&&d.rate>0)out.push({tk:String(sym||d.symbol||d.ticker||'').toUpperCase(),pay:(d.paymentDate||'').slice(0,10),dc:(d.lastDatePrior||'').slice(0,10),ex:(d.exDate||'').slice(0,10),rate:+d.rate,label:String(d.label||'DIVIDENDO').toUpperCase()})};
@@ -1166,8 +1209,9 @@ function loadDivs(force){
       add.push({id:id,side:'div',market:'BR',ticker:d.tk,date:d.pay,qty:1,price:val,fx:1,auto:1,tipo:item.tipo,note:item.tipo+' automático'});
     });
     up.sort(function(a,b){return (a.pay||'9')<(b.pay||'9')?-1:1});
-    DV.up=up;DV.at=Date.now();DV.err='';DV.added+=add.length;
+    DV.br=up;DV.at=Date.now();DV.err='';DV.added+=add.length;
     try{localStorage.setItem(LS+'-divs',JSON.stringify({up:up,at:DV.at}))}catch(e){}
+    mergeUp();
     if(add.length){add.forEach(function(t){S.trades.push(t);S.pend.push({t:'add',tr:t})});save();ghSync();
       $('status').className='msg muted';$('status').textContent='Caiu provento: '+add.map(function(t){return t.ticker+' '+brl.format(t.price)}).join(', ')+'. Já lancei na carteira.'}
     render();
@@ -1388,9 +1432,10 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden&&Dat
 setTimeout(function(){doRefresh(true)},600);
 setTimeout(function(){loadCDI()},900);
 setTimeout(function(){loadDivs()},2500);
+setTimeout(function(){loadDivsUS()},4200);
 setTimeout(function(){loadHist()},5000);
 setTimeout(function(){loadBench()},3500);
-setInterval(function(){if(!document.hidden)loadDivs()},60*60000);
+setInterval(function(){if(!document.hidden){loadDivs();loadDivsUS()}},60*60000);
 setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
 var TABS=['resumo','ativos','proventos','lancamentos','mais'],MAISV='cambio',CARV='pos';
 function showTab(n){
