@@ -126,6 +126,7 @@ textarea{width:100%;min-height:90px;background:var(--bg);border:1px solid var(--
     <button class="btn small" id="refresh" type="button">Atualizar preços</button>
   </div>
   <div class="msg muted" id="status" role="status"></div>
+  <div class="msg muted small" id="syncbar"></div>
   <div id="banner"></div>
   <div class="panel fxbar"><div class="fxl"><label for="c-fx">Dólar de hoje (R$ por US$)</label><span class="fxsrc" id="fx-src"></span></div><input id="c-fx" inputmode="decimal" placeholder="online"></div>
   <section id="summary" aria-label="Resumo" data-tab="resumo"></section>
@@ -168,7 +169,7 @@ textarea{width:100%;min-height:90px;background:var(--bg);border:1px solid var(--
   <section id="fxtab" aria-label="Câmbio" data-tab="cambio" hidden></section>
 
   <section class="panel" aria-labelledby="h-cfg" data-tab="ajustes" hidden>
-    <h2 id="h-cfg">Ajustes e backup</h2>
+    <h2 id="h-cfg">Ajustes</h2>
     <details open style="border-top:0;margin-top:8px;padding-top:0">
       <summary>Dados online e cotações</summary>
       <p class="note" id="srcinfo" style="margin:10px 0 0"></p>
@@ -182,7 +183,20 @@ textarea{width:100%;min-height:90px;background:var(--bg);border:1px solid var(--
         <p class="note" style="margin:0">Cole as duas chaves gratuitas uma vez. Com elas o app busca os preços sozinho a cada 15 minutos enquanto estiver aberto. O dólar não precisa de chave.</p>
       </div>
     </details>
-    <details>
+    <details open id="syncbox">
+      <summary>Seus dados na nuvem (GitHub)</summary>
+      <div class="stack" style="margin-top:10px">
+        <p class="note" id="syncinfo" style="margin:0"></p>
+        <div class="keys">
+          <label class="small muted" for="k-gh">Chave do GitHub (acesso ao repositório de dados)</label>
+          <input id="k-gh" type="password" placeholder="cole a chave github_pat_..." autocomplete="off">
+          <label class="small muted" for="k-repo">Repositório de dados</label>
+          <input id="k-repo" placeholder="THIAGOATAIDE2003/minha-carteira-dados" autocomplete="off" autocapitalize="none">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="sync-now" type="button">Sincronizar agora</button></div>
+      </div>
+    </details>
+    <details hidden>
       <summary>Backup dos dados</summary>
       <div class="stack" style="margin-top:10px">
         <p class="note" style="margin:0">Seus lançamentos ficam salvos só neste navegador. Copie o backup de vez em quando.</p>
@@ -207,8 +221,8 @@ window.addEventListener('error',function(e){var s=document.getElementById('statu
 var LS='minha-carteira-v1';
 var $=function(id){return document.getElementById(id)};
 var today=function(){return new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)};
-var S={trades:[],quotes:{},fx:null,keys:{finnhub:'',brapi:''},example:false};
-try{var raw=localStorage.getItem(LS);if(raw){var p=JSON.parse(raw);S=Object.assign(S,p);S.keys=Object.assign({finnhub:'',brapi:''},S.keys||{})}}catch(e){}
+var S={trades:[],quotes:{},fx:null,keys:{finnhub:'',brapi:'',gh:'',repo:''},example:false,pend:[]};
+try{var raw=localStorage.getItem(LS);if(raw){var p=JSON.parse(raw);S=Object.assign(S,p);S.keys=Object.assign({finnhub:'',brapi:'',gh:'',repo:''},S.keys||{});if(!Array.isArray(S.pend))S.pend=[]}}catch(e){}
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 function warnIn(m){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent=m}try{window.scrollTo(0,0)}catch(e){}}
 function sanitize(){
@@ -318,7 +332,7 @@ function compute(){
 function renderSummary(R){
   var T=R.tot,el=$('summary');
   if(!S.trades.length){
-    el.innerHTML='<div class="panel empty"><h3>Sua carteira está vazia</h3><p>Importe o seu arquivo de backup em Ajustes, ou lance sua primeira compra na aba Operações. Seus dados ficam só neste aparelho.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="goimp" type="button">Importar meu backup</button><button class="btn ghost" id="ex" type="button">Carregar exemplo</button></div></div>';
+    el.innerHTML='<div class="panel empty"><h3>Sua carteira está vazia</h3><p>Cole a chave do GitHub em Ajustes para carregar seus dados da nuvem, ou lance sua primeira compra na aba Operações.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="goimp" type="button">Conectar meus dados</button><button class="btn ghost" id="ex" type="button">Carregar exemplo</button></div></div>';
     return;
   }
   var upd='';
@@ -407,7 +421,7 @@ function renderTrades(){
 var PEND=null;
 function renderBanner(){
   if(PEND){$('banner').innerHTML='<div class="banner"><span>Importar sua carteira com '+PEND.n+' lançamentos? Isso substitui o que estiver neste aparelho.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="impok" type="button">Importar</button><button class="btn ghost small" id="impno" type="button">Cancelar</button></span></div>';return}
-  $('banner').innerHTML=S.example?'<div class="banner"><span>Você está vendo dados de exemplo, não são seus.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="goimp" type="button">Importar meu backup</button><button class="btn ghost small" id="clrex" type="button">Limpar exemplo</button></span></div>':'';
+  $('banner').innerHTML=S.example?'<div class="banner"><span>Você está vendo dados de exemplo, não são seus.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="goimp" type="button">Conectar meus dados</button><button class="btn ghost small" id="clrex" type="button">Limpar exemplo</button></span></div>':'';
 }
 
 var CAMBIO=[];
@@ -462,7 +476,7 @@ function render(){
     ps.push(RF.last?'Última busca às '+new Date(RF.last).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.'+(RF.err?' '+esc(RF.err):''):'Ainda não busquei nesta sessão.');
     if(MK.fxDates.length)ps.push('Histórico do dólar: '+MK.fxDates.length+' dias, de '+fmtDate(MK.fxDates[0])+' a '+fmtDate(MK.fxLatestDate)+' (AwesomeAPI).');
     si.innerHTML=ps.join('<br>')}
-  $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';
+  $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
   if(document.activeElement!==$('bk'))$('bk').value=bkText();
   syncForm();
 }
@@ -498,10 +512,11 @@ $('addform').addEventListener('submit',function(e){
     ticker:$('f-side').value==='out'?'CAIXA':$('f-ticker').value.toUpperCase().replace(/[^A-Z0-9.\-]/g,''),date:$('f-date').value,
     qty:($('f-side').value==='div'||$('f-side').value==='out')?1:parseNum($('f-qty').value),price:parseNum($('f-price').value),fx:us?parseNum($('f-fx').value):1};
   if(!t.ticker||!t.date||!(t.qty>0)||!(t.price>0)||(us&&!(t.fx>0))){m.className='msg err';m.textContent='Confira os campos: quantidade, preço e dólar precisam ser números maiores que zero.';return}
-  S.trades.push(t);
+  S.trades.push(t);S.pend.push({t:'add',tr:t});
   if(us&&t.date===today()&&fxCustom)S.fx={rate:t.fx,at:Date.now(),src:'manual'};
   save();
   $('f-ticker').value='';$('f-qty').value='';$('f-price').value='';fxCustom=false;$('f-fx').value='';
+  ghSync();
   m.textContent=t.side==='out'?'Retirada lançada.':(t.side==='buy'?'Compra':t.side==='sell'?'Venda':'Provento')+' de '+t.ticker+' lançado.';
   render();
 });
@@ -513,11 +528,12 @@ document.addEventListener('click',function(e){
   if(t.id==='impok'){var tx=PEND&&PEND.txt;PEND=null;if(tx)bkApply(tx);renderBanner()}
   else if(t.id==='impno'){PEND=null;renderBanner()}
   else if(t.id==='ex')loadExample();
-  else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');var dd=$('bk').closest('details');if(dd)dd.open=true;$('bkfile').scrollIntoView()}
+  else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');$('syncbox').open=true;$('k-gh').scrollIntoView();$('k-gh').focus()}
+  else if(t.id==='sync-now'){ghSync(true)}
   else if(t.id==='seed2'){if(t.dataset.arm){loadSeed()}else{t.dataset.arm='1';t.textContent='Substituir tudo? Toque de novo';setTimeout(function(){if(t.isConnected){delete t.dataset.arm;t.textContent='Recarregar carteira das notas da Nubank'}},3000)}}
   else if(t.id==='clrex'){S.trades=[];S.quotes={};S.fx=null;S.example=false;save();render()}
   else if(t.dataset&&t.dataset.del){
-    if(t.dataset.arm){S.trades=S.trades.filter(function(x){return x.id!==t.dataset.del});save();render()}
+    if(t.dataset.arm){var did=t.dataset.del;S.trades=S.trades.filter(function(x){return x.id!==did});if(!S.example)S.pend.push({t:'del',id:did});save();render();ghSync()}
     else{t.dataset.arm='1';t.textContent='Confirmar exclusão?';setTimeout(function(){if(t.isConnected){delete t.dataset.arm;t.textContent='Excluir'}},3000)}
   }
 });
@@ -536,10 +552,83 @@ document.addEventListener('change',function(e){
     S.fx=r>0?{rate:r,at:Date.now(),src:'manual'}:null;save();$('status').textContent='';render();
   }else if(t.id==='k-fh'||t.id==='k-br'){
     S.keys.finnhub=$('k-fh').value.trim();S.keys.brapi=$('k-br').value.trim();save();
+  }else if(t.id==='k-gh'||t.id==='k-repo'){
+    var was=S.keys.gh;S.keys.gh=$('k-gh').value.replace(/\s/g,'');S.keys.repo=$('k-repo').value.trim();save();
+    if(S.keys.gh&&S.keys.gh!==was)S.ghInit=false;ghSync(true);
   }
 });
 
 var SEED=[];
+
+/* sincronização com o repositório privado no GitHub */
+var GH={busy:false,last:0,err:'',again:false};
+function ghRepo(){return (S.keys.repo||'THIAGOATAIDE2003/minha-carteira-dados').replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'').trim()}
+function b64dec(x){var b=atob(String(x).replace(/\s/g,'')),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new TextDecoder().decode(u)}
+function b64enc(x){var u=new TextEncoder().encode(x),b='';for(var i=0;i<u.length;i+=8192)b+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(b)}
+function ghReq(method,body){
+  var c=new AbortController(),to=setTimeout(function(){c.abort()},15000);
+  return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/carteira.json'+(method==='GET'?'?ref=main':''),{method:method,signal:c.signal,cache:'no-store',
+    headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github+json'},body:body?JSON.stringify(body):undefined})
+    .then(function(r){clearTimeout(to);return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j}},function(){return {ok:r.ok,status:r.status,j:{}}})});
+}
+function applyOps(trades,ops){
+  var out=trades.slice();
+  ops.forEach(function(o){
+    if(o.t==='add'&&o.tr&&!out.some(function(x){return x.id===o.tr.id}))out.push(o.tr);
+    else if(o.t==='del')out=out.filter(function(x){return x.id!==o.id});
+  });
+  return out;
+}
+function ghAdopt(d){
+  var tr=applyOps(Array.isArray(d.trades)?d.trades:[],S.pend||[]);
+  var before=JSON.stringify([S.trades,S.cambio||[]]);
+  S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;S.example=false;save();
+  if(JSON.stringify([S.trades,S.cambio||[]])!==before)render();
+}
+function ghRound(attempt){
+  return ghReq('GET').then(function(r){
+    var remote,sha=null;
+    if(!r.ok)throw {status:r.status};
+    remote=JSON.parse(b64dec(r.j.content||''));sha=r.j.sha;
+    if(!S.ghInit){
+      var ids={};(remote.trades||[]).forEach(function(x){ids[x.id]=1});
+      S.trades.forEach(function(x){if(!S.example&&!ids[x.id]&&!/^n\d{3}$/.test(x.id)&&!S.pend.some(function(o){return o.tr&&o.tr.id===x.id}))S.pend.push({t:'add',tr:x})});
+      S.ghInit=true;save();
+    }
+    var pend=(S.pend||[]).slice();
+    if(!pend.length){ghAdopt(remote);return}
+    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend)});
+    var body={message:'App: '+pend.length+(pend.length>1?' alterações':' alteração'),content:b64enc(JSON.stringify(data,null,1)+'\n'),sha:sha,branch:'main'};
+    return ghReq('PUT',body).then(function(w){
+      if((w.status===409||w.status===422)&&attempt<2)return ghRound(attempt+1);
+      if(!w.ok)throw {status:w.status};
+      S.pend=(S.pend||[]).slice(pend.length);save();ghAdopt(data);
+    });
+  });
+}
+function ghSync(manual){
+  if(!S.keys.gh){renderSync();return}
+  if(GH.busy){GH.again=true;return}
+  GH.busy=true;renderSync();
+  ghRound(0).then(function(){GH.last=Date.now();GH.err=''},function(e){
+    var st=e&&e.status;
+    GH.err=st===401?'A chave do GitHub não foi aceita (errada ou vencida). Crie outra e cole em Ajustes.':st===403?'A chave do GitHub não tem permissão de gravar. Ela precisa de "Contents: Read and write".':st===404?'Não achei o repositório '+ghRepo()+' com essa chave. Confira o nome e se a chave dá acesso a ele.':'Sem conexão com o GitHub agora. Suas alterações ficam guardadas aqui e eu tento de novo.';
+    if(manual)warnIn(GH.err);
+  }).then(function(){GH.busy=false;renderSync();if(GH.again){GH.again=false;ghSync()}});
+}
+function renderSync(){
+  var n=(S.pend||[]).length,hm=function(t){return new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})},txt,bar='';
+  if(!S.keys.gh){txt='Seus dados estão só neste aparelho. Cole a chave do GitHub para salvar tudo na nuvem automaticamente.';bar=''}
+  else if(GH.busy){txt='Sincronizando com '+esc(ghRepo())+'...';bar='Sincronizando...'}
+  else if(GH.err){txt=esc(GH.err)+(n?' ('+n+(n>1?' alterações esperando':' alteração esperando')+')':'');bar='⚠ '+(n?n+(n>1?' alterações não salvas na nuvem':' alteração não salva na nuvem'):'Nuvem desconectada')}
+  else if(GH.last){txt='Tudo salvo na nuvem ('+esc(ghRepo())+'). Última sincronização às '+hm(GH.last)+'. Lançou ou excluiu, salva sozinho.';bar='☁ Salvo na nuvem às '+hm(GH.last)}
+  else{txt='Conectando...';bar=''}
+  if($('syncinfo'))$('syncinfo').innerHTML=txt;
+  if($('syncbar'))$('syncbar').textContent=bar;
+}
+setTimeout(function(){ghSync()},300);
+setInterval(function(){if(!document.hidden)ghSync()},5*60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-GH.last>60000)ghSync()});
 function loadSeed(){
   S.trades=SEED.map(function(x){return Object.assign({},x)});S.quotes={};S.example=false;S.seedVer=6;save();render();
   $('status').className='msg muted';$('status').textContent='Carteira carregada. Falta só digitar o preço atual de cada ativo (e o dólar de hoje).';
