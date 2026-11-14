@@ -75,12 +75,6 @@ button{cursor:pointer}
 .patr .duo div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .patr .duo .wide{grid-column:1/-1}
 .evolink{margin-top:14px;align-self:flex-start;background:rgba(255,255,255,.1);color:var(--hero-fg);border:1px solid var(--hero-line);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600}
-.hcalc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
-.hcalc li{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
-.hcalc li span:first-child{color:var(--hero-muted)}
-.hcalc .num{white-space:nowrap;font-weight:600}
-.hcalc li.tot{border-top:1px solid var(--hero-line);padding-top:8px;font:700 20px/1.2 var(--disp)}
-.hcalc li.tot span:first-child{color:var(--hero-fg)}
 .patr .duo b{font:600 18px/1.2 var(--disp);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .patr .duo small{font-size:12px;color:var(--hero-muted)}
 .hero{display:flex;flex-direction:column;gap:6px}
@@ -238,7 +232,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
         <input id="f-fx" inputmode="decimal" placeholder="5,00" aria-label="Dólar da operação">
         <span class="hint">Dólar do dia da operação. Só preencha se for diferente do dólar de hoje, por exemplo numa compra antiga.</span></div></div>
       <div class="full stack">
-        <button class="btn" type="submit">Lançar</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="submit" id="f-submit">Lançar</button><button class="btn ghost" type="button" id="f-cancel" hidden>Cancelar edição</button></div>
         <div class="msg" id="formmsg" role="status"></div>
       </div>
     </form>
@@ -474,11 +468,8 @@ function renderSummary(R){
   var pa0=T.uA+T.rfU;
   var h='<div class="patr"><span class="lbl">Patrimônio</span><div class="big">'+brl.format(T.value+T.cash)+'</div>'+
     '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>hoje</span>':'')+(times.length?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
-    '<div class="duo"><div class="wide"><ul class="hcalc">'+
-      '<li><span>Aplicado do seu bolso</span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
-      '<li><span>'+(pa0<0?'Desvalorização':'Valorização')+' das ações (só o preço, sem o dólar)</span><span class="num '+cls(pa0)+'">'+sgn(pa0)+' ('+pct(T.cost?pa0/T.cost:0)+')</span></li>'+
-      '<li class="tot"><span>Total</span><span class="num">'+brl.format(T.contrib+pa0)+'</span></li></ul></div>'+
-    '<div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre o aplicado</small></div>'+
+    '<div class="duo"><div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre '+brl.format(T.contrib)+' aplicados</small></div>'+
+    '<div><small>Preço das ações agora (sem o dólar)</small><b class="'+cls(pa0)+'">'+sgn(pa0)+'</b><small>'+pct(T.cost?pa0/T.cost:0)+' sobre o que você pagou</small></div>'+
     '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
@@ -496,13 +487,13 @@ function renderSummary(R){
     '<li class="tot"><span>Total<br>'+res(vt,ct)+'</span><span class="num">'+brl.format(vt)+'</span></li></ul>'+
     '<p class="note">Só o que você tem hoje: valor atual comparado com o que pagou (preço médio). Não conta vendas antigas nem proventos.</p></div>'}
 
-  var un=T.uA+T.uF+T.rfU,rz=T.rA+T.rF+T.rfR,fxE=T.uF+T.rF;
+  var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR,bm=cdiBench(R);
   h+='<div class="panel"><h2>De onde vem o '+(T.gain>=0?'lucro':'prejuízo')+' total</h2><ul class="calc">'+
-    '<li><span>O que você tem hoje</span><span class="num '+cls(un)+'">'+sgn(un)+'</span></li>'+
+    '<li><span>Preço das ações que você tem</span><span class="num '+cls(pz)+'">'+sgn(pz)+'</span></li>'+
+    (nUS||Math.abs(T.uF)>0.005?'<li><span>Dólar (sobre o VT que você tem)</span><span class="num '+cls(T.uF)+'">'+sgn(T.uF)+'</span></li>':'')+
     '<li><span>Vendas já feitas</span><span class="num '+cls(rz)+'">'+sgn(rz)+'</span></li>'+
     '<li><span>Proventos recebidos</span><span class="num '+cls(T.div)+'">'+sgn(T.div)+'</span></li>'+
     '<li class="tot"><span>'+(T.gain>=0?'Lucro':'Prejuízo')+' total</span><span class="num '+cls(T.gain)+'">'+sgn(T.gain)+'</span></li></ul>'+
-    (nUS||Math.abs(fxE)>0.005?'<p class="note">Desse total, <span class="num '+cls(fxE)+'">'+sgn(fxE)+'</span> vêm do efeito do câmbio (dólar de hoje contra o dólar que você pagou).</p>':'')+
     '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Rentabilidade simples</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div>'+
     '<div><span class="lbl">Anualizada (XIRR)</span><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div></div>'+
     '<details><summary>Como a conta é feita</summary><ul class="calc small" style="margin-top:12px">'+
@@ -514,6 +505,14 @@ function renderSummary(R){
     (Math.abs(T.check-T.gain)>0.01?'<p class="warn">A conta não fecha em '+brl.format(Math.abs(T.check-T.gain))+'. Revise os lançamentos.</p>':'')+
     '</details></div>';
 
+  if(bm){var dif=(T.value+T.cash)-bm.val;
+    h+='<div class="panel"><h2>Sua carteira contra o CDI</h2><ul class="calc">'+
+      '<li><span>Sua carteira hoje</span><span class="num">'+brl.format(T.value+T.cash)+'</span></li>'+
+      '<li><span>Se o mesmo dinheiro estivesse no CDI</span><span class="num">'+brl.format(bm.val)+'</span></li>'+
+      '<li class="tot"><span>'+(dif>=0?'Você está à frente do CDI':'Você está atrás do CDI')+'</span><span class="num '+cls(dif)+'">'+sgn(dif)+'</span></li></ul>'+
+      '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Sua carteira</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div><div><span class="lbl">CDI no mesmo período</span><span class="num">'+pct(bm.gain/bm.apl)+'</span></div></div>'+
+      '<p class="note">Cada real que você aplicou foi colocado no CDI na mesma data em que entrou na carteira, rendendo 100% do CDI até '+fmtDate(bm.last)+' (último CDI do Banco Central). Retiradas saem do CDI na mesma data. Sem IR, para comparar com a carteira, que também está sem IR.</p></div>'}
+  else if(S.trades.length&&!CDI.dates.length)h+='<div class="panel"><h2>Sua carteira contra o CDI</h2><p class="muted small">'+(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...')+'</p></div>';
   if(T.value>0){
     var cs=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
     var its=R.held.map(function(x){return {n:x.p.ticker,v:x.v}});if(T.rfV>0)its.push({n:'Renda fixa',v:T.rfV});
@@ -600,7 +599,7 @@ function renderTrades(){
     var sc=k==='sell'||k==='out'||k==='rfout'?' s':k==='div'?' p':'';
     var det=(t.auto?'automático, ':'')+(k==='rf'?num(t.pct,2)+'% do CDI'+(t.isento?', isento':''):k==='div'||k==='out'||k==='rfout'?(us?cur.format(t.price)+' a R$ '+num(t.fx,4):''):num(t.qty)+' × '+cur.format(t.price)+(us?' a R$ '+num(t.fx,4):''));
     h+='<div class="tr"><span class="side'+sc+'">'+lab+'</span><span><b>'+esc(k==='out'?(t.note||'Dinheiro retirado'):t.ticker)+'</b> <span class="d">'+fmtDate(t.date).slice(0,5)+'</span></span><span class="num">'+brl.format(tot)+'</span>'+
-      '<div class="x"><span class="num">'+det+'</span><button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></div></div>';
+      '<div class="x"><span class="num">'+det+'</span><span style="display:flex;gap:14px">'+(k==='rfout'||k==='out'?'':'<button class="link" type="button" data-edit="'+esc(t.id)+'">Editar</button>')+'<button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></span></div></div>';
   });
   el.innerHTML=h;
 }
@@ -664,7 +663,7 @@ function render(){
     ps.push('Preços e dólar são buscados sozinhos ao abrir o app e a cada 15 minutos enquanto ele estiver aberto.');
     ps.push(RF.last?'Última busca às '+new Date(RF.last).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.'+(RF.err?' '+esc(RF.err):''):'Ainda não busquei nesta sessão.');
     ps.push(!S.keys.brapi?'Proventos automáticos: precisa do token brapi.':DV.err?'Proventos automáticos: '+esc(DV.err):DV.at?'Proventos automáticos: conferidos às '+new Date(DV.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'. Lanço sozinho os pagos a partir de '+fmtDate(S.divFrom)+' (ações do Brasil).':'Proventos automáticos: buscando...');
-    if(S.trades.some(function(t){return t.side==='rf'}))ps.push(CDI.dates.length?'CDI: Banco Central, '+CDI.dates.length+' dias úteis até '+fmtDate(CDI.dates[CDI.dates.length-1])+(CDI.err?' ('+esc(CDI.err)+')':'.'):(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...'));
+    ps.push(CDI.dates.length?'CDI: Banco Central, '+CDI.dates.length+' dias úteis até '+fmtDate(CDI.dates[CDI.dates.length-1])+(CDI.err?' ('+esc(CDI.err)+')':'.'):(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...'));
     if(MK.fxDates.length)ps.push('Histórico do dólar: '+MK.fxDates.length+' dias, de '+fmtDate(MK.fxDates[0])+' a '+fmtDate(MK.fxLatestDate)+' (AwesomeAPI).');
     si.innerHTML=ps.join('<br>')}
   $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
@@ -673,7 +672,21 @@ function render(){
 }
 
 /* formulário */
-var fxCustom=false;
+var fxCustom=false,EDIT=null;
+function newId(){return EDIT||Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function dropEdit(){if(!EDIT)return;var id=EDIT;S.trades=S.trades.filter(function(x){return x.id!==id});S.pend.push({t:'del',id:id})}
+function endEdit(){EDIT=null;$('f-submit').textContent='Lançar';$('f-cancel').hidden=true;$('newbox').querySelector('summary').textContent='Novo lançamento'}
+function startEdit(id){
+  var t=S.trades.filter(function(x){return x.id===id})[0];if(!t)return;
+  EDIT=id;var bx=$('newbox');bx.open=true;bx.querySelector('summary').textContent='Editar lançamento';
+  $('f-market').value=t.market==='RF'?'RF':t.market;$('f-side').value=t.side==='rf'?'buy':t.side;
+  $('f-ticker').value=t.ticker;$('f-date').value=t.date;$('f-qty').value=String(t.qty).replace('.',',');$('f-price').value=String(t.price).replace('.',',');
+  if(t.side==='rf'){$('f-pct').value=String(t.pct).replace('.',',');$('f-venc').value=t.venc||'';$('f-isento').checked=!!t.isento}
+  fxCustom=t.market==='US';if(fxCustom)$('f-fx').value=String(t.fx).replace('.',',');
+  $('f-submit').textContent='Salvar alteração';$('f-cancel').hidden=false;$('formmsg').textContent='';
+  syncForm();bx.scrollIntoView({block:'start'});
+}
+$('f-cancel').addEventListener('click',function(){endEdit();$('f-ticker').value='';$('f-qty').value='';$('f-price').value='';$('f-pct').value='';fxCustom=false;$('f-fx').value='';syncForm()});
 function syncForm(){
   var mk=$('f-market').value,isRF=mk==='RF';
   $('o-div').disabled=isRF;if(isRF&&$('f-side').value==='div')$('f-side').value='buy';
@@ -722,24 +735,24 @@ $('addform').addEventListener('submit',function(e){
     m.textContent='Resgate de '+ap.ticker+' lançado: '+sgn(vv-ap.price)+' de resultado.';render();syncForm();return;
   }
   if($('f-market').value==='RF'&&$('f-side').value==='buy'){
-    var rt={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:'rf',market:'RF',ticker:$('f-ticker').value.trim().slice(0,40),date:$('f-date').value,qty:1,price:parseNum($('f-price').value),fx:1,
+    var rt={id:newId(),side:'rf',market:'RF',ticker:$('f-ticker').value.trim().slice(0,40),date:$('f-date').value,qty:1,price:parseNum($('f-price').value),fx:1,
       pct:parseNum($('f-pct').value),venc:$('f-venc').value||'',isento:$('f-isento').checked};
     if(!rt.ticker||!rt.date||!(rt.price>0)||!(rt.pct>0)||rt.pct>300){m.className='msg err';m.textContent='Confira: nome, data, valor aplicado e % do CDI (ex.: 110).';return}
-    S.trades.push(rt);S.pend.push({t:'add',tr:rt});save();
+    var wasE=!!EDIT;dropEdit();S.trades.push(rt);S.pend.push({t:'add',tr:rt});save();endEdit();
     $('f-ticker').value='';$('f-price').value='';$('f-pct').value='';$('f-venc').value='';$('f-isento').checked=false;
-    ghSync();loadCDI(true);m.textContent='Aplicação em '+rt.ticker+' lançada. Veja o rendimento na aba Carteira.';render();return;
+    ghSync();loadCDI(true);m.textContent=wasE?'Aplicação em '+rt.ticker+' alterada.':'Aplicação em '+rt.ticker+' lançada. Veja o rendimento na aba Carteira.';render();return;
   }
   var us=$('f-market').value==='US';
-  var t={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:$('f-side').value,market:$('f-market').value,
+  var t={id:newId(),side:$('f-side').value,market:$('f-market').value,
     ticker:$('f-side').value==='out'?'CAIXA':$('f-ticker').value.toUpperCase().replace(/[^A-Z0-9.\-]/g,''),date:$('f-date').value,
     qty:($('f-side').value==='div'||$('f-side').value==='out')?1:parseNum($('f-qty').value),price:parseNum($('f-price').value),fx:us?parseNum($('f-fx').value):1};
   if(!t.ticker||!t.date||!(t.qty>0)||!(t.price>0)||(us&&!(t.fx>0))){m.className='msg err';m.textContent='Confira os campos: quantidade, preço e dólar precisam ser números maiores que zero.';return}
-  S.trades.push(t);S.pend.push({t:'add',tr:t});
-  if(us&&t.date===today()&&fxCustom)S.fx={rate:t.fx,at:Date.now(),src:'manual'};
+  var wasE2=!!EDIT;dropEdit();S.trades.push(t);S.pend.push({t:'add',tr:t});endEdit();
+  if(us&&t.date===today()&&fxCustom&&!wasE2)S.fx={rate:t.fx,at:Date.now(),src:'manual'};
   save();
   $('f-ticker').value='';$('f-qty').value='';$('f-price').value='';fxCustom=false;$('f-fx').value='';
   ghSync();
-  m.textContent=t.side==='out'?'Retirada lançada.':(t.side==='buy'?'Compra':t.side==='sell'?'Venda':'Provento')+' de '+t.ticker+' lançado.';
+  var fem=t.side==='buy'||t.side==='sell';m.textContent=t.side==='out'?'Retirada lançada.':(t.side==='buy'?'Compra':t.side==='sell'?'Venda':'Provento')+' de '+t.ticker+(wasE2?(fem?' alterada.':' alterado.'):(fem?' lançada.':' lançado.'));
   render();
 });
 syncForm();
@@ -754,6 +767,7 @@ document.addEventListener('click',function(e){
   else if(t.id==='sync-now'){ghSync(true)}
   else if(t.dataset&&t.dataset.dvy){DVY=t.dataset.dvy;render()}
   else if(t.dataset&&t.dataset.trf){TRF=t.dataset.trf;renderTrades()}
+  else if(t.dataset&&t.dataset.edit){startEdit(t.dataset.edit)}
   else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
   else if(t.dataset&&t.dataset.evy){EVY=t.dataset.evy;renderEvo()}
   else if(t.dataset&&t.dataset.mais){try{location.hash=t.dataset.mais}catch(e){}showTab(t.dataset.mais)}
@@ -952,9 +966,27 @@ function rfCalc(t,rs){
   return {t:t,rs:rs,bruto:bruto,gain:gain,days:days,iofP:iofP,iof:iof,irP:irP,ir:ir,liq:liq,n:n,last:last,lastGain:bruto-bruto/(1+lastR),
     realized:rs?rs.price-t.price:0,stale:!CDI.dates.length};
 }
+
+function cdiBench(){
+  if(!CDI.dates.length)return null;
+  var ds=CDI.dates,n=ds.length,suf=new Array(n+1);suf[n]=1;for(var i=n-1;i>=0;i--)suf[i]=suf[i+1]*(1+CDI.s[ds[i]]/100);
+  var fac=function(d){var lo=0,hi=n;while(lo<hi){var mid=(lo+hi)>>1;if(ds[mid]<d)lo=mid+1;else hi=mid}return suf[lo]};
+  if(S.trades.some(function(t){return t.date<ds[0]}))return null;
+  var ts=S.trades.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)}),cash=0,contrib=0,val=0,apl=0;
+  var put=function(d,v){val+=v*fac(d);apl+=v};
+  ts.forEach(function(t){var F=t.market==='US'?t.fx:1,c0=contrib;
+    if(t.side==='out'){var am=t.price*F;cash-=am;contrib-=am;if(cash<0){contrib-=cash;cash=0}}
+    else if(t.side==='rf'){cash-=t.price;if(cash<0){contrib-=cash;cash=0}}
+    else if(t.side==='rfout'||t.side==='div'){cash+=t.price*F}
+    else if(t.side==='buy'){cash-=t.qty*t.price*F;if(cash<0){contrib-=cash;cash=0}}
+    else if(t.side==='sell'){cash+=t.qty*t.price*F}
+    if(Math.abs(contrib-c0)>1e-9)put(t.date,contrib-c0);
+  });
+  return {val:val,apl:apl,gain:val-apl,last:ds[n-1]};
+}
 function loadCDI(force){
-  var rf=S.trades.filter(function(t){return t.side==='rf'});if(!rf.length)return Promise.resolve();
-  var start=rf.map(function(t){return t.date}).sort()[0];
+  if(!S.trades.length)return Promise.resolve();
+  var start=S.trades.map(function(t){return t.date}).sort()[0];
   if(!force&&CDI.dates.length&&CDI.start&&CDI.start<=start&&Date.now()-CDI.at<3*3600000)return Promise.resolve();
   var br=function(iso){var q=iso.split('-');return q[2]+'/'+q[1]+'/'+q[0]};
   return getJSON('https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial='+br(start)+'&dataFinal='+br(today())).then(function(a){
