@@ -959,12 +959,17 @@ function aiContext(){
   if(STK.tk&&STK.d&&!$('stk').hidden)o.acao_aberta_na_tela={ativo:STK.tk,nome:STK.d.name,preco:STK.d.price,indicadores:STK.d.k};
   return JSON.stringify(o);
 }
-function aiModel(){
-  try{var c=JSON.parse(localStorage.getItem(LS+'-gemm2')||'null');if(c&&c.m&&Date.now()-c.at<7*864e5)return Promise.resolve(c.m)}catch(e){}
+var AIML=null,AIBAD={};
+function aiModel(skip){
+  if(skip)AIBAD[skip]=1;
+  try{var c=JSON.parse(localStorage.getItem(LS+'-gemm3')||'null');if(!skip&&c&&c.m&&Date.now()-c.at<7*864e5)return Promise.resolve(c.m)}catch(e){}
+  var pick=function(){var m=(AIML||[]).filter(function(n){return !AIBAD[n]})[0];if(!m)throw new Error('nomodel');try{localStorage.setItem(LS+'-gemm3',JSON.stringify({m:m,at:Date.now()}))}catch(e){}return m};
+  if(AIML)return Promise.resolve().then(pick);
   return getJSON('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(S.keys.gm)).then(function(j){
-    var ms=(j.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf('generateContent')>=0&&/flash/.test(m.name)&&!/lite|image|tts|live|audio|embed|vision|exp|preview|thinking/.test(m.name)}).map(function(m){return m.name});
-    var pick=ms.indexOf('models/gemini-2.5-flash')>=0?'models/gemini-2.5-flash':(ms.filter(function(n){return /flash-latest$/.test(n)})[0]||ms.sort().reverse()[0]);if(!pick)throw new Error('nomodel');
-    try{localStorage.setItem(LS+'-gemm2',JSON.stringify({m:pick,at:Date.now()}))}catch(e){}return pick});
+    var ms=(j.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf('generateContent')>=0&&/flash/.test(m.name)&&!/image|tts|live|audio|embed|vision|exp|thinking/.test(m.name)}).map(function(m){return m.name});
+    var rank=function(n){return (/flash-latest$/.test(n)?0:/lite/.test(n)?3:/preview/.test(n)?2:1)};
+    var ver=function(n){var v=n.match(/gemini-(\d+(?:\.\d+)?)/);return v?parseFloat(v[1]):0};
+    ms.sort(function(x,y){return rank(x)-rank(y)||ver(y)-ver(x)});AIML=ms;return pick()});
 }
 var AITH=null;try{AITH=localStorage.getItem(LS+'-gemth')}catch(e){}
 function aiLive(t){var el=$('ai-msgs');if(!el)return;var b=el.querySelector('.aim.live');if(!b){aiRender();b=el.querySelector('.aim.live')}if(b){b.innerHTML=aiFmt(t)||'<span class="muted">Pensando...</span>';el.scrollTop=el.scrollHeight}}
@@ -982,7 +987,7 @@ function aiSend(q){
       .then(function(r){
         if(!r.ok)return r.json().catch(function(){return {}}).then(function(j){var m=j&&j.error&&j.error.message||'';clearTimeout(to);
           if(r.status===400&&th&&/thinking/i.test(m)&&tries<3){var nt=th==='budget'?'level':'';try{localStorage.setItem(LS+'-gemth',nt)}catch(e){}AITH=nt;return call(model,nt,tries+1)}
-          if(r.status===404&&tries<3){try{localStorage.removeItem(LS+'-gemm2')}catch(e){}return aiModel().then(function(m2){return call(m2,th,tries+1)})}
+          if((r.status===404||(r.status===400&&/not (found|supported)|no longer/i.test(m)))&&tries<6){try{localStorage.removeItem(LS+'-gemm3')}catch(e){}return aiModel(model).then(function(m2){return call(m2,th,tries+1)})}
           var er=new Error('http');er.s=r.status;er.m=m;throw er});
         if(!r.body||!r.body.getReader)return r.text().then(function(tx){clearTimeout(to);tx.split('\n').forEach(function(l){if(l.indexOf('data:')===0)eat(l.slice(5))})});
         var rd=r.body.getReader(),dec=new TextDecoder(),buf='';
@@ -994,7 +999,7 @@ function aiSend(q){
   var th=AITH===null?'budget':AITH;
   aiModel().then(function(m){return call(m,th,0)}).then(function(){var last=AI.msgs[AI.msgs.length-1];last.t=out;delete last.live;if(!out){AI.msgs.pop();AI.msgs.push({r:'e',t:'A IA não respondeu. Tente perguntar de outro jeito.'})}},function(e){
     var last=AI.msgs[AI.msgs.length-1];if(last&&last.live){if(out){last.t=out;delete last.live}else AI.msgs.pop()}
-    var s0=e&&e.s;AI.msgs.push({r:'e',t:s0===400||s0===403?'A chave do Gemini não foi aceita. Confira em Ajustes.'+(e.m?' ('+String(e.m).slice(0,90)+')':''):s0===429?'Passou do limite grátis do Gemini por agora. Tente de novo em alguns minutos.':e&&e.name==='AbortError'?'A IA demorou demais. Tente de novo.':'Não consegui falar com a IA agora'+(s0?' (código '+s0+')':'')+'.'})})
+    var s0=e&&e.s;AI.msgs.push({r:'e',t:s0===400||s0===403?'A chave do Gemini não foi aceita. Confira em Ajustes.'+(e.m?' ('+String(e.m).slice(0,90)+')':''):s0===429?'Passou do limite grátis do Gemini por agora. Tente de novo em alguns minutos.':e&&e.name==='AbortError'?'A IA demorou demais. Tente de novo.':(e&&e.message==='nomodel'?'Nenhum modelo do Gemini aceitou a sua chave. Confira se a chave é do Google AI Studio.':'Não consegui falar com a IA agora'+(s0?' (código '+s0+(e.m?': '+String(e.m).slice(0,100):'')+')':'')+'.')})})
     .then(function(){AI.busy=false;aiSave();aiRender()});
 }
 
