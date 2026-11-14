@@ -447,6 +447,7 @@ function renderDivPanel(){
   if(ups.length)h+='<div class="panel"><h2>A receber em '+DVY+'</h2><ul class="calc">'+ups.map(function(u){
     return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+u.tipo+', '+num(u.q)+' ações na data-com '+fmtDate(u.dc)+'. '+(u.pay?'Paga em '+fmtDate(u.pay):'Pagamento a definir')+'</span></span><span class="num">'+brl.format(u.val)+'</span></li>'}).join('')+
     '<li class="tot"><span>Total</span><span class="num">'+brl.format(ups.reduce(function(a,u){return a+u.val},0))+'</span></li></ul></div>';
+  h+=divPorAtivo();
   var got=S.trades.filter(function(t){return t.side==='div'&&t.date.slice(0,4)===DVY}).sort(function(a,b){return a.date<b.date?1:-1});
   if(got.length)h+='<details class="panel"><summary>Recebidos em '+DVY+' ('+got.length+')</summary><ul class="calc" style="margin-top:12px">'+got.map(function(t){
     return '<li><span><b>'+esc(t.ticker)+'</b> <span class="muted small">'+fmtDate(t.date)+(t.auto?', automático':'')+'</span></span><span class="num gain">'+brl.format(t.price*(t.market==='US'?t.fx:1))+'</span></li>'}).join('')+'</ul></details>';
@@ -454,6 +455,24 @@ function renderDivPanel(){
   return h;
 }
 
+
+function divPorAtivo(){
+  var R=compute(),from=new Date(Date.now()-365*864e5).toISOString().slice(0,10),d0=S.trades.map(function(t){return t.date}).sort()[0]||from,full=d0<=from;
+  var rec={},up={},sold=0;S.trades.forEach(function(t){if(t.side==='div'&&t.date>=from)rec[t.ticker]=(rec[t.ticker]||0)+t.price*(t.market==='US'?t.fx:1)});
+  DV.up.forEach(function(u){up[u.tk]=(up[u.tk]||0)+u.val});
+  var held={};R.held.forEach(function(x){held[x.p.ticker]=x});
+  Object.keys(rec).forEach(function(k){if(!held[k])sold+=rec[k]});
+  var rows=R.held.map(function(x){var r=rec[x.p.ticker]||0;return {tk:x.p.ticker,r:r,yc:x.p.cB?r/x.p.cB:0,dy:x.v?r/x.v:0,up:up[x.p.ticker]||0}}).sort(function(a,b){return b.yc-a.yc});
+  if(!rows.length)return '';
+  var tr=rows.reduce(function(a,x){return a+x.r},0),tc=R.held.reduce(function(a,x){return a+x.p.cB},0),tv=R.held.reduce(function(a,x){return a+x.v},0);
+  var mesesH=Math.max(1,Math.round(dayDiff(full?from:d0,today())/30.44));
+  return '<div class="panel"><h2>Quanto cada ativo paga</h2><p class="note" style="margin:0 0 10px">Proventos '+(full?'dos últimos 12 meses':'desde '+fmtDate(d0)+' ('+mesesH+' meses)')+' comparados com o que você pagou (yield sobre o custo) e com o valor de hoje.</p>'+
+    '<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Ativo</th><th>Recebido</th><th>Sobre o custo</th><th>Sobre o valor</th></tr></thead><tbody>'+
+    rows.map(function(x){return '<tr><td><b>'+esc(x.tk)+'</b>'+(x.up?'<br><span class="small muted">+'+brl.format(x.up)+' a receber</span>':'')+'</td><td class="'+(x.r?'gain':'')+'">'+(x.r?brl.format(x.r):'—')+'</td><td>'+(x.r?pf.format(x.yc*100)+'%':'—')+'</td><td>'+(x.r?pf.format(x.dy*100)+'%':'—')+'</td></tr>'}).join('')+
+    '<tr class="tot"><td>Carteira</td><td class="gain">'+brl.format(tr)+'</td><td>'+pf.format(tc?tr/tc*100:0)+'%</td><td>'+pf.format(tv?tr/tv*100:0)+'%</td></tr></tbody></table></div>'+
+    (sold>0.005?'<p class="note">Mais '+brl.format(sold)+' de ações que você já vendeu, que não entram na tabela.</p>':'')+
+    '<p class="note">Renda estimada por ano, no ritmo atual: <b>'+brl.format(tr/mesesH*12)+'</b> ('+brl.format(tr/mesesH)+' por mês).'+(full?'':' Com menos de 12 meses de carteira, os percentuais ainda estão abaixo do que seria um ano inteiro, e um mês de provento grande puxa a média para cima.')+'</p></div>';
+}
 function renderSummary(R){
   var T=R.tot,el=$('summary');
   if(!S.trades.length){
