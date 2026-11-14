@@ -157,6 +157,9 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 .alv input{padding:8px;text-align:right}
 .alvbar{grid-column:1/-1;position:relative;height:8px;border-radius:4px;background:var(--tint);margin:-2px 0 6px}
 .alvbar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--c1)}
+.meta-bar{height:12px;border-radius:6px;background:var(--tint);overflow:hidden;margin:8px 0 4px}.meta-bar i{display:block;height:100%;border-radius:6px;background:var(--c1)}
+.meta-bar.r i{background:var(--c2)}
+.mt+.mt{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .alvbar b{position:absolute;top:-3px;bottom:-3px;width:3px;border-radius:2px;background:var(--c2)}
 #maisseg{grid-template-columns:repeat(3,minmax(0,1fr))}
 .irbar{height:10px;border-radius:5px;background:var(--tint);overflow:hidden;margin:10px 0 4px}.irbar i{display:block;height:100%;background:var(--c1);border-radius:5px}.irbar.over i{background:var(--loss)}
@@ -466,6 +469,7 @@ function renderSummary(R){
     '<div><small>Preço das ações agora (sem o dólar)</small><b class="'+cls(pa0)+'">'+sgn(pa0)+'</b><small>'+pct(T.cost?pa0/T.cost:0)+' sobre o que você pagou</small></div>'+
     '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
+  h+=metasHtml(R);
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
 
   var vBR=0,cBR=0,vUSu=0,cUSu=0,vUS=0,cUS=0,nBR=0,nUS=0;
@@ -649,7 +653,7 @@ function renderFx(){
 }
 function render(){
   var R=compute();
-  renderBanner();renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
+  renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
   $('divtab').innerHTML=renderDivPanel()||'<div class="panel"><p class="muted">Nenhum provento ainda. Quando cair o primeiro, ele aparece aqui.</p></div>';
   var f0=fxToday();$('pill-fx').textContent=f0?'Dólar R$ '+num(f0.rate,4):'';
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
@@ -776,6 +780,7 @@ document.addEventListener('click',function(e){
   else if(t.dataset&&t.dataset.iry){IRY=t.dataset.iry;renderIR()}
   else if(t.id==='apo-go'){apoCalc()}
   else if(t.id==='al-save'){alvSave()}
+  else if(t.id==='mt-save'){metasSave()}
   else if(t.dataset&&t.dataset.mais){try{location.hash=t.dataset.mais}catch(e){}showTab(t.dataset.mais)}
   else if(t.dataset&&t.dataset.goto){try{location.hash=t.dataset.goto}catch(e){}showTab(t.dataset.goto)}
   else if(t.dataset&&t.dataset.rfok){
@@ -906,6 +911,49 @@ function alvSave(){
   if(Object.keys(b).length&&Math.abs(bs-100)>0.5){m.className='msg err';m.textContent='Dentro do Brasil a soma está em '+pf.format(bs)+'%. Ajuste para 100%.';return}
   S.alvos={classes:c,br:b};S.pend.push({t:'cfg',k:'alvos',v:S.alvos});save();ghSync();m.className='msg gain';m.textContent='Salvo.';
   if(APV)apoCalc();
+}
+
+/* metas: patrimônio com data e renda passiva mensal */
+function mesesAte(d){var a=today(),y=+d.slice(0,4)-+a.slice(0,4),m=+d.slice(5,7)-+a.slice(5,7);return y*12+m}
+function metasHtml(R){
+  var T=R.tot,M=S.metas||{},pat=T.value+T.cash,h='<div class="panel" id="metasbox"><h2>Metas</h2>';
+  var ev=evoData(),k=ev.length,ap=0,nm=0;if(k>1){var i0=Math.max(0,k-7);ap=(ev[k-1].apl-ev[i0].apl);nm=(k-1)-i0}var apm=nm?ap/nm:0;
+  var cdiM=CDI.dates.length?Math.pow(1+CDI.s[CDI.dates[CDI.dates.length-1]]/100,21)-1:0.008;
+  if(M.pat&&M.pat.valor>0){var V=M.pat.valor,pc=Math.min(1,pat/V),fal=V-pat;
+    h+='<div class="mt"><div class="grp" style="margin:0"><div><b>Patrimônio de '+brl.format(V)+'</b><span class="det">'+(M.pat.data?'até '+MESL[+M.pat.data.slice(5,7)-1]+' de '+M.pat.data.slice(0,4):'sem data')+'</span></div><span class="num gt">'+pf.format(pc*100)+'%</span></div>'+
+      '<div class="meta-bar"><i style="width:'+(pc*100)+'%"></i></div>';
+    if(fal<=0)h+='<p class="note gain" style="margin:4px 0 0">Meta alcançada! Você tem '+brl.format(pat)+'.</p>';
+    else{h+='<p class="note" style="margin:4px 0 0">Faltam <b>'+brl.format(fal)+'</b>.';
+      if(M.pat.data){var n=mesesAte(M.pat.data);
+        if(n<=0)h+=' O prazo já passou.';
+        else{var g=Math.pow(1+cdiM,n),pmt=(V-pat*g)*cdiM/(g-1);
+          h+=' Em '+n+(n>1?' meses':' mês')+', precisa aportar cerca de <b>'+brl.format(Math.max(0,pmt))+' por mês</b> se a carteira render como o CDI ('+pf.format(cdiM*100)+'% ao mês)'+(pmt<=0?'; só o rendimento já leva você lá':'')+'. Sem rendimento nenhum, seriam '+brl.format(fal/n)+' por mês.'}}
+      if(apm>0){var mm=0,v=pat;while(v<V&&mm<600){v=v*(1+cdiM)+apm;mm++}
+        h+=' No seu ritmo dos últimos meses ('+brl.format(apm)+' por mês do bolso), você chega lá em '+(mm>=600?'mais de 50 anos':mm+(mm>1?' meses':' mês')+' ('+MESL[(new Date().getMonth()+mm)%12]+' de '+(new Date().getFullYear()+Math.floor((new Date().getMonth()+mm)/12))+')')+'.'}
+      h+='</p>'}
+    h+='</div>'}
+  if(M.renda&&M.renda.valor>0){
+    var d0=S.trades.map(function(t){return t.date}).sort()[0],ini=new Date(Date.now()-365*864e5).toISOString().slice(0,10),from=d0>ini?d0:ini;
+    var rec=0;S.trades.forEach(function(t){if(t.side==='div'&&t.date>=from)rec+=t.price*(t.market==='US'?t.fx:1)});
+    var meses=Math.max(1,Math.round(dayDiff(from,today())/30.44)),rm=rec/meses,W=M.renda.valor,pr=Math.min(1,rm/W),yl=pat?rm*12/pat:0;
+    h+='<div class="mt"><div class="grp" style="margin:0"><div><b>Renda passiva de '+brl.format(W)+' por mês</b><span class="det">média dos proventos '+(meses<12?'desde '+fmtDate(from):'dos últimos 12 meses')+'</span></div><span class="num gt">'+brl.format(rm)+'</span></div>'+
+      '<div class="meta-bar r"><i style="width:'+(pr*100)+'%"></i></div>'+
+      '<p class="note" style="margin:4px 0 0">Você recebe em média <b>'+brl.format(rm)+' por mês</b> ('+pf.format(pr*100)+'% da meta). '+(yl>0?'Com os proventos rendendo '+pf.format(yl*100)+'% ao ano sobre o patrimônio, a meta pede um patrimônio de cerca de <b>'+brl.format(W*12/yl)+'</b>.':'Ainda não há proventos suficientes para estimar.')+'</p></div>'}
+  if(!(M.pat&&M.pat.valor>0)&&!(M.renda&&M.renda.valor>0))h+='<p class="muted small" style="margin:0">Defina um objetivo de patrimônio, com data, e de renda passiva por mês. O app mostra o progresso e quanto aportar.</p>';
+  h+='<details'+(S.metas?'':' open')+'><summary>'+(S.metas?'Editar metas':'Definir metas')+'</summary><div class="stack" style="margin-top:12px">'+
+    '<div class="split"><label class="small muted">Patrimônio desejado (R$)<input id="mt-pv" inputmode="decimal" placeholder="50.000" value="'+(M.pat&&M.pat.valor?String(M.pat.valor).replace('.',','):'')+'"></label>'+
+    '<label class="small muted">Até quando<input id="mt-pd" type="month" value="'+(M.pat&&M.pat.data?M.pat.data.slice(0,7):'')+'"></label></div>'+
+    '<label class="small muted">Renda passiva desejada por mês (R$)<input id="mt-rv" inputmode="decimal" placeholder="500" value="'+(M.renda&&M.renda.valor?String(M.renda.valor).replace('.',','):'')+'"></label>'+
+    '<div style="display:flex;gap:10px;align-items:center"><button class="btn small" type="button" id="mt-save">Salvar metas</button><span class="msg" id="mt-msg"></span></div></div></details></div>';
+  return h;
+}
+function metasSave(){
+  var pn=function(id){var r=String($(id).value||'').trim();return /^\d{1,3}(\.\d{3})+$/.test(r)?parseFloat(r.replace(/\./g,'')):parseNum(r)};
+  var pv=pn('mt-pv'),pd=$('mt-pd').value,rv=pn('mt-rv'),m=$('mt-msg');
+  var M={};if(pv>0)M.pat={valor:pv,data:pd?pd+'-01':''};if(rv>0)M.renda={valor:rv};
+  if(!M.pat&&!M.renda){m.className='msg err';m.textContent='Preencha pelo menos uma meta.';return}
+  S.metas=M;S.pend.push({t:'cfg',k:'metas',v:M});save();try{document.activeElement.blur()}catch(e){}render();ghSync();
+  var mm=$('mt-msg');if(mm){mm.className='msg gain';mm.textContent='Salvo.'}
 }
 function renderIR(){
   var el=$('irtab');if(!el)return;
@@ -1157,9 +1205,9 @@ function applyOps(trades,ops){
   return out;
 }
 function applyPx(f,ops){var o=JSON.parse(JSON.stringify(f||{}));ops.forEach(function(x){if(x.t==='px'){(o[x.tk]=o[x.tk]||{})[x.m]=x.p}});return o}
-function applyCfg(d,ops){var a=d.alvos||null;ops.forEach(function(x){if(x.t==='cfg'&&x.k==='alvos')a=x.v});return a}
+function applyCfg(d,ops,k){k=k||'alvos';var a=d[k]||null;ops.forEach(function(x){if(x.t==='cfg'&&x.k===k)a=x.v});return a}
 function ghAdopt(d){
-  S.mclose=applyPx(d.fechamentos,S.pend||[]);var na=applyCfg(d,S.pend||[]);if(na)S.alvos=na;
+  S.mclose=applyPx(d.fechamentos,S.pend||[]);var na=applyCfg(d,S.pend||[]);if(na)S.alvos=na;var nm2=applyCfg(d,S.pend||[],'metas');if(nm2)S.metas=nm2;
   var tr=applyOps(Array.isArray(d.trades)?d.trades:[],S.pend||[]);
   var before=JSON.stringify([S.trades,S.cambio||[]]);
   S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;save();
@@ -1178,7 +1226,7 @@ function ghRound(attempt){
     }
     var pend=(S.pend||[]).slice();
     if(!pend.length){ghAdopt(remote);return}
-    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});var a2=applyCfg(remote,pend);if(a2)data.alvos=a2;
+    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});var a2=applyCfg(remote,pend);if(a2)data.alvos=a2;var m2=applyCfg(remote,pend,'metas');if(m2)data.metas=m2;
     var body={message:'App: '+pend.length+(pend.length>1?' alterações':' alteração'),content:b64enc(JSON.stringify(data,null,1)+'\n'),sha:sha,branch:'main'};
     return ghReq('PUT',body).then(function(w){
       if((w.status===409||w.status===422)&&attempt<3)return new Promise(function(r){setTimeout(r,1500*(attempt+1))}).then(function(){return ghRound(attempt+1)});
