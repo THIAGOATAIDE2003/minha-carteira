@@ -140,11 +140,13 @@ textarea{width:100%;min-height:90px;background:var(--bg);border:1px solid var(--
     <h2 id="h-add" style="margin-bottom:14px">Novo lançamento</h2>
     <form class="add" id="addform" autocomplete="off">
       <label for="f-side">Tipo
-        <select id="f-side"><option value="buy">Compra</option><option value="sell">Venda</option><option value="div">Provento</option><option value="out">Retirada de dinheiro</option><option value="rf">Renda fixa (CDB, LCI, LCA)</option></select></label>
+        <select id="f-side"><option value="buy">Compra</option><option value="sell">Venda</option><option value="div" id="o-div">Provento</option></select></label>
       <label for="f-market" id="w-market">Mercado
-        <select id="f-market"><option value="US">EUA (ações e ETFs)</option><option value="BR">Brasil (ações e FIIs)</option></select></label>
+        <select id="f-market"><option value="US">EUA (ações e ETFs)</option><option value="BR">Brasil (ações e FIIs)</option><option value="RF">Renda fixa (CDB, LCI, LCA)</option></select></label>
       <label for="f-ticker"><span id="l-ticker">Ticker</span>
         <input id="f-ticker" placeholder="AAPL ou PETR4" autocapitalize="characters" required></label>
+      <label for="f-rfsel" id="w-rfsel" hidden class="full">Qual aplicação você resgatou
+        <select id="f-rfsel"></select></label>
       <label for="f-date">Data
         <input id="f-date" type="date" required></label>
       <label for="f-qty" id="w-qty">Quantidade
@@ -525,13 +527,24 @@ function render(){
 /* formulário */
 var fxCustom=false;
 function syncForm(){
-  var rf=$('f-side').value==='rf',ot=$('f-side').value==='out',dv=$('f-side').value==='div'||ot||rf;
-  var us=!rf&&$('f-market').value==='US';
-  $('w-fx').hidden=!us;$('w-qty').hidden=dv;$('w-market').hidden=rf;
+  var mk=$('f-market').value,isRF=mk==='RF';
+  $('o-div').disabled=isRF;if(isRF&&$('f-side').value==='div')$('f-side').value='buy';
+  var side=$('f-side').value,rf=isRF&&side==='buy',rs=isRF&&side==='sell',ot=side==='out',dv=side==='div'||ot||isRF;
+  var us=!isRF&&mk==='US';
+  $('w-fx').hidden=!us;$('w-qty').hidden=dv;
   ['w-pct','w-venc','w-isento','w-rfhint'].forEach(function(k){$(k).hidden=!rf});$('w-isento').style.display=rf?'flex':'none';
+  $('w-rfsel').hidden=!rs;
   $('l-ticker').textContent=rf?'Nome do investimento':'Ticker';$('f-ticker').placeholder=rf?'CDB Banco X':'AAPL ou PETR4';$('f-ticker').autocapitalize=rf?'sentences':'characters';
-  var tl=$('f-ticker').closest('label');tl.hidden=ot;$('f-ticker').required=!ot;
+  var tl=$('f-ticker').closest('label');tl.hidden=ot||rs;$('f-ticker').required=!(ot||rs);$('f-price').required=!rs;
   if(rf){$('l-price').textContent='Valor aplicado (R$)';return}
+  if(rs){
+    var R0=compute(),op=(R0.rfs||[]).filter(function(c){return !c.rs}),cur=$('f-rfsel').value;
+    $('f-rfsel').innerHTML=op.length?op.map(function(c){return '<option value="'+esc(c.t.id)+'">'+esc(c.t.ticker)+' · '+brl.format(c.t.price)+' em '+fmtDate(c.t.date)+'</option>'}).join(''):'<option value="">Nenhuma aplicação em aberto</option>';
+    if(cur&&op.some(function(c){return c.t.id===cur}))$('f-rfsel').value=cur;
+    var sel=op.filter(function(c){return c.t.id===$('f-rfsel').value})[0];
+    $('l-price').textContent='Valor que caiu na conta (R$)';
+    $('f-price').placeholder=sel?String(Math.round(sel.liq*100)/100).replace('.',','):'';
+    return}
   $('l-price').textContent=ot?(us?'Valor retirado (US$)':'Valor retirado (R$)'):dv?(us?'Valor recebido (US$)':'Valor recebido (R$)'):(us?'Preço (US$)':'Preço (R$)');
   var d=$('f-date').value||today();
   var look=fxOn(d),ft=fxToday();
@@ -546,12 +559,21 @@ function syncForm(){
 $('f-date').value=today();
 $('f-market').addEventListener('change',syncForm);
 $('f-side').addEventListener('change',syncForm);
+$('f-rfsel').addEventListener('change',function(){$('f-price').value='';syncForm()});
 $('f-date').addEventListener('change',syncForm);
 $('fx-edit').addEventListener('click',function(){fxCustom=true;syncForm();$('f-fx').focus()});
 $('addform').addEventListener('submit',function(e){
   e.preventDefault();var m=$('formmsg');m.className='msg';m.textContent='';
   if(S.example){m.className='msg err';m.textContent='Limpe o exemplo antes de lançar seus dados.';return}
-  if($('f-side').value==='rf'){
+  if($('f-market').value==='RF'&&$('f-side').value==='sell'){
+    var rid=$('f-rfsel').value,ap=S.trades.filter(function(x){return x.id===rid&&x.side==='rf'})[0],vv=parseNum($('f-price').value||$('f-price').placeholder),dd=$('f-date').value;
+    if(!ap){m.className='msg err';m.textContent='Não há aplicação em aberto para resgatar.';return}
+    if(!dd||dd<ap.date||!(vv>0)){m.className='msg err';m.textContent='Confira a data e o valor que caiu na conta.';return}
+    var rr={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:'rfout',market:'RF',ticker:ap.ticker,ref:rid,date:dd,qty:1,price:vv,fx:1};
+    S.trades.push(rr);S.pend.push({t:'add',tr:rr});save();$('f-price').value='';ghSync();
+    m.textContent='Resgate de '+ap.ticker+' lançado: '+sgn(vv-ap.price)+' de resultado.';render();syncForm();return;
+  }
+  if($('f-market').value==='RF'&&$('f-side').value==='buy'){
     var rt={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:'rf',market:'RF',ticker:$('f-ticker').value.trim().slice(0,40),date:$('f-date').value,qty:1,price:parseNum($('f-price').value),fx:1,
       pct:parseNum($('f-pct').value),venc:$('f-venc').value||'',isento:$('f-isento').checked};
     if(!rt.ticker||!rt.date||!(rt.price>0)||!(rt.pct>0)||rt.pct>300){m.className='msg err';m.textContent='Confira: nome, data, valor aplicado e % do CDI (ex.: 110).';return}
