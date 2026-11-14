@@ -694,7 +694,6 @@ function renderSummary(R){
   cards=[cards[0],cards[2],cards[1]];
   var h='<div class="hcw"><div class="hcards" id="hcards">'+cards.join('')+'</div><div class="hdots">'+cards.map(function(c,i){return '<i data-hci="'+i+'"'+(i===HCI?' class="on"':'')+'></i>'}).join('')+'</div></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
-  h+=metasHtml(R);
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
 
 
@@ -707,6 +706,7 @@ function renderSummary(R){
     h+='<div class="panel"><h2>Distribuição</h2><div class="dbox"><div class="dwrap">'+donut(top,T.value)+'<div class="dc"><b class="num">'+its.length+'</b><span>ativos</span></div></div><ul class="leg">'+
       top.map(function(i){return '<li><i style="background:'+i.c+'"></i><span>'+esc(i.n)+'</span><span class="num">'+pf.format(i.v/T.value*100)+'%</span></li>'}).join('')+'</ul></div></div>';
   }
+  h+=metasHtml(R);
   el.innerHTML=h;
   var hc=$('hcards');if(hc&&HCI){hc.scrollLeft=HCI*hc.clientWidth}
 }
