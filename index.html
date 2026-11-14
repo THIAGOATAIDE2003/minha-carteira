@@ -401,7 +401,7 @@ function renderPositions(R){
       '<div class="row"><span class="det">'+num(p.qty)+' un. · médio '+cur.format(x.P0)+(us?' · dólar médio '+brl.format(x.F0):'')+'</span>'+
       '<span class="num '+cls(x.gain)+'" style="white-space:nowrap">'+sgn(x.gain)+' ('+pct(x.pct)+')</span></div>'+
       (us?'<div class="parts">'+parts+'</div>':'')+
-      '<div class="priceedit"><label for="q-'+esc(p.ticker)+'">Preço atual'+(us?' (US$)':' (R$)')+'</label><input id="q-'+esc(p.ticker)+'" data-quote="'+esc(p.ticker)+'" inputmode="decimal" placeholder="digite" value="'+qv+'">'+(x.qt&&x.qt.src==='online'?'<span class="small">online · '+esc(x.qt.from||'')+(x.qt.asOf?' · fechamento de '+esc(fmtDate(x.qt.asOf)):'')+'</span>':(x.qt?'<span class="small">digitado por você</span>':''))+'</div></div>';
+      '<div class="row" style="margin-top:6px"><span class="det">Preço atual: <b class="num">'+(x.hasQuote?cur.format(x.P1):'—')+'</b></span><span class="small muted">'+(!x.qt?'sem cotação ainda':x.qt.src==='auto'?'automático · '+(function(t){return new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})(x.qt.at):x.qt.src==='online'?'online'+(x.qt.asOf?' · fechamento de '+esc(fmtDate(x.qt.asOf)):''):'último preço salvo · '+(function(t){return new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})(x.qt.at||Date.now()))+'</span></div></div>';
   }).join('');
   if(R.closed.length){
     h+='<div class="pos"><span class="det">Encerradas</span>'+R.closed.map(function(p){var g=p.rA+p.rF+(p.div||0);
