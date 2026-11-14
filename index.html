@@ -383,7 +383,7 @@ function renderDivPanel(){
   var ups=DV.up.filter(function(u){return u.pay&&u.pay.slice(0,4)===DVY}).concat(DVY===cy?tbd:[]);
   if(ups.length)h+='<h3 style="margin:14px 0 6px;font-size:14px">A receber em '+DVY+'</h3><ul class="calc" style="margin:0;font-size:14px">'+ups.map(function(u){
     return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+u.tipo+' · '+num(u.q)+' ações na data-com '+fmtDate(u.dc)+' · '+(u.pay?'paga em '+fmtDate(u.pay):'pagamento a definir')+'</span></span><span class="num">'+brl.format(u.val)+'</span></li>'}).join('')+'</ul>';
-  h+='<p class="note" style="margin:10px 0 0">Recebido = proventos que já caíram (Brasil e VT, em reais). A receber = proventos já anunciados das ações que você tinha na data-com, inclusive das que já vendeu. Quando chega o dia, o app lança sozinho. JCP já vem com 15% de IR descontado.'+(tbd.length&&DVY!==cy?' Há '+tbd.length+' com data de pagamento a definir (aparecem no ano atual).':'')+'</p></div>';
+  h+='<p class="note" style="margin:10px 0 0">Recebido = proventos que já caíram (Brasil e VT, em reais). A receber = proventos já anunciados das ações que você tinha na data-com, inclusive das que já vendeu. Quando chega o dia, o app lança sozinho. JCP já vem com o IR descontado (17,5% desde 2026).'+(tbd.length&&DVY!==cy?' Há '+tbd.length+' com data de pagamento a definir (aparecem no ano atual).':'')+'</p></div>';
   return h;
 }
 function renderSummary(R){
@@ -718,14 +718,14 @@ function loadDivs(force){
       if(!d.tk||!tks[d.tk])return;
       var dc=d.dc||(d.ex?new Date(Date.parse(d.ex)-864e5).toISOString().slice(0,10):'');if(!dc)return;
       var q=qtyOn(d.tk,dc);if(!q)return;
-      var jcp=/JCP|JURO/.test(d.label),val=Math.round(q*d.rate*(jcp?0.85:1)*100)/100;if(!(val>0))return;
+      var jcp=/JCP|JURO/.test(d.label),irj=((d.pay||dc)>='2026-01-01')?0.175:0.15,val=Math.round(q*d.rate*(jcp?1-irj:1)*100)/100;if(!(val>0))return;
       var item={tk:d.tk,tipo:jcp?'JCP':'Dividendo',dc:dc,pay:d.pay,val:val,q:q};
       if(!d.pay||d.pay>td){up.push(item);return}
       if(d.pay<S.divFrom)return;
       var id='a-'+d.tk+'-'+d.pay+'-'+(jcp?'J':'D')+'-'+Math.round(d.rate*1e6);
       if(S.trades.some(function(t){return t.id===id}))return;
       if(S.trades.some(function(t){return t.side==='div'&&t.ticker===d.tk&&Math.abs(dayDiff(t.date,d.pay))<=5&&Math.abs(t.price-val)<=Math.max(0.1,val*0.02)}))return;
-      add.push({id:id,side:'div',market:'BR',ticker:d.tk,date:d.pay,qty:1,price:val,fx:1,auto:1,note:item.tipo+' automático ('+num(q)+' × '+num(d.rate,6)+(jcp?' − 15% IR':'')+')'});
+      add.push({id:id,side:'div',market:'BR',ticker:d.tk,date:d.pay,qty:1,price:val,fx:1,auto:1,note:item.tipo+' automático ('+num(q)+' × '+num(d.rate,6)+(jcp?' − '+num(irj*100,1)+'% IR':'')+')'});
     });
     up.sort(function(a,b){return (a.pay||'9')<(b.pay||'9')?-1:1});
     DV.up=up;DV.at=Date.now();DV.err='';DV.added+=add.length;
