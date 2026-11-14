@@ -357,7 +357,6 @@ function renderSummary(R){
     (T.cash>0.005?'<li class="muted small"><span>'+brl.format(T.value)+' em ativos + '+brl.format(T.cash)+' de saldo parado nas corretoras</span><span></span></li>':'')+
     '<li class="tot"><span>'+(T.gain>=0?'Lucro':'Prejuízo')+'</span><span class="num '+cls(T.gain)+'">'+sgn(T.gain)+' ('+pct(T.simple)+')</span></li></ul></div>';
   h+='<div class="panel" style="margin-top:16px"><div class="split">'+
-    '<div><span class="lbl">Variação das ações</span><span class="num '+cls(T.uA+T.rA)+'">'+sgn(T.uA+T.rA)+'</span></div>'+
     '<div><span class="lbl">Efeito do câmbio</span><span class="num '+cls(T.uF+T.rF)+'">'+sgn(T.uF+T.rF)+'</span></div>'+
     '<div><span class="lbl">Já realizado (vendas)</span><span class="num '+cls(T.rA+T.rF)+'">'+sgn(T.rA+T.rF)+'</span></div>'+
     '<div><span class="lbl">Proventos recebidos</span><span class="num '+cls(T.div)+'">'+sgn(T.div)+'</span></div></div>';
