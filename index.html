@@ -220,6 +220,14 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .wl .wtk{flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;color:var(--fg);display:flex;flex-direction:column}.wl .wtk b{font-size:15.5px}.wl .wtk small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wl .wpx{text-align:right;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}.wl .wpx span{font-weight:600}.wl .wx{background:none;border:0;color:var(--muted);font-size:16px;padding:4px}
 .wadd{display:flex;gap:8px;margin-top:12px}
+.atv{padding-bottom:12px}.atv .grp{align-items:center}.atv .gr{flex-direction:row!important;gap:6px!important}.atf{margin:12px 0 4px}
+.atr{display:grid;grid-template-columns:minmax(0,1fr) 44px 84px 78px;align-items:center;gap:6px;padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
+.atr.ahd{cursor:default;border-top:0;padding:10px 0 6px}.ath{background:none;border:0;padding:0;color:var(--muted);font-size:12.5px;text-align:center;white-space:nowrap}.ath.a1{text-align:left}.ath i{font-style:normal;font-size:11px;opacity:.7}
+.atr .a1{display:flex;align-items:center;gap:9px;min-width:0}.an{display:flex;flex-direction:column;min-width:0}.an b{font-size:15px}.an small{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aq{text-align:center;font-variant-numeric:tabular-nums;font-size:14px}
+.tlg{position:relative;width:34px;height:34px;border-radius:9px;flex:none;overflow:hidden;background:var(--tint);display:grid;place-items:center}.tlg span{font-size:12px;font-weight:700;color:var(--muted)}.tlg img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
+.atr .bal{justify-self:center;padding:0}.vpl{display:inline-flex;align-items:center;gap:2px;border-radius:999px;padding:4px 7px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;background:var(--tint)}
+.vpl i{font-style:normal;font-size:9px}.vpl.g{color:var(--gain)}.vpl.l{color:var(--loss)}.vpl.n{color:var(--muted)}
 .srch{position:relative}.srch svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;pointer-events:none}
 .srch input{padding:12px 14px 12px 40px;border-radius:12px;background:var(--surface);font-size:15px}
 .mkrp{padding:4px 14px;margin-top:-6px}.mkres{list-style:none;margin:0;padding:0}.mkres li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.mkres li:first-child{border-top:0}
@@ -999,8 +1007,7 @@ function renderPositions(R){
   var gsum=function(a){var g=sum(a,function(x){return x.gain}),c=sum(a,function(x){return x.p.cB});return [g,c?g/c:null]};
   var sum=function(a,f){return a.reduce(function(s,x){return s+f(x)},0)};
   var br=R.held.filter(function(x){return x.p.market!=='US'}),us=R.held.filter(function(x){return x.p.market==='US'}),h='';
-  if(br.length)h+=grp('Brasil','Nubank, '+br.length+(br.length>1?' ativos':' ativo'),sum(br,function(x){return x.v}),br.map(posCard).join(''),gsum(br),'br');
-  if(us.length)h+=grp('EUA','Inter, '+usd.format(sum(us,function(x){return x.p.qty*x.P1}))+(T.fxNow?' a R$ '+num(T.fxNow,4):''),sum(us,function(x){return x.v}),us.map(posCard).join(''),gsum(us),'us');
+  if(br.length||us.length)h+=atvTable(R);
   if(rfo.length)h+=grp('Renda fixa','Valor líquido, já sem IOF e IR',T.rfV,rfo.map(rfCard).join('')+
     '<details><summary>Como a renda fixa é calculada</summary><div class="small" style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+
     '<p><b>Rendimento:</b> todo dia útil o CDI do dia (taxa do Banco Central) é aplicado sobre o seu saldo, multiplicado pelo seu % do CDI. Por exemplo, CDI de 0,055% ao dia × 110% dá 0,0605% naquele dia. O banco credita de manhã cedo, com o CDI do dia anterior, e o app faz igual.</p>'+
@@ -1017,6 +1024,31 @@ function renderPositions(R){
   el.innerHTML=h;
 }
 
+/* tabela de ativos (estilo Investidor10): logo, quantidade, variação total e do dia; toque no % mostra o valor, toque na linha abre a análise */
+var ATF='all',ASRT={k:'v',d:-1};
+function tkLogo(tk,us){var ini=esc(tk.slice(0,2));return '<span class="tlg"><span>'+ini+'</span><img alt="" loading="lazy" src="'+(us?'https://financialmodelingprep.com/image-stock/'+encodeURIComponent(tk)+'.png':'https://icons.brapi.dev/icons/'+encodeURIComponent(tk)+'.svg')+'" onerror="this.remove()"></span>'}
+function vpill(p,txt){if(p==null||!isFinite(p))return '<span class="vpl n">—</span>';return bal(txt,'<span class="vpl '+(p>=0?'g':'l')+'">'+(p>=0?'+':'−')+pf.format(Math.abs(p*100))+'% <i>'+(p>=0?'▲':'▼')+'</i></span>')}
+function atvTable(R){
+  var T=R.tot,fx=T.fxNow||1,dl=dayLbl(),rows=R.held.map(function(x){var us=x.p.market==='US',F=us?fx:1,pm=x.p.cN/x.p.qty,q=S.quotes[x.p.ticker];
+    var tg=(x.P1-pm)*x.p.qty*F,dd=q&&q.prev&&q.src==='auto'?(q.price-q.prev)*x.p.qty*F:null;
+    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,pm:pm,t:pm?x.P1/pm-1:null,tg:tg,d:dd!=null?q.price/q.prev-1:null,dg:dd,prev:q&&q.prev}});
+  var has={BR:rows.some(function(r){return !r.us}),US:rows.some(function(r){return r.us})};if(ATF!=='all'&&!has[ATF])ATF='all';
+  var vis=rows.filter(function(r){return ATF==='all'||(ATF==='US')===r.us});
+  vis.sort(function(a,b){var k=ASRT.k,A=k==='n'?a.tk:a[k],B=k==='n'?b.tk:b[k];if(A==null)return 1;if(B==null)return -1;return (A<B?-1:A>B?1:0)*ASRT.d});
+  var tv=vis.reduce(function(s,r){return s+r.v},0),tc=vis.reduce(function(s,r){return s+r.v-r.tg},0),tgt=tv-tc,tdd=vis.reduce(function(s,r){return s+(r.dg||0)},0),tdp=vis.reduce(function(s,r){return s+(r.dg!=null?r.v-r.dg:0)},0);
+  var F2=function(r){return r.us?usd:brl},hd=function(k,l,cl){return '<button type="button" class="ath'+(cl?' '+cl:'')+'" data-asrt="'+k+'">'+l+' <i>'+(ASRT.k===k?(ASRT.d<0?'↓':'↑'):'⇅')+'</i></button>'};
+  var h='<div class="panel atv"><div class="grp"><div><h2>Ativos</h2><span class="det">'+brl.format(tv)+' em '+vis.length+(vis.length>1?' ativos':' ativo')+'</span></div><div class="gr">'+
+      vpill(tc?tgt/tc:null,'Desde a compra, só pelo preço: '+sgn(tgt)+'. O VT entra pelo dólar de hoje, sem o câmbio.')+(tdp?vpill(tdd/tdp,(dl.t==='hoje'?'Hoje':'No último pregão ('+dl.d+')')+': '+sgn(tdd)+'.'):'')+'</div></div>'+
+    (has.BR&&has.US?'<div class="chips atf">'+[['all','Todos'],['BR','Ações'],['US','ETFs Intern.']].map(function(f){return '<button type="button" data-atf="'+f[0]+'" aria-pressed="'+(ATF===f[0])+'">'+f[1]+'</button>'}).join('')+'</div>':'')+
+    '<div class="atr ahd">'+hd('n','Ativo','a1')+hd('q','Quant.')+hd('t','Total')+hd('d',dl.t==='hoje'?'Hoje':'Dia')+'</div>'+
+    vis.map(function(r){var F=F2(r),qt=num(r.q,r.us?4:0),qs=num(r.q,r.us?2:0),vk=r.v>=1e3?'R$ '+num(r.v/1e3,1)+' mil':brl.format(r.v);
+      return '<div class="atr" data-stk="'+esc(r.tk)+'" role="button" tabindex="0"><span class="a1">'+tkLogo(r.tk,r.us)+'<span class="an"><b>'+esc(r.tk)+'</b><small>'+vk+'</small></span></span>'+
+        '<span class="aq">'+qs+'</span>'+
+        vpill(r.t,r.tk+': '+sgn(r.tg)+' desde a compra ('+qt+(r.us?' cotas':' ações')+', preço médio '+F.format(r.pm)+', agora '+F.format(r.x.P1)+(r.us?'; em reais pelo dólar de hoje, sem câmbio':'')+').')+
+        vpill(r.d,r.tk+(dl.t==='hoje'?' hoje':' no último pregão ('+dl.d+')')+': '+(r.dg!=null?sgn(r.dg)+' (de '+F.format(r.prev)+' para '+F.format(r.x.P1)+')':'sem dado')+'.')+'</div>'}).join('')+
+    '<p class="note" style="margin-top:10px">Toque na porcentagem para ver o valor. Toque no ativo para abrir a análise.</p></div>';
+  return h;
+}
 var TRF='all',GOPEN={};
 document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.dataset&&d.dataset.g)GOPEN[d.dataset.g]=d.open},true);
 function trKind(t){return t.side==='div'?'div':(t.side==='rf'||t.side==='rfout')?'rf':t.side==='buy'?'buy':t.side==='sell'?'sell':'out'}
@@ -1232,6 +1264,8 @@ document.addEventListener('click',function(e){
   var wt=t.closest&&t.closest('[data-wtog]');if(wt){var tk2=wt.getAttribute('data-wtog'),W2=wlist().slice();if(W2.indexOf(tk2)>=0)W2=W2.filter(function(x){return x!==tk2});else W2.push(tk2);watchSet(W2);stkRender();renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(W2.indexOf(tk2)>=0)loadMkt(true);return}
   var it=t.closest&&t.closest('[data-idxt]');if(it){var ik=it.getAttribute('data-idxt'),A=idxSel().slice();if(A.indexOf(ik)>=0)A=A.filter(function(x){return x!==ik});else A.push(ik);idxSet(A);renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(A.indexOf(ik)>=0)loadMkt(true);return}
   if(t.closest&&t.closest('[data-mked]')){MKED=!MKED;renderMkt();return}
+  var af=t.closest&&t.closest('[data-atf]');if(af){ATF=af.getAttribute('data-atf');renderPositions(compute());return}
+  var as=t.closest&&t.closest('[data-asrt]');if(as){var ak2=as.getAttribute('data-asrt');if(ASRT.k===ak2)ASRT.d=-ASRT.d;else ASRT={k:ak2,d:ak2==='n'?1:-1};renderPositions(compute());return}
   var hd=t.closest&&t.closest('[data-hci]');if(hd){var hcs=$('hcards');if(hcs)hcs.scrollTo({left:+hd.getAttribute('data-hci')*hcs.clientWidth,behavior:'smooth'});return}
   var dvb=t.closest&&t.closest('[data-dvv]');if(dvb){DVV=dvb.getAttribute('data-dvv');render();return}
   var tb=t.closest&&t.closest('[data-tema]');
