@@ -113,6 +113,9 @@ details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-3px}
 .grp .gt{font:600 17px/1.2 var(--disp);white-space:nowrap}
 .pos{display:flex;flex-direction:column;gap:6px;padding-block:13px;border-top:1px solid var(--line);min-width:0}
 .grp+.pos{border-top:0}
+.stl li{align-items:center}
+.stt{font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap;background:var(--tint);color:var(--muted)}
+.stt.ok{color:var(--gain)}.stt.err{color:var(--loss)}
 .gbox>summary{color:var(--fg);font-weight:inherit;font-size:inherit;align-items:flex-start}
 .gbox>summary::after{margin-top:10px;color:var(--muted)}
 .gbox>summary .grp{flex:1;margin:0;min-width:0;align-items:flex-start}
@@ -240,6 +243,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 
   <section class="panel" aria-labelledby="h-tr" data-tab="lancamentos" hidden>
     <h2 id="h-tr">Extrato</h2>
+    <input id="tr-q" type="search" placeholder="Buscar ativo, ex.: ITUB4" autocomplete="off" autocapitalize="characters" aria-label="Buscar no extrato" style="margin-bottom:10px">
     <div id="trades"></div>
   </section>
 
@@ -251,6 +255,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
   </div>
 
   <div class="col" data-tab="mais" data-sub="ajustes" hidden>
+    <section class="panel"><h2>Status das fontes de dados</h2><div id="srcinfo"></div></section>
     <section class="panel" id="syncbox">
       <h2>Seus dados na nuvem</h2>
       <div class="stack">
@@ -273,7 +278,6 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
           <label class="small muted" for="k-br">Token brapi (ações do Brasil e proventos, grátis em brapi.dev)</label>
           <input id="k-br" placeholder="cole seu token" autocomplete="off">
         </div>
-        <p class="note" id="srcinfo" style="margin:0"></p>
       </div>
     </section>
     <p class="meta" style="text-align:center">Aporte 1.0 · seus dados ficam só com você</p>
@@ -595,8 +599,11 @@ function renderTrades(){
   if(!S.trades.length){el.innerHTML='<p class="muted">Nada lançado ainda.</p>';return}
   var fs=[['all','Tudo'],['buy','Compras'],['sell','Vendas'],['div','Proventos'],['rf','Renda fixa']];
   var h='<div class="yrs">'+fs.map(function(f){return '<button type="button" data-trf="'+f[0]+'" aria-pressed="'+(TRF===f[0])+'">'+f[1]+'</button>'}).join('')+'</div>';
-  var ts=S.trades.filter(function(t){return TRF==='all'||trKind(t)===TRF}).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.id<b.id?1:-1)});
-  if(!ts.length)h+='<p class="muted" style="margin-top:14px">Nenhum lançamento desse tipo.</p>';
+  var q=($('tr-q').value||'').trim().toUpperCase();
+  var ts=S.trades.filter(function(t){return (TRF==='all'||trKind(t)===TRF)&&(!q||String(t.ticker).toUpperCase().indexOf(q)>-1||String(t.note||'').toUpperCase().indexOf(q)>-1)}).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.id<b.id?1:-1)});
+  if(!ts.length)h+='<p class="muted" style="margin-top:14px">'+(q?'Nada encontrado para "'+esc(q)+'".':'Nenhum lançamento desse tipo.')+'</p>';
+  else if(q){var sb=0,ss=0,sd=0;ts.forEach(function(t){var v=t.qty*t.price*(t.market==='US'?t.fx:1);if(t.side==='buy'||t.side==='rf')sb+=v;else if(t.side==='sell'||t.side==='rfout')ss+=v;else if(t.side==='div')sd+=v});
+    h+='<p class="det" style="margin:12px 0 0">'+ts.length+(ts.length>1?' lançamentos':' lançamento')+(sb?' · comprou '+brl.format(sb):'')+(ss?' · vendeu '+brl.format(ss):'')+(sd?' · proventos '+brl.format(sd):'')+'</p>'}
   var cm='';
   ts.forEach(function(t){
     var m=t.date.slice(0,7);if(m!==cm){cm=m;var mn=MESL[+m.slice(5)-1];h+='<h3 class="mon">'+mn.charAt(0).toUpperCase()+mn.slice(1)+' de '+m.slice(0,4)+'</h3>'}
@@ -665,13 +672,20 @@ function render(){
   var ft=fxToday();
   $('fx-src').textContent=ft?(ft.src==='auto'?'R$ '+num(ft.rate,4)+', automático das '+new Date(ft.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'. Digite ao lado só se quiser usar outro valor.':ft.src==='manual'?'digitado por você (apague para usar o online)':'online · fechamento de '+fmtDate(ft.date)):'sem dado online, digite o valor';
   var si=$('srcinfo');
-  if(si){var ps=[];
-    ps.push('Preços e dólar são buscados sozinhos ao abrir o app e a cada 15 minutos enquanto ele estiver aberto.');
-    ps.push(RF.last?'Última busca às '+new Date(RF.last).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.'+(RF.err?' '+esc(RF.err):''):'Ainda não busquei nesta sessão.');
-    ps.push(!S.keys.brapi?'Proventos automáticos: precisa do token brapi.':DV.err?'Proventos automáticos: '+esc(DV.err):DV.at?'Proventos automáticos: conferidos às '+new Date(DV.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'. Lanço sozinho os pagos a partir de '+fmtDate(S.divFrom)+' (ações do Brasil).':'Proventos automáticos: buscando...');
-    ps.push(CDI.dates.length?'CDI: Banco Central, '+CDI.dates.length+' dias úteis até '+fmtDate(CDI.dates[CDI.dates.length-1])+(CDI.err?' ('+esc(CDI.err)+')':'.'):(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...'));
-    if(MK.fxDates.length)ps.push('Histórico do dólar: '+MK.fxDates.length+' dias, de '+fmtDate(MK.fxDates[0])+' a '+fmtDate(MK.fxLatestDate)+' (AwesomeAPI).');
-    si.innerHTML=ps.join('<br>')}
+  if(si){
+    var hhm=function(t){return new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
+    var fl=RF.fails||[],R1=compute(),hasBR=R1.held.some(function(x){return x.p.market==='BR'}),hasUS=R1.held.some(function(x){return x.p.market==='US'});
+    var brF=fl.filter(function(f){return R1.held.some(function(x){return x.p.market==='BR'&&f.indexOf(x.p.ticker)===0})}),usF=fl.filter(function(f){return R1.held.some(function(x){return x.p.market==='US'&&f.indexOf(x.p.ticker)===0})});
+    var row=function(name,st,txt){return '<li><span><b>'+name+'</b><br><span class="muted small">'+txt+'</span></span><span class="stt '+st+'">'+(st==='ok'?'Funcionando':st==='err'?'Com problema':st==='wait'?'Aguardando':'Desligado')+'</span></li>'};
+    var rows=[];
+    rows.push(row('Dólar (AwesomeAPI)',!RF.last?'wait':fl.indexOf('dólar')>-1?'err':'ok',RF.last?(fl.indexOf('dólar')>-1?'Não respondeu na última busca.':'Atualizado às '+hhm(RF.last)+'.'):'Busca ao abrir o app.'));
+    if(hasBR)rows.push(row('Ações do Brasil (brapi)',!S.keys.brapi?'off':!RF.last?'wait':brF.length?'err':'ok',!S.keys.brapi?'Falta o token brapi abaixo.':brF.length?'Sem preço para '+esc(brF.join(', ')):RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
+    if(hasUS)rows.push(row('Ações dos EUA (Finnhub)',!S.keys.finnhub?'off':!RF.last?'wait':usF.length?'err':'ok',!S.keys.finnhub?'Falta a chave Finnhub abaixo.':usF.length?'Sem preço para '+esc(usF.join(', ')):RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
+    rows.push(row('Proventos automáticos (brapi)',!S.keys.brapi?'off':DV.err?'err':DV.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':DV.err?esc(DV.err):DV.at?'Conferidos às '+hhm(DV.at)+'. Lança sozinho os pagos a partir de '+fmtDate(S.divFrom)+'.':'Confere de hora em hora.'));
+    rows.push(row('Histórico de preços (brapi)',!S.keys.brapi?'off':HI.err&&!Object.keys(HI.px).length?'err':HI.at?(HI.err?'err':'ok'):'wait',!S.keys.brapi?'Falta o token brapi.':HI.err?esc(HI.err)+' Esses meses usam o preço médio na Evolução.':HI.at?'Preços de fechamento de '+Object.keys(HI.px).length+' ativos para a Evolução.':'Busca uma vez por dia.'));
+    rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'err':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
+    rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
+    si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
   $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
   if(document.activeElement!==$('bk'))$('bk').value=bkText();
   syncForm();
@@ -692,6 +706,7 @@ function startEdit(id){
   $('f-submit').textContent='Salvar alteração';$('f-cancel').hidden=false;$('formmsg').textContent='';
   syncForm();bx.scrollIntoView({block:'start'});
 }
+$('tr-q').addEventListener('input',function(){renderTrades()});
 $('f-cancel').addEventListener('click',function(){endEdit();$('f-ticker').value='';$('f-qty').value='';$('f-price').value='';$('f-pct').value='';fxCustom=false;$('f-fx').value='';syncForm()});
 function syncForm(){
   var mk=$('f-market').value,isRF=mk==='RF';
@@ -844,7 +859,7 @@ function loadHist(force){
   return tks.reduce(function(p,tk,i){return p.then(function(){return i?wait(700):null}).then(function(){return one(tk,['1y','6mo','3mo'])})},Promise.resolve()).then(function(){
     HI.at=Date.now();HI.err=fails?'Sem histórico de '+fails+(fails>1?' ativos':' ativo')+' no brapi.':'';
     try{localStorage.setItem(LS+'-hist',JSON.stringify({px:HI.px,at:HI.at}))}catch(e){}
-    HI.busy=false;renderEvo();
+    HI.busy=false;render();
   });
 }
 function evoData(){
@@ -1059,7 +1074,7 @@ function ghSync(manual){
     var st=e&&e.status;
     GH.err=st===401?'A chave do GitHub não foi aceita (errada ou vencida). Crie outra e cole em Ajustes.':st===403||(st===404&&GH.readOk)?'A chave do GitHub só tem permissão de leitura. No GitHub, edite a chave e mude "Conteúdo" para "Leitura e gravação".':st===404?'Não achei o repositório '+ghRepo()+' com essa chave. Confira o nome e se a chave dá acesso a ele.':'Sem conexão com o GitHub agora. Suas alterações ficam guardadas aqui e eu tento de novo.';
     if(manual)warnIn(GH.err);
-  }).then(function(){GH.busy=false;renderSync();if(GH.again){GH.again=false;ghSync()}});
+  }).then(function(){GH.busy=false;render();if(GH.again){GH.again=false;ghSync()}});
 }
 function renderSync(){
   var n=(S.pend||[]).length,hm=function(t){return new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})},txt,bar='';
@@ -1072,6 +1087,7 @@ function renderSync(){
   if($('syncbar'))$('syncbar').textContent=bar;
 }
 setTimeout(function(){ghSync()},300);
+try{if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js')}catch(e){}
 setInterval(function(){if(!document.hidden)ghSync()},5*60000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-GH.last>60000)ghSync()});
 function loadSeed(){
@@ -1163,6 +1179,7 @@ function doRefresh(silent){
   };
   jobs.push(br.reduce(function(p,tk,i){return p.then(function(){return i?wait(700):null}).then(function(){return one(tk,2)})},Promise.resolve()));
   Promise.all(jobs).then(function(){
+    RF.fails=fails.slice();RF.okc=okc;
     RF.busy=false;RF.last=Date.now();
     var mo=today().slice(0,7),dd=today(),chg=0;S.mcDay=S.mcDay||{};S.mclose=S.mclose||{};
     Object.keys(S.quotes).forEach(function(tk){var q=S.quotes[tk];if(!q||q.src!=='auto'||Date.now()-q.at>3600000||!R.held.some(function(x){return x.p.ticker===tk}))return;

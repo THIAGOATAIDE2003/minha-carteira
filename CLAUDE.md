@@ -10,7 +10,7 @@ There is no build system, package manager, test suite or linter. To develop, edi
 
 ## Architecture
 
-Everything is in a single `index.html` (~650 lines: inline CSS, markup, then one IIFE `<script>` starting around line 204). `manifest.webmanifest` and `icon.svg` make it installable. Code is written in dense ES5 style (`var`, `function`, no modules) — keep that style when editing.
+Everything is in a single `index.html` (~650 lines: inline CSS, markup, then one IIFE `<script>` starting around line 204). `manifest.webmanifest`, `icon.svg` and `sw.js` (service worker: network-first for the app's own files, cache fallback so it opens offline; never touches API calls) make it installable. Code is written in dense ES5 style (`var`, `function`, no modules) — keep that style when editing.
 
 Key pieces inside the script:
 
