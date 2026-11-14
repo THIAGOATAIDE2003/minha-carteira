@@ -935,15 +935,15 @@ function watchSet(W){S.watch=W;S.pend.push({t:'cfg',k:'watch',v:W});save();ghSyn
 /* ===== Assistente de IA (Google Gemini) ===== */
 var AI={msgs:[],busy:false};
 try{var ai0=JSON.parse(localStorage.getItem(LS+'-aichat')||'null');if(ai0&&Array.isArray(ai0))AI.msgs=ai0.slice(-30)}catch(e){}
-function aiSave(){try{localStorage.setItem(LS+'-aichat',JSON.stringify(AI.msgs.slice(-30)))}catch(e){}}
+function aiSave(){try{localStorage.setItem(LS+'-aichat',JSON.stringify(AI.msgs.filter(function(m){return !m.live}).slice(-30)))}catch(e){}}
 function aiOpen(q){$('ai').hidden=false;document.body.style.overflow='hidden';aiRender();if(q){aiSend(q)}else setTimeout(function(){try{$('ai-in').focus()}catch(e){}},50)}
 function aiClose(){$('ai').hidden=true;document.body.style.overflow=''}
 function aiFmt(t){return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#+\s*(.+)$/gm,'<b>$1</b>').replace(/^\s*[\*\-]\s+/gm,'• ')}
 function aiRender(){var el=$('ai-msgs');if(!el)return;
   if(!S.keys.gm){el.innerHTML='<p class="muted">Para usar o assistente, crie uma chave grátis no Google AI Studio (aistudio.google.com → Get API key) e cole em Mais → Ajustes → Chave Google Gemini.</p>';return}
-  var h=AI.msgs.length?AI.msgs.map(function(m){return '<div class="aim '+(m.r==='u'?'u':m.r==='e'?'e':'a')+'">'+(m.r==='u'?esc(m.t):aiFmt(m.t))+'</div>'}).join(''):
+  var h=AI.msgs.length?AI.msgs.map(function(m){return '<div class="aim '+(m.r==='u'?'u':m.r==='e'?'e':'a')+(m.live?' live':'')+'">'+(m.r==='u'?esc(m.t):m.live&&!m.t?'<span class="muted">Pensando...</span>':aiFmt(m.t))+'</div>'}).join(''):
     '<p class="muted small">Pergunte o que quiser sobre sua carteira, seus proventos ou qualquer ação. Exemplos:</p><div class="aisug">'+['Por que minha carteira caiu no último pregão?','Quanto recebi de proventos este ano e de quais ações?','Me explique os indicadores da ITUB4 de forma simples','Minha carteira está muito concentrada em alguma ação?'].map(function(q){return '<button type="button" data-aiq="'+esc(q)+'">'+esc(q)+'</button>'}).join('')+'</div>';
-  if(AI.busy)h+='<div class="aim a muted">Pensando...</div>';
+
   el.innerHTML=h;el.scrollTop=el.scrollHeight}
 function aiContext(){
   var R=compute(),T=R.tot,VZ=valoriz(R),fx=T.fxNow;
@@ -960,25 +960,41 @@ function aiContext(){
   return JSON.stringify(o);
 }
 function aiModel(){
-  try{var c=JSON.parse(localStorage.getItem(LS+'-gemm')||'null');if(c&&c.m&&Date.now()-c.at<7*864e5)return Promise.resolve(c.m)}catch(e){}
+  try{var c=JSON.parse(localStorage.getItem(LS+'-gemm2')||'null');if(c&&c.m&&Date.now()-c.at<7*864e5)return Promise.resolve(c.m)}catch(e){}
   return getJSON('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(S.keys.gm)).then(function(j){
-    var ms=(j.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf('generateContent')>=0&&/flash/.test(m.name)&&!/lite|image|tts|live|audio|embed|vision|exp/.test(m.name)}).map(function(m){return m.name});
-    var pick=ms.filter(function(n){return /flash-latest$/.test(n)})[0]||ms.sort().reverse()[0];if(!pick)throw new Error('nomodel');
-    try{localStorage.setItem(LS+'-gemm',JSON.stringify({m:pick,at:Date.now()}))}catch(e){}return pick});
+    var ms=(j.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf('generateContent')>=0&&/flash/.test(m.name)&&!/lite|image|tts|live|audio|embed|vision|exp|preview|thinking/.test(m.name)}).map(function(m){return m.name});
+    var pick=ms.indexOf('models/gemini-2.5-flash')>=0?'models/gemini-2.5-flash':(ms.filter(function(n){return /flash-latest$/.test(n)})[0]||ms.sort().reverse()[0]);if(!pick)throw new Error('nomodel');
+    try{localStorage.setItem(LS+'-gemm2',JSON.stringify({m:pick,at:Date.now()}))}catch(e){}return pick});
 }
+var AITH=null;try{AITH=localStorage.getItem(LS+'-gemth')}catch(e){}
+function aiLive(t){var el=$('ai-msgs');if(!el)return;var b=el.querySelector('.aim.live');if(!b){aiRender();b=el.querySelector('.aim.live')}if(b){b.innerHTML=aiFmt(t)||'<span class="muted">Pensando...</span>';el.scrollTop=el.scrollHeight}}
 function aiSend(q){
   q=String(q||'').trim();if(!q||AI.busy)return;if(!S.keys.gm){aiRender();return}
   AI.msgs.push({r:'u',t:q});AI.busy=true;aiRender();
-  var sys='Você é o assistente do app Aporte, a carteira de investimentos pessoal do Thiago (investidor pessoa física no Brasil, ações na Nubank e o ETF VT no Inter). Responda sempre em português do Brasil, de forma curta, simples e direta, como numa conversa de celular. Use os dados da carteira abaixo (valores em reais, a não ser quando indicado). Explique conceitos e números, compare, aponte riscos e prós e contras, mas não dê ordem de compra ou venda nem garanta resultados: deixe a decisão com ele. Se não tiver o dado, diga que não tem em vez de inventar. Dados atuais da carteira (JSON): '+aiContext();
-  var hist=AI.msgs.filter(function(m){return m.r!=='e'}).slice(-12).map(function(m){return {role:m.r==='u'?'user':'model',parts:[{text:m.t}]}});
-  var call=function(model,retry){var c=new AbortController(),to=setTimeout(function(){c.abort()},45000);
-    return fetch('https://generativelanguage.googleapis.com/v1beta/'+model+':generateContent?key='+encodeURIComponent(S.keys.gm),{method:'POST',signal:c.signal,headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:hist,generationConfig:{temperature:0.4,maxOutputTokens:1200}})}).then(function(r){clearTimeout(to);return r.json().then(function(j){return {s:r.status,j:j}})})
-      .then(function(x){if(x.s===404&&!retry){try{localStorage.removeItem(LS+'-gemm')}catch(e){}return aiModel().then(function(m){return call(m,true)})}
-        if(x.s!==200){var e=new Error('http');e.s=x.s;e.m=x.j&&x.j.error&&x.j.error.message;throw e}
-        var c0=x.j.candidates&&x.j.candidates[0],t=c0&&c0.content&&c0.content.parts?c0.content.parts.map(function(p){return p.text||''}).join(''):'';if(!t)throw new Error('vazio');return t})};
-  aiModel().then(function(m){return call(m,false)}).then(function(t){AI.msgs.push({r:'a',t:t})},function(e){
-    var s=e&&e.s;AI.msgs.push({r:'e',t:s===400||s===403?'A chave do Gemini não foi aceita. Confira em Ajustes.':s===429?'Passou do limite grátis do Gemini por agora. Tente de novo em alguns minutos.':e&&e.message==='vazio'?'A IA não respondeu. Tente perguntar de outro jeito.':'Não consegui falar com a IA agora'+(s?' (código '+s+')':'')+'.'})})
+  var sys='Você é o assistente do app Aporte, a carteira de investimentos pessoal do Thiago (investidor pessoa física no Brasil, ações na Nubank e o ETF VT no Inter). Responda sempre em português do Brasil, curto e direto, como numa conversa de celular: comece pela resposta, depois no máximo alguns tópicos. Use os dados da carteira abaixo (valores em reais, a não ser quando indicado). Explique conceitos e números, compare, aponte riscos e prós e contras, mas não dê ordem de compra ou venda nem garanta resultados: deixe a decisão com ele. Se não tiver o dado, diga que não tem em vez de inventar. Dados atuais da carteira (JSON): '+aiContext();
+  var hist=AI.msgs.filter(function(m){return m.r!=='e'}).slice(-10).map(function(m){return {role:m.r==='u'?'user':'model',parts:[{text:m.t}]}});
+  var out='',ctl=null;
+  var body=function(model,th){var g={temperature:0.4,maxOutputTokens:1000};
+    if(th==='budget')g.thinkingConfig={thinkingBudget:0};else if(th==='level')g.thinkingConfig={thinkingLevel:'low'};
+    return JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:hist,generationConfig:g})};
+  var call=function(model,th,tries){ctl=new AbortController();var to=setTimeout(function(){ctl.abort()},60000);out='';
+    return fetch('https://generativelanguage.googleapis.com/v1beta/'+model+':streamGenerateContent?alt=sse&key='+encodeURIComponent(S.keys.gm),{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json'},body:body(model,th)})
+      .then(function(r){
+        if(!r.ok)return r.json().catch(function(){return {}}).then(function(j){var m=j&&j.error&&j.error.message||'';clearTimeout(to);
+          if(r.status===400&&th&&/thinking/i.test(m)&&tries<3){var nt=th==='budget'?'level':'';try{localStorage.setItem(LS+'-gemth',nt)}catch(e){}AITH=nt;return call(model,nt,tries+1)}
+          if(r.status===404&&tries<3){try{localStorage.removeItem(LS+'-gemm2')}catch(e){}return aiModel().then(function(m2){return call(m2,th,tries+1)})}
+          var er=new Error('http');er.s=r.status;er.m=m;throw er});
+        if(!r.body||!r.body.getReader)return r.text().then(function(tx){clearTimeout(to);tx.split('\n').forEach(function(l){if(l.indexOf('data:')===0)eat(l.slice(5))})});
+        var rd=r.body.getReader(),dec=new TextDecoder(),buf='';
+        var pump=function(){return rd.read().then(function(x){if(x.done){clearTimeout(to);if(buf.indexOf('data:')===0)eat(buf.slice(5));return}
+          buf+=dec.decode(x.value,{stream:true});var ls=buf.split('\n');buf=ls.pop();ls.forEach(function(l){if(l.indexOf('data:')===0)eat(l.slice(5))});return pump()})};
+        return pump()})};
+  var eat=function(js){try{var j=JSON.parse(js),c=j.candidates&&j.candidates[0],ps=c&&c.content&&c.content.parts||[];ps.forEach(function(p){if(p.text&&!p.thought)out+=p.text});aiLive(out)}catch(e){}};
+  AI.msgs.push({r:'a',t:'',live:1});aiRender();
+  var th=AITH===null?'budget':AITH;
+  aiModel().then(function(m){return call(m,th,0)}).then(function(){var last=AI.msgs[AI.msgs.length-1];last.t=out;delete last.live;if(!out){AI.msgs.pop();AI.msgs.push({r:'e',t:'A IA não respondeu. Tente perguntar de outro jeito.'})}},function(e){
+    var last=AI.msgs[AI.msgs.length-1];if(last&&last.live){if(out){last.t=out;delete last.live}else AI.msgs.pop()}
+    var s0=e&&e.s;AI.msgs.push({r:'e',t:s0===400||s0===403?'A chave do Gemini não foi aceita. Confira em Ajustes.'+(e.m?' ('+String(e.m).slice(0,90)+')':''):s0===429?'Passou do limite grátis do Gemini por agora. Tente de novo em alguns minutos.':e&&e.name==='AbortError'?'A IA demorou demais. Tente de novo.':'Não consegui falar com a IA agora'+(s0?' (código '+s0+')':'')+'.'})})
     .then(function(){AI.busy=false;aiSave();aiRender()});
 }
 
