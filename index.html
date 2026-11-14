@@ -12,11 +12,12 @@
   --accent:#63b7e2; --accent-fg:#06121b; --gain:#4fc79a; --loss:#f3826f; --tint:#182431;
   --hero:#16293b; --hero-fg:#f4f8fb; --hero-muted:#9db2c5; --hero-gain:#74e0b6; --hero-loss:#ffa696; --hero-line:rgba(255,255,255,.12);
   --c1:#63b7e2; --c2:#e3b657; --c3:#c08e68; --c4:#b08fd6; --c5:#ee8a72; --c6:#6fcdb4;
+  --ev1:#2fbf71; --ev2:#9be8c0;
   --sans:'Public Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --disp:'Bricolage Grotesque','Public Sans',system-ui,sans-serif;
 }
 :root[data-theme="branco"]{
-  color-scheme:light;
+  color-scheme:light;--ev1:#1f9d5c;--ev2:#86d9ad;
   --bg:#ffffff; --surface:#ffffff; --fg:#121417; --muted:#62676f; --line:#e6e8eb;
   --accent:#121417; --accent-fg:#ffffff; --gain:#0b7a4f; --loss:#cf3a2a; --tint:#f2f3f5;
   --hero:#121417; --hero-fg:#ffffff; --hero-muted:#a3a9b1; --hero-gain:#6fe3b0; --hero-loss:#ff9f8f; --hero-line:rgba(255,255,255,.14);
@@ -180,7 +181,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 .yrs button,.seg button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500}
 .yrs button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-#carseg{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}#carseg button{padding:9px 4px;font-size:13px}
+#carseg{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}#carseg button{padding:9px 2px;font-size:12.5px;letter-spacing:-.01em}
 .alv{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:6px 10px;align-items:center}
 .alv input{padding:8px;text-align:right}
 .alvbar{grid-column:1/-1;position:relative;height:8px;border-radius:4px;background:var(--tint);margin:-2px 0 6px}
@@ -212,6 +213,21 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .dvbar{display:flex;flex-direction:column-reverse;height:100%;justify-content:flex-start;gap:2px}
 .dvbar i{display:block;border-radius:4px 4px 0 0;min-height:0}
 .dvbar .r{background:var(--c1)}
+.evp .grp{align-items:center}.evfbtn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:7px 12px;font-size:13.5px}
+.evfbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.evsub{font-size:12.5px;color:var(--muted);margin:2px 0 0}
+.evlg{justify-content:center;margin:12px 0 6px}.evlg span::before{width:14px;border-radius:3px}.evlg .a::before{background:var(--ev1)}.evlg .g::before{background:var(--ev2)}
+.evch{display:flex;align-items:stretch;min-width:0}.evax{flex:none;font-size:10.5px;fill:var(--muted)}
+.evpl{flex:1;min-width:0;position:relative}.evpl>svg{display:block}.evxl{position:absolute;inset:0;pointer-events:none}.evxl span{position:absolute;font-size:11px;color:var(--muted);white-space:nowrap;transform:translateX(-100%) rotate(-45deg);transform-origin:100% 0}
+.evpl.tipon g{opacity:.45}.evpl.tipon g.on{opacity:1}
+.evtb{margin-top:10px}
+.sheet{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sbox{background:var(--surface);color:var(--fg);width:100%;max-width:620px;border-radius:18px 18px 0 0;max-height:88vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.shd{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 18px 14px;border-bottom:1px solid var(--line);font-size:16px}.shx{background:none;border:0;color:var(--muted);font-size:20px;padding:0 4px}
+.sbd{padding:6px 18px 18px;overflow:auto}.sbd h3{font-size:15px;margin:16px 0 8px}
+.rad{display:flex;align-items:center;gap:12px;padding:7px 0;font-size:15px}.rad input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chips button{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:8px 16px;font-size:14px}.chips button[aria-pressed=true]{background:var(--tint);color:var(--fg);border-color:var(--fg);font-weight:600}
+.sft{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-top:1px solid var(--line);background:var(--bg)}.sft .link{font-size:14.5px;text-decoration:none;color:var(--fg)}
 .bal{background:none;border:0;padding:0 2px;margin:0;color:inherit;font:inherit;display:inline;vertical-align:baseline;cursor:pointer}
 .bal .bi{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1.5px solid currentColor;font:700 9.5px/1 var(--sans);opacity:.7;vertical-align:1px}
 .bal .u{border-bottom:1.5px dotted currentColor}
@@ -980,7 +996,13 @@ document.addEventListener('click',function(e){
   else if(t.dataset&&t.dataset.trf){TRF=t.dataset.trf;renderTrades()}
   else if(t.dataset&&t.dataset.edit){startEdit(t.dataset.edit)}
   else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':t.dataset.cv==='apo'?'aporte':t.dataset.cv==='perf'?'desempenho':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
-  else if(t.dataset&&t.dataset.evy){EVY=t.dataset.evy;renderEvo()}
+  else if(t.closest&&t.closest('[data-evt]')){var cb=t.closest('[data-evt]');[].forEach.call(document.querySelectorAll('[data-evt]'),function(x){x.setAttribute('aria-pressed',String(x===cb))})}
+  else if(t.closest&&t.closest('[data-evf]')){var ac=t.closest('[data-evf]').getAttribute('data-evf'),sh=$('evsheet');
+    if(ac==='open'&&sh){sh.hidden=false;document.body.style.overflow='hidden'}
+    else if(ac==='close'){sh.hidden=true;document.body.style.overflow=''}
+    else if(ac==='reset'||ac==='save'){if(ac==='reset')EVF={p:'all',t:'all'};else{var rp=document.querySelector('input[name=evp]:checked'),ct=document.querySelector('[data-evt][aria-pressed=true]');EVF={p:rp?rp.value:'all',t:ct?ct.getAttribute('data-evt'):'all'}}
+      try{localStorage.setItem(LS+'-evof',JSON.stringify(EVF))}catch(e){}document.body.style.overflow='';renderEvo()}}
+  else if(t.classList&&t.classList.contains('sheet')){t.hidden=true;document.body.style.overflow=''}
   else if(t.dataset&&t.dataset.iry){IRY=t.dataset.iry;renderIR()}
   else if(t.id==='apo-go'){apoCalc()}
   else if(t.id==='al-save'){alvSave()}
@@ -1247,7 +1269,7 @@ function evoData(){
       if(t.side==='buy'){p.q+=t.qty;p.cN+=t.qty*t.price;cash-=t.qty*ePx(t)*F;if(cash<0){contrib-=cash;cash=0}}
       else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.cN-=p.cN*q/p.q;p.q-=q;if(p.q<1e-9){p.q=0;p.cN=0}cash+=q*ePx(t)*F}
     });
-    var fx=m===cur?(fxToday()||{}).rate:(fxOn(e)||{}).rate,val=0;
+    var fx=m===cur?(fxToday()||{}).rate:(fxOn(e)||{}).rate,val=0,seg={BR:{v:0,c:0},US:{v:0,c:0},RF:{v:0,c:0}};
     Object.keys(pos).forEach(function(k){var p=pos[k];if(p.q<1e-9)return;
       var px=null;
       if(m===cur){var gq=getQuote(k);px=gq&&gq.price}
@@ -1255,46 +1277,53 @@ function evoData(){
       if(!px&&S.mclose&&S.mclose[k]&&S.mclose[k][m])px=S.mclose[k][m];
       if(!px){px=p.cN/p.q;approx.push(k)}
       var F2=p.mk==='US'?(fx||1):1;if(p.mk==='US'&&!fx)approx.push('dólar');
-      val+=p.q*px*F2});
-    Object.keys(rfo).forEach(function(id){var t=rfo[id];var c=rfCalc(t,{date:e,price:0});val+=CDI.dates.length?c.liq:t.price});
-    rows.push({m:m,pat:val+cash,apl:contrib,div:divs,approx:approx});
+      val+=p.q*px*F2;var sg=seg[p.mk==='US'?'US':'BR'];sg.v+=p.q*px*F2;sg.c+=p.cN*F2});
+    Object.keys(rfo).forEach(function(id){var t=rfo[id];var c=rfCalc(t,{date:e,price:0}),lv=CDI.dates.length?c.liq:t.price;val+=lv;seg.RF.v+=lv;seg.RF.c+=t.price});
+    rows.push({m:m,pat:val+cash,apl:contrib,div:divs,approx:approx,seg:seg});
   });
   rows.forEach(function(r,i){var pv=i?rows[i-1]:null;r.lucro=r.pat-r.apl;r.rend=pv?(r.pat-pv.pat)-(r.apl-pv.apl):r.pat-r.apl;r.rendP=pv&&pv.pat?r.rend/(pv.pat+Math.max(0,r.apl-pv.apl)):null});
   return rows;
 }
+var EVF={p:'all',t:'all'};try{var ef0=JSON.parse(localStorage.getItem(LS+'-evof')||'null');if(ef0&&ef0.p)EVF=ef0}catch(e){}
+var EVTN={all:'Todos os tipos',BR:'Ações',US:'ETFs Intern.',RF:'Renda fixa'},EVPN={all:'Desde o início','12':'Últimos 12 meses','24':'2 anos','60':'5 anos','120':'10 anos'};
+function niceStep(r){var e=Math.pow(10,Math.floor(Math.log(r)/Math.LN10)),f=r/e;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e}
+function kfmt(v){var a=Math.abs(v);return (v<0?'R$ -':'R$ ')+(a>=1000?num(a/1000,a%1000?1:0)+'K':num(a,2))}
 function renderEvo(){
   var el=$('evotab');if(!el)return;
-  var rows=evoData();if(!rows.length){el.innerHTML='<div class="panel"><p class="muted">Lance sua primeira compra para começar a acompanhar a evolução.</p></div>';return}
-  var ys={};rows.forEach(function(r){ys[r.m.slice(0,4)]=1});var years=Object.keys(ys).sort();if(!EVY||!ys[EVY])EVY=years[years.length-1];
-  var yr=rows.filter(function(r){return r.m.slice(0,4)===EVY}),last=rows[rows.length-1],first=rows[0];
-  var vals=[];yr.forEach(function(r){vals.push(r.pat,r.apl)});
-  var mxv=Math.max.apply(null,vals)||1,mnv=Math.min.apply(null,vals),pd=(mxv-mnv)*0.15||mxv*0.05;mnv=Math.max(0,mnv-pd);mxv+=pd*0.5;
-  var W=320,H=150,RH=46,bw=W/12,sx=function(i){return i*bw+bw/2},sy=function(v){return H-4-((v-mnv)/(mxv-mnv))*(H-14)};
-  var byM={};yr.forEach(function(r){byM[+r.m.slice(5,7)-1]=r});
-  var pp=[],pa=[],rb='',rmx=Math.max.apply(null,yr.map(function(r){return Math.abs(r.rend)}))||1,dots='';
-  for(var i=0;i<12;i++){var r=byM[i];if(!r)continue;pp.push([sx(i),sy(r.pat)]);pa.push([sx(i),sy(r.apl)]);
-    var bh=Math.max(2,Math.abs(r.rend)/rmx*(RH/2-4));rb+='<rect x="'+(i*bw+bw*.25).toFixed(1)+'" y="'+(r.rend>=0?H+12+RH/2-bh:H+12+RH/2).toFixed(1)+'" width="'+(bw*.5).toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="2" fill="var(--'+(r.rend>=0?'gain':'loss')+')"><title>'+MESES[i]+': rendeu '+sgn(r.rend)+'</title></rect>'}
-  var P=function(a){return a.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ')};
-  var bars=pp.length>1?'<defs><linearGradient id="evg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--c1)" stop-opacity=".32"/><stop offset="1" stop-color="var(--c1)" stop-opacity="0"/></linearGradient></defs><polygon points="'+pp[0][0].toFixed(1)+','+(H-4)+' '+P(pp)+' '+pp[pp.length-1][0].toFixed(1)+','+(H-4)+'" fill="url(#evg)"/>':'';
-  var line=(pa.length>1?'<polyline points="'+P(pa)+'" fill="none" stroke="var(--c2)" stroke-width="2" stroke-dasharray="5 4"/>':'')+(pp.length>1?'<polyline points="'+P(pp)+'" fill="none" stroke="var(--c1)" stroke-width="2.6" stroke-linejoin="round"/>':'');
-  pp.forEach(function(p,k){dots+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(k===pp.length-1?4.2:2.6)+'" fill="'+(k===pp.length-1?'var(--c1)':'var(--surface)')+'" stroke="var(--c1)" stroke-width="2"/>'});
-  dots+='<line x1="0" x2="'+W+'" y1="'+(H+12+RH/2)+'" y2="'+(H+12+RH/2)+'" stroke="var(--line)"/>'+rb;
-  H=H+12+RH;
-  var gT=last.pat-last.apl;
-  var h='<div class="panel"><div class="split">'+
-    '<div><span class="lbl">Patrimônio agora</span><span class="num">'+brl.format(last.pat)+'</span></div>'+
-    '<div><span class="lbl">Desde '+MESL[+first.m.slice(5,7)-1].slice(0,3)+'/'+first.m.slice(2,4)+'</span><span class="num '+cls(gT)+'">'+sgn(gT)+' sobre o aplicado</span></div></div></div>';
-  h+='<div class="panel"><div class="grp"><h2>Mês a mês</h2>'+(years.length>1?'<div class="yrs">'+years.map(function(y){return '<button type="button" data-evy="'+y+'" aria-pressed="'+(y===EVY)+'">'+y+'</button>'}).join('')+'</div>':'<span class="det">'+EVY+'</span>')+'</div>'+
-    '<div class="tipc"'+tipAttr({n:12,pts:yr.map(function(r){var i=+r.m.slice(5,7)-1;return {i:i,t:MESL[i].charAt(0).toUpperCase()+MESL[i].slice(1)+' de '+r.m.slice(0,4)+(r.m===today().slice(0,7)?' (até hoje)':''),r:[['var(--c1)','Patrimônio',brl.format(r.pat)],['var(--c2)','Aplicado do bolso',brl.format(r.apl)],['','Rendeu',sgn(r.rend)+(r.rendP!=null?' ('+pct(r.rendP)+')':''),r.rend>=0?'gain':'loss'],['','Resultado total',sgn(r.lucro),r.lucro>=0?'gain':'loss']]}})})+'><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;margin:8px 0 2px" role="img" aria-label="Patrimônio e aplicado por mês em '+EVY+'">'+bars+line+dots+'</svg></div>'+
-    '<div class="dvlbl">'+MESES.map(function(m){return '<span>'+m.charAt(0)+'</span>'}).join('')+'</div>'+
-    '<div class="dvleg"><span>Patrimônio no fim do mês</span><span class="ln">Aplicado do seu bolso</span><span class="rb">Rendeu no mês</span></div>';
-  h+='<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Patrimônio</th><th>Aplicado do bolso</th><th>Rendeu no mês</th></tr></thead><tbody>'+
-    yr.slice().reverse().map(function(r){var mi=+r.m.slice(5,7)-1,cur=r.m===today().slice(0,7);
-      return '<tr><td>'+MESES[mi]+(cur?' <span class="muted small">até hoje</span>':'')+(r.approx.length?' <span class="muted" title="Sem preço de fechamento para '+esc(r.approx.join(', '))+'">*</span>':'')+'</td><td>'+brl.format(r.pat)+'</td><td>'+brl.format(r.apl)+'</td><td class="'+cls(r.rend)+'">'+sgn(r.rend)+(r.rendP!=null?'<br><span class="small">'+pct(r.rendP)+'</span>':'')+'</td></tr>'}).join('')+
-    '</tbody></table></div></div>';
+  var all=evoData();if(!all.length){el.innerHTML='<div class="panel"><p class="muted">Lance sua primeira compra para começar a acompanhar a evolução.</p></div>';return}
+  var rows=EVF.p==='all'?all:all.slice(-(+EVF.p));
+  var has={BR:0,US:0,RF:0};all.forEach(function(r){['BR','US','RF'].forEach(function(k){if(r.seg[k].c>0)has[k]=1})});
+  if(EVF.t!=='all'&&!has[EVF.t])EVF.t='all';
+  var pick=function(r){var o={v:0,c:0};(EVF.t==='all'?['BR','US','RF']:[EVF.t]).forEach(function(k){o.v+=r.seg[k].v;o.c+=r.seg[k].c});o.g=o.v-o.c;return o};
+  var P=rows.map(pick),n=rows.length,last=P[n-1];
+  var hi=Math.max.apply(null,P.map(function(o){return Math.max(o.c,o.c+o.g,0)}))||1,lo=Math.min.apply(null,P.map(function(o){return Math.min(0,o.g)}));
+  var st=niceStep((hi-lo)/4||1),top=Math.ceil(hi/st)*st,bot=Math.floor(lo/st)*st;if(bot===0&&lo<0)bot=-st;
+  var H=230,PT=10,PB=46,ph=H-PT-PB,y=function(v){return PT+(top-v)/(top-bot)*ph},W=300,bw=W/n,grid='',ax='';
+  for(var v=bot;v<=top+1e-6;v+=st){var yy=y(v).toFixed(1);grid+='<line x1="0" x2="'+W+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"/>';ax+='<text x="54" y="'+(+yy+4)+'" text-anchor="end">'+kfmt(v)+'</text>'}
+  var bars='',lbl='';
+  P.forEach(function(o,i){var x=i*bw+bw*.18,w=bw*.64,r=rows[i];
+    bars+='<g data-slot="'+i+'"><rect x="'+x.toFixed(1)+'" y="'+y(o.c).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+Math.max(0,y(0)-y(o.c)).toFixed(1)+'" rx="3" fill="var(--ev1)"/>'+
+      (o.g>=0?'<rect x="'+x.toFixed(1)+'" y="'+y(o.c+o.g).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+Math.max(1,y(o.c)-y(o.c+o.g)).toFixed(1)+'" rx="2" fill="var(--ev2)"/>':'<rect x="'+x.toFixed(1)+'" y="'+y(0).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+Math.max(1,y(o.g)-y(0)).toFixed(1)+'" rx="2" fill="var(--ev2)"/>')+'</g>';
+    var cx=i*bw+bw/2,lx=r.m.slice(5,7)+'/'+r.m.slice(2,4);if(n<=14||i%Math.ceil(n/12)===0)lbl+='<span style="left:'+(cx/W*100).toFixed(2)+'%;top:'+(H-PB+6)+'px">'+lx+'</span>'});
+  var zero='<line x1="0" x2="'+W+'" y1="'+y(0).toFixed(1)+'" y2="'+y(0).toFixed(1)+'" stroke="var(--muted)" stroke-width="1.2"/>';
+  var tip={n:n,pts:rows.map(function(r,i){var o=P[i];return {i:i,t:r.m.slice(5,7)+'/'+r.m.slice(2,4)+(r.m===today().slice(0,7)?' (até hoje)':''),r:[['var(--c1)','Patrimônio',brl.format(o.v)],['var(--ev1)','Valor aplicado',brl.format(o.c)],['var(--ev2)','Ganho de capital',sgn(o.g),o.g>=0?'gain':'loss']]}})};
+  var h='<div class="panel"><div class="split"><div><span class="lbl">Patrimônio'+(EVF.t!=='all'?' ('+EVTN[EVF.t]+')':'')+'</span><span class="num">'+brl.format(last.v)+'</span></div>'+
+    '<div><span class="lbl">Ganho de capital</span><span class="num '+cls(last.g)+'">'+sgn(last.g)+(last.c?' <span class="small">('+pct(last.g/last.c)+')</span>':'')+'</span></div></div></div>';
+  h+='<div class="panel evp"><div class="grp"><h2>Evolução do patrimônio</h2><button type="button" class="evfbtn" data-evf="open"><svg viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></svg>Filtros</button></div>'+
+    '<p class="evsub">'+EVPN[EVF.p]+(EVF.t!=='all'?' · '+EVTN[EVF.t]:'')+'</p>'+
+    '<div class="dvleg evlg"><span class="a">Valor aplicado</span><span class="g">Ganho de capital</span></div>'+
+    '<div class="evch"><svg class="evax" viewBox="0 0 58 '+H+'" width="58" height="'+H+'" aria-hidden="true">'+ax+'</svg>'+
+    '<div class="tipc evpl"'+tipAttr(tip)+'><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" width="100%" height="'+H+'" role="img" aria-label="Evolução do patrimônio por mês">'+grid+zero+bars+'</svg>'+
+    '<div class="evxl" aria-hidden="true">'+lbl+'</div></div></div>';
+  h+='<details class="evtb"><summary>Ver tabela mês a mês</summary><div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Patrimônio</th><th>Aplicado</th><th>Ganho</th></tr></thead><tbody>'+
+    rows.slice().reverse().map(function(r,k){var o=P[n-1-k];return '<tr><td>'+r.m.slice(5,7)+'/'+r.m.slice(2,4)+(r.approx.length?' <span class="muted">*</span>':'')+'</td><td>'+brl.format(o.v)+'</td><td>'+brl.format(o.c)+'</td><td class="'+cls(o.g)+'">'+sgn(o.g)+'</td></tr>'}).join('')+'</tbody></table></div></details></div>';
   var anyA=rows.some(function(r){return r.approx.length});
-  h+='<p class="note exp" style="margin:0 4px"><b>Patrimônio</b> é o valor de tudo no último dia do mês (ações pelo preço de fechamento, VT convertido pelo dólar do dia, renda fixa líquida). <b>Rendeu no mês</b> é quanto o patrimônio cresceu sem contar o dinheiro novo que você colocou: se você aportou R$ 1.000 e o patrimônio subiu R$ 1.200, rendeu R$ 200.'+
-    (anyA?' * Mês em que faltou o preço de fechamento de algum ativo; usei o preço médio dele.':'')+(HI.busy?' Buscando preços antigos no brapi...':HI.err?' '+esc(HI.err):'')+' O mês atual se atualiza com os preços de agora e fica guardado na nuvem quando o mês fecha.</p>';
+  h+='<p class="note exp" style="margin:0 4px"><b>Patrimônio</b> é quanto valia o que você tinha no fim de cada mês (ações pelo fechamento, VT pelo dólar daquele dia, renda fixa líquida). <b>Valor aplicado</b> é quanto você pagou por esses ativos (preço médio), com o VT pelo mesmo dólar. <b>Ganho de capital</b> é a diferença: só o preço, sem câmbio, vendas ou proventos, igual ao Investidor10.'+
+    (anyA?' * Mês em que faltou o preço de fechamento de algum ativo; usei o preço médio dele.':'')+(HI.busy?' Buscando preços antigos no brapi...':HI.err?' '+esc(HI.err):'')+'</p>';
+  h+='<div class="sheet" id="evsheet" hidden><div class="sbox" role="dialog" aria-label="Filtros de evolução do patrimônio"><div class="shd"><b>Filtros de evolução do patrimônio</b><button type="button" class="shx" data-evf="close" aria-label="Fechar">✕</button></div>'+
+    '<div class="sbd"><h3>Período</h3>'+['all','12','24','60','120'].map(function(k){return '<label class="rad"><input type="radio" name="evp" value="'+k+'"'+(EVF.p===k?' checked':'')+'><span>'+EVPN[k]+'</span></label>'}).join('')+
+    '<h3>Tipos de ativo</h3><div class="chips">'+['all','BR','US','RF'].filter(function(k){return k==='all'||has[k]}).map(function(k){return '<button type="button" data-evt="'+k+'" aria-pressed="'+(EVF.t===k)+'">'+EVTN[k]+'</button>'}).join('')+'</div></div>'+
+    '<div class="sft"><button type="button" class="link" data-evf="reset">Restaurar padrão</button><button type="button" class="btn" data-evf="save">Salvar</button></div></div></div>';
   el.innerHTML=h;
 }
 
