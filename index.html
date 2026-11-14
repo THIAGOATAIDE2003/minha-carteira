@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0f2a3f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Aporte"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>Aporte</title>
+<script>try{var tm=localStorage.getItem("minha-carteira-v1-tema");if(tm==="branco"||tm==="preto"){document.documentElement.setAttribute("data-theme",tm);document.querySelector('meta[name="theme-color"]').content=tm==="preto"?"#000000":"#ffffff"}}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Public+Sans:wght@400;500;600;700&display=swap">
 <style>
@@ -14,18 +15,17 @@
   --sans:'Public Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --disp:'Bricolage Grotesque','Public Sans',system-ui,sans-serif;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+:root[data-theme="branco"]{
+  --bg:#ffffff; --surface:#ffffff; --fg:#121417; --muted:#62676f; --line:#e6e8eb;
+  --accent:#121417; --accent-fg:#ffffff; --gain:#0b7a4f; --loss:#cf3a2a; --tint:#f2f3f5;
+  --hero:#121417; --hero-fg:#ffffff; --hero-muted:#a3a9b1; --hero-gain:#6fe3b0; --hero-loss:#ff9f8f; --hero-line:rgba(255,255,255,.14);
+  --c1:#121417; --c2:#c9952f; --c3:#2f7fb0; --c4:#75509a; --c5:#c4553f; --c6:#3f8f7a}
+:root[data-theme="preto"]{
   color-scheme:dark;
-  --bg:#0a1017; --surface:#121b25; --fg:#e7eef6; --muted:#8d9cad; --line:#213041;
-  --accent:#63b7e2; --accent-fg:#06121b; --gain:#4fc79a; --loss:#f3826f; --tint:#182431;
-  --hero:#16293b; --hero-fg:#f4f8fb; --hero-muted:#9db2c5; --hero-gain:#74e0b6; --hero-loss:#ffa696; --hero-line:rgba(255,255,255,.12);
-  --c1:#63b7e2; --c2:#e3b657; --c3:#c08e68; --c4:#b08fd6; --c5:#ee8a72; --c6:#6fcdb4}}
-:root[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:#0a1017; --surface:#121b25; --fg:#e7eef6; --muted:#8d9cad; --line:#213041;
-  --accent:#63b7e2; --accent-fg:#06121b; --gain:#4fc79a; --loss:#f3826f; --tint:#182431;
-  --hero:#16293b; --hero-fg:#f4f8fb; --hero-muted:#9db2c5; --hero-gain:#74e0b6; --hero-loss:#ffa696; --hero-line:rgba(255,255,255,.12);
-  --c1:#63b7e2; --c2:#e3b657; --c3:#c08e68; --c4:#b08fd6; --c5:#ee8a72; --c6:#6fcdb4}
+  --bg:#000000; --surface:#101215; --fg:#f2f4f7; --muted:#8b929b; --line:#1f2328;
+  --accent:#5fb8ea; --accent-fg:#00121d; --gain:#3fd08f; --loss:#ff7a66; --tint:#191c21;
+  --hero:#0c2233; --hero-fg:#f4f8fb; --hero-muted:#93a9bc; --hero-gain:#6fe3b0; --hero-loss:#ff9f8f; --hero-line:rgba(255,255,255,.12);
+  --c1:#5fb8ea; --c2:#e3b657; --c3:#c08e68; --c4:#b08fd6; --c5:#ee8a72; --c6:#6fcdb4}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{padding-top:env(safe-area-inset-top,0px)}
@@ -34,7 +34,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);pad
 .wrap{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:14px;min-width:0}
 .col{display:flex;flex-direction:column;gap:14px;min-width:0}
 h1,h2,h3{font-weight:600;margin:0;text-wrap:balance}
-h2{font:600 16px/1.3 var(--disp);letter-spacing:-.01em}
+h2{font:650 17px/1.3 var(--disp);letter-spacing:-.015em}
 h3{font-size:14px}
 p{margin:0}
 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
@@ -64,7 +64,8 @@ button{cursor:pointer}
 .warn{color:var(--loss);font-size:13px}
 
 /* cartões */
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+:root[data-theme="preto"] .panel{border-color:transparent}
 .panel>h2{margin-bottom:12px}
 .patr{background:var(--hero);color:var(--hero-fg);border-radius:18px;padding:20px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .patr .lbl{font-size:13px;color:var(--hero-muted)}
@@ -106,6 +107,19 @@ details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-3px}
 .leg li{display:flex;align-items:center;gap:8px;min-width:0}
 .leg i{width:10px;height:10px;border-radius:3px;flex:none}
 .leg li span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbox{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:center}.dbox .leg{grid-template-columns:1fr;margin:0}
+.dwrap{position:relative;width:120px;height:120px}.dnt{width:120px;height:120px;display:block}
+.dc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}.dc b{font:700 24px/1 var(--disp)}.dc span{font-size:12px;color:var(--muted)}
+.spkbtn{display:block;width:100%;background:none;border:0;padding:0;margin-top:14px;color:inherit;text-align:left}
+.spk{display:block;width:100%;height:78px}
+.spkl{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11.5px;color:var(--hero-muted);margin-top:4px}
+.spkl .lg{display:flex;align-items:center;gap:5px}.spkl i{display:inline-block;width:12px;height:2.5px;border-radius:2px;background:var(--hero-gain)}.spkl i.d{background:none;border-top:1.5px dashed var(--hero-muted);height:0;margin-left:6px}
+.calc.wf li{flex-wrap:wrap;row-gap:5px}.calc.wf li>span:first-child{flex:1;min-width:0}
+.calc.wf .trk{flex-basis:100%;height:6px;border-radius:3px;background:var(--tint);overflow:hidden}.calc.wf .trk i,.vsb i{display:block;height:6px;border-radius:3px}
+i.g{background:var(--gain)}i.l{background:var(--loss)}i.n{background:var(--muted);opacity:.55}
+.vsb{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;align-items:center;font-size:13px;color:var(--muted);flex-basis:100%}
+.vsb>div{background:var(--tint);border-radius:3px;height:6px;overflow:hidden}.vsb b{font-size:13.5px;text-align:right;color:var(--fg)}.vsb b.gain{color:var(--gain)}.vsb b.loss{color:var(--loss)}
+.calc li.vsli{flex-wrap:wrap;row-gap:8px}.calc li.vsli+li.vsli{border-top:1px solid var(--line);padding-top:10px}
 
 /* carteira */
 .grp{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:4px}
@@ -164,6 +178,10 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 #maisseg{grid-template-columns:repeat(3,minmax(0,1fr))}
 .irbar{height:10px;border-radius:5px;background:var(--tint);overflow:hidden;margin:10px 0 4px}.irbar i{display:block;height:100%;background:var(--c1);border-radius:5px}.irbar.over i{background:var(--loss)}
 .seg button{border-radius:10px;padding:9px 12px;font-size:14px}
+details.info{border:0;padding:0;margin:10px 0 0}details.info>summary{display:inline-flex;justify-content:flex-start;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+details.info>summary::before{content:"i";display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font:700 10px/1 var(--sans)}
+details.info>summary::after{width:6px;height:6px;border-width:1.5px}
+#temas{grid-template-columns:repeat(3,minmax(0,1fr))}#temas button{display:flex;align-items:center;justify-content:center;gap:8px}#temas i{width:14px;height:14px;border-radius:50%;flex:none}
 .mon{font:600 13px/1.3 var(--sans);color:var(--muted);margin:16px 0 2px}
 .mbox{border-top:1px solid var(--line);margin-top:4px}.mbox>summary{color:var(--fg);font-size:15px;padding-block:14px}.mbox>summary::after{color:var(--muted)}
 .mbox>summary .mc{margin-left:auto;font-weight:400;font-size:13px;color:var(--muted)}.mbox[open]>summary{padding-bottom:4px}
@@ -185,6 +203,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 .dvleg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
 .dvleg span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c1)}
 .dvleg span.ln::before{height:3px;border-radius:2px;background:var(--c2);vertical-align:3px;width:14px}
+.dvleg span.ln::before{background:none;border-top:2px dashed var(--c2);height:0}.dvleg span.rb::before{background:linear-gradient(90deg,var(--gain) 50%,var(--loss) 50%)}
 .dvleg span.p::before{background:repeating-linear-gradient(45deg,var(--c2) 0 3px,transparent 3px 6px);border:1px solid var(--c2)}
 .dvtab{width:100%;border-collapse:collapse;font-size:13.5px}
 .dvtab th{font-weight:500;color:var(--muted);font-size:12.5px}
@@ -271,6 +290,10 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
   </div>
 
   <div class="col" data-tab="mais" data-sub="ajustes" hidden>
+    <section class="panel"><h2>Aparência</h2><div class="seg" id="temas" role="group" aria-label="Tema do app">
+      <button type="button" data-tema="atual"><i style="background:#0f2a3f"></i>Azul</button>
+      <button type="button" data-tema="branco"><i style="background:#fff;border:1px solid #ccd"></i>Branco</button>
+      <button type="button" data-tema="preto"><i style="background:#000"></i>Preto</button></div></section>
     <section class="panel"><h2>Status das fontes de dados</h2><div id="srcinfo"></div></section>
     <section class="panel" id="syncbox">
       <h2>Seus dados na nuvem</h2>
@@ -459,7 +482,7 @@ function renderDivPanel(){
   var got=S.trades.filter(function(t){return t.side==='div'&&t.date.slice(0,4)===DVY}).sort(function(a,b){return a.date<b.date?1:-1});
   if(got.length)h+='<details class="panel"><summary>Recebidos em '+DVY+' ('+got.length+')</summary><ul class="calc" style="margin-top:12px">'+got.map(function(t){
     return '<li><span><b>'+esc(t.ticker)+'</b> <span class="muted small">'+fmtDate(t.date)+(t.auto?', automático':'')+'</span></span><span class="num gain">'+brl.format(t.price*(t.market==='US'?t.fx:1))+'</span></li>'}).join('')+'</ul></details>';
-  h+='<p class="note" style="margin:0 4px">Recebido é o que já caiu na conta, do Brasil e do VT (em reais). A receber são os proventos já anunciados das ações que você tinha na data-com, inclusive das que já vendeu. Quando chega o dia do pagamento, o app lança sozinho.'+(tbd.length&&DVY!==cy?' Há '+tbd.length+' com pagamento a definir, listados no ano atual.':'')+'</p>';
+  h+='<p class="note exp" style="margin:0 4px">Recebido é o que já caiu na conta, do Brasil e do VT (em reais). A receber são os proventos já anunciados das ações que você tinha na data-com, inclusive das que já vendeu. Quando chega o dia do pagamento, o app lança sozinho.'+(tbd.length&&DVY!==cy?' Há '+tbd.length+' com pagamento a definir, listados no ano atual.':'')+'</p>';
   return h;
 }
 
@@ -481,6 +504,29 @@ function divPorAtivo(){
     (sold>0.005?'<p class="note">Mais '+brl.format(sold)+' de ações que você já vendeu, que não entram na tabela.</p>':'')+
     '<p class="note">Renda estimada por ano, no ritmo atual: <b>'+brl.format(tr/mesesH*12)+'</b> ('+brl.format(tr/mesesH)+' por mês).'+(full?'':' Com menos de 12 meses de carteira, os percentuais ainda estão abaixo do que seria um ano inteiro, e um mês de provento grande puxa a média para cima.')+'</p></div>';
 }
+/* gráficos em SVG */
+function spark(rows){
+  var n=rows.length;if(n<2)return '';
+  var W=320,H=78,all=[];rows.forEach(function(r){all.push(r.pat,r.apl)});
+  var mn=Math.min.apply(null,all),mx=Math.max.apply(null,all),pad=(mx-mn)*0.12||mx*0.05||1;mn-=pad;mx+=pad*0.4;
+  var x=function(i){return (i/(n-1)*W).toFixed(1)},y=function(v){return (H-2-(v-mn)/(mx-mn)*(H-8)).toFixed(1)};
+  var lp=rows.map(function(r,i){return x(i)+','+y(r.pat)}).join(' '),la=rows.map(function(r,i){return x(i)+','+y(r.apl)}).join(' ');
+  var lastUp=rows[n-1].pat>=rows[n-1].apl;
+  return '<svg class="spk" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Patrimônio mês a mês">'+
+    '<defs><linearGradient id="spg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--hero-gain)" stop-opacity=".35"/><stop offset="1" stop-color="var(--hero-gain)" stop-opacity="0"/></linearGradient></defs>'+
+    '<polygon points="0,'+H+' '+lp+' '+W+','+H+'" fill="url(#spg)"/>'+
+    '<polyline points="'+la+'" fill="none" stroke="var(--hero-muted)" stroke-width="1.5" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>'+
+    '<polyline points="'+lp+'" fill="none" stroke="var(--hero-gain)" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>'+
+    '<div class="spkl"><span>'+MESES[+rows[0].m.slice(5,7)-1]+'/'+rows[0].m.slice(2,4)+'</span><span class="lg"><i></i>patrimônio <i class="d"></i>aplicado</span><span>hoje</span></div>';
+}
+function donut(top,tot){
+  var r=42,c=2*Math.PI*r,off=0,seg='';
+  top.forEach(function(i){var f=i.v/tot,l=Math.max(0,f*c-1.5);seg+='<circle r="'+r+'" cx="55" cy="55" fill="none" stroke="'+i.c+'" stroke-width="16" stroke-dasharray="'+l.toFixed(2)+' '+(c-l).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 55 55)"/>';off+=f*c});
+  return '<svg viewBox="0 0 110 110" class="dnt" role="img" aria-label="Distribuição por ativo">'+seg+'</svg>';
+}
+function vsBars(a,la,b,lb){var mx=Math.max(Math.abs(a),Math.abs(b),0.0001),w=function(v){return Math.max(2,Math.abs(v)/mx*100).toFixed(1)};
+  return '<div class="vsb"><span>'+la+'</span><div><i class="'+(a>=0?'g':'l')+'" style="width:'+w(a)+'%"></i></div><b class="num '+cls(a)+'">'+pct(a)+'</b>'+
+    '<span>'+lb+'</span><div><i class="n" style="width:'+w(b)+'%"></i></div><b class="num">'+pct(b)+'</b></div>'}
 function renderSummary(R){
   var T=R.tot,el=$('summary');
   if(!S.trades.length){
@@ -494,7 +540,7 @@ function renderSummary(R){
     '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>hoje</span>':'')+(times.length?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
     '<div class="duo"><div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre '+brl.format(T.contrib)+' aplicados do bolso</small></div>'+
     '<div><small>Preço das ações agora (sem o dólar)</small><b class="'+cls(pa0)+'">'+sgn(pa0)+'</b><small>'+pct(T.cost?pa0/T.cost:0)+' sobre o que você pagou</small></div>'+
-    '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
+    '</div>'+(function(){var rw=[];try{rw=evoData()}catch(e){}return rw.length>1?'<button type="button" class="spkbtn" data-goto="evolucao" aria-label="Ver evolução do patrimônio">'+spark(rw)+'</button>':'<button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button>'})()+'</div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   h+=metasHtml(R);
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
@@ -510,21 +556,19 @@ function renderSummary(R){
     (nUS?'<li><span>EUA <span class="muted small">Inter</span><br><span class="num muted small">'+usd.format(vUSu)+'</span> '+res(vUSu,cUSu,sgu)+'<br><span class="muted small">em reais </span>'+res(vUS,cUS)+'</span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
     (nRF?'<li><span>Renda fixa <span class="muted small">líquido</span><br>'+res(T.rfV,T.rfC)+'</span><span class="num">'+brl.format(T.rfV)+'</span></li>':'')+
     '<li class="tot"><span>Total<br>'+res(vt,ct)+'</span><span class="num">'+brl.format(vt)+'</span></li></ul>'+
-    '<p class="note">Só o que você tem hoje: valor atual comparado com o que pagou (preço médio). Não conta vendas antigas nem proventos.</p></div>';
+    '<p class="note exp">Só o que você tem hoje: valor atual comparado com o que pagou (preço médio). Não conta vendas antigas nem proventos.</p></div>';
     var dA=ct-T.contrib;
     h+='<div class="panel"><h2>Quanto você investiu</h2><ul class="calc">'+
       '<li><span>Valor investido<br><span class="muted small">o que você pagou pelo que tem hoje (preço médio × quantidade), como no Nubank e no Inter</span></span><span class="num">'+brl.format(ct)+'</span></li>'+
       '<li><span>Aplicado do seu bolso<br><span class="muted small">dinheiro novo que saiu da sua conta para investir, menos o que você retirou</span></span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
       '<li class="tot"><span>Diferença</span><span class="num">'+brl.format(Math.abs(dA))+'</span></li></ul>'+
-      '<p class="note">'+(dA>=0?'O valor investido é maior porque parte das compras foi paga com lucro de vendas e com proventos, e não com dinheiro novo do seu bolso.':'O valor investido é menor porque parte do dinheiro aplicado ainda está parada, ou foi perdida em vendas com prejuízo.')+' O lucro total é calculado sobre o aplicado do seu bolso.</p></div>'}
+      '<p class="note exp">'+(dA>=0?'O valor investido é maior porque parte das compras foi paga com lucro de vendas e com proventos, e não com dinheiro novo do seu bolso.':'O valor investido é menor porque parte do dinheiro aplicado ainda está parada, ou foi perdida em vendas com prejuízo.')+' O lucro total é calculado sobre o aplicado do seu bolso.</p></div>'}
 
   var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR,bm=cdiBench(R);
-  h+='<div class="panel"><h2>De onde vem o '+(T.gain>=0?'lucro':'prejuízo')+' total</h2><ul class="calc">'+
-    '<li><span>Preço das ações que você tem</span><span class="num '+cls(pz)+'">'+sgn(pz)+'</span></li>'+
-    (nUS||Math.abs(T.uF)>0.005?'<li><span>Dólar (sobre o VT que você tem)</span><span class="num '+cls(T.uF)+'">'+sgn(T.uF)+'</span></li>':'')+
-    '<li><span>Vendas já feitas</span><span class="num '+cls(rz)+'">'+sgn(rz)+'</span></li>'+
-    '<li><span>Proventos recebidos</span><span class="num '+cls(T.div)+'">'+sgn(T.div)+'</span></li>'+
-    (T.fees>0.005?'<li><span>Taxas da B3 pagas nas notas</span><span class="num loss">'+sgn(-T.fees)+'</span></li>':'')+
+  var wfi=[['Preço das ações que você tem',pz]];if(nUS||Math.abs(T.uF)>0.005)wfi.push(['Dólar (sobre o VT que você tem)',T.uF]);wfi.push(['Vendas já feitas',rz],['Proventos recebidos',T.div]);if(T.fees>0.005)wfi.push(['Taxas da B3 pagas nas notas',-T.fees]);
+  var wmx=Math.max.apply(null,wfi.map(function(w){return Math.abs(w[1])}))||1;
+  h+='<div class="panel"><h2>De onde vem o '+(T.gain>=0?'lucro':'prejuízo')+' total</h2><ul class="calc wf">'+
+    wfi.map(function(w){return '<li><span>'+w[0]+'</span><span class="num '+cls(w[1])+'">'+sgn(w[1])+'</span><span class="trk"><i class="'+(w[1]>=0?'g':'l')+'" style="width:'+Math.max(1.5,Math.abs(w[1])/wmx*100).toFixed(1)+'%"></i></span></li>'}).join('')+
     '<li class="tot"><span>'+(T.gain>=0?'Lucro':'Prejuízo')+' total</span><span class="num '+cls(T.gain)+'">'+sgn(T.gain)+'</span></li></ul>'+
     '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Rentabilidade simples</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div>'+
     '<div><span class="lbl">Anualizada (XIRR)</span><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div></div>'+
@@ -538,17 +582,17 @@ function renderSummary(R){
     '</details></div>';
 
   var sb=nBR?benchSeg('BR','BOVA11'):null,su=nUS?benchSeg('US','IVVB11'):null;
-  if(sb||su){var ln=function(lab,a,bl,b){var d=a.gP-a.gB;return '<li><span><b>'+lab+'</b><br><span class="muted small">você '+pct(a.pP)+' · '+bl+' '+pct(a.pB)+'</span></span><span class="num '+cls(d)+'">'+sgn(d)+'</span></li>'};
+  if(sb||su){var ln=function(lab,a,bl,b){var d=a.gP-a.gB;return '<li class="vsli"><span><b>'+lab+'</b></span><span class="num '+cls(d)+'">'+sgn(d)+'</span>'+vsBars(a.pP,'Você',a.pB,bl)+'</li>'};
     h+='<div class="panel"><h2>Sua carteira contra o mercado</h2><ul class="calc">'+(sb?ln('Ações do Brasil',sb,'Ibovespa'):'')+(su?ln('VT (em reais)',su,'S&P 500'):'')+'</ul>'+
-      '<p class="note">Valor em reais: quanto você ganhou a mais (+) ou a menos (−) do que teria ganho se, em cada compra e venda, tivesse comprado e vendido o índice no mesmo dia. Ibovespa pelo BOVA11 e S&P 500 pelo IVVB11, que já inclui o dólar. Inclui seus proventos; os ETFs não pagam proventos. As porcentagens são sobre o total que você comprou em cada parte.</p></div>'}
+      '<p class="note exp">Valor em reais: quanto você ganhou a mais (+) ou a menos (−) do que teria ganho se, em cada compra e venda, tivesse comprado e vendido o índice no mesmo dia. Ibovespa pelo BOVA11 e S&P 500 pelo IVVB11, que já inclui o dólar. Inclui seus proventos; os ETFs não pagam proventos. As porcentagens são sobre o total que você comprou em cada parte.</p></div>'}
   else if(S.keys.brapi&&(nBR||nUS)&&!BX.at)h+='<div class="panel"><h2>Sua carteira contra o mercado</h2><p class="muted small">'+(BX.err?esc(BX.err):'Buscando Ibovespa e S&P 500...')+'</p></div>';
   if(bm){var dif=(T.value+T.cash)-bm.val;
     h+='<div class="panel"><h2>Sua carteira contra o CDI</h2><ul class="calc">'+
       '<li><span>Sua carteira hoje</span><span class="num">'+brl.format(T.value+T.cash)+'</span></li>'+
       '<li><span>Se o mesmo dinheiro estivesse no CDI</span><span class="num">'+brl.format(bm.val)+'</span></li>'+
       '<li class="tot"><span>'+(dif>=0?'Você está à frente do CDI':'Você está atrás do CDI')+'</span><span class="num '+cls(dif)+'">'+sgn(dif)+'</span></li></ul>'+
-      '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Sua carteira</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div><div><span class="lbl">CDI no mesmo período</span><span class="num">'+pct(bm.gain/bm.apl)+'</span></div></div>'+
-      '<p class="note">Cada real que você aplicou foi colocado no CDI na mesma data em que entrou na carteira, rendendo 100% do CDI até '+fmtDate(bm.last)+' (último CDI do Banco Central). Retiradas saem do CDI na mesma data. Sem IR, para comparar com a carteira, que também está sem IR.</p></div>'}
+      '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">'+vsBars(T.simple,'Sua carteira',bm.gain/bm.apl,'CDI')+'</div>'+
+      '<p class="note exp">Cada real que você aplicou foi colocado no CDI na mesma data em que entrou na carteira, rendendo 100% do CDI até '+fmtDate(bm.last)+' (último CDI do Banco Central). Retiradas saem do CDI na mesma data. Sem IR, para comparar com a carteira, que também está sem IR.</p></div>'}
   else if(S.trades.length&&!CDI.dates.length)h+='<div class="panel"><h2>Sua carteira contra o CDI</h2><p class="muted small">'+(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...')+'</p></div>';
   if(T.value>0){
     var cs=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
@@ -556,9 +600,8 @@ function renderSummary(R){
     its.sort(function(a,b){return b.v-a.v});
     var top=its.slice(0,6),rest=its.slice(6).reduce(function(s,x){return s+x.v},0);
     top.forEach(function(x,i){x.c=cs[i]});if(rest>0)top.push({n:'Outros',v:rest,c:'var(--muted)'});
-    h+='<div class="panel"><h2>Distribuição</h2><div class="bar" role="img" aria-label="Distribuição por ativo">'+
-      top.map(function(i){return '<span style="width:'+(i.v/T.value*100)+'%;background:'+i.c+'"></span>'}).join('')+'</div><ul class="leg">'+
-      top.map(function(i){return '<li><i style="background:'+i.c+'"></i><span>'+esc(i.n)+'</span><span class="num">'+pf.format(i.v/T.value*100)+'%</span></li>'}).join('')+'</ul></div>';
+    h+='<div class="panel"><h2>Distribuição</h2><div class="dbox"><div class="dwrap">'+donut(top,T.value)+'<div class="dc"><b class="num">'+its.length+'</b><span>ativos</span></div></div><ul class="leg">'+
+      top.map(function(i){return '<li><i style="background:'+i.c+'"></i><span>'+esc(i.n)+'</span><span class="num">'+pf.format(i.v/T.value*100)+'%</span></li>'}).join('')+'</ul></div></div>';
   }
   if(DV.up.length){var u0=DV.up.slice(0,3);
     h+='<div class="panel"><div class="grp"><h2>Proventos a receber</h2><span class="num gt">'+brl.format(DV.up.reduce(function(a,u){return a+u.val},0))+'</span></div><ul class="calc">'+
@@ -712,8 +755,9 @@ function render(){
     rows.push(row('Ibovespa e S&P 500 (brapi)',!S.keys.brapi?'off':BX.err?'err':BX.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':BX.err?esc(BX.err):BX.at?'BOVA11 e IVVB11, atualizados 2 vezes por dia.':'Busca ao abrir o app.'));
     rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'err':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
-    si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
+    si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note exp">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
   $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
+  markTema();foldNotes();
   syncForm();
 }
 
@@ -806,8 +850,25 @@ $('addform').addEventListener('submit',function(e){
 syncForm();
 
 /* cliques */
+/* explicações longas ficam recolhidas em "Entenda" */
+function foldNotes(){[].forEach.call(document.querySelectorAll('p.note.exp'),function(p){
+  if(p.parentNode&&p.parentNode.classList&&p.parentNode.classList.contains('info'))return;
+  var d=document.createElement('details');d.className='info';var su=document.createElement('summary');su.textContent='Entenda';d.appendChild(su);
+  var k=p.textContent.slice(0,40);if(INFO[k])d.open=true;d.setAttribute('data-k',k);
+  p.parentNode.insertBefore(d,p);p.style.margin='6px 0 0';d.appendChild(p)})}
+var INFO={};
+try{new MutationObserver(function(){foldNotes()}).observe(document.body,{childList:true,subtree:true})}catch(e){}
+document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.classList&&d.classList.contains('info'))INFO[d.getAttribute('data-k')]=d.open},true);
+function getTema(){try{return localStorage.getItem(LS+'-tema')||'atual'}catch(e){return 'atual'}}
+function setTema(tm){try{localStorage.setItem(LS+'-tema',tm)}catch(e){}
+  var r=document.documentElement;if(tm==='atual')r.removeAttribute('data-theme');else r.setAttribute('data-theme',tm);
+  var mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.content=tm==='preto'?'#000000':tm==='branco'?'#ffffff':'#0f2a3f';
+  markTema();render()}
+function markTema(){var tm=getTema();[].forEach.call(document.querySelectorAll('[data-tema]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-tema')===tm))})}
 document.addEventListener('click',function(e){
   var t=e.target;
+  var tb=t.closest&&t.closest('[data-tema]');
+  if(tb){setTema(tb.getAttribute('data-tema'));return}
   if(false){}
   else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');$('k-gh').scrollIntoView();$('k-gh').focus()}
   else if(t.id==='sync-now'){ghSync(true)}
@@ -910,13 +971,13 @@ function renderApo(){
   var inB=A.br||{};br.forEach(function(x){if(inB[x.p.ticker]==null)inB[x.p.ticker]=+(100/br.length).toFixed(1)});
   var nm={BR:'Brasil (ações)',US:'EUA (VT)',RF:'Renda fixa'},h='';
   var row=function(k,lab,c,tg,id){return '<span>'+lab+'<br><span class="muted small">hoje '+pf.format(c)+'%</span></span><input id="'+id+'" inputmode="decimal" value="'+String(tg).replace('.',',')+'" aria-label="'+lab+' alvo em %"><div class="alvbar"><i style="width:'+Math.min(100,c)+'%"></i><b style="left:calc('+Math.min(100,tg)+'% - 1px)"></b></div>'};
-  h+='<div class="panel"><h2>Sua divisão ideal</h2><p class="note" style="margin:0 0 12px">Quanto de cada parte você quer ter, em %. A barra azul é como está hoje; o traço dourado é o seu alvo.'+(S.alvos?'':' Preenchi com a divisão de hoje, ajuste e salve.')+'</p><div class="alv">'+
+  h+='<div class="panel"><h2>Sua divisão ideal</h2><p class="note exp" style="margin:0 0 12px">Quanto de cada parte você quer ter, em %. A barra azul é como está hoje; o traço dourado é o seu alvo.'+(S.alvos?'':' Preenchi com a divisão de hoje, ajuste e salve.')+'</p><div class="alv">'+
     ['BR','US','RF'].map(function(k){return row(k,nm[k],cur[k]/tot*100,cl[k],'al-'+k)}).join('')+'</div>'+
     (br.length>1?'<details><summary>Divisão dentro do Brasil</summary><p class="note" style="margin:8px 0 10px">Quanto cada ação representa dentro da parte do Brasil. Começa igual para todas.</p><div class="alv">'+
       br.map(function(x){return row('',esc(x.p.ticker),cur.BR?x.v/cur.BR*100:0,inB[x.p.ticker],'ab-'+x.p.ticker)}).join('')+'</div></details>':'')+
     '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap"><button class="btn small" type="button" id="al-save">Salvar divisão</button><span class="msg" id="al-msg"></span></div></div>';
   h+='<div class="panel"><h2>Quanto vai aportar?</h2><div style="display:flex;gap:8px;margin-top:4px"><input id="apo-v" inputmode="decimal" placeholder="1.000,00" value="'+esc(APV)+'" aria-label="Valor do aporte em reais"><button class="btn" type="button" id="apo-go">Calcular</button></div><div id="apo-res"></div></div>';
-  h+='<p class="note" style="margin:0 4px">O cálculo só sugere compras: coloca o dinheiro primeiro onde está mais abaixo do alvo, sem vender nada. Não é recomendação de investimento, é a conta da divisão que você escolheu.</p>';
+  h+='<p class="note exp" style="margin:0 4px">O cálculo só sugere compras: coloca o dinheiro primeiro onde está mais abaixo do alvo, sem vender nada. Não é recomendação de investimento, é a conta da divisão que você escolheu.</p>';
   el.innerHTML=h;if(APV)apoCalc();
 }
 function apoCalc(){
@@ -1023,7 +1084,7 @@ function renderIR(){
   var cod=function(p){return p.rf?'Grupo 04 (aplicações de renda fixa)':p.mk==='US'?'Grupo 07 ou 04, conforme o tipo (ETF no exterior)':isFII(p.tk)?'Grupo 07, código 03 (FII)':'Grupo 03, código 01 (ações)'};
   h+='<div class="panel"><div class="grp"><h2>Declaração de IR</h2>'+(years.length>1?'<div class="yrs">'+years.map(function(y){return '<button type="button" data-iry="'+y+'" aria-pressed="'+(y===IRY)+'">'+y+'</button>'}).join('')+'</div>':'<span class="det">ano '+IRY+'</span>')+'</div>'+
     '<p class="note" style="margin:0 0 10px">O que vai na declaração entregue em '+(Y+1)+', referente a '+IRY+'.'+(IRY===today().slice(0,4)?' O ano ainda não acabou: os valores mudam até 31/12.':'')+'</p>'+
-    '<h3 style="margin:12px 0 6px">Bens e Direitos</h3><p class="note" style="margin:0 0 8px">Cada ativo pelo custo (preço médio × quantidade), não pelo valor de mercado. Ativos dos EUA em reais, pelo dólar de cada compra.</p>'+
+    '<h3 style="margin:12px 0 6px">Bens e Direitos</h3><p class="note exp" style="margin:0 0 8px">Cada ativo pelo custo (preço médio × quantidade), não pelo valor de mercado. Ativos dos EUA em reais, pelo dólar de cada compra.</p>'+
     (b1.length||b0.length?'<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Ativo</th>'+(b0.length?'<th>31/12/'+(Y-1)+'</th>':'')+'<th>31/12/'+Y+'</th></tr></thead><tbody>'+
       b1.concat(b0.filter(function(p){return !b1.some(function(x){return x.tk===p.tk&&!!x.rf===!!p.rf})}).map(function(p){return {tk:p.tk,mk:p.mk,rf:p.rf,q:0,c:0,gone:1}})).map(function(p){var o=b0m[p.tk];
         return '<tr><td><b>'+esc(p.tk)+'</b><br><span class="muted small">'+(p.gone?'vendido no ano':num(p.q)+(p.rf?'':' un.')+(p.mk==='US'?' · '+usd.format(p.cu):''))+'<br>'+cod(p)+'</span></td>'+(b0.length?'<td>'+(o?brl.format(o.c):'R$ 0,00')+'</td>':'')+'<td>'+brl.format(p.c)+'</td></tr>'}).join('')+'</tbody></table></div>':'<p class="muted small">Nenhum bem nesse ano.</p>')+
@@ -1031,7 +1092,7 @@ function renderIR(){
     '<h3 style="margin:16px 0 6px">Tributação exclusiva (JCP)</h3>'+(byT.jcp?'<ul class="calc">'+lst(byT.jcp,function(r){return brl.format(r.v)})+'<li class="tot"><span>Total líquido</span><span class="num">'+brl.format(tot(byT.jcp,function(r){return r.v}))+'</span></li></ul><p class="note">Valor líquido, como caiu na conta. O informe de rendimentos da corretora traz o valor bruto, que é o que vai na declaração.</p>':'<p class="muted small">Nenhum.</p>')+
     (byT.ext?'<h3 style="margin:16px 0 6px">Dividendos do exterior</h3><ul class="calc">'+lst(byT.ext,function(r){return brl.format(r.b)+' bruto · '+brl.format(r.ir)+' retido nos EUA'})+'</ul><p class="note">Declarados na ficha de aplicações no exterior. O imposto retido nos EUA (30%) é maior que os 15% do Brasil, então normalmente não sobra nada a pagar aqui.</p>':'')+
     '</div>';
-  h+='<p class="note" style="margin:0 4px">Regras usadas: ações à vista com isenção para vendas de até R$ 20 mil no mês e 15% acima disso; FIIs sem isenção, 20%; prejuízo descontado de lucros futuros do mesmo tipo. O custo inclui as taxas da B3 das notas (somadas na compra e descontadas na venda), como pede a Receita. Os informes da Nubank e do Inter valem como fonte oficial. Isto é um apoio, não substitui um contador.</p>';
+  h+='<p class="note exp" style="margin:0 4px">Regras usadas: ações à vista com isenção para vendas de até R$ 20 mil no mês e 15% acima disso; FIIs sem isenção, 20%; prejuízo descontado de lucros futuros do mesmo tipo. O custo inclui as taxas da B3 das notas (somadas na compra e descontadas na venda), como pede a Receita. Os informes da Nubank e do Inter valem como fonte oficial. Isto é um apoio, não substitui um contador.</p>';
   el.innerHTML=h;
 }
 
@@ -1102,13 +1163,19 @@ function renderEvo(){
   var rows=evoData();if(!rows.length){el.innerHTML='<div class="panel"><p class="muted">Lance sua primeira compra para começar a acompanhar a evolução.</p></div>';return}
   var ys={};rows.forEach(function(r){ys[r.m.slice(0,4)]=1});var years=Object.keys(ys).sort();if(!EVY||!ys[EVY])EVY=years[years.length-1];
   var yr=rows.filter(function(r){return r.m.slice(0,4)===EVY}),last=rows[rows.length-1],first=rows[0];
-  var mx=Math.max.apply(null,yr.map(function(r){return Math.max(r.pat,r.apl)}))||1;
-  var W=320,H=150,n=12,bw=W/n,sx=function(i){return i*bw+bw/2},sy=function(v){return H-6-(v/mx)*(H-16)};
+  var vals=[];yr.forEach(function(r){vals.push(r.pat,r.apl)});
+  var mxv=Math.max.apply(null,vals)||1,mnv=Math.min.apply(null,vals),pd=(mxv-mnv)*0.15||mxv*0.05;mnv=Math.max(0,mnv-pd);mxv+=pd*0.5;
+  var W=320,H=150,RH=46,bw=W/12,sx=function(i){return i*bw+bw/2},sy=function(v){return H-4-((v-mnv)/(mxv-mnv))*(H-14)};
   var byM={};yr.forEach(function(r){byM[+r.m.slice(5,7)-1]=r});
-  var bars='',pts=[];
-  for(var i=0;i<12;i++){var r=byM[i];if(!r)continue;var y0=sy(r.pat);bars+='<rect x="'+(i*bw+bw*.18)+'" y="'+y0+'" width="'+(bw*.64)+'" height="'+(H-6-y0)+'" rx="3" fill="var(--c1)"><title>'+MESES[i]+': patrimônio '+brl.format(r.pat)+', aplicado '+brl.format(r.apl)+'</title></rect>';pts.push([sx(i),sy(r.apl)])}
-  var line=pts.length>1?'<polyline points="'+pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ')+'" fill="none" stroke="var(--c2)" stroke-width="2.2" stroke-linejoin="round"/>':'';
-  var dots=pts.map(function(p){return '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.2" fill="var(--surface)" stroke="var(--c2)" stroke-width="2"/>'}).join('');
+  var pp=[],pa=[],rb='',rmx=Math.max.apply(null,yr.map(function(r){return Math.abs(r.rend)}))||1,dots='';
+  for(var i=0;i<12;i++){var r=byM[i];if(!r)continue;pp.push([sx(i),sy(r.pat)]);pa.push([sx(i),sy(r.apl)]);
+    var bh=Math.max(2,Math.abs(r.rend)/rmx*(RH/2-4));rb+='<rect x="'+(i*bw+bw*.25).toFixed(1)+'" y="'+(r.rend>=0?H+12+RH/2-bh:H+12+RH/2).toFixed(1)+'" width="'+(bw*.5).toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="2" fill="var(--'+(r.rend>=0?'gain':'loss')+')"><title>'+MESES[i]+': rendeu '+sgn(r.rend)+'</title></rect>'}
+  var P=function(a){return a.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ')};
+  var bars=pp.length>1?'<defs><linearGradient id="evg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--c1)" stop-opacity=".32"/><stop offset="1" stop-color="var(--c1)" stop-opacity="0"/></linearGradient></defs><polygon points="'+pp[0][0].toFixed(1)+','+(H-4)+' '+P(pp)+' '+pp[pp.length-1][0].toFixed(1)+','+(H-4)+'" fill="url(#evg)"/>':'';
+  var line=(pa.length>1?'<polyline points="'+P(pa)+'" fill="none" stroke="var(--c2)" stroke-width="2" stroke-dasharray="5 4"/>':'')+(pp.length>1?'<polyline points="'+P(pp)+'" fill="none" stroke="var(--c1)" stroke-width="2.6" stroke-linejoin="round"/>':'');
+  pp.forEach(function(p,k){dots+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(k===pp.length-1?4.2:2.6)+'" fill="'+(k===pp.length-1?'var(--c1)':'var(--surface)')+'" stroke="var(--c1)" stroke-width="2"/>'});
+  dots+='<line x1="0" x2="'+W+'" y1="'+(H+12+RH/2)+'" y2="'+(H+12+RH/2)+'" stroke="var(--line)"/>'+rb;
+  H=H+12+RH;
   var gT=last.pat-last.apl;
   var h='<div class="panel"><div class="split">'+
     '<div><span class="lbl">Patrimônio agora</span><span class="num">'+brl.format(last.pat)+'</span></div>'+
@@ -1116,13 +1183,13 @@ function renderEvo(){
   h+='<div class="panel"><div class="grp"><h2>Mês a mês</h2>'+(years.length>1?'<div class="yrs">'+years.map(function(y){return '<button type="button" data-evy="'+y+'" aria-pressed="'+(y===EVY)+'">'+y+'</button>'}).join('')+'</div>':'<span class="det">'+EVY+'</span>')+'</div>'+
     '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;margin:8px 0 2px" role="img" aria-label="Patrimônio e aplicado por mês em '+EVY+'">'+bars+line+dots+'</svg>'+
     '<div class="dvlbl">'+MESES.map(function(m){return '<span>'+m.charAt(0)+'</span>'}).join('')+'</div>'+
-    '<div class="dvleg"><span>Patrimônio no fim do mês</span><span class="ln">Aplicado do seu bolso</span></div>';
+    '<div class="dvleg"><span>Patrimônio no fim do mês</span><span class="ln">Aplicado do seu bolso</span><span class="rb">Rendeu no mês</span></div>';
   h+='<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Patrimônio</th><th>Aplicado do bolso</th><th>Rendeu no mês</th></tr></thead><tbody>'+
     yr.slice().reverse().map(function(r){var mi=+r.m.slice(5,7)-1,cur=r.m===today().slice(0,7);
       return '<tr><td>'+MESES[mi]+(cur?' <span class="muted small">até hoje</span>':'')+(r.approx.length?' <span class="muted" title="Sem preço de fechamento para '+esc(r.approx.join(', '))+'">*</span>':'')+'</td><td>'+brl.format(r.pat)+'</td><td>'+brl.format(r.apl)+'</td><td class="'+cls(r.rend)+'">'+sgn(r.rend)+(r.rendP!=null?'<br><span class="small">'+pct(r.rendP)+'</span>':'')+'</td></tr>'}).join('')+
     '</tbody></table></div></div>';
   var anyA=rows.some(function(r){return r.approx.length});
-  h+='<p class="note" style="margin:0 4px"><b>Patrimônio</b> é o valor de tudo no último dia do mês (ações pelo preço de fechamento, VT convertido pelo dólar do dia, renda fixa líquida). <b>Rendeu no mês</b> é quanto o patrimônio cresceu sem contar o dinheiro novo que você colocou: se você aportou R$ 1.000 e o patrimônio subiu R$ 1.200, rendeu R$ 200.'+
+  h+='<p class="note exp" style="margin:0 4px"><b>Patrimônio</b> é o valor de tudo no último dia do mês (ações pelo preço de fechamento, VT convertido pelo dólar do dia, renda fixa líquida). <b>Rendeu no mês</b> é quanto o patrimônio cresceu sem contar o dinheiro novo que você colocou: se você aportou R$ 1.000 e o patrimônio subiu R$ 1.200, rendeu R$ 200.'+
     (anyA?' * Mês em que faltou o preço de fechamento de algum ativo; usei o preço médio dele.':'')+(HI.busy?' Buscando preços antigos no brapi...':HI.err?' '+esc(HI.err):'')+' O mês atual se atualiza com os preços de agora e fica guardado na nuvem quando o mês fecha.</p>';
   el.innerHTML=h;
 }
