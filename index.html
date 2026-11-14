@@ -221,8 +221,12 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .wl .wpx{text-align:right;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}.wl .wpx span{font-weight:600}.wl .wx{background:none;border:0;color:var(--muted);font-size:16px;padding:4px}
 .wadd{display:flex;gap:8px;margin-top:12px}
 .atv{padding-bottom:12px}.atv .grp{align-items:center}.atv .gr{flex-direction:row!important;gap:6px!important}.atf{margin:12px 0 4px}
-.atr{display:grid;grid-template-columns:minmax(0,1fr) 44px 84px 78px;align-items:center;gap:6px;padding:11px 0;border-top:1px solid var(--line);cursor:pointer}
-.atr.ahd{cursor:default;border-top:0;padding:10px 0 6px}.ath{background:none;border:0;padding:0;color:var(--muted);font-size:12.5px;text-align:center;white-space:nowrap}.ath.a1{text-align:left}.ath i{font-style:normal;font-size:11px;opacity:.7}
+.atsc{overflow-x:auto;margin:0 -16px;padding:0 16px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.atr{display:grid;grid-template-columns:118px 48px 86px 80px 100px 96px 96px 104px;width:max-content;min-width:100%;align-items:center;gap:6px;padding:11px 0;border-top:1px solid var(--line)}
+.atr>.a1,.atr>.ath.a1{position:sticky;left:-16px;z-index:2;background:var(--surface);padding-left:16px;margin-left:-16px;height:100%;box-shadow:6px 0 8px -6px rgba(0,0,0,.45)}
+.atr>.a1{border:0;color:inherit;text-align:left;cursor:pointer;font:inherit;width:calc(100% + 16px)}
+.av{text-align:right;font-variant-numeric:tabular-nums;font-size:13.5px;white-space:nowrap;padding-right:6px}.av.gain{color:var(--gain)}.av.loss{color:var(--loss)}
+.atr.ahd{border-top:0;padding:10px 0 6px}.ahd .ath{text-align:right;padding-right:6px}.ahd .ath:nth-child(2),.ahd .ath:nth-child(3),.ahd .ath:nth-child(4){text-align:center;padding-right:0}.ath{background:none;border:0;padding:0;color:var(--muted);font-size:12.5px;text-align:center;white-space:nowrap}.ath.a1{text-align:left}.ath i{font-style:normal;font-size:11px;opacity:.7}
 .atr .a1{display:flex;align-items:center;gap:9px;min-width:0}.an{display:flex;flex-direction:column;min-width:0}.an b{font-size:15px}.an small{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .aq{text-align:center;font-variant-numeric:tabular-nums;font-size:14px}
 .tlg{position:relative;width:34px;height:34px;border-radius:9px;flex:none;overflow:hidden;background:var(--tint);display:grid;place-items:center}.tlg span{font-size:12px;font-weight:700;color:var(--muted)}.tlg img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
@@ -1031,7 +1035,7 @@ function vpill(p,txt){if(p==null||!isFinite(p))return '<span class="vpl n">—</
 function atvTable(R){
   var T=R.tot,fx=T.fxNow||1,dl=dayLbl(),rows=R.held.map(function(x){var us=x.p.market==='US',F=us?fx:1,pm=x.p.cN/x.p.qty,q=S.quotes[x.p.ticker];
     var tg=(x.P1-pm)*x.p.qty*F,dd=q&&q.prev&&q.src==='auto'?(q.price-q.prev)*x.p.qty*F:null;
-    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,pm:pm,t:pm?x.P1/pm-1:null,tg:tg,d:dd!=null?q.price/q.prev-1:null,dg:dd,prev:q&&q.prev}});
+    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,pm:pm,px:x.P1,t:pm?x.P1/pm-1:null,tg:tg,d:dd!=null?q.price/q.prev-1:null,dg:dd,prev:q&&q.prev}});
   var has={BR:rows.some(function(r){return !r.us}),US:rows.some(function(r){return r.us})};if(ATF!=='all'&&!has[ATF])ATF='all';
   var vis=rows.filter(function(r){return ATF==='all'||(ATF==='US')===r.us});
   vis.sort(function(a,b){var k=ASRT.k,A=k==='n'?a.tk:a[k],B=k==='n'?b.tk:b[k];if(A==null)return 1;if(B==null)return -1;return (A<B?-1:A>B?1:0)*ASRT.d});
@@ -1040,13 +1044,14 @@ function atvTable(R){
   var h='<div class="panel atv"><div class="grp"><div><h2>Ativos</h2><span class="det">'+brl.format(tv)+' em '+vis.length+(vis.length>1?' ativos':' ativo')+'</span></div><div class="gr">'+
       vpill(tc?tgt/tc:null,'Desde a compra, só pelo preço: '+sgn(tgt)+'. O VT entra pelo dólar de hoje, sem o câmbio.')+(tdp?vpill(tdd/tdp,(dl.t==='hoje'?'Hoje':'No último pregão ('+dl.d+')')+': '+sgn(tdd)+'.'):'')+'</div></div>'+
     (has.BR&&has.US?'<div class="chips atf">'+[['all','Todos'],['BR','Ações'],['US','ETFs Intern.']].map(function(f){return '<button type="button" data-atf="'+f[0]+'" aria-pressed="'+(ATF===f[0])+'">'+f[1]+'</button>'}).join('')+'</div>':'')+
-    '<div class="atr ahd">'+hd('n','Ativo','a1')+hd('q','Quant.')+hd('t','Total')+hd('d',dl.t==='hoje'?'Hoje':'Dia')+'</div>'+
+    '<div class="atsc"><div class="atr ahd">'+hd('n','Ativo','a1')+hd('q','Quant.')+hd('t','Total')+hd('d',dl.t==='hoje'?'Hoje':'Dia')+hd('tg','Total R$')+hd('pm','Preço médio')+hd('px','Preço atual')+hd('v','Valor')+'</div>'+
     vis.map(function(r){var F=F2(r),qt=num(r.q,r.us?4:0),qs=num(r.q,r.us?2:0),vk=r.v>=1e3?'R$ '+num(r.v/1e3,1)+' mil':brl.format(r.v);
-      return '<div class="atr" data-stk="'+esc(r.tk)+'" role="button" tabindex="0"><span class="a1">'+tkLogo(r.tk,r.us)+'<span class="an"><b>'+esc(r.tk)+'</b><small>'+vk+'</small></span></span>'+
+      return '<div class="atr"><button type="button" class="a1" data-stk="'+esc(r.tk)+'" aria-label="Abrir análise de '+esc(r.tk)+'">'+tkLogo(r.tk,r.us)+'<span class="an"><b>'+esc(r.tk)+'</b><small>'+vk+'</small></span></button>'+
         '<span class="aq">'+qs+'</span>'+
         vpill(r.t,r.tk+': '+sgn(r.tg)+' desde a compra ('+qt+(r.us?' cotas':' ações')+', preço médio '+F.format(r.pm)+', agora '+F.format(r.x.P1)+(r.us?'; em reais pelo dólar de hoje, sem câmbio':'')+').')+
-        vpill(r.d,r.tk+(dl.t==='hoje'?' hoje':' no último pregão ('+dl.d+')')+': '+(r.dg!=null?sgn(r.dg)+' (de '+F.format(r.prev)+' para '+F.format(r.x.P1)+')':'sem dado')+'.')+'</div>'}).join('')+
-    '<p class="note" style="margin-top:10px">Toque na porcentagem para ver o valor. Toque no ativo para abrir a análise.</p></div>';
+        vpill(r.d,r.tk+(dl.t==='hoje'?' hoje':' no último pregão ('+dl.d+')')+': '+(r.dg!=null?sgn(r.dg)+' (de '+F.format(r.prev)+' para '+F.format(r.x.P1)+')':'sem dado')+'.')+
+        '<span class="av '+cls(r.tg)+'">'+sgn(r.tg)+'</span><span class="av">'+F.format(r.pm)+'</span><span class="av">'+F.format(r.x.P1)+'</span><span class="av">'+brl.format(r.v)+'</span></div>'}).join('')+
+    '</div><p class="note" style="margin-top:10px">Arraste para o lado para ver mais colunas. Toque no % para ver o valor; toque no nome do ativo para abrir a análise.</p></div>';
   return h;
 }
 var TRF='all',GOPEN={};
