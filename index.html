@@ -592,6 +592,11 @@ function donut(top,tot){
 function vsBars(a,la,b,lb){var mx=Math.max(Math.abs(a),Math.abs(b),0.0001),w=function(v){return Math.max(2,Math.abs(v)/mx*100).toFixed(1)};
   return '<div class="vsb"><span>'+la+'</span><div><i class="'+(a>=0?'g':'l')+'" style="width:'+w(a)+'%"></i></div><b class="num '+cls(a)+'">'+pct(a)+'</b>'+
     '<span>'+lb+'</span><div><i class="n" style="width:'+w(b)+'%"></i></div><b class="num">'+pct(b)+'</b></div>'}
+/* rótulo da variação do dia: fora do pregão mostra o último dia de negociação */
+function dayLbl(){var b=brt();
+  if(b.wd>=1&&b.wd<=5&&b.min>=600)return {t:'hoje',b:'Quanto suas ações e o VT subiram ou caíram hoje, comparando o preço de agora com o fechamento do pregão anterior.'};
+  var d=new Date(lastClose()-3*3600000),dn=['domingo','segunda','terça','quarta','quinta','sexta','sábado'][d.getUTCDay()];
+  return {t:'no último pregão ('+dn+')',b:'A bolsa está fechada agora. Esse é quanto suas ações e o VT subiram ou caíram no último dia de negociação ('+dn+'), comparado com o fechamento do dia anterior. Volta a mexer quando a bolsa abrir.'}}
 function renderSummary(R){
   var T=R.tot,el=$('summary');
   if(!S.trades.length){
@@ -602,7 +607,7 @@ function renderSummary(R){
   var dn=0,dp=0,dok=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,Fp=us?(S.fx&&S.fx.prev?S.fx.prev:F):1;dn+=x.p.qty*q.price*F;dp+=x.p.qty*q.prev*Fp;dok++});
   var pa0=T.uA+T.rfU;
   var h='<div class="patr"><span class="lbl">Patrimônio</span><div class="big">'+brl.format(T.value+T.cash)+'</div>'+
-    '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>hoje '+bal('Quanto suas ações e o VT subiram ou caíram hoje, comparando o preço de agora com o fechamento de ontem.')+'</span>':'')+(times.length?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
+    '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>'+dayLbl().t+' '+bal(dayLbl().b)+'</span>':'')+(times.length&&dayLbl().t==='hoje'?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
     '<div class="duo"><div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início '+bal('Tudo que você ganhou desde o começo: preço das ações, dólar, vendas já feitas e proventos, menos as taxas. A conta completa está em "De onde vem o lucro total".')+'</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre '+brl.format(T.contrib)+' aplicados do bolso</small></div>'+
     '<div><small>Preço das ações agora (sem o dólar) '+bal('Quanto as ações que você tem hoje subiram ou caíram desde que você comprou, comparando o preço de agora com o preço médio. Não conta o dólar do VT, vendas antigas nem proventos.')+'</small><b class="'+cls(pa0)+'">'+sgn(pa0)+'</b><small>'+pct(T.cost?pa0/T.cost:0)+' sobre o que você pagou</small></div>'+
     '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
