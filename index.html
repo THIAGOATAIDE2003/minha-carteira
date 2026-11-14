@@ -965,7 +965,7 @@ function aiModel(skip){
   try{var c=JSON.parse(localStorage.getItem(LS+'-gemm3')||'null');if(!skip&&c&&c.m&&Date.now()-c.at<7*864e5)return Promise.resolve(c.m)}catch(e){}
   var pick=function(){var m=(AIML||[]).filter(function(n){return !AIBAD[n]})[0];if(!m)throw new Error('nomodel');try{localStorage.setItem(LS+'-gemm3',JSON.stringify({m:m,at:Date.now()}))}catch(e){}return m};
   if(AIML)return Promise.resolve().then(pick);
-  return getJSON('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(S.keys.gm)).then(function(j){
+  return getJSON('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(S.keys.gm)).catch(function(e){var er=new Error('http');er.s=+e.message||0;er.m='lista de modelos';throw er}).then(function(j){
     var ms=(j.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf('generateContent')>=0&&/flash/.test(m.name)&&!/image|tts|live|audio|embed|vision|exp|thinking/.test(m.name)}).map(function(m){return m.name});
     var rank=function(n){return (/flash-latest$/.test(n)?0:/lite/.test(n)?3:/preview/.test(n)?2:1)};
     var ver=function(n){var v=n.match(/gemini-(\d+(?:\.\d+)?)/);return v?parseFloat(v[1]):0};
@@ -982,13 +982,14 @@ function aiSend(q){
   var body=function(model,th){var g={temperature:0.4,maxOutputTokens:1000};
     if(th==='budget')g.thinkingConfig={thinkingBudget:0};else if(th==='level')g.thinkingConfig={thinkingLevel:'low'};
     return JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:hist,generationConfig:g})};
-  var call=function(model,th,tries){ctl=new AbortController();var to=setTimeout(function(){ctl.abort()},60000);out='';
-    return fetch('https://generativelanguage.googleapis.com/v1beta/'+model+':streamGenerateContent?alt=sse&key='+encodeURIComponent(S.keys.gm),{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json'},body:body(model,th)})
+  var call=function(model,th,tries,kind){kind=kind||'stream';ctl=new AbortController();var to=setTimeout(function(){ctl.abort()},60000);out='';
+    return fetch('https://generativelanguage.googleapis.com/v1beta/'+model+(kind==='stream'?':streamGenerateContent?alt=sse&':':generateContent?')+'key='+encodeURIComponent(S.keys.gm),{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json'},body:body(model,th)})
       .then(function(r){
         if(!r.ok)return r.json().catch(function(){return {}}).then(function(j){var m=j&&j.error&&j.error.message||'';clearTimeout(to);
-          if(r.status===400&&th&&/thinking/i.test(m)&&tries<3){var nt=th==='budget'?'level':'';try{localStorage.setItem(LS+'-gemth',nt)}catch(e){}AITH=nt;return call(model,nt,tries+1)}
-          if((r.status===404||(r.status===400&&/not (found|supported)|no longer/i.test(m)))&&tries<6){try{localStorage.removeItem(LS+'-gemm3')}catch(e){}return aiModel(model).then(function(m2){return call(m2,th,tries+1)})}
+          if(r.status===400&&th&&/thinking/i.test(m)&&tries<8){var nt=th==='budget'?'level':'';try{localStorage.setItem(LS+'-gemth',nt)}catch(e){}AITH=nt;return call(model,nt,tries+1,kind)}
+          if((r.status===404||(r.status===400&&/not (found|supported)|no longer/i.test(m)))&&tries<8){if(kind==='stream')return call(model,th,tries+1,'plain');try{localStorage.removeItem(LS+'-gemm3')}catch(e){}return aiModel(model).then(function(m2){return call(m2,th,tries+1,'stream')})}
           var er=new Error('http');er.s=r.status;er.m=m;throw er});
+        if(kind==='plain')return r.json().then(function(j){clearTimeout(to);eat(JSON.stringify(j))});
         if(!r.body||!r.body.getReader)return r.text().then(function(tx){clearTimeout(to);tx.split('\n').forEach(function(l){if(l.indexOf('data:')===0)eat(l.slice(5))})});
         var rd=r.body.getReader(),dec=new TextDecoder(),buf='';
         var pump=function(){return rd.read().then(function(x){if(x.done){clearTimeout(to);if(buf.indexOf('data:')===0)eat(buf.slice(5));return}
@@ -997,9 +998,9 @@ function aiSend(q){
   var eat=function(js){try{var j=JSON.parse(js),c=j.candidates&&j.candidates[0],ps=c&&c.content&&c.content.parts||[];ps.forEach(function(p){if(p.text&&!p.thought)out+=p.text});aiLive(out)}catch(e){}};
   AI.msgs.push({r:'a',t:'',live:1});aiRender();
   var th=AITH===null?'budget':AITH;
-  aiModel().then(function(m){return call(m,th,0)}).then(function(){var last=AI.msgs[AI.msgs.length-1];last.t=out;delete last.live;if(!out){AI.msgs.pop();AI.msgs.push({r:'e',t:'A IA não respondeu. Tente perguntar de outro jeito.'})}},function(e){
+  aiModel().then(function(m){return call(m,th,0,'stream')}).then(function(){var last=AI.msgs[AI.msgs.length-1];last.t=out;delete last.live;if(!out){AI.msgs.pop();AI.msgs.push({r:'e',t:'A IA não respondeu. Tente perguntar de outro jeito.'})}},function(e){
     var last=AI.msgs[AI.msgs.length-1];if(last&&last.live){if(out){last.t=out;delete last.live}else AI.msgs.pop()}
-    var s0=e&&e.s;AI.msgs.push({r:'e',t:s0===400||s0===403?'A chave do Gemini não foi aceita. Confira em Ajustes.'+(e.m?' ('+String(e.m).slice(0,90)+')':''):s0===429?'Passou do limite grátis do Gemini por agora. Tente de novo em alguns minutos.':e&&e.name==='AbortError'?'A IA demorou demais. Tente de novo.':(e&&e.message==='nomodel'?'Nenhum modelo do Gemini aceitou a sua chave. Confira se a chave é do Google AI Studio.':'Não consegui falar com a IA agora'+(s0?' (código '+s0+(e.m?': '+String(e.m).slice(0,100):'')+')':'')+'.')})})
+    var s0=e&&e.s;AI.msgs.push({r:'e',t:s0===400||s0===403?'A chave do Gemini não foi aceita. Confira em Ajustes.'+(e.m?' ('+String(e.m).slice(0,90)+')':''):s0===429?'Passou do limite grátis do Gemini por agora. Tente de novo em alguns minutos.':e&&e.name==='AbortError'?'A IA demorou demais. Tente de novo.':(e&&e.message==='nomodel'?'Nenhum modelo do Gemini aceitou a sua chave. Confira se a chave é do Google AI Studio.':'Não consegui falar com a IA agora'+(s0?' (código '+s0+(e.m?': '+String(e.m).slice(0,140):'')+')':e&&e.message&&e.message!=='http'?' ('+String(e.message).slice(0,100)+')':'')+'.')})})
     .then(function(){AI.busy=false;aiSave();aiRender()});
 }
 
