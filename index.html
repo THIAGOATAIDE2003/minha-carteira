@@ -339,7 +339,7 @@ function renderSummary(R){
   var times=Object.keys(S.quotes).map(function(k){return S.quotes[k].at}).filter(Boolean);if(MK.updatedMs)times.push(MK.updatedMs);times.sort();
   if(times.length){upd='Preços de '+new Date(times[times.length-1]).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
   var fxTxt=T.fxNow?'Dólar '+brl.format(T.fxNow):'Dólar não informado';
-  var h='<div class="hero"><div class="meta">Resultado da carteira</div>'+
+  var h='<div class="hero"><div class="meta">'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início <span class="small">(vendas + proventos + o que você tem hoje)</span></div>'+
     '<div class="big num '+cls(T.gain)+'">'+sgn(T.gain)+'</div>'+
     '<div class="sub"><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span><span class="meta">'+(T.gain>=0?'de lucro':'de prejuízo')+' sobre o que você aplicou</span></div>'+
     '<div class="meta">'+esc(fxTxt)+(upd?' · '+esc(upd):'')+(T.missing.length?' · sem preço: '+esc(T.missing.join(', ')):'')+'</div></div>';
