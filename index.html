@@ -338,7 +338,7 @@ function renderSummary(R){
   var upd='';
   var times=Object.keys(S.quotes).map(function(k){return S.quotes[k].at}).filter(Boolean);if(MK.updatedMs)times.push(MK.updatedMs);times.sort();
   if(times.length){upd='Preços de '+new Date(times[times.length-1]).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
-  var fxTxt=T.fxNow?'Dólar '+brl.format(T.fxNow):'Dólar não informado';
+  var fxTxt=T.fxNow?'Dólar R$ '+num(T.fxNow,4):'Dólar não informado';
   var h='<div class="hero"><div class="meta">'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início <span class="small">(vendas + proventos + o que você tem hoje)</span></div>'+
     '<div class="big num '+cls(T.gain)+'">'+sgn(T.gain)+'</div>'+
     '<div class="sub"><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span><span class="meta">'+(T.gain>=0?'de lucro':'de prejuízo')+' sobre o que você aplicou</span></div>'+
@@ -448,7 +448,7 @@ function renderFx(){
     '<div><span class="lbl">Dólares comprados</span><span class="num">'+usd.format(T.usd)+'</span></div>'+
     '<div><span class="lbl">Dólar médio pago (com tudo)</span><span class="num">'+brl.format(avgPaid)+'</span></div>'+
     '<div><span class="lbl">Dólar médio de referência</span><span class="num">'+(avgRef?brl.format(avgRef):'—')+'</span></div>'+
-    '<div><span class="lbl">Dólar de hoje</span><span class="num">'+(ft?brl.format(ft.rate):'—')+'</span></div></div></div>';
+    '<div><span class="lbl">Dólar de hoje</span><span class="num">'+(ft?'R$ '+num(ft.rate,4):'—')+'</span></div></div></div>';
   if(!(S.cambio||[]).length){el.innerHTML='<div class="panel"><p class="muted" style="margin:0">Nenhuma compra de dólar registrada. Elas vêm junto com o backup.</p></div>';return}
   var buys=0,dvu=0;S.trades.forEach(function(t){if(t.market==='US'){if(t.side==='div'){dvu+=t.price;return}var c=t.qty*t.price;buys+=t.side==='buy'?c:-c}});
   if(T.estTot)h+='<div class="msg muted" style="margin-top:12px">Duas compras de dólar de 05/06 ('+usd.format(461)+') estão no extrato do Inter Global, mas sem comprovante. Usei a taxa do comprovante de US$ 1 do mesmo dia, então esses '+brl.format(T.estTot)+' são estimados. Se mandar o comprovante, eu troco pelo valor exato.</div>';
