@@ -842,7 +842,7 @@ function evoMonths(){
 }
 function brHeldTickers(){
   var tks={};evoMonths().forEach(function(m){var e=monthEnd(m),q={};S.trades.forEach(function(t){if(t.market==='BR'&&t.date<=e&&(t.side==='buy'||t.side==='sell'))q[t.ticker]=(q[t.ticker]||0)+(t.side==='buy'?t.qty:-t.qty)});Object.keys(q).forEach(function(k){if(q[k]>1e-9)tks[k]=1})});
-  return Object.keys(tks);
+  return Object.keys(tks).filter(function(k){return /^[A-Z0-9]{4}\d{1,2}$/.test(k)});
 }
 function loadHist(force){
   if(!S.keys.brapi||HI.busy)return Promise.resolve();
@@ -943,10 +943,13 @@ function loadDivs(force){
   if(!S.keys.brapi||DV.busy)return Promise.resolve();
   if(!force&&Date.now()-DV.at<6*3600000)return Promise.resolve();
   var tks={};S.trades.forEach(function(t){if(t.market==='BR'&&(t.side==='buy'||t.side==='sell'))tks[t.ticker]=1});
-  var list=Object.keys(tks).filter(function(k){return qtyOn(k,'9999-12-31')>0||true});if(!list.length)return Promise.resolve();
+  var list=Object.keys(tks).filter(function(k){return /^[A-Z0-9]{4}\d{1,2}$/.test(k)});if(!list.length)return Promise.resolve();
   var start=new Date(Date.now()-60*864e5).toISOString().slice(0,10);
-  DV.busy=true;
-  return getJSON('https://brapi.dev/api/v2/stocks/dividends?symbols='+encodeURIComponent(list.join(','))+'&startDate='+start+'&token='+encodeURIComponent(S.keys.brapi)).then(function(j){
+  DV.busy=true;var wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})},acc=[],fails=0,last=0;
+  return list.reduce(function(p,tk,i){return p.then(function(){return i?wait(700):null}).then(function(){
+      return getJSON('https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?dividends=true&token='+encodeURIComponent(S.keys.brapi)).then(function(d){acc.push(d)}).catch(function(e){fails++;last=e&&e.message})})},Promise.resolve()).then(function(){
+    if(!acc.length)throw new Error(last||'0');
+    var j=acc;
     var ds=divList(j),up=[],add=[],td=today();
     ds.forEach(function(d){
       if(!d.tk||!tks[d.tk])return;
@@ -967,7 +970,7 @@ function loadDivs(force){
     if(add.length){add.forEach(function(t){S.trades.push(t);S.pend.push({t:'add',tr:t})});save();ghSync();
       $('status').className='msg muted';$('status').textContent='Caiu provento: '+add.map(function(t){return t.ticker+' '+brl.format(t.price)}).join(', ')+'. Já lancei na carteira.'}
     render();
-  }).catch(function(e){DV.err=String(e&&e.message)==='403'?'Seu plano do brapi não libera proventos.':'Não consegui buscar os proventos agora.';render()}).then(function(){DV.busy=false});
+  }).catch(function(e){var c=String(e&&e.message);DV.err=c==='403'||c==='401'||c==='400'?'Seu plano do brapi não libera proventos (código '+c+').':'Não consegui buscar os proventos agora'+(c&&c!=='0'?' (código '+c+')':'')+'.';render()}).then(function(){DV.busy=false});
 }
 
 /* renda fixa: CDI diário do Banco Central (SGS série 12) */
