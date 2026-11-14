@@ -791,7 +791,8 @@ function stkLoad(){
         var ex=[];
         if(cap.mod!==false)ex.push(q1('modules=summaryProfile,defaultKeyStatistics,financialData').then(function(y){['summaryProfile','defaultKeyStatistics','financialData'].forEach(function(k){if(y[k])x[k]=y[k]});cap.mod=true}).catch(function(e){var c=String(e&&e.message);if(c==='400'||c==='401'||c==='403'){cap.mod=false;capSave()}}));
         if(cap.div!==false)ex.push(q1('dividends=true').then(function(y){if(y.dividendsData)x.dividendsData=y.dividendsData;cap.div=true}).catch(function(e){var c=String(e&&e.message);if(c==='400'||c==='401'||c==='403'){cap.div=false;capSave()}}));
-        return Promise.all(ex).then(function(){var d=conv(x,!!(x.defaultKeyStatistics||x.financialData));d.rgGot=r;done(d)})},function(e){last=String(e&&e.message);step()})};
+        if(r!==rg&&S.keys.av)ex.push(avHist(tk+'.SAO',rg).then(function(hh){if(hh.length>1){x._av=hh}}).catch(function(){}));
+        return Promise.all(ex).then(function(){var d=conv(x,!!(x.defaultKeyStatistics||x.financialData));d.rgGot=r;if(x._av){d.hist=x._av;d.rgGot=rg;d.histSrc='Alpha Vantage'}done(d)})},function(e){last=String(e&&e.message);step()})};
     step();
   }else{
     if(!S.keys.finnhub)return fail('Falta a chave Finnhub em Ajustes para ações dos EUA.');
@@ -843,7 +844,7 @@ function stkRender(){
     (!d.mods?'<p class="note">O plano grátis do brapi não liberou parte dos indicadores (P/VP, ROE, margem). Os que aparecem com — não vieram.</p>':'');
   if(d.divs&&d.divs.length)h+='<h3 style="margin:18px 0 6px">Últimos proventos</h3><ul class="calc small">'+d.divs.slice(0,8).map(function(c){return '<li><span>'+esc(String(c.label||'').replace('JUROS SOBRE CAPITAL PRÓPRIO','JCP'))+' <span class="muted">'+(c.paymentDate?'pago em '+fmtDate(String(c.paymentDate).slice(0,10)):'a definir')+'</span></span><span class="num">R$ '+num(+c.rate,4)+'</span></li>'}).join('')+'</ul>';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px"><button type="button" class="btn ghost" data-wtog="'+esc(tk)+'">'+(inW?'Parar de acompanhar':'Acompanhar')+'</button>'+(S.keys.gm?'<button type="button" class="btn" data-aiask="'+esc(tk)+'">Perguntar à IA sobre '+esc(tk)+'</button>':'')+'</div>'+
-    '<p class="note">Dados do '+(d.cur==='USD'?'Finnhub e Alpha Vantage':'brapi')+'. Indicadores servem para estudar, não são recomendação de compra ou venda.</p>';
+    '<p class="note">Dados do '+(d.cur==='USD'?'Finnhub e Alpha Vantage':'brapi'+(d.histSrc?', gráfico da Alpha Vantage':''))+'. Indicadores servem para estudar, não são recomendação de compra ou venda.</p>';
   b.innerHTML=h;
 }
 function watchSet(W){S.watch=W;S.pend.push({t:'cfg',k:'watch',v:W});save();ghSync()}
