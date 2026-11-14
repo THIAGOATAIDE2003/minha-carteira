@@ -772,7 +772,7 @@ function stkLoad(){
   var fail=function(msg){if(STK.tk!==tk)return;STK.busy=false;STK.err=msg;stkRender()};
   if(isBR(tk)||tk.charAt(0)==='^'){
     if(!S.keys.brapi)return fail('Falta o token do brapi em Ajustes.');
-    var iv=rg==='5y'?'1wk':'1d',base='https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?range='+rg+'&interval='+iv+'&dividends=true&token='+encodeURIComponent(S.keys.brapi);
+    var tok='&token='+encodeURIComponent(S.keys.brapi),u0='https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?';
     var conv=function(x,mods){var hp=(x.historicalDataPrice||[]).filter(function(p){return p&&p.close>0}).map(function(p){return {t:p.date*1000,c:p.close}});
       var ks=x.defaultKeyStatistics||{},fd=x.financialData||{},pr=x.summaryProfile||{},dv=(x.dividendsData&&x.dividendsData.cashDividends)||[];
       var yr=Date.now()-365*864e5,d12=dv.filter(function(c){var t=Date.parse(c.paymentDate||c.lastDatePrior||'');return t>yr&&t<=Date.now()+90*864e5}).reduce(function(a,c){return a+(+c.rate||0)},0);
@@ -780,9 +780,13 @@ function stkLoad(){
         k:{pl:pickNum(x,['priceEarnings']),lpa:pickNum(x,['earningsPerShare']),hi:pickNum(x,['fiftyTwoWeekHigh']),lo:pickNum(x,['fiftyTwoWeekLow']),mc:pickNum(x,['marketCap']),
           pvp:pickNum(ks,['priceToBook']),vpa:pickNum(ks,['bookValue']),dy:pickNum(ks,['dividendYield','trailingAnnualDividendYield']),roe:pickNum(fd,['returnOnEquity']),ml:pickNum(fd,['profitMargins']),
           div:pickNum(fd,['debtToEquity']),evebitda:pickNum(ks,['enterpriseToEbitda']),d12:d12},divs:dv.slice(0,12)}};
-    getJSON(base+'&modules=summaryProfile,defaultKeyStatistics,financialData').then(function(d){var x=d&&d.results&&d.results[0];if(!x)throw new Error('0');done(conv(x,true))}).catch(function(){
-      return getJSON(base).then(function(d){var x=d&&d.results&&d.results[0];if(!x)throw new Error('0');done(conv(x,false))})}).catch(function(e){
-      var c=String(e&&e.message);fail(c==='400'||c==='403'?'O plano grátis do brapi não liberou esse período. Tente um período menor.':'Não achei '+tk+' no brapi'+(c&&c!=='0'?' (código '+c+')':'')+'.')});
+    var RG=['5y','1y','6mo','3mo','1mo'],ok=null;try{ok=localStorage.getItem(LS+'-brmax')}catch(e){}
+    var tries=[],ri=RG.indexOf(rg);RG.slice(Math.max(ri,ok?RG.indexOf(ok):0)).forEach(function(r){tries.push({r:r,m:1},{r:r,m:0})});tries.push({r:'',m:0});
+    var get=function(t){return getJSON(u0+(t.r?'range='+t.r+'&interval='+(t.r==='5y'?'1wk':'1d')+'&':'')+(t.m?'modules=summaryProfile,defaultKeyStatistics,financialData&':'')+'dividends=true'+tok).then(function(d){var x=d&&d.results&&d.results[0];if(!x||!(x.regularMarketPrice>0))throw new Error('0');return x})};
+    var i=0,last='';
+    var step=function(){if(i>=tries.length)return fail('Não achei '+tk+' no brapi'+(last&&last!=='0'?' (código '+last+')':'')+'.');var t=tries[i++];
+      get(t).then(function(x){var d=conv(x,!!t.m);d.rgGot=t.r;if(t.r&&t.r!==rg){try{localStorage.setItem(LS+'-brmax',t.r)}catch(e){}}if(!t.m&&t.r===(tries[0]&&tries[0].r)){}done(d)},function(e){last=String(e&&e.message);step()})};
+    step();
   }else{
     if(!S.keys.finnhub)return fail('Falta a chave Finnhub em Ajustes para ações dos EUA.');
     var fh='&token='+encodeURIComponent(S.keys.finnhub),d={cur:'USD',name:'',hist:[],k:{},divs:[],mods:true};
@@ -817,15 +821,15 @@ function lineChart(hist,cur,pm){
 }
 function stkRender(){
   var b=$('stk-b');if(!b||$('stk').hidden)return;var d=STK.d,tk=STK.tk;
-  if(!d){b.innerHTML=STK.err?'<p class="warn">'+esc(STK.err)+'</p>':'<p class="muted">Carregando '+esc(tk)+'...</p>';return}
+  if(!d){b.innerHTML=STK.err?'<p class="warn">'+esc(STK.err)+'</p><button type="button" class="btn ghost" style="margin-top:12px" data-rng="'+STK.rng+'">Tentar de novo</button>':'<p class="muted">Carregando '+esc(tk)+'...</p>';return}
   var F=d.cur==='USD'?usd:brl,K=d.k||{},R=compute(),mine=R.held.filter(function(x){return x.p.ticker===tk})[0],pm=mine?mine.p.cN/mine.p.qty:null;
   var ch=d.hist.length>1?d.hist[d.hist.length-1].c/d.hist[0].c-1:null,W=wlist(),inW=W.indexOf(tk)>=0;
   var pc=function(v){return v==null?'—':pf.format(v*100)+'%'},nm=function(v,dd){return v==null?'—':num(v,dd==null?2:dd)};
   var big=function(v){return v==null?'—':(d.cur==='USD'?'US$ ':'R$ ')+(v>=1e9?num(v/1e9,1)+' bi':num(v/1e6,0)+' mi')};
   var dyC=K.dy!=null?K.dy:(K.d12&&d.price?K.d12/d.price:null),pvp=K.pvp!=null?K.pvp:(K.vpa&&d.price?d.price/K.vpa:null);
   var h='<p class="muted small" style="margin:0 0 4px">'+esc(d.name||'')+(d.sector?' · '+esc(d.sector):'')+'</p><div class="stkhd"><b class="num">'+F.format(d.price)+'</b>'+(d.pct!=null?'<span class="num '+cls(d.pct)+'">'+(d.pct>=0?'+':'−')+pf.format(Math.abs(d.pct))+'% hoje</span>':'')+'</div>'+
-    '<div class="rng">'+[['1mo','1M'],['6mo','6M'],['1y','1A'],['5y','5A']].map(function(r){return '<button type="button" data-rng="'+r[0]+'" aria-pressed="'+(STK.rng===r[0])+'">'+r[1]+'</button>'}).join('')+(ch!=null?'<span class="num '+cls(ch)+'" style="margin-left:auto;align-self:center;font-weight:600">'+(ch>=0?'+':'−')+pf.format(Math.abs(ch*100))+'%</span>':'')+'</div>'+
-    (STK.busy?'<p class="muted small">Atualizando...</p>':'')+lineChart(d.hist,d.cur,pm);
+    '<div class="rng">'+[['1mo','1M'],['3mo','3M'],['6mo','6M'],['1y','1A'],['5y','5A']].map(function(r){var got=d.rgGot===undefined?STK.rng:d.rgGot;return '<button type="button" data-rng="'+r[0]+'" aria-pressed="'+(got===r[0])+'">'+r[1]+'</button>'}).join('')+(ch!=null?'<span class="num '+cls(ch)+'" style="margin-left:auto;align-self:center;font-weight:600">'+(ch>=0?'+':'−')+pf.format(Math.abs(ch*100))+'%</span>':'')+'</div>'+
+    (STK.busy?'<p class="muted small">Atualizando...</p>':'')+(d.rgGot!==undefined&&d.rgGot!==STK.rng?'<p class="note" style="margin:0 0 6px">O plano grátis do brapi '+(d.rgGot?'só liberou até '+({'1mo':'1 mês','3mo':'3 meses','6mo':'6 meses','1y':'1 ano'}[d.rgGot]||d.rgGot)+' de gráfico':'não liberou o gráfico')+' para essa ação.</p>':'')+lineChart(d.hist,d.cur,pm);
   if(mine)h+='<div class="panel" style="margin-top:14px"><h2>Sua posição</h2><ul class="calc" style="margin-top:8px"><li><span>'+num(mine.p.qty,4)+(mine.p.market==='US'?' cotas':' ações')+' a '+F.format(pm)+' (preço médio)</span><span class="num '+cls(d.price-pm)+'">'+(d.price>=pm?'+':'−')+pf.format(Math.abs((d.price/pm-1)*100))+'%</span></li></ul></div>';
   h+='<h3 style="margin:18px 0 6px">Indicadores</h3><div class="kpis">'+
     [['P/L',nm(K.pl)],['P/VP',nm(pvp)],['Dividend yield',pc(dyC)],['ROE',pc(K.roe)],['LPA',K.lpa==null?'—':F.format(K.lpa)],['Margem líquida',pc(K.ml)],['Máx. 52 sem.',K.hi==null?'—':F.format(K.hi)],['Mín. 52 sem.',K.lo==null?'—':F.format(K.lo)],['Valor de mercado',big(K.mc)],['EV/EBITDA',nm(K.evebitda)],['Dívida/PL',K.div==null?'—':(K.div>5?num(K.div,0)+'%':nm(K.div))]]
