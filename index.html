@@ -780,12 +780,18 @@ function stkLoad(){
         k:{pl:pickNum(x,['priceEarnings']),lpa:pickNum(x,['earningsPerShare']),hi:pickNum(x,['fiftyTwoWeekHigh']),lo:pickNum(x,['fiftyTwoWeekLow']),mc:pickNum(x,['marketCap']),
           pvp:pickNum(ks,['priceToBook']),vpa:pickNum(ks,['bookValue']),dy:pickNum(ks,['dividendYield','trailingAnnualDividendYield']),roe:pickNum(fd,['returnOnEquity']),ml:pickNum(fd,['profitMargins']),
           div:pickNum(fd,['debtToEquity']),evebitda:pickNum(ks,['enterpriseToEbitda']),d12:d12},divs:dv.slice(0,12)}};
-    var RG=['5y','1y','6mo','3mo','1mo'],ok=null;try{ok=localStorage.getItem(LS+'-brmax')}catch(e){}
-    var tries=[],ri=RG.indexOf(rg);RG.slice(Math.max(ri,ok?RG.indexOf(ok):0)).forEach(function(r){tries.push({r:r,m:1},{r:r,m:0})});tries.push({r:'',m:0});
-    var get=function(t){return getJSON(u0+(t.r?'range='+t.r+'&interval='+(t.r==='5y'?'1wk':'1d')+'&':'')+(t.m?'modules=summaryProfile,defaultKeyStatistics,financialData&':'')+'dividends=true'+tok).then(function(d){var x=d&&d.results&&d.results[0];if(!x||!(x.regularMarketPrice>0))throw new Error('0');return x})};
+    var RG=['5y','1y','6mo','3mo','1mo'],cap={};try{cap=JSON.parse(localStorage.getItem(LS+'-brcap')||'{}')||{}}catch(e){}
+    var capSave=function(){try{localStorage.setItem(LS+'-brcap',JSON.stringify(cap))}catch(e){}};
+    var tries=RG.slice(Math.max(RG.indexOf(rg),cap.max?RG.indexOf(cap.max):0)).concat(['']);
+    var q1=function(qs){return getJSON(u0+qs+tok).then(function(d){var x=d&&d.results&&d.results[0];if(!x)throw new Error('0');return x})};
     var i=0,last='';
-    var step=function(){if(i>=tries.length)return fail('Não achei '+tk+' no brapi'+(last&&last!=='0'?' (código '+last+')':'')+'.');var t=tries[i++];
-      get(t).then(function(x){var d=conv(x,!!t.m);d.rgGot=t.r;if(t.r&&t.r!==rg){try{localStorage.setItem(LS+'-brmax',t.r)}catch(e){}}if(!t.m&&t.r===(tries[0]&&tries[0].r)){}done(d)},function(e){last=String(e&&e.message);step()})};
+    var step=function(){if(i>=tries.length)return fail('Não consegui os dados de '+tk+' no brapi'+(last&&last!=='0'?' (código '+last+')':'')+'.');var r=tries[i++];
+      q1(r?'range='+r+'&interval='+(r==='5y'?'1wk':'1d'):'').then(function(x){if(!(x.regularMarketPrice>0))throw new Error('0');
+        if(r&&r!==rg&&(!cap.max||RG.indexOf(r)>RG.indexOf(cap.max))){cap.max=r;capSave()}
+        var ex=[];
+        if(cap.mod!==false)ex.push(q1('modules=summaryProfile,defaultKeyStatistics,financialData').then(function(y){['summaryProfile','defaultKeyStatistics','financialData'].forEach(function(k){if(y[k])x[k]=y[k]});cap.mod=true}).catch(function(e){var c=String(e&&e.message);if(c==='400'||c==='401'||c==='403'){cap.mod=false;capSave()}}));
+        if(cap.div!==false)ex.push(q1('dividends=true').then(function(y){if(y.dividendsData)x.dividendsData=y.dividendsData;cap.div=true}).catch(function(e){var c=String(e&&e.message);if(c==='400'||c==='401'||c==='403'){cap.div=false;capSave()}}));
+        return Promise.all(ex).then(function(){var d=conv(x,!!(x.defaultKeyStatistics||x.financialData));d.rgGot=r;done(d)})},function(e){last=String(e&&e.message);step()})};
     step();
   }else{
     if(!S.keys.finnhub)return fail('Falta a chave Finnhub em Ajustes para ações dos EUA.');
