@@ -926,6 +926,20 @@ function watchSet(W){S.watch=W;S.pend.push({t:'cfg',k:'watch',v:W});save();ghSyn
 /* assistente de IA removido a pedido do usuário: limpa o que ficou guardado */
 try{if(S.keys&&S.keys.gm){delete S.keys.gm;save()}['-aichat','-gemm','-gemm2','-gemm3','-gemth'].forEach(function(k){localStorage.removeItem(LS+k)})}catch(e){}
 
+function hojeHtml(R){var T=R.tot,h='';
+  var vBR=0,cBR=0,vUSu=0,cUSu=0,vUS=0,cUS=0,nBR=0,nUS=0;
+  R.held.forEach(function(x){if(x.p.market==='US'){vUSu+=x.p.qty*x.P1;cUSu+=x.p.cN;vUS+=x.v;cUS+=x.p.cB;nUS++}else{vBR+=x.v;cBR+=x.p.cB;nBR++}});
+  var res=function(v,c,f){var g=v-c;return '<span class="num small '+cls(g)+'">'+(f||sgn)(g)+' ('+pct(c?g/c:0)+')</span>'};
+  var sgu=function(g){return (g>=0?'+':'−')+usd.format(Math.abs(g))};
+  var nRF=(R.rfs||[]).filter(function(c){return !c.rs}).length;
+  if(nBR||nUS||nRF){var vt=vBR+vUS+T.rfV,ct=cBR+cUS+T.rfC,ctp=cBR+cUSu*T.fxNow+T.rfC,vtp=vBR+vUSu*T.fxNow+T.rfV;
+    h+='<div class="panel"><h2>Carteira hoje</h2><ul class="calc">'+
+    (nBR?'<li><span>Brasil <span class="muted small">Nubank</span><br>'+res(vBR,cBR)+'</span><span class="num">'+brl.format(vBR)+'</span></li>':'')+
+    (nUS?'<li><span>EUA <span class="muted small">Inter</span><br>'+bal('Em dólar: '+sgu(vUSu-cUSu)+' ('+pct(cUSu?(vUSu-cUSu)/cUSu:0)+'), você tem '+usd.format(vUSu)+'. Convertido pelo dólar de hoje (R$ '+num(T.fxNow,4)+'). Com o ganho do câmbio, ficaria '+sgn(vUS-cUS)+'.',res(vUSu*T.fxNow,cUSu*T.fxNow).replace('class="num small','class="num small u'))+'</span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
+    (nRF?'<li><span>Renda fixa <span class="muted small">líquido</span><br>'+res(T.rfV,T.rfC)+'</span><span class="num">'+brl.format(T.rfV)+'</span></li>':'')+
+    '<li class="tot"><span>Total<br>'+res(vtp,ctp)+' '+bal('Quanto o preço de tudo que você tem hoje está acima (ou abaixo) do que você pagou, pelo preço médio. Sem câmbio, sem vendas antigas e sem proventos.')+'</span><span class="num">'+brl.format(vt)+'</span></li></ul></div>';
+  }
+  return h}
 function investHtml(R){var T=R.tot,h='',ct=T.rfC;R.held.forEach(function(x){ct+=x.p.cB});if(!R.held.length&&!T.rfC)return '';var dA=ct-T.contrib;
     h+='<div class="panel"><h2>Quanto você investiu</h2><ul class="calc">'+
       '<li><span>Valor investido<br><span class="muted small">o que você pagou pelo que tem hoje (preço médio × quantidade), como no Nubank e no Inter</span></span><span class="num">'+brl.format(ct)+'</span></li>'+
@@ -965,7 +979,7 @@ function perfHtml(R){
       '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">'+vsBars(T.simple,'Sua carteira',bm.gain/bm.apl,'CDI')+'</div>'+
       '<p class="note exp">Cada real que você aplicou foi colocado no CDI na mesma data em que entrou na carteira, rendendo 100% do CDI até '+fmtDate(bm.last)+' (último CDI do Banco Central). Retiradas saem do CDI na mesma data. Sem IR, para comparar com a carteira, que também está sem IR.</p></div>'}
   else if(S.trades.length&&!CDI.dates.length)h+='<div class="panel"><h2>Sua carteira contra o CDI</h2><p class="muted small">'+(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...')+'</p></div>';
-  h+=investHtml(R);
+  h+=hojeHtml(R)+investHtml(R);
   return h;
 }
 function renderPerf(R){var el=$('perftab');if(!el)return;var h=S.trades.length?perfHtml(R):'';el.innerHTML=h||'<div class="panel"><p class="muted">Lance suas compras para comparar a carteira com o mercado e com o CDI.</p></div>'}
