@@ -362,12 +362,12 @@ function xirr(flows){
   return (lo+hi)/2;
 }
 
-/* preço efetivo: compra soma as taxas da nota, venda desconta */
+/* preço efetivo com as taxas da B3 (compra soma, venda desconta): conta o dinheiro que saiu/entrou, mas não entra no preço médio */
 function ePx(t){var x=(t.taxa||0)/(t.qty||1);return t.side==='buy'?t.price+x:t.side==='sell'?t.price-x:t.price}
 function compute(){
   var by={},warns=[],flows=[],bought=0,proceeds=0,divs=0,cash=0,contrib=0;
   var ts=S.trades.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)});
-  var outs=0;
+  var outs=0,fees=0;
   ts.forEach(function(t){
     if(t.side==='out'){var am=t.price*(t.market==='US'?t.fx:1);outs+=am;cash-=am;contrib-=am;if(cash<0){contrib-=cash;cash=0}return}
     if(t.side==='rf'){bought+=t.price;flows.push([t.date,-t.price]);cash-=t.price;if(cash<0){contrib-=cash;cash=0}return}
@@ -378,7 +378,7 @@ function compute(){
       var dv=t.price*F;p.div=(p.div||0)+dv;divs+=dv;proceeds+=dv;cash+=dv;flows.push([t.date,dv]);return;
     }
     if(t.side==='buy'){
-      var ep=ePx(t);p.qty+=t.qty;p.cN+=t.qty*ep;p.cB+=t.qty*ep*F;
+      var ep=ePx(t);fees+=t.taxa||0;p.qty+=t.qty;p.cN+=t.qty*t.price;p.cB+=t.qty*t.price*F;
       bought+=t.qty*ep*F;flows.push([t.date,-t.qty*ep*F]);
       cash-=t.qty*ep*F;if(cash<0){contrib-=cash;cash=0}
     }else{
@@ -386,7 +386,7 @@ function compute(){
       if(q>p.qty+1e-9){warns.push('Venda de '+t.ticker+' em '+fmtDate(t.date)+' maior que a quantidade que você tinha. Conferi só até o que havia em carteira.');q=p.qty}
       if(q<=0)return;
       var P0=p.cN/p.qty,F0=p.cB/p.cN,prop=q/p.qty;
-      var sp=ePx(t);p.rA+=q*(sp-P0)*F0;p.rF+=q*sp*(F-F0);
+      var sp=ePx(t);fees+=(t.taxa||0)*q/t.qty;p.rA+=q*(t.price-P0)*F0;p.rF+=q*t.price*(F-F0);
       p.cN-=p.cN*prop;p.cB-=p.cB*prop;p.qty-=q;
       if(p.qty<1e-9){p.qty=0;p.cN=0;p.cB=0}
       proceeds+=q*sp*F;cash+=q*sp*F;flows.push([t.date,q*sp*F]);
@@ -409,7 +409,7 @@ function compute(){
   var rfs=[];tot.rfV=0;tot.rfC=0;tot.rfU=0;tot.rfR=0;
   ts.forEach(function(t){if(t.side!=='rf')return;var rs=ts.filter(function(x){return x.side==='rfout'&&x.ref===t.id})[0]||null;var c=rfCalc(t,rs);rfs.push(c);
     if(rs){tot.rfR+=c.realized}else{tot.value+=c.liq;tot.cost+=t.price;tot.rfV+=c.liq;tot.rfC+=t.price;tot.rfU+=c.liq-t.price}});
-  tot.gain=tot.rA+tot.rF+tot.uA+tot.uF+tot.div+tot.rfU+tot.rfR;
+  tot.fees=fees;tot.gain=tot.rA+tot.rF+tot.uA+tot.uF+tot.div+tot.rfU+tot.rfR-fees;
   tot.check=tot.value+proceeds-bought;
   var fl=flows.slice();if(tot.value>0)fl.push([today(),tot.value]);
   tot.xirr=xirr(fl);
@@ -520,6 +520,7 @@ function renderSummary(R){
     (nUS||Math.abs(T.uF)>0.005?'<li><span>Dólar (sobre o VT que você tem)</span><span class="num '+cls(T.uF)+'">'+sgn(T.uF)+'</span></li>':'')+
     '<li><span>Vendas já feitas</span><span class="num '+cls(rz)+'">'+sgn(rz)+'</span></li>'+
     '<li><span>Proventos recebidos</span><span class="num '+cls(T.div)+'">'+sgn(T.div)+'</span></li>'+
+    (T.fees>0.005?'<li><span>Taxas da B3 pagas nas notas</span><span class="num loss">'+sgn(-T.fees)+'</span></li>':'')+
     '<li class="tot"><span>'+(T.gain>=0?'Lucro':'Prejuízo')+' total</span><span class="num '+cls(T.gain)+'">'+sgn(T.gain)+'</span></li></ul>'+
     '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Rentabilidade simples</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div>'+
     '<div><span class="lbl">Anualizada (XIRR)</span><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div></div>'+
@@ -1069,7 +1070,7 @@ function evoData(){
       if(t.side==='rfout'){delete rfo[t.ref];cash+=t.price;return}
       var p=pos[t.ticker]||(pos[t.ticker]={tk:t.ticker,mk:t.market,q:0,cN:0});
       if(t.side==='div'){cash+=t.price*F;divs+=t.price*F;return}
-      if(t.side==='buy'){p.q+=t.qty;p.cN+=t.qty*ePx(t);cash-=t.qty*ePx(t)*F;if(cash<0){contrib-=cash;cash=0}}
+      if(t.side==='buy'){p.q+=t.qty;p.cN+=t.qty*t.price;cash-=t.qty*ePx(t)*F;if(cash<0){contrib-=cash;cash=0}}
       else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.cN-=p.cN*q/p.q;p.q-=q;if(p.q<1e-9){p.q=0;p.cN=0}cash+=q*ePx(t)*F}
     });
     var fx=m===cur?(fxToday()||{}).rate:(fxOn(e)||{}).rate,val=0;
