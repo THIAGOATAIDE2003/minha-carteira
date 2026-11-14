@@ -198,7 +198,6 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
     <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0f2a3f"/><path d="M120 356l92-104 68 60 112-148" fill="none" stroke="#f4f8fb" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="392" cy="164" r="34" fill="#e3b657"/></svg><h1>Aporte</h1></div>
     <div class="pills"><span class="pill" id="pill-fx"></span><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button></div>
   </header>
-  <button id="refresh" type="button" hidden>Atualizar preços</button>
   <div class="msg muted" id="status" role="status"></div>
   <div id="banner"></div>
 
@@ -284,19 +283,6 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
       </div>
     </section>
     <p class="meta" style="text-align:center">Aporte 1.0 · seus dados ficam só com você</p>
-    <details hidden>
-      <summary>Backup dos dados</summary>
-      <div class="stack" style="margin-top:10px">
-        <textarea id="bk" aria-label="Backup em texto"></textarea>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn ghost small" id="bk-copy" type="button">Copiar backup</button>
-          <button class="btn ghost small" id="bk-load" type="button">Restaurar do texto acima</button>
-          <button class="btn ghost small" id="bk-down" type="button">Baixar arquivo de backup</button>
-          <label class="btn small" for="bkfile" style="cursor:pointer">Importar arquivo de backup</label><input id="bkfile" type="file" hidden>
-        </div>
-        <div class="msg" id="bkmsg"></div>
-      </div>
-    </details>
   </div>
 </div>
 
@@ -325,9 +311,8 @@ function sanitize(){
   save();
   return 'Apaguei valores digitados que pareciam errados ('+msgs.join(', ')+'). Se quiser, digite de novo com a vírgula.';
 }
-var MK={fxSeries:{},fxDates:[],fxLatest:null,fxLatestDate:'',fxMeta:null,qm:{},updatedMs:0,dbOk:null,jsFx:'',jsQ:''};
+var MK={fxSeries:{},fxDates:[],fxLatest:null,fxLatestDate:'',fxMeta:null};
 function ingestFx(d){MK.fxMeta=d||null;MK.fxSeries=(d&&d.series)||{};MK.fxDates=Object.keys(MK.fxSeries).sort();var n=MK.fxDates.length;MK.fxLatestDate=n?MK.fxDates[n-1]:'';MK.fxLatest=n?MK.fxSeries[MK.fxLatestDate]:null}
-function ingestQ(d){MK.qm=(d&&d.quotes)||{};MK.updatedMs=d&&d.updatedAt?(Date.parse(d.updatedAt)||0):0}
 function fxOn(date){
   var ds=MK.fxDates;if(!ds.length)return null;
   if(date>=MK.fxLatestDate)return {rate:MK.fxLatest,date:MK.fxLatestDate};
@@ -340,12 +325,7 @@ function fxToday(){
   if(MK.fxLatest)return {rate:MK.fxLatest,src:'online',date:MK.fxLatestDate};
   return null;
 }
-function getQuote(tk){
-  var m=S.quotes[tk],o=MK.qm[tk];
-  if(m&&(!o||m.at>MK.updatedMs))return m;
-  if(o&&o.price>0)return {price:o.price,at:MK.updatedMs||Date.now(),src:'online',asOf:o.asOf||'',from:o.src||''};
-  return null;
-}
+function getQuote(tk){var m=S.quotes[tk];return m&&m.price>0?m:null}
 
 var brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 var usd=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'USD'});
@@ -467,10 +447,10 @@ function renderDivPanel(){
 function renderSummary(R){
   var T=R.tot,el=$('summary');
   if(!S.trades.length){
-    el.innerHTML='<div class="panel empty"><h2>Sua carteira está vazia</h2><p>Conecte seus dados da nuvem em Mais, ou lance sua primeira compra no Extrato.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="goimp" type="button">Conectar meus dados</button><button class="btn ghost" id="ex" type="button">Carregar exemplo</button></div></div>';
+    el.innerHTML='<div class="panel empty"><h2>Sua carteira está vazia</h2><p>Conecte seus dados da nuvem em Mais, ou lance sua primeira compra no Extrato.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="goimp" type="button">Conectar meus dados</button></div></div>';
     return;
   }
-  var times=Object.keys(S.quotes).map(function(k){return S.quotes[k].at}).filter(Boolean);if(MK.updatedMs)times.push(MK.updatedMs);times.sort();
+  var times=Object.keys(S.quotes).map(function(k){return S.quotes[k].at}).filter(Boolean);times.sort();
   var dn=0,dp=0,dok=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,Fp=us?(S.fx&&S.fx.prev?S.fx.prev:F):1;dn+=x.p.qty*q.price*F;dp+=x.p.qty*q.prev*Fp;dok++});
   var pa0=T.uA+T.rfU;
   var h='<div class="patr"><span class="lbl">Patrimônio</span><div class="big">'+brl.format(T.value+T.cash)+'</div>'+
@@ -620,16 +600,11 @@ function renderTrades(){
   el.innerHTML=h;
 }
 
-var PEND=null;
-function renderBanner(){
-  if(PEND){$('banner').innerHTML='<div class="banner"><span>Importar sua carteira com '+PEND.n+' lançamentos? Isso substitui o que estiver neste aparelho.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="impok" type="button">Importar</button><button class="btn ghost small" id="impno" type="button">Cancelar</button></span></div>';return}
-  $('banner').innerHTML=S.example?'<div class="banner"><span>Você está vendo dados de exemplo, não são seus.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="goimp" type="button">Conectar meus dados</button><button class="btn ghost small" id="clrex" type="button">Limpar exemplo</button></span></div>':'';
-}
+function renderBanner(){$('banner').innerHTML=''}
 
-var CAMBIO=[];
 function renderFx(){
   var el=$('fxtab');if(!el)return;
-  var T={usd:0,tot:0,nac:0,ref:0,iof:0,spread:0,okUsd:0},rows=(S.cambio||CAMBIO).map(function(c){
+  var T={usd:0,tot:0,nac:0,ref:0,iof:0,spread:0,okUsd:0},rows=(S.cambio||[]).map(function(c){
     var f=fxOn(c[0]),ref=f?f.rate:null,r={d:c[0],usd:c[1],taxa:c[2],nac:c[3],iof:c[4],tot:c[5],est:!!c[6],ref:ref};if(r.est)T.estTot=(T.estTot||0)+r.tot;
     T.usd+=r.usd;T.tot+=r.tot;T.nac+=r.nac;T.iof+=r.iof;
     if(ref){r.refBrl=r.usd*ref;r.spread=r.nac-r.refBrl;T.ref+=r.refBrl;T.spread+=r.spread;T.okUsd+=r.usd}
@@ -690,7 +665,6 @@ function render(){
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
     si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
   $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
-  if(document.activeElement!==$('bk'))$('bk').value=bkText();
   syncForm();
 }
 
@@ -749,7 +723,6 @@ $('f-date').addEventListener('change',syncForm);
 $('fx-edit').addEventListener('click',function(){fxCustom=true;syncForm();$('f-fx').focus()});
 $('addform').addEventListener('submit',function(e){
   e.preventDefault();var m=$('formmsg');m.className='msg';m.textContent='';
-  if(S.example){m.className='msg err';m.textContent='Limpe o exemplo antes de lançar seus dados.';return}
   if($('f-market').value==='RF'&&$('f-side').value==='sell'){
     var rid=$('f-rfsel').value,ap=S.trades.filter(function(x){return x.id===rid&&x.side==='rf'})[0],vv=parseNum($('f-price').value||$('f-price').placeholder),dd=$('f-date').value;
     if(!ap){m.className='msg err';m.textContent='Não há aplicação em aberto para resgatar.';return}
@@ -784,9 +757,7 @@ syncForm();
 /* cliques */
 document.addEventListener('click',function(e){
   var t=e.target;
-  if(t.id==='impok'){var tx=PEND&&PEND.txt;PEND=null;if(tx)bkApply(tx);renderBanner()}
-  else if(t.id==='impno'){PEND=null;renderBanner()}
-  else if(t.id==='ex')loadExample();
+  if(false){}
   else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');$('k-gh').scrollIntoView();$('k-gh').focus()}
   else if(t.id==='sync-now'){ghSync(true)}
   else if(t.dataset&&t.dataset.dvy){DVY=t.dataset.dvy;render()}
@@ -804,10 +775,8 @@ document.addEventListener('click',function(e){
     S.trades.push(rr);S.pend.push({t:'add',tr:rr});save();render();ghSync();
     $('status').className='msg muted';$('status').textContent='Resgate de '+ap.ticker+' lançado: '+sgn(vv-ap.price)+' de resultado.';
   }
-  else if(t.id==='seed2'){if(t.dataset.arm){loadSeed()}else{t.dataset.arm='1';t.textContent='Substituir tudo? Toque de novo';setTimeout(function(){if(t.isConnected){delete t.dataset.arm;t.textContent='Recarregar carteira das notas da Nubank'}},3000)}}
-  else if(t.id==='clrex'){S.trades=[];S.quotes={};S.fx=null;S.example=false;save();render()}
   else if(t.dataset&&t.dataset.del){
-    if(t.dataset.arm){var did=t.dataset.del;var gone=S.trades.filter(function(x){return x.id===did||x.ref===did}).map(function(x){return x.id});S.trades=S.trades.filter(function(x){return gone.indexOf(x.id)<0});if(!S.example)gone.forEach(function(g){S.pend.push({t:'del',id:g})});save();render();ghSync()}
+    if(t.dataset.arm){var did=t.dataset.del;var gone=S.trades.filter(function(x){return x.id===did||x.ref===did}).map(function(x){return x.id});S.trades=S.trades.filter(function(x){return gone.indexOf(x.id)<0});gone.forEach(function(g){S.pend.push({t:'del',id:g})});save();render();ghSync()}
     else{t.dataset.arm='1';t.textContent='Confirmar exclusão?';setTimeout(function(){if(t.isConnected){delete t.dataset.arm;t.textContent='Excluir'}},3000)}
   }
 });
@@ -832,7 +801,6 @@ document.addEventListener('change',function(e){
   }
 });
 
-var SEED=[];
 
 /* imposto de renda: ações e FIIs no Brasil (swing trade), proventos e bens para a declaração */
 var FIIS={HGLG11:1},IRY=null;
@@ -1123,7 +1091,7 @@ function ghAdopt(d){
   S.mclose=applyPx(d.fechamentos,S.pend||[]);
   var tr=applyOps(Array.isArray(d.trades)?d.trades:[],S.pend||[]);
   var before=JSON.stringify([S.trades,S.cambio||[]]);
-  S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;S.example=false;save();
+  S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;save();
   if(JSON.stringify([S.trades,S.cambio||[]])!==before){render();loadCDI()}
 }
 function ghRound(attempt){
@@ -1134,7 +1102,7 @@ function ghRound(attempt){
     remote=JSON.parse(b64dec(r.j.content||''));sha=r.j.sha;
     if(!S.ghInit){
       var ids={};(remote.trades||[]).forEach(function(x){ids[x.id]=1});
-      S.trades.forEach(function(x){if(!S.example&&!ids[x.id]&&!/^n\d{3}$/.test(x.id)&&!S.pend.some(function(o){return o.tr&&o.tr.id===x.id}))S.pend.push({t:'add',tr:x})});
+      S.trades.forEach(function(x){if(!ids[x.id]&&!/^n\d{3}$/.test(x.id)&&!S.pend.some(function(o){return o.tr&&o.tr.id===x.id}))S.pend.push({t:'add',tr:x})});
       S.ghInit=true;save();
     }
     var pend=(S.pend||[]).slice();
@@ -1172,59 +1140,7 @@ setTimeout(function(){ghSync()},300);
 try{if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js')}catch(e){}
 setInterval(function(){if(!document.hidden)ghSync()},5*60000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-GH.last>60000)ghSync()});
-function loadSeed(){
-  S.trades=SEED.map(function(x){return Object.assign({},x)});S.quotes={};S.example=false;S.seedVer=6;save();render();
-  $('status').className='msg muted';$('status').textContent='Carteira carregada. Falta só digitar o preço atual de cada ativo (e o dólar de hoje).';
-}
-function loadExample(){
-  S.trades=[
-    {id:'e1',side:'buy',market:'US',ticker:'AAPL',date:'2025-03-10',qty:10,price:180,fx:5.0},
-    {id:'e2',side:'buy',market:'US',ticker:'NVDA',date:'2025-05-02',qty:5,price:110,fx:5.7},
-    {id:'e3',side:'sell',market:'US',ticker:'NVDA',date:'2025-09-15',qty:2,price:140,fx:5.4},
-    {id:'e4',side:'buy',market:'BR',ticker:'PETR4',date:'2025-04-01',qty:100,price:32,fx:1},
-    {id:'e5',side:'div',market:'US',ticker:'AAPL',date:'2025-08-15',qty:1,price:2.4,fx:5.5}];
-  S.quotes={AAPL:{price:230,at:Date.now(),src:'manual'},NVDA:{price:180,at:Date.now(),src:'manual'},PETR4:{price:36,at:Date.now(),src:'manual'}};
-  S.fx={rate:5.35,at:Date.now(),src:'manual'};S.example=true;save();render();
-}
 
-/* backup */
-$('bk-copy').addEventListener('click',function(){
-  var ta=$('bk'),m=$('bkmsg');ta.value=bkText();
-  var ok=function(){m.textContent='Backup copiado.'},no=function(){ta.select();m.textContent='Selecione e copie o texto acima.'};
-  try{navigator.clipboard.writeText(ta.value).then(ok,no)}catch(e){no()}
-});
-function bkText(){return JSON.stringify({trades:S.trades,cambio:S.cambio||[],quotes:S.quotes,fx:S.fx})}
-function bkApply(txt){
-  var m=$('bkmsg'),st=$('status');
-  try{txt=String(txt||'').replace(/^\uFEFF/,'').trim();
-    var k=txt.indexOf('importar=');if(k>=0){var b=txt.slice(k+9).replace(/\s/g,'').replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';txt=new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0)}))}
-    var i=txt.indexOf('{');if(i>0)txt=txt.slice(i);
-    var d=JSON.parse(txt);if(!d||!Array.isArray(d.trades))throw 0;
-    S.trades=d.trades;S.cambio=Array.isArray(d.cambio)?d.cambio:(S.cambio||[]);var nq=d.quotes||{},oq=S.quotes||{};Object.keys(oq).forEach(function(k){if(!nq[k]||(oq[k]&&(oq[k].at||0)>(nq[k].at||0)))nq[k]=oq[k]});S.quotes=nq;if(d.fx&&(!S.fx||(d.fx.at||0)>(S.fx.at||0)))S.fx=d.fx;S.example=false;save();
-    try{location.hash='resumo'}catch(e){}showTab('resumo');render();
-    m.textContent='Dados restaurados: '+S.trades.length+' lançamentos.';
-    st.className='msg muted';st.textContent='Pronto! Importei '+S.trades.length+' lançamentos. Buscando preços e dólar...';
-    doRefresh(true);return true}
-  catch(e){m.className='msg err';m.textContent='Esse arquivo não é o backup da carteira. Escolha o arquivo backup-minha-carteira.json.';warnIn(m.textContent);return false}
-}
-$('bk-load').addEventListener('click',function(){bkApply($('bk').value)});
-$('bkfile').addEventListener('change',function(){var inp=this,f=inp.files&&inp.files[0];if(!f)return;$('bkmsg').textContent='Lendo '+(f.name||'arquivo')+'...';
-  var done=function(t){bkApply(t);try{inp.value=''}catch(e){}};
-  if(f.text){f.text().then(done,function(){warnIn('Não consegui ler o arquivo. Tente de novo ou use o link de importação.')})}
-  else{var r=new FileReader();r.onload=function(){done(r.result)};r.onerror=function(){warnIn('Não consegui ler o arquivo.')};r.readAsText(f)}});
-/* importar por link: #importar=<base64> */
-(function(){var h=location.hash||'';if(h.indexOf('#importar=')!==0)return;
-  try{var b=h.slice(10).replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';
-    var bytes=Uint8Array.from(atob(b),function(c){return c.charCodeAt(0)});var txt=new TextDecoder().decode(bytes);
-    try{history.replaceState(null,'',location.pathname)}catch(e){}
-    var d=JSON.parse(txt);var n=(d.trades||[]).length;
-    PEND={n:n,txt:txt};renderBanner();
-  }catch(e){warnIn('O link de importação veio incompleto. Copie o link inteiro de novo.')}
-})();
-$('bk-down').addEventListener('click',function(){
-  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bkText()],{type:'application/json'}));a.download='backup-minha-carteira-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();
-  $('bkmsg').textContent='Arquivo de backup baixado.';
-});
 
 /* atualização automática (só funciona fora do Claude, em site próprio) */
 function getJSON(url){
@@ -1246,10 +1162,10 @@ function lastClose(){var b=brt(),d=new Date(b.d.getTime());
   d.setUTCHours(18,15,0,0);return d.getTime()+3*3600000}
 function needQuote(tk){if(mktOpen())return true;var q=S.quotes[tk];return !q||q.src!=='auto'||!(q.at>=lastClose())}
 function doRefresh(silent){
-  var btn=$('refresh'),st=$('status'),R=compute();
+  var st=$('status'),R=compute();
   if(RF.busy)return;
   if(!R.held.length){if(!silent)st.textContent='Lance uma compra primeiro.';return}
-  RF.busy=true;btn.disabled=true;if(!silent){st.className='msg muted';st.textContent='Buscando cotações...'}
+  RF.busy=true;if(!silent){st.className='msg muted';st.textContent='Buscando cotações...'}
   var jobs=[],fails=[],okc=0;
   jobs.push(getJSON('https://economia.awesomeapi.com.br/json/last/USD-BRL').then(function(d){var r=parseFloat(d.USDBRL.bid),pc=parseFloat(d.USDBRL.pctChange);if(r>3&&r<10){S.fx={rate:r,at:Date.now(),src:'auto',prev:isFinite(pc)?r/(1+pc/100):null};okc++}else fails.push('dólar')}).catch(function(){fails.push('dólar')}));
   var br=[];
@@ -1274,12 +1190,11 @@ function doRefresh(silent){
     var mo=today().slice(0,7),dd=today(),chg=0;S.mcDay=S.mcDay||{};S.mclose=S.mclose||{};
     Object.keys(S.quotes).forEach(function(tk){var q=S.quotes[tk];if(!q||q.src!=='auto'||Date.now()-q.at>3600000||!R.held.some(function(x){return x.p.ticker===tk}))return;
       if(S.mcDay[tk+'|'+mo]===dd)return;S.mcDay[tk+'|'+mo]=dd;(S.mclose[tk]=S.mclose[tk]||{})[mo]=q.price;S.pend.push({t:'px',tk:tk,m:mo,p:q.price});chg++});
-    save();render();btn.disabled=false;if(chg)ghSync();
+    save();render();if(chg)ghSync();
     if(okc===0){RF.err='Não consegui buscar os preços agora. Confira a internet e as chaves em Ajustes.';if(!silent){st.className='msg err';st.textContent=RF.err}}
     else{RF.err=fails.length?'Sem atualização para: '+fails.join(', '):'';st.className='msg muted';st.textContent=fails.length?'Atualizado, menos: '+fails.join(', ')+'.':''}
   });
 }
-$('refresh').addEventListener('click',function(){doRefresh(false)});
 try{var fh=JSON.parse(localStorage.getItem(LS+'-fxh')||'null');if(fh&&fh.ser)ingestFx({series:fh.ser,source:'AwesomeAPI'});if(!fh||Date.now()-fh.at>6*3600000)loadFxHistory().then(function(){render()})}catch(e){loadFxHistory()}
 setInterval(function(){if(!document.hidden)doRefresh(true)},15*60000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-RF.last>15*60000)doRefresh(true)});
@@ -1289,7 +1204,6 @@ setTimeout(function(){loadDivs()},2500);
 setTimeout(function(){loadHist()},5000);
 setInterval(function(){if(!document.hidden)loadDivs()},60*60000);
 setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
-MK.dbOk=true;
 var TABS=['resumo','ativos','proventos','lancamentos','mais'],MAISV='cambio',CARV='pos';
 function showTab(n){
   if(n==='cambio'||n==='ajustes'||n==='imposto'){MAISV=n;n='mais'}
@@ -1303,15 +1217,9 @@ function showTab(n){
 }
 Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.addEventListener('click',function(){try{location.hash=b.dataset.go}catch(e){}showTab(b.dataset.go)})});
 window.addEventListener('hashchange',function(){showTab((location.hash||'').replace('#',''))});
-showTab((location.hash||'').indexOf('#importar=')===0?'resumo':(location.hash||'').replace('#',''));
-var firstRun=false;
-var migrate=false&&S.seedVer!==6&&S.trades.length>0&&S.trades.every(function(t){return /^[in]\d{3}$/.test(t.id)});
-if(firstRun){if(S.example)S.fx=null;S.trades=SEED.map(function(x){return Object.assign({},x)});S.quotes={};S.example=false;S.seedAuto=1;S.seedVer=6;save()}
-if(migrate){S.trades=SEED.map(function(x){return Object.assign({},x)});S.seedVer=6;save()}
+showTab((location.hash||'').replace('#',''));
 var fixedMsg=sanitize();
 render();
-if(firstRun){$('status').className='msg muted';$('status').textContent='Carteira carregada ('+S.trades.length+' lançamentos). Digite o preço atual de cada ativo e o dólar de hoje.'}
-if(migrate){$('status').className='msg muted';$('status').textContent='Atualizei seus lançamentos (notas da Nubank, câmbio do Inter e proventos da B3, '+S.trades.length+' lançamentos).'}
 if(fixedMsg)warnIn(fixedMsg);
 })();
 </script>
