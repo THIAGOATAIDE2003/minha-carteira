@@ -25,6 +25,22 @@ h1,h2,h3{font-weight:600;margin:0;text-wrap:balance}
 h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .gain{color:var(--gain)}.loss{color:var(--loss)}.muted{color:var(--muted)}
+.yrs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.yrs button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.yrs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.dvbars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;align-items:end;height:120px;margin:4px 0 4px}
+.dvbar{display:flex;flex-direction:column-reverse;height:100%;justify-content:flex-start;gap:1px}
+.dvbar i{display:block;border-radius:3px 3px 0 0;min-height:0}
+.dvbar .r{background:var(--c1)}
+.dvbar .p{background:repeating-linear-gradient(45deg,var(--c2) 0 3px,transparent 3px 6px);border:1px solid var(--c2)}
+.dvlbl{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;font-size:11px;color:var(--muted);text-align:center}
+.dvleg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:8px 0 4px}
+.dvleg span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--c1)}
+.dvleg span.p::before{background:repeating-linear-gradient(45deg,var(--c2) 0 3px,transparent 3px 6px);border:1px solid var(--c2)}
+.dvtab{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.dvtab th,.dvtab td{padding:6px 4px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+.dvtab th:first-child,.dvtab td:first-child{text-align:left}
+.dvtab tr.tot td{font-weight:600;border-top:2px solid var(--line)}
 .small{font-size:13px}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -342,6 +358,34 @@ function compute(){
   return {tot:tot,held:held,closed:closed,warns:warns,rfs:rfs};
 }
 
+
+var DVY=null,MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function renderDivPanel(){
+  var rec={},pro={},tbd=[],ys={},cy=today().slice(0,4);ys[cy]=1;
+  S.trades.forEach(function(t){if(t.side!=='div')return;var v=t.price*(t.market==='US'?t.fx:1),y=t.date.slice(0,4),m=+t.date.slice(5,7)-1;ys[y]=1;(rec[y]=rec[y]||[0,0,0,0,0,0,0,0,0,0,0,0])[m]+=v});
+  DV.up.forEach(function(u){if(!u.pay){tbd.push(u);return}var y=u.pay.slice(0,4),m=+u.pay.slice(5,7)-1;ys[y]=1;(pro[y]=pro[y]||[0,0,0,0,0,0,0,0,0,0,0,0])[m]+=u.val});
+  var years=Object.keys(ys).sort();if(!S.trades.some(function(t){return t.side==='div'})&&!DV.up.length)return '';
+  if(!DVY||!ys[DVY])DVY=cy;
+  var R0=rec[DVY]||[0,0,0,0,0,0,0,0,0,0,0,0],P0=pro[DVY]||[0,0,0,0,0,0,0,0,0,0,0,0];
+  var mx=Math.max.apply(null,R0.map(function(v,i){return v+P0[i]}))||1;
+  var tr=R0.reduce(function(a,b){return a+b},0),tp=P0.reduce(function(a,b){return a+b},0);
+  var h='<div class="panel" style="margin-top:16px"><h2 style="margin:0 0 10px">Proventos</h2>';
+  h+='<div class="yrs">'+years.map(function(y){return '<button type="button" data-dvy="'+y+'" aria-pressed="'+(y===DVY)+'">'+y+'</button>'}).join('')+'</div>';
+  h+='<div class="dvbars" role="img" aria-label="Proventos por mês em '+DVY+'">'+R0.map(function(v,i){var p=P0[i];
+    return '<div class="dvbar" title="'+MESES[i]+': recebido '+brl.format(v)+(p?' · a receber '+brl.format(p):'')+'"><i class="r" style="height:'+(v/mx*100)+'%"></i><i class="p" style="height:'+(p/mx*100)+'%;'+(p?'':'border:0')+'"></i></div>'}).join('')+'</div>';
+  h+='<div class="dvlbl">'+MESES.map(function(m){return '<span>'+m.charAt(0)+'</span>'}).join('')+'</div>';
+  h+='<div class="dvleg"><span>Recebido</span><span class="p">A receber (já anunciado)</span></div>';
+  var acc=0;
+  h+='<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Recebido</th><th>A receber</th><th>Acumulado</th></tr></thead><tbody>'+
+    R0.map(function(v,i){var p=P0[i];acc+=v+p;if(!v&&!p)return '<tr class="muted"><td>'+MESES[i]+'</td><td>—</td><td>—</td><td>'+(acc?brl.format(acc):'—')+'</td></tr>';
+      return '<tr><td>'+MESES[i]+'</td><td class="'+(v?'gain':'')+'">'+(v?brl.format(v):'—')+'</td><td>'+(p?brl.format(p):'—')+'</td><td>'+brl.format(acc)+'</td></tr>'}).join('')+
+    '<tr class="tot"><td>'+DVY+'</td><td class="gain">'+brl.format(tr)+'</td><td>'+brl.format(tp)+'</td><td>'+brl.format(tr+tp)+'</td></tr></tbody></table></div>';
+  var ups=DV.up.filter(function(u){return u.pay&&u.pay.slice(0,4)===DVY}).concat(DVY===cy?tbd:[]);
+  if(ups.length)h+='<h3 style="margin:14px 0 6px;font-size:14px">A receber em '+DVY+'</h3><ul class="calc" style="margin:0;font-size:14px">'+ups.map(function(u){
+    return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+u.tipo+' · '+num(u.q)+' ações na data-com '+fmtDate(u.dc)+' · '+(u.pay?'paga em '+fmtDate(u.pay):'pagamento a definir')+'</span></span><span class="num">'+brl.format(u.val)+'</span></li>'}).join('')+'</ul>';
+  h+='<p class="note" style="margin:10px 0 0">Recebido = proventos que já caíram (Brasil e VT, em reais). A receber = proventos já anunciados das ações que você tinha na data-com, inclusive das que já vendeu. Quando chega o dia, o app lança sozinho. JCP já vem com 15% de IR descontado.'+(tbd.length&&DVY!==cy?' Há '+tbd.length+' com data de pagamento a definir (aparecem no ano atual).':'')+'</p></div>';
+  return h;
+}
 function renderSummary(R){
   var T=R.tot,el=$('summary');
   if(!S.trades.length){
@@ -379,10 +423,7 @@ function renderSummary(R){
     '<div><span class="lbl">Efeito do câmbio</span><span class="num '+cls(T.uF+T.rF)+'">'+sgn(T.uF+T.rF)+'</span></div>'+
     '<div><span class="lbl">Já realizado (vendas)</span><span class="num '+cls(T.rA+T.rF)+'">'+sgn(T.rA+T.rF)+'</span></div>'+
     '<div><span class="lbl">Proventos recebidos</span><span class="num '+cls(T.div)+'">'+sgn(T.div)+'</span></div></div>';
-  if(DV.up.length){h+='<div class="panel" style="margin-top:16px"><h2 style="margin:0 0 10px">Proventos a receber</h2><ul class="calc" style="margin:0;font-size:15px">'+
-    DV.up.map(function(u){return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+u.tipo+' · data-com '+fmtDate(u.dc)+' · '+(u.pay?'paga em '+fmtDate(u.pay):'data de pagamento a definir')+'</span></span><span class="num '+cls(1)+'">'+brl.format(u.val)+'</span></li>'}).join('')+
-    '<li class="tot"><span>Total a receber</span><span class="num">'+brl.format(DV.up.reduce(function(a,u){return a+u.val},0))+'</span></li></ul>'+
-    '<p class="note" style="margin:10px 0 0">Quando chegar a data de pagamento, o app lança sozinho na carteira. JCP já vem com os 15% de IR descontados.</p></div>'}
+  h+=renderDivPanel();
   if(R.held.length&&T.value>0){
     var cs=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
     var hs=R.held.slice().sort(function(a,b){return b.v-a.v});
@@ -609,6 +650,7 @@ document.addEventListener('click',function(e){
   else if(t.id==='ex')loadExample();
   else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');$('syncbox').open=true;$('k-gh').scrollIntoView();$('k-gh').focus()}
   else if(t.id==='sync-now'){ghSync(true)}
+  else if(t.dataset&&t.dataset.dvy){DVY=t.dataset.dvy;render()}
   else if(t.dataset&&t.dataset.rfok){
     var rid=t.dataset.rfok,ap=S.trades.filter(function(x){return x.id===rid})[0],dd=$('rfd-'+rid).value,vv=parseNum($('rfv-'+rid).value);
     if(!ap||!dd||!(vv>0)||dd<ap.date){warnIn('Confira a data e o valor do resgate.');return}
@@ -668,7 +710,7 @@ function loadDivs(force){
   if(!force&&Date.now()-DV.at<6*3600000)return Promise.resolve();
   var tks={};S.trades.forEach(function(t){if(t.market==='BR'&&(t.side==='buy'||t.side==='sell'))tks[t.ticker]=1});
   var list=Object.keys(tks).filter(function(k){return qtyOn(k,'9999-12-31')>0||true});if(!list.length)return Promise.resolve();
-  var start=new Date(Date.now()-120*864e5).toISOString().slice(0,10);
+  var start=new Date(Date.now()-60*864e5).toISOString().slice(0,10);
   DV.busy=true;
   return getJSON('https://brapi.dev/api/v2/stocks/dividends?symbols='+encodeURIComponent(list.join(','))+'&startDate='+start+'&token='+encodeURIComponent(S.keys.brapi)).then(function(j){
     var ds=divList(j),up=[],add=[],td=today();
