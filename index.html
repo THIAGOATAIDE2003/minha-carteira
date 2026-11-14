@@ -236,6 +236,8 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
         <input id="f-qty" inputmode="decimal" placeholder="10"></label>
       <label for="f-price"><span id="l-price">Preço (R$)</span>
         <input id="f-price" inputmode="decimal" placeholder="180,00" required></label>
+      <label for="f-taxa" id="w-taxa">Taxas da nota (R$, opcional)
+        <input id="f-taxa" inputmode="decimal" placeholder="0,00"></label>
       <label for="f-pct" id="w-pct" hidden>% do CDI
         <input id="f-pct" inputmode="decimal" placeholder="110"></label>
       <label for="f-venc" id="w-venc" hidden>Vencimento (opcional)
@@ -360,6 +362,8 @@ function xirr(flows){
   return (lo+hi)/2;
 }
 
+/* preço efetivo: compra soma as taxas da nota, venda desconta */
+function ePx(t){var x=(t.taxa||0)/(t.qty||1);return t.side==='buy'?t.price+x:t.side==='sell'?t.price-x:t.price}
 function compute(){
   var by={},warns=[],flows=[],bought=0,proceeds=0,divs=0,cash=0,contrib=0;
   var ts=S.trades.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)});
@@ -374,18 +378,18 @@ function compute(){
       var dv=t.price*F;p.div=(p.div||0)+dv;divs+=dv;proceeds+=dv;cash+=dv;flows.push([t.date,dv]);return;
     }
     if(t.side==='buy'){
-      p.qty+=t.qty;p.cN+=t.qty*t.price;p.cB+=t.qty*t.price*F;
-      bought+=t.qty*t.price*F;flows.push([t.date,-t.qty*t.price*F]);
-      cash-=t.qty*t.price*F;if(cash<0){contrib-=cash;cash=0}
+      var ep=ePx(t);p.qty+=t.qty;p.cN+=t.qty*ep;p.cB+=t.qty*ep*F;
+      bought+=t.qty*ep*F;flows.push([t.date,-t.qty*ep*F]);
+      cash-=t.qty*ep*F;if(cash<0){contrib-=cash;cash=0}
     }else{
       var q=t.qty;
       if(q>p.qty+1e-9){warns.push('Venda de '+t.ticker+' em '+fmtDate(t.date)+' maior que a quantidade que você tinha. Conferi só até o que havia em carteira.');q=p.qty}
       if(q<=0)return;
       var P0=p.cN/p.qty,F0=p.cB/p.cN,prop=q/p.qty;
-      p.rA+=q*(t.price-P0)*F0;p.rF+=q*t.price*(F-F0);
+      var sp=ePx(t);p.rA+=q*(sp-P0)*F0;p.rF+=q*sp*(F-F0);
       p.cN-=p.cN*prop;p.cB-=p.cB*prop;p.qty-=q;
       if(p.qty<1e-9){p.qty=0;p.cN=0;p.cB=0}
-      proceeds+=q*t.price*F;cash+=q*t.price*F;flows.push([t.date,q*t.price*F]);
+      proceeds+=q*sp*F;cash+=q*sp*F;flows.push([t.date,q*sp*F]);
     }
   });
   var ft0=fxToday(),fxNow=ft0?ft0.rate:null;
@@ -620,15 +624,15 @@ function renderTrades(){
   var q=($('tr-q').value||'').trim().toUpperCase();
   var ts=S.trades.filter(function(t){return (TRF==='all'||trKind(t)===TRF)&&(!q||String(t.ticker).toUpperCase().indexOf(q)>-1||String(t.note||'').toUpperCase().indexOf(q)>-1)}).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.id<b.id?1:-1)});
   if(!ts.length)h+='<p class="muted" style="margin-top:14px">'+(q?'Nada encontrado para "'+esc(q)+'".':'Nenhum lançamento desse tipo.')+'</p>';
-  else if(q){var sb=0,ss=0,sd=0;ts.forEach(function(t){var v=t.qty*t.price*(t.market==='US'?t.fx:1);if(t.side==='buy'||t.side==='rf')sb+=v;else if(t.side==='sell'||t.side==='rfout')ss+=v;else if(t.side==='div')sd+=v});
+  else if(q){var sb=0,ss=0,sd=0;ts.forEach(function(t){var v=t.qty*ePx(t)*(t.market==='US'?t.fx:1);if(t.side==='buy'||t.side==='rf')sb+=v;else if(t.side==='sell'||t.side==='rfout')ss+=v;else if(t.side==='div')sd+=v});
     h+='<p class="det" style="margin:12px 0 0">'+ts.length+(ts.length>1?' lançamentos':' lançamento')+(sb?' · comprou '+brl.format(sb):'')+(ss?' · vendeu '+brl.format(ss):'')+(sd?' · proventos '+brl.format(sd):'')+'</p>'}
   var cm='';
   ts.forEach(function(t){
     var m=t.date.slice(0,7);if(m!==cm){cm=m;var mn=MESL[+m.slice(5)-1];h+='<h3 class="mon">'+mn.charAt(0).toUpperCase()+mn.slice(1)+' de '+m.slice(0,4)+'</h3>'}
-    var us=t.market==='US',cur=us?usd:brl,tot=t.qty*t.price*(us?t.fx:1),k=t.side;
+    var us=t.market==='US',cur=us?usd:brl,tot=t.qty*ePx(t)*(us?t.fx:1),k=t.side;
     var lab=k==='buy'?'Compra':k==='sell'?'Venda':k==='out'?'Retirada':k==='rf'?'Aplicação':k==='rfout'?'Resgate':'Provento';
     var sc=k==='sell'||k==='out'||k==='rfout'?' s':k==='div'?' p':'';
-    var det=(t.auto?'automático, ':'')+(k==='rf'?num(t.pct,2)+'% do CDI'+(t.isento?', isento':''):k==='div'||k==='out'||k==='rfout'?(us?cur.format(t.price)+' a R$ '+num(t.fx,4):''):num(t.qty)+' × '+cur.format(t.price)+(us?' a R$ '+num(t.fx,4):''));
+    var det=(t.auto?'automático, ':'')+(k==='rf'?num(t.pct,2)+'% do CDI'+(t.isento?', isento':''):k==='div'||k==='out'||k==='rfout'?(us?cur.format(t.price)+' a R$ '+num(t.fx,4):''):num(t.qty)+' × '+cur.format(t.price)+(us?' a R$ '+num(t.fx,4):'')+(t.taxa?(k==='sell'?' − ':' + ')+brl.format(t.taxa)+' de taxas':''));
     h+='<div class="tr"><span class="side'+sc+'">'+lab+'</span><span><b>'+esc(k==='out'?(t.note||'Dinheiro retirado'):t.ticker)+'</b> <span class="d">'+fmtDate(t.date).slice(0,5)+'</span></span><span class="num">'+brl.format(tot)+'</span>'+
       '<div class="x"><span class="num">'+det+'</span><span style="display:flex;gap:14px">'+(k==='rfout'||k==='out'?'':'<button class="link" type="button" data-edit="'+esc(t.id)+'">Editar</button>')+'<button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></span></div></div>';
   });
@@ -713,7 +717,7 @@ function startEdit(id){
   var t=S.trades.filter(function(x){return x.id===id})[0];if(!t)return;
   EDIT=id;var bx=$('newbox');bx.open=true;bx.querySelector('summary').textContent='Editar lançamento';
   $('f-market').value=t.market==='RF'?'RF':t.market;$('f-side').value=t.side==='rf'?'buy':t.side;
-  $('f-ticker').value=t.ticker;$('f-date').value=t.date;$('f-qty').value=String(t.qty).replace('.',',');$('f-price').value=String(t.price).replace('.',',');
+  $('f-ticker').value=t.ticker;$('f-date').value=t.date;$('f-qty').value=String(t.qty).replace('.',',');$('f-price').value=String(t.price).replace('.',',');$('f-taxa').value=t.taxa?String(t.taxa).replace('.',','):'';
   if(t.side==='rf'){$('f-pct').value=String(t.pct).replace('.',',');$('f-venc').value=t.venc||'';$('f-isento').checked=!!t.isento}
   fxCustom=t.market==='US';if(fxCustom)$('f-fx').value=String(t.fx).replace('.',',');
   $('f-submit').textContent='Salvar alteração';$('f-cancel').hidden=false;$('formmsg').textContent='';
@@ -721,13 +725,13 @@ function startEdit(id){
 }
 $('tr-q').addEventListener('input',function(){renderTrades()});
 $('apotab').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='apo-v'){e.preventDefault();apoCalc()}});
-$('f-cancel').addEventListener('click',function(){endEdit();$('f-ticker').value='';$('f-qty').value='';$('f-price').value='';$('f-pct').value='';fxCustom=false;$('f-fx').value='';syncForm()});
+$('f-cancel').addEventListener('click',function(){endEdit();$('f-ticker').value='';$('f-qty').value='';$('f-price').value='';$('f-taxa').value='';$('f-pct').value='';fxCustom=false;$('f-fx').value='';syncForm()});
 function syncForm(){
   var mk=$('f-market').value,isRF=mk==='RF';
   $('o-div').disabled=isRF;if(isRF&&$('f-side').value==='div')$('f-side').value='buy';
   var side=$('f-side').value,rf=isRF&&side==='buy',rs=isRF&&side==='sell',ot=side==='out',dv=side==='div'||ot||isRF;
   var us=!isRF&&mk==='US';
-  $('w-fx').hidden=!us;$('w-qty').hidden=dv;
+  $('w-fx').hidden=!us;$('w-qty').hidden=dv;$('w-taxa').hidden=dv||us;
   ['w-pct','w-venc','w-isento','w-rfhint'].forEach(function(k){$(k).hidden=!rf});$('w-isento').style.display=rf?'flex':'none';
   $('w-rfsel').hidden=!rs;
   $('l-ticker').textContent=rf?'Nome do investimento':'Ticker';$('f-ticker').placeholder=rf?'CDB Banco X':'AAPL ou PETR4';$('f-ticker').autocapitalize=rf?'sentences':'characters';
@@ -780,11 +784,12 @@ $('addform').addEventListener('submit',function(e){
   var t={id:newId(),side:$('f-side').value,market:$('f-market').value,
     ticker:$('f-side').value==='out'?'CAIXA':$('f-ticker').value.toUpperCase().replace(/[^A-Z0-9.\-]/g,''),date:$('f-date').value,
     qty:($('f-side').value==='div'||$('f-side').value==='out')?1:parseNum($('f-qty').value),price:parseNum($('f-price').value),fx:us?parseNum($('f-fx').value):1};
+  var tx=parseNum($('f-taxa').value);if(!us&&(t.side==='buy'||t.side==='sell')&&tx>0)t.taxa=Math.round(tx*100)/100;
   if(!t.ticker||!t.date||!(t.qty>0)||!(t.price>0)||(us&&!(t.fx>0))){m.className='msg err';m.textContent='Confira os campos: quantidade, preço e dólar precisam ser números maiores que zero.';return}
   var wasE2=!!EDIT;dropEdit();S.trades.push(t);S.pend.push({t:'add',tr:t});endEdit();
   if(us&&t.date===today()&&fxCustom&&!wasE2)S.fx={rate:t.fx,at:Date.now(),src:'manual'};
   save();
-  $('f-ticker').value='';$('f-qty').value='';$('f-price').value='';fxCustom=false;$('f-fx').value='';
+  $('f-ticker').value='';$('f-qty').value='';$('f-price').value='';$('f-taxa').value='';fxCustom=false;$('f-fx').value='';
   ghSync();
   var fem=t.side==='buy'||t.side==='sell';m.textContent=t.side==='out'?'Retirada lançada.':(t.side==='buy'?'Compra':t.side==='sell'?'Venda':'Provento')+' de '+t.ticker+(wasE2?(fem?' alterada.':' alterado.'):(fem?' lançada.':' lançado.'));
   render();
@@ -850,8 +855,8 @@ function irData(){
   var pos={},mo={},dts={},warn=[];
   ts.forEach(function(t){
     var p=pos[t.ticker]||(pos[t.ticker]={q:0,c:0});(dts[t.ticker+'|'+t.date]=dts[t.ticker+'|'+t.date]||{})[t.side]=1;
-    if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*t.price;return}
-    var q=Math.min(t.qty,p.q);if(q<=0)return;var avg=p.c/p.q,g=q*(t.price-avg),m=t.date.slice(0,7),k=isFII(t.ticker)?'fii':'acao';
+    if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*ePx(t);return}
+    var q=Math.min(t.qty,p.q);if(q<=0)return;var avg=p.c/p.q,g=q*(ePx(t)-avg),m=t.date.slice(0,7),k=isFII(t.ticker)?'fii':'acao';
     var r=mo[m]||(mo[m]={m:m,acao:{v:0,g:0,it:[]},fii:{v:0,g:0,it:[]}});r[k].v+=q*t.price;r[k].g+=g;r[k].it.push({tk:t.ticker,d:t.date,q:q,v:q*t.price,g:g});
     p.c-=avg*q;p.q-=q;if(p.q<1e-9){p.q=0;p.c=0}
   });
@@ -873,7 +878,7 @@ function bensEm(dt){
     if(t.side==='rfout'){delete pos['rf'+t.ref];return}
     if(t.side!=='buy'&&t.side!=='sell')return;
     var p=pos[t.ticker]||(pos[t.ticker]={tk:t.ticker,mk:t.market,q:0,c:0,cu:0});var F=t.market==='US'?t.fx:1;
-    if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*t.price*F;p.cu+=t.qty*t.price}else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.c-=p.c*q/p.q;p.cu-=p.cu*q/p.q;p.q-=q}
+    if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*ePx(t)*F;p.cu+=t.qty*ePx(t)}else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.c-=p.c*q/p.q;p.cu-=p.cu*q/p.q;p.q-=q}
   });
   return Object.keys(pos).map(function(k){return pos[k]}).filter(function(p){return p.q>1e-9});
 }
@@ -1064,8 +1069,8 @@ function evoData(){
       if(t.side==='rfout'){delete rfo[t.ref];cash+=t.price;return}
       var p=pos[t.ticker]||(pos[t.ticker]={tk:t.ticker,mk:t.market,q:0,cN:0});
       if(t.side==='div'){cash+=t.price*F;divs+=t.price*F;return}
-      if(t.side==='buy'){p.q+=t.qty;p.cN+=t.qty*t.price;cash-=t.qty*t.price*F;if(cash<0){contrib-=cash;cash=0}}
-      else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.cN-=p.cN*q/p.q;p.q-=q;if(p.q<1e-9){p.q=0;p.cN=0}cash+=q*t.price*F}
+      if(t.side==='buy'){p.q+=t.qty;p.cN+=t.qty*ePx(t);cash-=t.qty*ePx(t)*F;if(cash<0){contrib-=cash;cash=0}}
+      else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.cN-=p.cN*q/p.q;p.q-=q;if(p.q<1e-9){p.q=0;p.cN=0}cash+=q*ePx(t)*F}
     });
     var fx=m===cur?(fxToday()||{}).rate:(fxOn(e)||{}).rate,val=0;
     Object.keys(pos).forEach(function(k){var p=pos[k];if(p.q<1e-9)return;
@@ -1204,7 +1209,7 @@ function pxOn(tk,d){var px=BX.px[tk];if(!px)return null;var ks=Object.keys(px).s
 function benchSeg(mk,etf){
   var px=BX.px[etf];if(!px)return null;var ks=Object.keys(px).sort(),pT=px[ks[ks.length-1]];
   var units=0,buys=0,proc=0,divs=0,miss=false;
-  S.trades.forEach(function(t){if(t.market!==mk)return;var F=mk==='US'?t.fx:1,v=t.qty*t.price*F;
+  S.trades.forEach(function(t){if(t.market!==mk)return;var F=mk==='US'?t.fx:1,v=t.qty*ePx(t)*F;
     if(t.side==='div'){divs+=t.price*F;return}if(t.side!=='buy'&&t.side!=='sell')return;
     var p=pxOn(etf,t.date);if(!p){miss=true;return}
     if(t.side==='buy'){units+=v/p;buys+=v}else{units-=v/p;proc+=v}});
@@ -1224,8 +1229,8 @@ function cdiBench(){
     if(t.side==='out'){var am=t.price*F;cash-=am;contrib-=am;if(cash<0){contrib-=cash;cash=0}}
     else if(t.side==='rf'){cash-=t.price;if(cash<0){contrib-=cash;cash=0}}
     else if(t.side==='rfout'||t.side==='div'){cash+=t.price*F}
-    else if(t.side==='buy'){cash-=t.qty*t.price*F;if(cash<0){contrib-=cash;cash=0}}
-    else if(t.side==='sell'){cash+=t.qty*t.price*F}
+    else if(t.side==='buy'){cash-=t.qty*ePx(t)*F;if(cash<0){contrib-=cash;cash=0}}
+    else if(t.side==='sell'){cash+=t.qty*ePx(t)*F}
     if(Math.abs(contrib-c0)>1e-9)put(t.date,contrib-c0);
   });
   return {val:val,apl:apl,gain:val-apl,last:ds[n-1]};
