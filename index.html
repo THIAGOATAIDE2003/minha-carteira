@@ -468,7 +468,7 @@ function renderSummary(R){
   var pa0=T.uA+T.rfU;
   var h='<div class="patr"><span class="lbl">Patrimônio</span><div class="big">'+brl.format(T.value+T.cash)+'</div>'+
     '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>hoje</span>':'')+(times.length?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
-    '<div class="duo"><div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre '+brl.format(T.contrib)+' aplicados</small></div>'+
+    '<div class="duo"><div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre '+brl.format(T.contrib)+' aplicados do bolso</small></div>'+
     '<div><small>Preço das ações agora (sem o dólar)</small><b class="'+cls(pa0)+'">'+sgn(pa0)+'</b><small>'+pct(T.cost?pa0/T.cost:0)+' sobre o que você pagou</small></div>'+
     '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
@@ -485,7 +485,13 @@ function renderSummary(R){
     (nUS?'<li><span>EUA <span class="muted small">Inter</span><br><span class="num muted small">'+usd.format(vUSu)+'</span> '+res(vUSu,cUSu,sgu)+'<br><span class="muted small">em reais </span>'+res(vUS,cUS)+'</span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
     (nRF?'<li><span>Renda fixa <span class="muted small">líquido</span><br>'+res(T.rfV,T.rfC)+'</span><span class="num">'+brl.format(T.rfV)+'</span></li>':'')+
     '<li class="tot"><span>Total<br>'+res(vt,ct)+'</span><span class="num">'+brl.format(vt)+'</span></li></ul>'+
-    '<p class="note">Só o que você tem hoje: valor atual comparado com o que pagou (preço médio). Não conta vendas antigas nem proventos.</p></div>'}
+    '<p class="note">Só o que você tem hoje: valor atual comparado com o que pagou (preço médio). Não conta vendas antigas nem proventos.</p></div>';
+    var dA=ct-T.contrib;
+    h+='<div class="panel"><h2>Quanto você investiu</h2><ul class="calc">'+
+      '<li><span>Valor investido<br><span class="muted small">o que você pagou pelo que tem hoje (preço médio × quantidade), como no Nubank e no Inter</span></span><span class="num">'+brl.format(ct)+'</span></li>'+
+      '<li><span>Aplicado do seu bolso<br><span class="muted small">dinheiro novo que saiu da sua conta para investir, menos o que você retirou</span></span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
+      '<li class="tot"><span>Diferença</span><span class="num">'+brl.format(Math.abs(dA))+'</span></li></ul>'+
+      '<p class="note">'+(dA>=0?'O valor investido é maior porque parte das compras foi paga com lucro de vendas e com proventos, e não com dinheiro novo do seu bolso.':'O valor investido é menor porque parte do dinheiro aplicado ainda está parada, ou foi perdida em vendas com prejuízo.')+' O lucro total é calculado sobre o aplicado do seu bolso.</p></div>'}
 
   var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR,bm=cdiBench(R);
   h+='<div class="panel"><h2>De onde vem o '+(T.gain>=0?'lucro':'prejuízo')+' total</h2><ul class="calc">'+
@@ -891,7 +897,7 @@ function renderEvo(){
     '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;margin:8px 0 2px" role="img" aria-label="Patrimônio e aplicado por mês em '+EVY+'">'+bars+line+dots+'</svg>'+
     '<div class="dvlbl">'+MESES.map(function(m){return '<span>'+m.charAt(0)+'</span>'}).join('')+'</div>'+
     '<div class="dvleg"><span>Patrimônio no fim do mês</span><span class="ln">Aplicado do seu bolso</span></div>';
-  h+='<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Patrimônio</th><th>Aplicado</th><th>Rendeu no mês</th></tr></thead><tbody>'+
+  h+='<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Patrimônio</th><th>Aplicado do bolso</th><th>Rendeu no mês</th></tr></thead><tbody>'+
     yr.slice().reverse().map(function(r){var mi=+r.m.slice(5,7)-1,cur=r.m===today().slice(0,7);
       return '<tr><td>'+MESES[mi]+(cur?' <span class="muted small">até hoje</span>':'')+(r.approx.length?' <span class="muted" title="Sem preço de fechamento para '+esc(r.approx.join(', '))+'">*</span>':'')+'</td><td>'+brl.format(r.pat)+'</td><td>'+brl.format(r.apl)+'</td><td class="'+cls(r.rend)+'">'+sgn(r.rend)+(r.rendP!=null?'<br><span class="small">'+pct(r.rendP)+'</span>':'')+'</td></tr>'}).join('')+
     '</tbody></table></div></div>';
