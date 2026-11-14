@@ -719,7 +719,7 @@ document.addEventListener('scroll',function(e){var hc=e.target;if(!hc||hc.id!=='
 /* ===== Mercado: índices, lista de acompanhamento e página da ação ===== */
 var MKT={q:{},idx:{},at:0,busy:false,err:''};
 try{var mk0=JSON.parse(localStorage.getItem(LS+'-mkt')||'null');if(mk0){MKT.q=mk0.q||{};MKT.idx=mk0.idx||{};MKT.at=mk0.at||0}}catch(e){}
-function isBR(tk){return /^[A-Z]{4}\d{1,2}[A-Z]?$/.test(tk)}
+function isBR(tk){var t=(S.trades||[]).filter(function(x){return x.ticker===tk&&(x.market==='BR'||x.market==='US')})[0];if(t)return t.market==='BR';return /^[A-Z0-9]{4}\d{1,2}[A-Z]?$/.test(tk)}
 function wlist(){return Array.isArray(S.watch)?S.watch:[]}
 function mktSave(){try{localStorage.setItem(LS+'-mkt',JSON.stringify({q:MKT.q,idx:MKT.idx,at:MKT.at}))}catch(e){}}
 function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
