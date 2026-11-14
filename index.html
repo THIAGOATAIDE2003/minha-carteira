@@ -140,10 +140,10 @@ textarea{width:100%;min-height:90px;background:var(--bg);border:1px solid var(--
     <h2 id="h-add" style="margin-bottom:14px">Novo lançamento</h2>
     <form class="add" id="addform" autocomplete="off">
       <label for="f-side">Tipo
-        <select id="f-side"><option value="buy">Compra</option><option value="sell">Venda</option><option value="div">Provento</option><option value="out">Retirada de dinheiro</option></select></label>
-      <label for="f-market">Mercado
+        <select id="f-side"><option value="buy">Compra</option><option value="sell">Venda</option><option value="div">Provento</option><option value="out">Retirada de dinheiro</option><option value="rf">Renda fixa (CDB, LCI, LCA)</option></select></label>
+      <label for="f-market" id="w-market">Mercado
         <select id="f-market"><option value="US">EUA (ações e ETFs)</option><option value="BR">Brasil (ações e FIIs)</option></select></label>
-      <label for="f-ticker">Ticker
+      <label for="f-ticker"><span id="l-ticker">Ticker</span>
         <input id="f-ticker" placeholder="AAPL ou PETR4" autocapitalize="characters" required></label>
       <label for="f-date">Data
         <input id="f-date" type="date" required></label>
@@ -151,6 +151,12 @@ textarea{width:100%;min-height:90px;background:var(--bg);border:1px solid var(--
         <input id="f-qty" inputmode="decimal" placeholder="10"></label>
       <label for="f-price"><span id="l-price">Preço (US$)</span>
         <input id="f-price" inputmode="decimal" placeholder="180,00" required></label>
+      <label for="f-pct" id="w-pct" hidden>% do CDI
+        <input id="f-pct" inputmode="decimal" placeholder="110"></label>
+      <label for="f-venc" id="w-venc" hidden>Vencimento (opcional)
+        <input id="f-venc" type="date"></label>
+      <label class="full" id="w-isento" hidden style="display:flex;gap:8px;align-items:center;flex-direction:row"><input id="f-isento" type="checkbox" style="width:auto"> Isento de IR (LCI, LCA)</label>
+      <p class="full hint" id="w-rfhint" hidden style="margin:0">O rendimento entra todo dia útil, de manhã cedo, com o CDI do dia anterior (como no banco). O app desconta o IOF (se resgatar antes de 30 dias) e o IR pela tabela regressiva, e mostra o valor líquido.</p>
       <div class="full" id="w-fx"><div class="fxline"><span>Dólar da operação: <b class="num" id="fx-show"></b></span><button class="link" type="button" id="fx-edit">usar outro</button></div><div class="stack" id="fx-box" hidden style="margin-top:8px">
         <input id="f-fx" inputmode="decimal" placeholder="5,00" aria-label="Dólar da operação">
         <span class="hint">Dólar do dia da operação. Só preencha se for diferente do dólar de hoje, por exemplo numa compra antiga.</span></div></div>
@@ -284,6 +290,8 @@ function compute(){
   var outs=0;
   ts.forEach(function(t){
     if(t.side==='out'){var am=t.price*(t.market==='US'?t.fx:1);outs+=am;cash-=am;contrib-=am;if(cash<0){contrib-=cash;cash=0}return}
+    if(t.side==='rf'){bought+=t.price;flows.push([t.date,-t.price]);cash-=t.price;if(cash<0){contrib-=cash;cash=0}return}
+    if(t.side==='rfout'){proceeds+=t.price;cash+=t.price;flows.push([t.date,t.price]);return}
     var p=by[t.ticker]||(by[t.ticker]={ticker:t.ticker,market:t.market,qty:0,cN:0,cB:0,rA:0,rF:0,lastFx:1});
     var F=t.market==='US'?t.fx:1;p.lastFx=F;
     if(t.side==='div'){
@@ -318,7 +326,10 @@ function compute(){
       held.push({p:p,P0:P0,P1:P1,F0:F0,F1:F1,v:v,a:a,f:f,gain:a+f,pct:p.cB?(a+f)/p.cB:0,hasQuote:!!qt,qt:qt});
     }else{closed.push(p)}
   });
-  tot.gain=tot.rA+tot.rF+tot.uA+tot.uF+tot.div;
+  var rfs=[];tot.rfV=0;tot.rfC=0;tot.rfU=0;tot.rfR=0;
+  ts.forEach(function(t){if(t.side!=='rf')return;var rs=ts.filter(function(x){return x.side==='rfout'&&x.ref===t.id})[0]||null;var c=rfCalc(t,rs);rfs.push(c);
+    if(rs){tot.rfR+=c.realized}else{tot.value+=c.liq;tot.cost+=t.price;tot.rfV+=c.liq;tot.rfC+=t.price;tot.rfU+=c.liq-t.price}});
+  tot.gain=tot.rA+tot.rF+tot.uA+tot.uF+tot.div+tot.rfU+tot.rfR;
   tot.check=tot.value+proceeds-bought;
   var fl=flows.slice();if(tot.value>0)fl.push([today(),tot.value]);
   tot.xirr=xirr(fl);
@@ -326,7 +337,7 @@ function compute(){
   var first=ts.length?ts[0].date:null;
   tot.days=first?Math.round((Date.now()-new Date(first).getTime())/864e5):0;
   tot.fxNow=fxNow;
-  return {tot:tot,held:held,closed:closed,warns:warns};
+  return {tot:tot,held:held,closed:closed,warns:warns,rfs:rfs};
 }
 
 function renderSummary(R){
@@ -348,10 +359,12 @@ function renderSummary(R){
   R.held.forEach(function(x){if(x.p.market==='US'){vUSu+=x.p.qty*x.P1;cUSu+=x.p.cN;vUS+=x.v;cUS+=x.p.cB;nUS++}else{vBR+=x.v;cBR+=x.p.cB;nBR++}});
   var res=function(v,c,f){var g=v-c;return '<span class="num small '+cls(g)+'">'+(f||sgn)(g)+' ('+pct(c?g/c:0)+')</span>'};
   var sgu=function(g){return (g>=0?'+':'−')+usd.format(Math.abs(g))};
-  if(nBR||nUS){var vt=vBR+vUS,ct=cBR+cUS;
+  var nRF=(R.rfs||[]).filter(function(c){return !c.rs}).length;
+  if(nBR||nUS||nRF){var vt=vBR+vUS+T.rfV,ct=cBR+cUS+T.rfC;
     h+='<div class="panel" style="margin-top:16px"><h2 style="margin:0 0 10px">Carteira hoje</h2><ul class="calc" style="margin:0;font-size:15px">'+
     (nBR?'<li><span>Brasil <span class="muted small">(Nubank)</span><br>'+res(vBR,cBR)+'</span><span class="num">'+brl.format(vBR)+'</span></li>':'')+
     (nUS?'<li><span>EUA <span class="muted small">(Inter)</span><br><span class="num muted small">'+usd.format(vUSu)+'</span> '+res(vUSu,cUSu,sgu)+'<br><span class="muted small">em reais: </span>'+res(vUS,cUS)+'</span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
+    (nRF?'<li><span>Renda fixa <span class="muted small">(líquido)</span><br>'+res(T.rfV,T.rfC)+'</span><span class="num">'+brl.format(T.rfV)+'</span></li>':'')+
     '<li class="tot"><span>Total<br>'+res(vt,ct)+'</span><span class="num">'+brl.format(vt)+'</span></li></ul>'+
     '<p class="note" style="margin:10px 0 0">Só o que você tem hoje: valor atual comparado com o que pagou (preço médio). Não conta vendas antigas nem proventos.</p></div>'}
   if(dok&&dp>0)h+='<div class="panel" style="margin-top:16px"><div class="split"><div><span class="lbl">Variação do dia</span><span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span></div><div><span class="lbl">Dólar no dia</span><span class="num">'+(S.fx&&S.fx.prev?pct(S.fx.rate/S.fx.prev-1):'—')+'</span></div></div></div>';
@@ -392,7 +405,8 @@ function renderSummary(R){
 
 function renderPositions(R){
   var el=$('positions');
-  if(!R.held.length&&!R.closed.length){el.innerHTML='<p class="muted" style="margin:0">Nenhum ativo ainda.</p>';return}
+  var rfo=(R.rfs||[]).filter(function(c){return !c.rs}),rfc=(R.rfs||[]).filter(function(c){return c.rs});
+  if(!R.held.length&&!R.closed.length&&!(R.rfs||[]).length){el.innerHTML='<p class="muted" style="margin:0">Nenhum ativo ainda.</p>';return}
   var h=R.held.map(function(x){
     var p=x.p,us=p.market==='US',cur=us?usd:brl;
     var qv=x.hasQuote?String(x.P1).replace('.',','):'';
@@ -403,9 +417,32 @@ function renderPositions(R){
       (us?'<div class="parts">'+parts+'</div>':'')+
       '<div class="row" style="margin-top:6px"><span class="det">Preço atual: <b class="num">'+(x.hasQuote?cur.format(x.P1):'—')+'</b></span><span class="small muted">'+(!x.qt?'sem cotação ainda':x.qt.src==='auto'?'automático · '+(function(t){return new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})(x.qt.at):x.qt.src==='online'?'online'+(x.qt.asOf?' · fechamento de '+esc(fmtDate(x.qt.asOf)):''):'último preço salvo · '+(function(t){return new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})})(x.qt.at||Date.now()))+'</span></div></div>';
   }).join('');
-  if(R.closed.length){
+  var dm=function(d){return d?fmtDate(d).slice(0,5):''};
+  h+=rfo.map(function(c){var t=c.t,lg=c.liq-t.price;
+    return '<div class="pos"><div class="row"><div><span class="tk">'+esc(t.ticker)+'</span><span class="tag">RENDA FIXA</span></div><div class="val num">'+brl.format(c.liq)+'</div></div>'+
+      '<div class="row"><span class="det">'+num(t.pct,2)+'% do CDI · aplicado em '+fmtDate(t.date)+' · '+c.days+(c.days===1?' dia':' dias')+(t.venc?' · vence '+fmtDate(t.venc):'')+(t.isento?' · isento de IR':'')+'</span>'+
+      '<span class="num '+cls(lg)+'" style="white-space:nowrap">'+sgn(lg)+' ('+pct(t.price?lg/t.price:0)+')</span></div>'+
+      '<ul class="calc small" style="margin:8px 0 0">'+
+      '<li><span>Valor aplicado</span><span class="num">'+brl.format(t.price)+'</span></li>'+
+      '<li><span>+ Rendimento bruto <span class="muted">('+c.n+(c.n===1?' dia útil':' dias úteis')+')</span></span><span class="num '+cls(c.gain)+'">'+sgn(c.gain)+'</span></li>'+
+      '<li><span>− IOF <span class="muted">('+(c.iofP?c.iofP+'% do rendimento, resgate antes de 30 dias':'zerado após 30 dias')+')</span></span><span class="num">'+brl.format(c.iof)+'</span></li>'+
+      '<li><span>− IR <span class="muted">('+(t.isento?'isento':num(c.irP,1)+'% do rendimento')+')</span></span><span class="num">'+brl.format(c.ir)+'</span></li>'+
+      '<li class="tot"><span>= Líquido se resgatar hoje</span><span class="num">'+brl.format(c.liq)+'</span></li></ul>'+
+      '<div class="det" style="margin-top:6px">'+(c.n?'Último rendimento: '+sgn(c.lastGain)+' (CDI de '+dm(c.last)+', creditado na manhã seguinte).':(CDI.dates.length?'Ainda sem rendimento: o primeiro entra na manhã do próximo dia útil.':'Esperando o CDI do Banco Central para calcular.'))+'</div>'+
+      '<details style="margin-top:8px"><summary>Resgatar</summary><div class="stack" style="margin-top:8px">'+
+      '<label class="small muted">Data do resgate<input type="date" id="rfd-'+esc(t.id)+'" value="'+today()+'"></label>'+
+      '<label class="small muted">Valor que caiu na conta (R$)<input inputmode="decimal" id="rfv-'+esc(t.id)+'" value="'+String(Math.round(c.liq*100)/100).replace('.',',')+'"></label>'+
+      '<button class="btn small" type="button" data-rfok="'+esc(t.id)+'">Confirmar resgate</button></div></details></div>'}).join('');
+  if((R.rfs||[]).length)h+='<details class="pos"><summary>Como a renda fixa é calculada</summary><div class="small" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">'+
+    '<p style="margin:0"><b>Rendimento:</b> todo dia útil o CDI do dia (taxa do Banco Central) é aplicado sobre o seu saldo, multiplicado pelo seu % do CDI. Ex.: CDI de 0,055% ao dia × 110% = 0,0605% naquele dia. O banco credita de manhã cedo, com o CDI do dia anterior, e o app faz igual.</p>'+
+    '<p style="margin:0"><b>IOF:</b> só se resgatar antes de 30 dias. Começa em 96% do rendimento no 1º dia e cai até zerar no 30º.</p>'+
+    '<p style="margin:0"><b>IR:</b> sobre o rendimento, pela tabela regressiva: 22,5% até 180 dias, 20% até 360, 17,5% até 720 e 15% depois. LCI e LCA são isentas.</p>'+
+    '<p style="margin:0"><b>Líquido:</b> aplicado + rendimento − IOF − IR. É o que cai na conta se resgatar hoje. Pode diferir alguns centavos do banco por arredondamento do CDI.</p>'+
+    (CDI.err?'<p class="msg err" style="margin:0">'+esc(CDI.err)+'</p>':'')+'</div></details>';
+  if(R.closed.length||rfc.length){
     h+='<div class="pos"><span class="det">Encerradas</span>'+R.closed.map(function(p){var g=p.rA+p.rF+(p.div||0);
-      return '<div class="row"><span><span class="tk" style="font-size:15px">'+esc(p.ticker)+'</span></span><span class="num '+cls(g)+'">'+sgn(g)+'</span></div>'}).join('')+'</div>';
+      return '<div class="row"><span><span class="tk" style="font-size:15px">'+esc(p.ticker)+'</span></span><span class="num '+cls(g)+'">'+sgn(g)+'</span></div>'}).join('')+
+      rfc.map(function(c){return '<div class="row"><span><span class="tk" style="font-size:15px">'+esc(c.t.ticker)+'</span> <span class="tag">RENDA FIXA</span></span><span class="num '+cls(c.realized)+'">'+sgn(c.realized)+'</span></div>'}).join('')+'</div>';
   }
   el.innerHTML=h;
 }
@@ -416,8 +453,8 @@ function renderTrades(){
   var ts=S.trades.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.id<b.id?1:-1)});
   el.innerHTML=ts.map(function(t){
     var us=t.market==='US',cur=us?usd:brl,tot=t.qty*t.price*(us?t.fx:1);
-    return '<div class="tr"><span class="side '+(t.side==='sell'||t.side==='out'?'s':'b')+'">'+(t.side==='buy'?'COMPRA':t.side==='sell'?'VENDA':t.side==='out'?'RETIRADA':'PROVENTO')+'</span><span><b>'+esc(t.side==='out'?(t.note||'Dinheiro retirado da corretora'):t.ticker)+'</b> <span class="d">'+fmtDate(t.date)+'</span></span><span class="num">'+brl.format(tot)+'</span>'+
-      '<div class="x"><span class="num">'+(t.side==='div'||t.side==='out'?'':num(t.qty)+' × ')+cur.format(t.price)+(us?' · dólar '+brl.format(t.fx):'')+'</span><button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></div></div>';
+    return '<div class="tr"><span class="side '+(t.side==='sell'||t.side==='out'||t.side==='rfout'?'s':'b')+'">'+(t.side==='buy'?'COMPRA':t.side==='sell'?'VENDA':t.side==='out'?'RETIRADA':t.side==='rf'?'APLICAÇÃO':t.side==='rfout'?'RESGATE':'PROVENTO')+'</span><span><b>'+esc(t.side==='out'?(t.note||'Dinheiro retirado da corretora'):t.ticker)+'</b> <span class="d">'+fmtDate(t.date)+'</span></span><span class="num">'+brl.format(tot)+'</span>'+
+      '<div class="x"><span class="num">'+(t.side==='rf'?num(t.pct,2)+'% do CDI'+(t.isento?' · isento':'')+' · ':'')+(t.side==='div'||t.side==='out'||t.side==='rf'||t.side==='rfout'?'':num(t.qty)+' × ')+cur.format(t.price)+(us?' · dólar '+brl.format(t.fx):'')+'</span><button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></div></div>';
   }).join('');
 }
 
@@ -477,6 +514,7 @@ function render(){
   if(si){var ps=[];
     ps.push('Preços e dólar são buscados sozinhos ao abrir o app e a cada 15 minutos enquanto ele estiver aberto.');
     ps.push(RF.last?'Última busca às '+new Date(RF.last).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'.'+(RF.err?' '+esc(RF.err):''):'Ainda não busquei nesta sessão.');
+    if(S.trades.some(function(t){return t.side==='rf'}))ps.push(CDI.dates.length?'CDI: Banco Central, '+CDI.dates.length+' dias úteis até '+fmtDate(CDI.dates[CDI.dates.length-1])+(CDI.err?' ('+esc(CDI.err)+')':'.'):(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...'));
     if(MK.fxDates.length)ps.push('Histórico do dólar: '+MK.fxDates.length+' dias, de '+fmtDate(MK.fxDates[0])+' a '+fmtDate(MK.fxLatestDate)+' (AwesomeAPI).');
     si.innerHTML=ps.join('<br>')}
   $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
@@ -487,10 +525,13 @@ function render(){
 /* formulário */
 var fxCustom=false;
 function syncForm(){
-  var ot=$('f-side').value==='out',dv=$('f-side').value==='div'||ot;
-  var us=$('f-market').value==='US';
-  $('w-fx').hidden=!us;$('w-qty').hidden=dv;
+  var rf=$('f-side').value==='rf',ot=$('f-side').value==='out',dv=$('f-side').value==='div'||ot||rf;
+  var us=!rf&&$('f-market').value==='US';
+  $('w-fx').hidden=!us;$('w-qty').hidden=dv;$('w-market').hidden=rf;
+  ['w-pct','w-venc','w-isento','w-rfhint'].forEach(function(k){$(k).hidden=!rf});$('w-isento').style.display=rf?'flex':'none';
+  $('l-ticker').textContent=rf?'Nome do investimento':'Ticker';$('f-ticker').placeholder=rf?'CDB Banco X':'AAPL ou PETR4';$('f-ticker').autocapitalize=rf?'sentences':'characters';
   var tl=$('f-ticker').closest('label');tl.hidden=ot;$('f-ticker').required=!ot;
+  if(rf){$('l-price').textContent='Valor aplicado (R$)';return}
   $('l-price').textContent=ot?(us?'Valor retirado (US$)':'Valor retirado (R$)'):dv?(us?'Valor recebido (US$)':'Valor recebido (R$)'):(us?'Preço (US$)':'Preço (R$)');
   var d=$('f-date').value||today();
   var look=fxOn(d),ft=fxToday();
@@ -510,6 +551,14 @@ $('fx-edit').addEventListener('click',function(){fxCustom=true;syncForm();$('f-f
 $('addform').addEventListener('submit',function(e){
   e.preventDefault();var m=$('formmsg');m.className='msg';m.textContent='';
   if(S.example){m.className='msg err';m.textContent='Limpe o exemplo antes de lançar seus dados.';return}
+  if($('f-side').value==='rf'){
+    var rt={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:'rf',market:'RF',ticker:$('f-ticker').value.trim().slice(0,40),date:$('f-date').value,qty:1,price:parseNum($('f-price').value),fx:1,
+      pct:parseNum($('f-pct').value),venc:$('f-venc').value||'',isento:$('f-isento').checked};
+    if(!rt.ticker||!rt.date||!(rt.price>0)||!(rt.pct>0)||rt.pct>300){m.className='msg err';m.textContent='Confira: nome, data, valor aplicado e % do CDI (ex.: 110).';return}
+    S.trades.push(rt);S.pend.push({t:'add',tr:rt});save();
+    $('f-ticker').value='';$('f-price').value='';$('f-pct').value='';$('f-venc').value='';$('f-isento').checked=false;
+    ghSync();loadCDI(true);m.textContent='Aplicação em '+rt.ticker+' lançada. Veja o rendimento na aba Ativos.';render();return;
+  }
   var us=$('f-market').value==='US';
   var t={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:$('f-side').value,market:$('f-market').value,
     ticker:$('f-side').value==='out'?'CAIXA':$('f-ticker').value.toUpperCase().replace(/[^A-Z0-9.\-]/g,''),date:$('f-date').value,
@@ -533,10 +582,17 @@ document.addEventListener('click',function(e){
   else if(t.id==='ex')loadExample();
   else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');$('syncbox').open=true;$('k-gh').scrollIntoView();$('k-gh').focus()}
   else if(t.id==='sync-now'){ghSync(true)}
+  else if(t.dataset&&t.dataset.rfok){
+    var rid=t.dataset.rfok,ap=S.trades.filter(function(x){return x.id===rid})[0],dd=$('rfd-'+rid).value,vv=parseNum($('rfv-'+rid).value);
+    if(!ap||!dd||!(vv>0)||dd<ap.date){warnIn('Confira a data e o valor do resgate.');return}
+    var rr={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:'rfout',market:'RF',ticker:ap.ticker,ref:rid,date:dd,qty:1,price:vv,fx:1};
+    S.trades.push(rr);S.pend.push({t:'add',tr:rr});save();render();ghSync();
+    $('status').className='msg muted';$('status').textContent='Resgate de '+ap.ticker+' lançado: '+sgn(vv-ap.price)+' de resultado.';
+  }
   else if(t.id==='seed2'){if(t.dataset.arm){loadSeed()}else{t.dataset.arm='1';t.textContent='Substituir tudo? Toque de novo';setTimeout(function(){if(t.isConnected){delete t.dataset.arm;t.textContent='Recarregar carteira das notas da Nubank'}},3000)}}
   else if(t.id==='clrex'){S.trades=[];S.quotes={};S.fx=null;S.example=false;save();render()}
   else if(t.dataset&&t.dataset.del){
-    if(t.dataset.arm){var did=t.dataset.del;S.trades=S.trades.filter(function(x){return x.id!==did});if(!S.example)S.pend.push({t:'del',id:did});save();render();ghSync()}
+    if(t.dataset.arm){var did=t.dataset.del;var gone=S.trades.filter(function(x){return x.id===did||x.ref===did}).map(function(x){return x.id});S.trades=S.trades.filter(function(x){return gone.indexOf(x.id)<0});if(!S.example)gone.forEach(function(g){S.pend.push({t:'del',id:g})});save();render();ghSync()}
     else{t.dataset.arm='1';t.textContent='Confirmar exclusão?';setTimeout(function(){if(t.isConnected){delete t.dataset.arm;t.textContent='Excluir'}},3000)}
   }
 });
@@ -563,6 +619,35 @@ document.addEventListener('change',function(e){
 
 var SEED=[];
 
+/* renda fixa: CDI diário do Banco Central (SGS série 12) */
+var CDI={s:{},dates:[],at:0,start:'',err:''};
+function ingestCdi(o){CDI.s=(o&&o.s)||{};CDI.dates=Object.keys(CDI.s).sort();CDI.at=(o&&o.at)||0;CDI.start=(o&&o.start)||''}
+try{var c0=JSON.parse(localStorage.getItem(LS+'-cdi')||'null');if(c0)ingestCdi(c0)}catch(e){}
+var IOFT=[96,93,90,86,83,80,76,73,70,66,63,60,56,53,50,46,43,40,36,33,30,26,23,20,16,13,10,6,3];
+function dayDiff(a,b){return Math.round((Date.parse(b)-Date.parse(a))/864e5)}
+function irRate(d){return d<=180?22.5:d<=360?20:d<=720?17.5:15}
+function rfCalc(t,rs){
+  var end=rs?rs.date:today(),f=1,n=0,last='',lastR=0;
+  CDI.dates.forEach(function(d){if(d>=t.date&&d<end){var r=CDI.s[d]/100*(t.pct/100);f*=1+r;n++;last=d;lastR=r}});
+  var bruto=t.price*f,gain=bruto-t.price,days=Math.max(0,dayDiff(t.date,end));
+  var iofP=days>=30?0:IOFT[Math.max(1,days)-1],iof=gain>0?gain*iofP/100:0;
+  var irP=t.isento?0:irRate(days),ir=gain-iof>0?(gain-iof)*irP/100:0;
+  var liq=bruto-iof-ir;
+  return {t:t,rs:rs,bruto:bruto,gain:gain,days:days,iofP:iofP,iof:iof,irP:irP,ir:ir,liq:liq,n:n,last:last,lastGain:bruto-bruto/(1+lastR),
+    realized:rs?rs.price-t.price:0,stale:!CDI.dates.length};
+}
+function loadCDI(force){
+  var rf=S.trades.filter(function(t){return t.side==='rf'});if(!rf.length)return Promise.resolve();
+  var start=rf.map(function(t){return t.date}).sort()[0];
+  if(!force&&CDI.dates.length&&CDI.start&&CDI.start<=start&&Date.now()-CDI.at<3*3600000)return Promise.resolve();
+  var br=function(iso){var q=iso.split('-');return q[2]+'/'+q[1]+'/'+q[0]};
+  return getJSON('https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial='+br(start)+'&dataFinal='+br(today())).then(function(a){
+    var s2={};(a||[]).forEach(function(x){var q=String(x.data).split('/'),v=parseFloat(String(x.valor).replace(',','.'));if(q.length===3&&v>=0&&v<1)s2[q[2]+'-'+q[1]+'-'+q[0]]=v});
+    if(!Object.keys(s2).length)throw 0;
+    var o={s:s2,at:Date.now(),start:start};ingestCdi(o);CDI.err='';try{localStorage.setItem(LS+'-cdi',JSON.stringify(o))}catch(e){}render();
+  }).catch(function(){CDI.err='Não consegui buscar o CDI no Banco Central agora'+(CDI.dates.length?'; usando o último CDI salvo.':'.');render()});
+}
+
 /* sincronização com o repositório privado no GitHub */
 var GH={busy:false,last:0,err:'',again:false};
 function ghRepo(){return (S.keys.repo||'THIAGOATAIDE2003/minha-carteira-dados').replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'').trim()}
@@ -586,7 +671,7 @@ function ghAdopt(d){
   var tr=applyOps(Array.isArray(d.trades)?d.trades:[],S.pend||[]);
   var before=JSON.stringify([S.trades,S.cambio||[]]);
   S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;S.example=false;save();
-  if(JSON.stringify([S.trades,S.cambio||[]])!==before)render();
+  if(JSON.stringify([S.trades,S.cambio||[]])!==before){render();loadCDI()}
 }
 function ghRound(attempt){
   return ghReq('GET').then(function(r){
@@ -731,6 +816,8 @@ try{var fh=JSON.parse(localStorage.getItem(LS+'-fxh')||'null');if(fh&&fh.ser)ing
 setInterval(function(){if(!document.hidden)doRefresh(true)},15*60000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-RF.last>15*60000)doRefresh(true)});
 setTimeout(function(){doRefresh(true)},600);
+setTimeout(function(){loadCDI()},900);
+setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
 MK.dbOk=true;
 var TABS=['resumo','ativos','lancamentos','cambio','ajustes'];
 function showTab(n){
