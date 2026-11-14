@@ -152,6 +152,12 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 .yrs button,.seg button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500}
 .yrs button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#carseg{grid-template-columns:repeat(3,minmax(0,1fr))}
+.alv{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:6px 10px;align-items:center}
+.alv input{padding:8px;text-align:right}
+.alvbar{grid-column:1/-1;position:relative;height:8px;border-radius:4px;background:var(--tint);margin:-2px 0 6px}
+.alvbar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--c1)}
+.alvbar b{position:absolute;top:-3px;bottom:-3px;width:3px;border-radius:2px;background:var(--c2)}
 #maisseg{grid-template-columns:repeat(3,minmax(0,1fr))}
 .irbar{height:10px;border-radius:5px;background:var(--tint);overflow:hidden;margin:10px 0 4px}.irbar i{display:block;height:100%;background:var(--c1);border-radius:5px}.irbar.over i{background:var(--loss)}
 .seg button{border-radius:10px;padding:9px 12px;font-size:14px}
@@ -203,7 +209,8 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 
   <section id="summary" class="col" aria-label="Início" data-tab="resumo"></section>
 
-  <div class="seg" id="carseg" data-tab="ativos" hidden><button type="button" data-cv="pos">Ativos</button><button type="button" data-cv="evo">Evolução</button></div>
+  <div class="seg" id="carseg" data-tab="ativos" hidden><button type="button" data-cv="pos">Ativos</button><button type="button" data-cv="evo">Evolução</button><button type="button" data-cv="apo">Aporte</button></div>
+  <section id="apotab" class="col" aria-label="Próximo aporte" data-tab="ativos" data-sub2="apo" hidden></section>
   <section id="positions" class="col" aria-label="Ativos" data-tab="ativos" data-sub2="pos" hidden></section>
   <section id="evotab" class="col" aria-label="Evolução do patrimônio" data-tab="ativos" data-sub2="evo" hidden></section>
 
@@ -642,7 +649,7 @@ function renderFx(){
 }
 function render(){
   var R=compute();
-  renderBanner();renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();renderIR();
+  renderBanner();renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
   $('divtab').innerHTML=renderDivPanel()||'<div class="panel"><p class="muted">Nenhum provento ainda. Quando cair o primeiro, ele aparece aqui.</p></div>';
   var f0=fxToday();$('pill-fx').textContent=f0?'Dólar R$ '+num(f0.rate,4):'';
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
@@ -684,6 +691,7 @@ function startEdit(id){
   syncForm();bx.scrollIntoView({block:'start'});
 }
 $('tr-q').addEventListener('input',function(){renderTrades()});
+$('apotab').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='apo-v'){e.preventDefault();apoCalc()}});
 $('f-cancel').addEventListener('click',function(){endEdit();$('f-ticker').value='';$('f-qty').value='';$('f-price').value='';$('f-pct').value='';fxCustom=false;$('f-fx').value='';syncForm()});
 function syncForm(){
   var mk=$('f-market').value,isRF=mk==='RF';
@@ -763,9 +771,11 @@ document.addEventListener('click',function(e){
   else if(t.dataset&&t.dataset.dvy){DVY=t.dataset.dvy;render()}
   else if(t.dataset&&t.dataset.trf){TRF=t.dataset.trf;renderTrades()}
   else if(t.dataset&&t.dataset.edit){startEdit(t.dataset.edit)}
-  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
+  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':t.dataset.cv==='apo'?'aporte':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
   else if(t.dataset&&t.dataset.evy){EVY=t.dataset.evy;renderEvo()}
   else if(t.dataset&&t.dataset.iry){IRY=t.dataset.iry;renderIR()}
+  else if(t.id==='apo-go'){apoCalc()}
+  else if(t.id==='al-save'){alvSave()}
   else if(t.dataset&&t.dataset.mais){try{location.hash=t.dataset.mais}catch(e){}showTab(t.dataset.mais)}
   else if(t.dataset&&t.dataset.goto){try{location.hash=t.dataset.goto}catch(e){}showTab(t.dataset.goto)}
   else if(t.dataset&&t.dataset.rfok){
@@ -836,6 +846,66 @@ function bensEm(dt){
     if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*t.price*F;p.cu+=t.qty*t.price}else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.c-=p.c*q/p.q;p.cu-=p.cu*q/p.q;p.q-=q}
   });
   return Object.keys(pos).map(function(k){return pos[k]}).filter(function(p){return p.q>1e-9});
+}
+
+/* alocação alvo e próximo aporte (só compras, sem vender nada) */
+var APV='';
+function splitNeed(cur,tgt,amt){
+  var tot=0,ks=Object.keys(tgt);ks.forEach(function(k){tot+=cur[k]||0});
+  var after=tot+amt,need={},sn=0;ks.forEach(function(k){need[k]=Math.max(0,tgt[k]/100*after-(cur[k]||0));sn+=need[k]});
+  var out={};ks.forEach(function(k){out[k]=sn<=amt?need[k]+(amt-sn)*tgt[k]/100:(sn?amt*need[k]/sn:0)});return out;
+}
+function renderApo(){
+  var el=$('apotab');if(!el)return;
+  var R=compute(),T=R.tot,br=R.held.filter(function(x){return x.p.market==='BR'}),us=R.held.filter(function(x){return x.p.market==='US'});
+  var cur={BR:0,US:0,RF:T.rfV||0};br.forEach(function(x){cur.BR+=x.v});us.forEach(function(x){cur.US+=x.v});
+  var tot=cur.BR+cur.US+cur.RF;if(!tot){el.innerHTML='<div class="panel"><p class="muted">Lance suas compras para montar a divisão.</p></div>';return}
+  var A=S.alvos||{};var cl=A.classes||{BR:Math.round(cur.BR/tot*100),US:Math.round(cur.US/tot*100),RF:0};
+  var adj=100-(cl.BR+cl.US+cl.RF);if(adj&&!S.alvos)cl.US+=adj;
+  var inB=A.br||{};br.forEach(function(x){if(inB[x.p.ticker]==null)inB[x.p.ticker]=+(100/br.length).toFixed(1)});
+  var nm={BR:'Brasil (ações)',US:'EUA (VT)',RF:'Renda fixa'},h='';
+  var row=function(k,lab,c,tg,id){return '<span>'+lab+'<br><span class="muted small">hoje '+pf.format(c)+'%</span></span><input id="'+id+'" inputmode="decimal" value="'+String(tg).replace('.',',')+'" aria-label="'+lab+' alvo em %"><div class="alvbar"><i style="width:'+Math.min(100,c)+'%"></i><b style="left:calc('+Math.min(100,tg)+'% - 1px)"></b></div>'};
+  h+='<div class="panel"><h2>Sua divisão ideal</h2><p class="note" style="margin:0 0 12px">Quanto de cada parte você quer ter, em %. A barra azul é como está hoje; o traço dourado é o seu alvo.'+(S.alvos?'':' Preenchi com a divisão de hoje, ajuste e salve.')+'</p><div class="alv">'+
+    ['BR','US','RF'].map(function(k){return row(k,nm[k],cur[k]/tot*100,cl[k],'al-'+k)}).join('')+'</div>'+
+    (br.length>1?'<details><summary>Divisão dentro do Brasil</summary><p class="note" style="margin:8px 0 10px">Quanto cada ação representa dentro da parte do Brasil. Começa igual para todas.</p><div class="alv">'+
+      br.map(function(x){return row('',esc(x.p.ticker),cur.BR?x.v/cur.BR*100:0,inB[x.p.ticker],'ab-'+x.p.ticker)}).join('')+'</div></details>':'')+
+    '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap"><button class="btn small" type="button" id="al-save">Salvar divisão</button><span class="msg" id="al-msg"></span></div></div>';
+  h+='<div class="panel"><h2>Quanto vai aportar?</h2><div style="display:flex;gap:8px;margin-top:4px"><input id="apo-v" inputmode="decimal" placeholder="1.000,00" value="'+esc(APV)+'" aria-label="Valor do aporte em reais"><button class="btn" type="button" id="apo-go">Calcular</button></div><div id="apo-res"></div></div>';
+  h+='<p class="note" style="margin:0 4px">O cálculo só sugere compras: coloca o dinheiro primeiro onde está mais abaixo do alvo, sem vender nada. Não é recomendação de investimento, é a conta da divisão que você escolheu.</p>';
+  el.innerHTML=h;if(APV)apoCalc();
+}
+function apoCalc(){
+  var raw=String($('apo-v').value||'').trim(),v=/^\d{1,3}(\.\d{3})+$/.test(raw)?parseFloat(raw.replace(/\./g,'')):parseNum(raw),out=$('apo-res');APV=raw;
+  if(!(v>0)){out.innerHTML='<p class="msg err" style="margin-top:10px">Digite um valor, por exemplo 1.000.</p>';return}
+  var R=compute(),T=R.tot,br=R.held.filter(function(x){return x.p.market==='BR'}),us=R.held.filter(function(x){return x.p.market==='US'});
+  var cur={BR:0,US:0,RF:T.rfV||0};br.forEach(function(x){cur.BR+=x.v});us.forEach(function(x){cur.US+=x.v});
+  var A=S.alvos||{},tot=cur.BR+cur.US+cur.RF,cl=A.classes||{BR:Math.round(cur.BR/tot*100),US:Math.round(cur.US/tot*100),RF:0};
+  var sc=cl.BR+cl.US+cl.RF;cl={BR:cl.BR/sc*100,US:cl.US/sc*100,RF:cl.RF/sc*100};
+  var dist=splitNeed(cur,cl,v),fx=(fxToday()||{}).rate,li=[];
+  if(dist.BR>0.5&&br.length){
+    var inB=(A.br||{}),tg={},cb={},s2=0;br.forEach(function(x){tg[x.p.ticker]=inB[x.p.ticker]!=null?inB[x.p.ticker]:100/br.length;s2+=tg[x.p.ticker];cb[x.p.ticker]=x.v});
+    Object.keys(tg).forEach(function(k){tg[k]=tg[k]/s2*100});
+    var db=splitNeed(cb,tg,dist.BR),left=0;
+    br.forEach(function(x){var a=db[x.p.ticker];if(a<0.5)return;var px=x.P1,q=px?Math.floor(a/px):0;left+=a-q*px;
+      li.push('<li><span><b>'+esc(x.p.ticker)+'</b><br><span class="muted small">'+(q?q+(q>1?' ações':' ação')+' a '+brl.format(px)+' = '+brl.format(q*px):'menos de 1 ação ('+brl.format(px)+' cada)')+'</span></span><span class="num">'+brl.format(a)+'</span></li>')});
+    if(left>0.5)li.push('<li class="muted small"><span>Sobra por arredondar em ações inteiras</span><span class="num">'+brl.format(left)+'</span></li>');
+  }
+  if(dist.US>0.5&&us.length){var x=us[0],u=fx?dist.US/fx:0,q=x.P1?u/x.P1:0;
+    li.push('<li><span><b>'+esc(x.p.ticker)+'</b><br><span class="muted small">'+(fx?usd.format(u)+' a R$ '+num(fx,4)+' ≈ '+num(q,4)+' cotas a '+usd.format(x.P1)+', antes do spread e IOF do câmbio':'')+'</span></span><span class="num">'+brl.format(dist.US)+'</span></li>')}
+  if(dist.RF>0.5)li.push('<li><span><b>Renda fixa</b><br><span class="muted small">CDB, LCI ou LCA</span></span><span class="num">'+brl.format(dist.RF)+'</span></li>');
+  var after={BR:cur.BR+dist.BR,US:cur.US+dist.US,RF:cur.RF+dist.RF},ta=tot+v;
+  out.innerHTML='<ul class="calc" style="margin-top:14px">'+li.join('')+'<li class="tot"><span>Total</span><span class="num">'+brl.format(v)+'</span></li></ul>'+
+    '<p class="note">Depois do aporte: Brasil '+pf.format(after.BR/ta*100)+'%, EUA '+pf.format(after.US/ta*100)+'%, Renda fixa '+pf.format(after.RF/ta*100)+'% (alvo '+pf.format(cl.BR)+'% / '+pf.format(cl.US)+'% / '+pf.format(cl.RF)+'%).</p>';
+}
+function alvSave(){
+  var g=function(id){var v=parseNum(($(id)||{}).value);return isFinite(v)?v:0};
+  var c={BR:g('al-BR'),US:g('al-US'),RF:g('al-RF')},sm=c.BR+c.US+c.RF,m=$('al-msg');
+  if(Math.abs(sm-100)>0.05){m.className='msg err';m.textContent='A soma está em '+pf.format(sm)+'%. Ajuste para dar 100%.';return}
+  var b={};Array.prototype.forEach.call(document.querySelectorAll('[id^="ab-"]'),function(i){var v=parseNum(i.value);b[i.id.slice(3)]=isFinite(v)?v:0});
+  var bs=Object.keys(b).reduce(function(a,k){return a+b[k]},0);
+  if(Object.keys(b).length&&Math.abs(bs-100)>0.5){m.className='msg err';m.textContent='Dentro do Brasil a soma está em '+pf.format(bs)+'%. Ajuste para 100%.';return}
+  S.alvos={classes:c,br:b};S.pend.push({t:'cfg',k:'alvos',v:S.alvos});save();ghSync();m.className='msg gain';m.textContent='Salvo.';
+  if(APV)apoCalc();
 }
 function renderIR(){
   var el=$('irtab');if(!el)return;
@@ -1087,8 +1157,9 @@ function applyOps(trades,ops){
   return out;
 }
 function applyPx(f,ops){var o=JSON.parse(JSON.stringify(f||{}));ops.forEach(function(x){if(x.t==='px'){(o[x.tk]=o[x.tk]||{})[x.m]=x.p}});return o}
+function applyCfg(d,ops){var a=d.alvos||null;ops.forEach(function(x){if(x.t==='cfg'&&x.k==='alvos')a=x.v});return a}
 function ghAdopt(d){
-  S.mclose=applyPx(d.fechamentos,S.pend||[]);
+  S.mclose=applyPx(d.fechamentos,S.pend||[]);var na=applyCfg(d,S.pend||[]);if(na)S.alvos=na;
   var tr=applyOps(Array.isArray(d.trades)?d.trades:[],S.pend||[]);
   var before=JSON.stringify([S.trades,S.cambio||[]]);
   S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;save();
@@ -1107,7 +1178,7 @@ function ghRound(attempt){
     }
     var pend=(S.pend||[]).slice();
     if(!pend.length){ghAdopt(remote);return}
-    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});
+    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});var a2=applyCfg(remote,pend);if(a2)data.alvos=a2;
     var body={message:'App: '+pend.length+(pend.length>1?' alterações':' alteração'),content:b64enc(JSON.stringify(data,null,1)+'\n'),sha:sha,branch:'main'};
     return ghReq('PUT',body).then(function(w){
       if((w.status===409||w.status===422)&&attempt<3)return new Promise(function(r){setTimeout(r,1500*(attempt+1))}).then(function(){return ghRound(attempt+1)});
@@ -1207,7 +1278,7 @@ setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
 var TABS=['resumo','ativos','proventos','lancamentos','mais'],MAISV='cambio',CARV='pos';
 function showTab(n){
   if(n==='cambio'||n==='ajustes'||n==='imposto'){MAISV=n;n='mais'}
-  if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='ativos')CARV='pos';
+  if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='aporte'){CARV='apo';n='ativos'}else if(n==='ativos')CARV='pos';
   if(TABS.indexOf(n)<0)n='resumo';
   Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(el){el.hidden=el.getAttribute('data-tab')!==n||(!!el.dataset.sub&&el.dataset.sub!==MAISV)||(!!el.dataset.sub2&&el.dataset.sub2!==CARV)});
   Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){if(b.dataset.go===n)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
