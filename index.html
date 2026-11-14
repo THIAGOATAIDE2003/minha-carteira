@@ -638,6 +638,7 @@ function renderSummary(R){
     card(IC.dia,dl.t==='hoje'?'Variação de hoje':'Último pregão ('+dl.d+')',dl.t==='hoje'?'Quanto suas ações (Brasil e VT) subiram ou caíram hoje, só pelo preço. O VT entra pelo dólar de hoje, sem a variação do dólar.':'A bolsa está fechada. Esse é quanto suas ações (Brasil e VT) subiram ou caíram no último dia de negociação ('+dl.d+'), só pelo preço, sem a variação do dólar.',
       (dok&&dp>0?'<div class="hcm"><b class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+'</b><span class="num '+cls(dn-dp)+'">'+pct((dn-dp)/dp)+' '+arrow(dn-dp)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
       (pB?'<div><small>Brasil</small><span class="num '+cls(dB)+'">'+pct(dB/pB)+'</span></div>':'')+(pU?'<div><small>VT</small><span class="num '+cls(dU)+'">'+pct(dU/pU)+'</span></div>':'')+(times.length&&dl.t==='hoje'?'<div><small>Preços de</small><span>'+hm(times[times.length-1])+'</span></div>':''))];
+  cards=[cards[0],cards[2],cards[1]];
   var h='<div class="hcw"><div class="hcards" id="hcards">'+cards.join('')+'</div><div class="hdots">'+cards.map(function(c,i){return '<i data-hci="'+i+'"'+(i===HCI?' class="on"':'')+'></i>'}).join('')+'</div></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   h+=metasHtml(R);
