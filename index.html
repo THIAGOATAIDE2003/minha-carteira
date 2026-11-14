@@ -68,6 +68,19 @@ button{cursor:pointer}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
 :root[data-theme="preto"] .panel{border-color:transparent}
 .panel>h2{margin-bottom:12px}
+.hcw{display:flex;flex-direction:column;gap:8px;min-width:0}
+.hcards{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:0;min-width:0;border-radius:18px}
+.hcards::-webkit-scrollbar{display:none}
+.hc{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;background:var(--hero);color:var(--hero-fg);border-radius:18px;padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:176px}
+.hct{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px}.hct .bal{margin-left:auto;color:var(--hero-muted)}
+.hci{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;flex:none}
+.hci svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hcm{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.hcm b{font:700 clamp(26px,8vw,34px)/1.1 var(--disp);letter-spacing:-.02em}.hcm>span{font-size:15px;font-weight:600}
+.hc .gain{color:var(--hero-gain)}.hc .loss{color:var(--hero-loss)}.hc .muted{color:var(--hero-muted)}
+.arw{font-size:11px;vertical-align:1px}
+.hcs{display:flex;gap:10px 22px;flex-wrap:wrap;align-items:flex-end;margin-top:auto}.hcs>div{display:flex;flex-direction:column;gap:1px}.hcs small{font-size:12px;color:var(--hero-muted)}.hcs .num{font-size:16px;font-weight:600}
+.hcs .evolink{margin:0 0 0 auto}
+.hdots{display:flex;justify-content:center;gap:6px}.hdots i{cursor:pointer;width:7px;height:7px;border-radius:50%;background:var(--line)}.hdots i.on{background:var(--accent);width:18px;border-radius:4px}
 .patr{background:var(--hero);color:var(--hero-fg);border-radius:18px;padding:20px 18px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .patr .lbl{font-size:13px;color:var(--hero-muted)}
 .patr .big{font:700 clamp(34px,10.5vw,46px)/1.05 var(--disp);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
@@ -608,13 +621,24 @@ function renderSummary(R){
     return;
   }
   var times=Object.keys(S.quotes).map(function(k){return S.quotes[k].at}).filter(Boolean);times.sort();
-  var dn=0,dp=0,dok=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var F=x.p.market==='US'?T.fxNow:1;dn+=x.p.qty*q.price*F;dp+=x.p.qty*q.prev*F;dok++});
-  var VZ=valoriz(R),dl=dayLbl();
-  var h='<div class="patr"><span class="lbl">Patrimônio</span><div class="big">'+brl.format(T.value+T.cash)+'</div>'+
-    (times.length&&dl.t==='hoje'?'<div class="day"><span>Preços de '+hm(times[times.length-1])+'</span></div>':'')+
-    '<div class="duo"><div><small>'+(dl.t==='hoje'?'Hoje':'Último pregão ('+dl.d+')')+' '+bal(dl.t==='hoje'?'Quanto todas as suas ações (Brasil e VT) subiram ou caíram hoje, só pelo preço. O VT entra convertido pelo dólar de hoje, sem a variação do dólar.':'A bolsa está fechada agora. Esse é quanto todas as suas ações (Brasil e VT) subiram ou caíram no último dia de negociação ('+dl.d+'), só pelo preço, sem a variação do dólar.')+'</small>'+(dok&&dp>0?'<b class="'+cls(dn-dp)+'">'+sgn(dn-dp)+'</b><small>'+pct((dn-dp)/dp)+'</small>':'<b class="muted">—</b><small>esperando os preços</small>')+'</div>'+
-    '<div><small>Valorização total '+bal('Quanto o preço de tudo que você tem subiu ou caiu desde a compra, mais os proventos que você já recebeu. O VT entra convertido pelo dólar de hoje, sem o ganho do câmbio. Câmbio e vendas ficam em Carteira → Desempenho.')+'</small><b class="'+cls(VZ.g)+'">'+sgn(VZ.g)+'</b><small>'+pct(VZ.p)+(VZ.div>0.005?' · com '+brl.format(VZ.div)+' de proventos':'')+'</small></div>'+
-    '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
+  var dn=0,dp=0,dok=0,dB=0,dU=0,pB=0,pU=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,a=x.p.qty*q.price*F,c=x.p.qty*q.prev*F;dn+=a;dp+=c;if(us){dU+=a-c;pU+=c}else{dB+=a-c;pB+=c}dok++});
+  var VZ=valoriz(R),dl=dayLbl(),ctp=0,vtp=0;R.held.forEach(function(x){if(x.p.market==='US'){ctp+=x.p.cN*T.fxNow;vtp+=x.p.qty*x.P1*T.fxNow}else{ctp+=x.p.cB;vtp+=x.v}});ctp+=T.rfC;vtp+=T.rfV;
+  var pv=vtp-ctp,arrow=function(v){return '<span class="arw '+cls(v)+'">'+(v>=0?'▲':'▼')+'</span>'};
+  var card=function(ic,tit,info,main,sub){return '<div class="hc"><div class="hct"><span class="hci">'+ic+'</span><span>'+tit+'</span>'+bal(info)+'</div>'+main+'<div class="hcs">'+sub+'</div></div>'};
+  var IC={pat:'<svg viewBox="0 0 24 24"><path d="M4 11a7 6 0 0 1 13-2h2v4l-2 1-1 3h-3v-2H9v2H6l-1-3a5 5 0 0 1-1-3z"/><circle cx="15" cy="11" r="1"/></svg>',
+    val:'<svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>',
+    dia:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
+  var cards=[
+    card(IC.pat,'Patrimônio total','Quanto vale tudo que você tem hoje. A porcentagem compara com o valor investido (o que você pagou, com o VT pelo dólar de hoje), só pelo preço.',
+      '<div class="hcm"><b class="num">'+brl.format(T.value+T.cash)+'</b>'+(ctp?'<span class="num '+cls(pv)+'">'+pct(pv/ctp)+' '+arrow(pv)+'</span>':'')+'</div>',
+      '<div><small>Valor investido</small><span class="num">'+brl.format(ctp)+'</span></div><button type="button" class="evolink" data-goto="evolucao">Ver evolução</button>'),
+    card(IC.val,'Valorização','Quanto o preço de tudo que você tem subiu ou caiu desde a compra (ganho de capital), mais os proventos que você já recebeu. Sem câmbio e sem vendas: esses ficam em Carteira → Desempenho.',
+      '<div class="hcm"><b class="num '+cls(VZ.g)+'">'+sgn(VZ.g)+'</b><span class="num '+cls(VZ.g)+'">'+pct(VZ.p)+' '+arrow(VZ.g)+'</span></div>',
+      '<div><small>Ganho de capital</small><span class="num">'+sgn(VZ.pv)+'</span></div><div><small>Proventos recebidos</small><span class="num">'+brl.format(VZ.div)+'</span></div>'),
+    card(IC.dia,dl.t==='hoje'?'Variação de hoje':'Último pregão ('+dl.d+')',dl.t==='hoje'?'Quanto suas ações (Brasil e VT) subiram ou caíram hoje, só pelo preço. O VT entra pelo dólar de hoje, sem a variação do dólar.':'A bolsa está fechada. Esse é quanto suas ações (Brasil e VT) subiram ou caíram no último dia de negociação ('+dl.d+'), só pelo preço, sem a variação do dólar.',
+      (dok&&dp>0?'<div class="hcm"><b class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+'</b><span class="num '+cls(dn-dp)+'">'+pct((dn-dp)/dp)+' '+arrow(dn-dp)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
+      (pB?'<div><small>Brasil</small><span class="num '+cls(dB)+'">'+pct(dB/pB)+'</span></div>':'')+(pU?'<div><small>VT</small><span class="num '+cls(dU)+'">'+pct(dU/pU)+'</span></div>':'')+(times.length&&dl.t==='hoje'?'<div><small>Preços de</small><span>'+hm(times[times.length-1])+'</span></div>':''))];
+  var h='<div class="hcw"><div class="hcards" id="hcards">'+cards.join('')+'</div><div class="hdots">'+cards.map(function(c,i){return '<i data-hci="'+i+'"'+(i===HCI?' class="on"':'')+'></i>'}).join('')+'</div></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   h+=metasHtml(R);
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
@@ -647,7 +671,10 @@ function renderSummary(R){
       top.map(function(i){return '<li><i style="background:'+i.c+'"></i><span>'+esc(i.n)+'</span><span class="num">'+pf.format(i.v/T.value*100)+'%</span></li>'}).join('')+'</ul></div></div>';
   }
   el.innerHTML=h;
+  var hc=$('hcards');if(hc&&HCI){hc.scrollLeft=HCI*hc.clientWidth}
 }
+var HCI=0;
+document.addEventListener('scroll',function(e){var hc=e.target;if(!hc||hc.id!=='hcards')return;var i=Math.round(hc.scrollLeft/Math.max(1,hc.clientWidth));if(i!==HCI){HCI=i;[].forEach.call(document.querySelectorAll('.hdots i'),function(d){d.classList.toggle('on',+d.getAttribute('data-hci')===i)})}},true);
 
 function perfHtml(R){
   var T=R.tot,h='',bm=cdiBench(R),nBR=R.held.some(function(x){return x.p.market==='BR'}),nUS=R.held.some(function(x){return x.p.market==='US'});
@@ -940,6 +967,7 @@ function setTema(tm){try{localStorage.setItem(LS+'-tema',tm)}catch(e){}
 function markTema(){var tm=getTema();[].forEach.call(document.querySelectorAll('[data-tema]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-tema')===tm))})}
 document.addEventListener('click',function(e){
   var t=e.target;
+  var hd=t.closest&&t.closest('[data-hci]');if(hd){var hcs=$('hcards');if(hcs)hcs.scrollTo({left:+hd.getAttribute('data-hci')*hcs.clientWidth,behavior:'smooth'});return}
   var dvb=t.closest&&t.closest('[data-dvv]');if(dvb){DVV=dvb.getAttribute('data-dvv');render();return}
   var tb=t.closest&&t.closest('[data-tema]');
   if(tb){setTema(tb.getAttribute('data-tema'));return}
