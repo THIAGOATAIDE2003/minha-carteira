@@ -455,10 +455,10 @@ function renderSummary(R){
   }
   var times=Object.keys(S.quotes).map(function(k){return S.quotes[k].at}).filter(Boolean);if(MK.updatedMs)times.push(MK.updatedMs);times.sort();
   var dn=0,dp=0,dok=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,Fp=us?(S.fx&&S.fx.prev?S.fx.prev:F):1;dn+=x.p.qty*q.price*F;dp+=x.p.qty*q.prev*Fp;dok++});
-  var un0=T.uA+T.uF+T.rfU;
+  var pa0=T.uA+T.rfU;
   var h='<div class="patr"><span class="lbl">Patrimônio</span><div class="big">'+brl.format(T.value+T.cash)+'</div>'+
     '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>hoje</span>':'')+(times.length?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
-    '<div class="duo"><div class="wide"><small>Carteira hoje (o que você tem agora contra o que pagou)</small><b class="'+cls(un0)+'">'+sgn(un0)+' ('+pct(T.cost?un0/T.cost:0)+')</b>'+(Math.abs(T.uF)>0.005?'<small>No preço dos ativos: <span class="num '+cls(T.uA+T.rfU)+'">'+sgn(T.uA+T.rfU)+'</span>. No dólar: <span class="num '+cls(T.uF)+'">'+sgn(T.uF)+'</span>.</small>':'')+'</div>'+
+    '<div class="duo"><div class="wide"><small>Valorização das suas ações agora (só o preço, sem o dólar)</small><b class="'+cls(pa0)+'">'+sgn(pa0)+' ('+pct(T.cost?pa0/T.cost:0)+')</b></div>'+
     '<div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre o aplicado</small></div>'+
     '<div><small>Aplicado do seu bolso</small><b>'+brl.format(T.contrib)+'</b>'+(T.cash>0.005?'<small>'+brl.format(T.cash)+' de saldo parado</small>':'')+'</div></div></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
