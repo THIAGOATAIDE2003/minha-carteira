@@ -330,6 +330,12 @@ function renderSummary(R){
     '<div class="sub"><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span><span class="meta">'+(T.gain>=0?'de lucro':'de prejuízo')+' sobre o que você aplicou</span></div>'+
     '<div class="meta">'+esc(fxTxt)+(upd?' · '+esc(upd):'')+(T.missing.length?' · sem preço: '+esc(T.missing.join(', ')):'')+'</div></div>';
   var dn=0,dp=0,dok=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,Fp=us?(S.fx&&S.fx.prev?S.fx.prev:F):1;dn+=x.p.qty*q.price*F;dp+=x.p.qty*q.prev*Fp;dok++});
+  var vBR=0,vUSu=0,vUS=0,nBR=0,nUS=0;R.held.forEach(function(x){if(x.p.market==='US'){vUSu+=x.p.qty*x.P1;vUS+=x.v;nUS++}else{vBR+=x.v;nBR++}});
+  if(nBR||nUS){h+='<div class="panel" style="margin-top:16px"><ul class="calc" style="margin:0;font-size:15px">'+
+    (nBR?'<li><span>Bolsa Brasil <span class="muted small">(Nubank)</span></span><span class="num">'+brl.format(vBR)+'</span></li>':'')+
+    (nUS?'<li><span>EUA <span class="muted small">(Inter)</span><br><span class="num muted small">'+usd.format(vUSu)+(T.fxNow?' × '+num(T.fxNow,4):'')+'</span></span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
+    (T.cash>0.005?'<li><span>Saldo parado</span><span class="num">'+brl.format(T.cash)+'</span></li>':'')+
+    '<li class="tot"><span>Total</span><span class="num">'+brl.format(vBR+vUS+(T.cash>0.005?T.cash:0))+'</span></li></ul></div>'}
   if(dok&&dp>0)h+='<div class="panel" style="margin-top:16px"><div class="split"><div><span class="lbl">Variação do dia</span><span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span></div><div><span class="lbl">Dólar no dia</span><span class="num">'+(S.fx&&S.fx.prev?pct(S.fx.rate/S.fx.prev-1):'—')+'</span></div></div></div>';
   h+='<div class="panel" style="margin-top:16px"><ul class="calc" style="margin:0;font-size:15px">'+
     '<li><span>Aplicado do seu bolso</span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
