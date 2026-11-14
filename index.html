@@ -291,7 +291,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 <div class="wrap">
   <header class="top">
     <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0f2a3f"/><path d="M120 356l92-104 68 60 112-148" fill="none" stroke="#f4f8fb" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="392" cy="164" r="34" fill="#e3b657"/></svg><h1>Aporte</h1></div>
-    <div class="pills"><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button><button type="button" class="aibtn" id="aifab" aria-label="Assistente de IA"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>IA</button></div>
+    <div class="pills"><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button></div>
   </header>
   <div class="msg muted" id="status" role="status"></div>
   <div id="banner"></div>
@@ -385,8 +385,6 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
           <input id="k-br" placeholder="cole seu token" autocomplete="off">
           <label class="small muted" for="k-av">Chave Alpha Vantage (dividendos do VT, grátis em alphavantage.co)</label>
           <input id="k-av" placeholder="cole sua chave" autocomplete="off">
-          <label class="small muted" for="k-gm">Chave Google Gemini (assistente de IA, grátis em aistudio.google.com)</label>
-          <input id="k-gm" placeholder="cole sua chave" autocomplete="off">
         </div>
       </div>
     </section>
@@ -395,8 +393,6 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 </div>
 
 <div class="sheet" id="stk" hidden><div class="sbox big" role="dialog" aria-label="Ação"><div class="shd"><b id="stk-h">Ação</b><button type="button" class="shx" data-stk="close" aria-label="Fechar">✕</button></div><div class="sbd" id="stk-b"></div></div></div>
-<div class="sheet" id="ai" hidden><div class="sbox big" role="dialog" aria-label="Assistente de IA"><div class="shd"><b>Assistente</b><span style="display:flex;gap:6px;align-items:center"><button type="button" class="link" data-ai="clear">Limpar</button><button type="button" class="shx" data-ai="close" aria-label="Fechar">✕</button></span></div>
-<div class="sbd aimsgs" id="ai-msgs"></div><form class="aiform" id="ai-form"><input id="ai-in" placeholder="Pergunte sobre sua carteira ou uma ação" autocomplete="off"><button class="btn" type="submit">Enviar</button></form></div></div>
 <nav class="tabs" aria-label="Seções">
 <button type="button" data-go="resumo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>Início</button>
 <button type="button" data-go="ativos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9h9a9 9 0 1 1-9-9z"/><path d="M15.5 3.6A9 9 0 0 1 20.4 8.5H15.5z"/></svg>Carteira</button>
@@ -927,85 +923,13 @@ function stkRender(){
       .map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'}).join('')+'</div>'+
     (!d.mods?'<p class="note">Indicadores ainda não disponíveis para essa ação. Eles chegam com o robô diário (até a próxima atualização).</p>':'');
   if(d.divs&&d.divs.length)h+='<h3 style="margin:18px 0 6px">Últimos proventos'+(K.d12&&d.price?' <span class="muted small">('+F.format(K.d12)+' por ação em 12 meses)</span>':'')+'</h3><ul class="calc small">'+d.divs.slice(0,8).map(function(c){return '<li><span>'+esc(String(c.label||'').replace('JUROS SOBRE CAPITAL PRÓPRIO','JCP'))+' <span class="muted">'+(c.exDate?'data ex '+fmtDate(c.exDate):c.paymentDate?'pago em '+fmtDate(String(c.paymentDate).slice(0,10)):'a definir')+'</span></span><span class="num">'+(d.cur==='USD'?'US$ ':'R$ ')+num(+c.rate,4)+'</span></li>'}).join('')+'</ul>';
-  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px"><button type="button" class="btn ghost" data-wtog="'+esc(tk)+'">'+(inW?'Parar de acompanhar':'Acompanhar')+'</button>'+(S.keys.gm?'<button type="button" class="btn" data-aiask="'+esc(tk)+'">Perguntar à IA sobre '+esc(tk)+'</button>':'')+'</div>'+
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px"><button type="button" class="btn ghost" data-wtog="'+esc(tk)+'">'+(inW?'Parar de acompanhar':'Acompanhar')+'</button>'+'</div>'+
     '<p class="note">'+(d.fast?'Gráfico e proventos do Yahoo'+(d.cur==='USD'?', indicadores do Finnhub':', indicadores do Fundamentus')+', atualizados pelo robô diário'+(MD.d&&MD.d.at?' ('+new Date(MD.d.at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')':'')+'; preço de agora do '+(d.cur==='USD'?'Finnhub':'brapi'):'Dados do '+(d.cur==='USD'?'Finnhub e Alpha Vantage':'brapi'+(d.histSrc?', gráfico da Alpha Vantage':'')))+'. Indicadores servem para estudar, não são recomendação de compra ou venda.</p>';
   b.innerHTML=h;
 }
 function watchSet(W){S.watch=W;S.pend.push({t:'cfg',k:'watch',v:W});save();ghSync();clearTimeout(watchSet.t);watchSet.t=setTimeout(function(){loadMD(true)},150000)}
-/* ===== Assistente de IA (Google Gemini) ===== */
-var AI={msgs:[],busy:false};
-try{var ai0=JSON.parse(localStorage.getItem(LS+'-aichat')||'null');if(ai0&&Array.isArray(ai0))AI.msgs=ai0.slice(-30)}catch(e){}
-function aiSave(){try{localStorage.setItem(LS+'-aichat',JSON.stringify(AI.msgs.filter(function(m){return !m.live}).slice(-30)))}catch(e){}}
-function aiOpen(q){$('ai').hidden=false;document.body.style.overflow='hidden';aiRender();if(q){aiSend(q)}else setTimeout(function(){try{$('ai-in').focus()}catch(e){}},50)}
-function aiClose(){$('ai').hidden=true;document.body.style.overflow=''}
-function aiFmt(t){return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#+\s*(.+)$/gm,'<b>$1</b>').replace(/^\s*[\*\-]\s+/gm,'• ')}
-function aiRender(){var el=$('ai-msgs');if(!el)return;
-  if(!S.keys.gm){el.innerHTML='<p class="muted">Para usar o assistente, crie uma chave grátis no Google AI Studio (aistudio.google.com → Get API key) e cole em Mais → Ajustes → Chave Google Gemini.</p>';return}
-  var h=AI.msgs.length?AI.msgs.map(function(m){return '<div class="aim '+(m.r==='u'?'u':m.r==='e'?'e':'a')+(m.live?' live':'')+'">'+(m.r==='u'?esc(m.t):m.live&&!m.t?'<span class="muted">Pensando...</span>':aiFmt(m.t))+(m.m?'<small class="aimm">'+esc(m.m)+'</small>':'')+'</div>'}).join(''):
-    '<p class="muted small">Pergunte o que quiser sobre sua carteira, seus proventos ou qualquer ação. Exemplos:</p><div class="aisug">'+['Por que minha carteira caiu no último pregão?','Quanto recebi de proventos este ano e de quais ações?','Me explique os indicadores da ITUB4 de forma simples','Minha carteira está muito concentrada em alguma ação?'].map(function(q){return '<button type="button" data-aiq="'+esc(q)+'">'+esc(q)+'</button>'}).join('')+'</div>';
-
-  el.innerHTML=h;el.scrollTop=el.scrollHeight}
-function aiContext(){
-  var R=compute(),T=R.tot,VZ=valoriz(R),fx=T.fxNow;
-  var pos=R.held.map(function(x){var us=x.p.market==='US',pm=x.p.cN/x.p.qty;return {ativo:x.p.ticker,mercado:us?'EUA (US$)':'Brasil (R$)',quantidade:+x.p.qty.toFixed(4),preco_medio:+pm.toFixed(4),preco_atual:+(+x.P1).toFixed(4),valor_em_reais:Math.round(x.v*100)/100,variacao_preco_pct:+((x.P1/pm-1)*100).toFixed(2)}});
-  var y=today().slice(0,4),dv={};S.trades.forEach(function(t){if(t.side==='div'&&t.date.slice(0,4)===y){var v=t.price*(t.market==='US'?t.fx:1);dv[t.ticker]=Math.round(((dv[t.ticker]||0)+v)*100)/100}});
-  var q={};R.held.forEach(function(x){var g=S.quotes[x.p.ticker];if(g&&g.prev)q[x.p.ticker]=+((g.price/g.prev-1)*100).toFixed(2)});
-  var w={};wlist().forEach(function(tk){var m=MKT.q[tk];if(m)w[tk]={preco:m.price,variacao_dia_pct:m.pct}});
-  var o={data_hoje:today(),bolsa:dayLbl().t,patrimonio:Math.round((T.value+T.cash)*100)/100,dolar:fx,posicoes:pos,variacao_ultimo_pregao_pct_por_ativo:q,
-    valorizacao:{ganho_capital_preco:Math.round(VZ.pv*100)/100,proventos_recebidos_total:Math.round(VZ.div*100)/100,total:Math.round(VZ.g*100)/100,pct:+(VZ.p*100).toFixed(2)},
-    lucro_total_desde_inicio:{total:Math.round(T.gain*100)/100,aplicado_do_bolso:Math.round(T.contrib*100)/100,vendas_realizadas:Math.round((T.rA+T.rF+T.rfR)*100)/100,taxas:Math.round(T.fees*100)/100},
-    proventos_recebidos_no_ano:dv,proventos_a_receber:DV.up.map(function(u){return {ativo:u.tk,tipo:u.tipo,pagamento:u.pay||'a definir',valor_reais:u.val}}),
-    lista_de_acompanhamento:w,indices:MKT.idx,indicadores_fundamentus:(function(){var o={};R.held.map(function(x){return x.p.ticker}).concat(wlist()).forEach(function(tk){var F=fundOf(tk);if(F)o[tk]={P_L:F.pl,P_VP:F.pvp,DY_pct:F.dy,ROE_pct:F.roe,ROIC_pct:F.roic,margem_liq_pct:F.ml,div_bruta_PL:F.divpl,cresc_receita_5a_pct:F.cr5}});return o})()};
-  if(STK.tk&&STK.d&&!$('stk').hidden)o.acao_aberta_na_tela={ativo:STK.tk,nome:STK.d.name,preco:STK.d.price,indicadores:STK.d.k};
-  return JSON.stringify(o);
-}
-var AIML=null,AIBAD={};
-function aiModel(skip){
-  if(skip)AIBAD[skip]=1;
-  try{var c=JSON.parse(localStorage.getItem(LS+'-gemm3')||'null');if(!skip&&c&&c.m&&Date.now()-c.at<7*864e5)return Promise.resolve(c.m)}catch(e){}
-  var pick=function(){var m=(AIML||[]).filter(function(n){return !AIBAD[n]})[0];if(!m)throw new Error('nomodel');try{localStorage.setItem(LS+'-gemm3',JSON.stringify({m:m,at:Date.now()}))}catch(e){}return m};
-  if(AIML)return Promise.resolve().then(pick);
-  return getJSON('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(S.keys.gm)).catch(function(e){var er=new Error('http');er.s=+e.message||0;er.m='lista de modelos';throw er}).then(function(j){
-    var ms=(j.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf('generateContent')>=0&&/flash/.test(m.name)&&!/image|tts|live|audio|embed|vision|exp|thinking/.test(m.name)}).map(function(m){return m.name});
-    var rank=function(n){return (/flash-latest$/.test(n)?0:/lite/.test(n)?3:/preview/.test(n)?2:1)};
-    var ver=function(n){var v=n.match(/gemini-(\d+(?:\.\d+)?)/);return v?parseFloat(v[1]):0};
-    ms.sort(function(x,y){return rank(x)-rank(y)||ver(y)-ver(x)});AIML=ms;return pick()});
-}
-var AITH=null;try{AITH=localStorage.getItem(LS+'-gemth')}catch(e){}
-function aiLive(t){var el=$('ai-msgs');if(!el)return;var b=el.querySelector('.aim.live');if(!b){aiRender();b=el.querySelector('.aim.live')}if(b){b.innerHTML=aiFmt(t)||'<span class="muted">Pensando...</span>';el.scrollTop=el.scrollHeight}}
-function aiSend(q){
-  q=String(q||'').trim();if(!q||AI.busy)return;if(!S.keys.gm){aiRender();return}
-  AI.msgs.push({r:'u',t:q});AI.busy=true;aiRender();
-  var sys='Você é o assistente do app Aporte, a carteira de investimentos pessoal do Thiago (investidor pessoa física no Brasil, ações na Nubank e o ETF VT no Inter). Responda sempre em português do Brasil, curto e direto, como numa conversa de celular: comece pela resposta, depois no máximo alguns tópicos. Use os dados da carteira abaixo (valores em reais, a não ser quando indicado). Explique conceitos e números, compare, aponte riscos e prós e contras, mas não dê ordem de compra ou venda nem garanta resultados: deixe a decisão com ele. Se não tiver o dado, diga que não tem em vez de inventar. Dados atuais da carteira (JSON): '+aiContext();
-  var hist=AI.msgs.filter(function(m){return m.r!=='e'}).slice(-10).map(function(m){return {role:m.r==='u'?'user':'model',parts:[{text:m.t}]}});
-  var out='',ctl=null;
-  var body=function(model,th){var g={temperature:0.4,maxOutputTokens:1000};
-    if(th==='budget')g.thinkingConfig={thinkingBudget:0};else if(th==='level')g.thinkingConfig={thinkingLevel:'low'};
-    return JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:hist,generationConfig:g})};
-  var got=false,used='';
-  var logl=[],stat=function(t){logl.push(t);if(!got){var el=$('ai-msgs'),b=el&&el.querySelector('.aim.live');if(b)b.innerHTML='<span class="muted">Pensando...</span><small class="aimm">'+esc(logl.slice(-4).join(' · '))+'</small>'}};
-  var call=function(model,th,tries,kind){kind=kind||'stream';var my=new AbortController(),slow=false;ctl=my;got=false;used=model;stat(model.replace('models/','')+(kind==='stream'?'':' (normal)'));var to=setTimeout(function(){my.abort()},60000),fb=setTimeout(function(){if(!got){slow=true;my.abort()}},kind==='stream'?20000:35000);out='';
-    var next=function(){clearTimeout(to);clearTimeout(fb);if(kind==='stream')return call(model,th,tries+1,'plain');try{localStorage.removeItem(LS+'-gemm3')}catch(e){}return aiModel(model).then(function(m2){return call(m2,th,tries+1,'stream')})};
-    return fetch('https://generativelanguage.googleapis.com/v1beta/'+model+(kind==='stream'?':streamGenerateContent?alt=sse&':':generateContent?')+'key='+encodeURIComponent(S.keys.gm),{method:'POST',signal:my.signal,headers:{'Content-Type':'application/json'},body:body(model,th)})
-      .then(function(r){
-        if(!r.ok)return r.json().catch(function(){return {}}).then(function(j){var m=j&&j.error&&j.error.message||'';clearTimeout(to);stat('erro '+r.status);
-          if(r.status===400&&th&&/thinking/i.test(m)&&tries<8){var nt=th==='budget'?'level':'';try{localStorage.setItem(LS+'-gemth',nt)}catch(e){}AITH=nt;return call(model,nt,tries+1,kind)}
-          clearTimeout(fb);if((r.status===404||(r.status===400&&/not (found|supported)|no longer/i.test(m))||r.status===503||r.status===500)&&tries<8)return next();
-          var er=new Error('http');er.s=r.status;er.m=m;throw er});
-        if(kind==='plain')return r.json().then(function(j){clearTimeout(to);eat(JSON.stringify(j))});
-        if(!r.body||!r.body.getReader)return r.text().then(function(tx){clearTimeout(to);tx.split('\n').forEach(function(l){if(l.indexOf('data:')===0)eat(l.slice(5))})});
-        var rd=r.body.getReader(),dec=new TextDecoder(),buf='';
-        var pump=function(){return rd.read().then(function(x){if(x.done){clearTimeout(to);if(buf.indexOf('data:')===0)eat(buf.slice(5));return}
-          buf+=dec.decode(x.value,{stream:true});var ls=buf.split('\n');buf=ls.pop();ls.forEach(function(l){if(l.indexOf('data:')===0)eat(l.slice(5))});return pump()})};
-        return pump()}).then(function(){clearTimeout(fb);clearTimeout(to)},function(e){clearTimeout(fb);clearTimeout(to);if(slow&&!got&&tries<8){stat('sem resposta em 20s');return next()}throw e})};
-  var eat=function(js){try{var j=JSON.parse(js),c=j.candidates&&j.candidates[0],ps=c&&c.content&&c.content.parts||[];got=true;ps.forEach(function(p){if(p.text&&!p.thought)out+=p.text});aiLive(out)}catch(e){}};
-  AI.msgs.push({r:'a',t:'',live:1});aiRender();
-  var th=AITH===null?'budget':AITH;
-  stat('buscando modelos');aiModel().then(function(m){return call(m,th,0,'stream')}).then(function(){var last=AI.msgs[AI.msgs.length-1];last.t=out;last.m=used.replace('models/','');delete last.live;try{localStorage.setItem(LS+'-gemm3',JSON.stringify({m:used,at:Date.now()}))}catch(e){}if(!out){AI.msgs.pop();AI.msgs.push({r:'e',t:'A IA não respondeu. Tente perguntar de outro jeito.'})}},function(e){
-    var last=AI.msgs[AI.msgs.length-1];if(last&&last.live){if(out){last.t=out;delete last.live}else AI.msgs.pop()}
-    var s0=e&&e.s;AI.msgs.push({r:'e',t:s0===400||s0===403?'A chave do Gemini não foi aceita. Confira em Ajustes.'+(e.m?' ('+String(e.m).slice(0,90)+')':''):s0===429?'Passou do limite grátis do Gemini por agora. Tente de novo em alguns minutos.':e&&e.name==='AbortError'?'A IA demorou demais. Tentativas: '+logl.join(' · '):(e&&e.message==='nomodel'?'Nenhum modelo do Gemini aceitou a sua chave. Confira se a chave é do Google AI Studio.':'Não consegui falar com a IA agora'+(s0?' (código '+s0+(e.m?': '+String(e.m).slice(0,140):'')+')':e&&e.message&&e.message!=='http'?' ('+String(e.message).slice(0,100)+')':'')+'.')})})
-    .then(function(){AI.busy=false;aiSave();aiRender()});
-}
+/* assistente de IA removido a pedido do usuário: limpa o que ficou guardado */
+try{if(S.keys&&S.keys.gm){delete S.keys.gm;save()}['-aichat','-gemm','-gemm2','-gemm3','-gemth'].forEach(function(k){localStorage.removeItem(LS+k)})}catch(e){}
 
 function perfHtml(R){
   var T=R.tot,h='',bm=cdiBench(R),nBR=R.held.some(function(x){return x.p.market==='BR'}),nUS=R.held.some(function(x){return x.p.market==='US'});
@@ -1188,7 +1112,7 @@ function render(){
     rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'err':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
     si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note exp">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
-  $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';$('k-gm').value=S.keys.gm||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
+  $('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
   markTema();foldNotes();
   syncForm();
 }
@@ -1249,8 +1173,7 @@ $('f-date').addEventListener('change',syncForm);
 $('fx-edit').addEventListener('click',function(){fxCustom=true;syncForm();$('f-fx').focus()});
 document.addEventListener('input',function(e){if(e.target&&e.target.id==='mk-q')mkSearch(e.target.value)});
 document.addEventListener('submit',function(e){var f=e.target;
-  if(f.id==='wadd'){e.preventDefault();var tk=String($('w-tk').value||'').trim().toUpperCase().replace(/[^A-Z0-9^.]/g,'');if(!tk)return;var W=wlist().slice();if(W.indexOf(tk)<0){W.push(tk);watchSet(W)}$('w-tk').value='';renderMkt();loadMkt(true)}
-  else if(f.id==='ai-form'){e.preventDefault();var q=$('ai-in').value;$('ai-in').value='';aiSend(q)}},true);
+  if(f.id==='wadd'){e.preventDefault();var tk=String($('w-tk').value||'').trim().toUpperCase().replace(/[^A-Z0-9^.]/g,'');if(!tk)return;var W=wlist().slice();if(W.indexOf(tk)<0){W.push(tk);watchSet(W)}$('w-tk').value='';renderMkt();loadMkt(true)}},true);
 $('addform').addEventListener('submit',function(e){
   e.preventDefault();var m=$('formmsg');m.className='msg';m.textContent='';
   if($('f-market').value==='RF'&&$('f-side').value==='sell'){
@@ -1307,10 +1230,6 @@ document.addEventListener('click',function(e){
   var rg=t.closest&&t.closest('[data-rng]');if(rg){STK.rng=rg.getAttribute('data-rng');stkLoad();return}
   var wd=t.closest&&t.closest('[data-wdel]');if(wd){var dk=wd.getAttribute('data-wdel');watchSet(wlist().filter(function(x){return x!==dk}));renderMkt();return}
   var wt=t.closest&&t.closest('[data-wtog]');if(wt){var tk2=wt.getAttribute('data-wtog'),W2=wlist().slice();if(W2.indexOf(tk2)>=0)W2=W2.filter(function(x){return x!==tk2});else W2.push(tk2);watchSet(W2);stkRender();renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(W2.indexOf(tk2)>=0)loadMkt(true);return}
-  if(t.closest&&t.closest('#aifab')){aiOpen();return}
-  var aa=t.closest&&t.closest('[data-ai]');if(aa){var av=aa.getAttribute('data-ai');if(av==='close')aiClose();else if(av==='clear'){AI.msgs=[];aiSave();aiRender()}return}
-  var aq=t.closest&&t.closest('[data-aiq]');if(aq){aiSend(aq.getAttribute('data-aiq'));return}
-  var ak=t.closest&&t.closest('[data-aiask]');if(ak){aiOpen('Analise a ação '+ak.getAttribute('data-aiask')+' com os indicadores que aparecem na tela: o que eles dizem, pontos fortes e pontos de atenção.');return}
   var it=t.closest&&t.closest('[data-idxt]');if(it){var ik=it.getAttribute('data-idxt'),A=idxSel().slice();if(A.indexOf(ik)>=0)A=A.filter(function(x){return x!==ik});else A.push(ik);idxSet(A);renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(A.indexOf(ik)>=0)loadMkt(true);return}
   if(t.closest&&t.closest('[data-mked]')){MKED=!MKED;renderMkt();return}
   var hd=t.closest&&t.closest('[data-hci]');if(hd){var hcs=$('hcards');if(hcs)hcs.scrollTo({left:+hd.getAttribute('data-hci')*hcs.clientWidth,behavior:'smooth'});return}
@@ -1363,7 +1282,6 @@ document.addEventListener('change',function(e){
     var r=parseNum(t.value);
     if(r>0&&(r<3||r>10)){warnIn('O dólar digitado ('+num(r,2)+') parece errado. Confira a vírgula, por exemplo 5,58.');t.value=S.fx&&S.fx.rate?String(S.fx.rate).replace('.',','):'';return}
     S.fx=r>0?{rate:r,at:Date.now(),src:'manual'}:null;save();$('status').textContent='';render();
-  }else if(t.id==='k-gm'){S.keys.gm=$('k-gm').value.trim();save();try{localStorage.removeItem(LS+'-gemm')}catch(e){}
   }else if(t.id==='k-fh'||t.id==='k-br'||t.id==='k-av'){
     var av0=S.keys.av;S.keys.finnhub=$('k-fh').value.trim();S.keys.brapi=$('k-br').value.trim();S.keys.av=$('k-av').value.trim();save();
     if(S.keys.av&&S.keys.av!==av0){DU.at=0;loadDivsUS(true)}
