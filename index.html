@@ -139,7 +139,7 @@ textarea{width:100%;min-height:90px;background:var(--bg);border:1px solid var(--
     <h2 id="h-add" style="margin-bottom:14px">Novo lançamento</h2>
     <form class="add" id="addform" autocomplete="off">
       <label for="f-side">Tipo
-        <select id="f-side"><option value="buy">Compra</option><option value="sell">Venda</option><option value="div">Provento</option></select></label>
+        <select id="f-side"><option value="buy">Compra</option><option value="sell">Venda</option><option value="div">Provento</option><option value="out">Retirada de dinheiro</option></select></label>
       <label for="f-market">Mercado
         <select id="f-market"><option value="US">EUA (ações e ETFs)</option><option value="BR">Brasil (ações e FIIs)</option></select></label>
       <label for="f-ticker">Ticker
@@ -267,7 +267,9 @@ function xirr(flows){
 function compute(){
   var by={},warns=[],flows=[],bought=0,proceeds=0,divs=0,cash=0,contrib=0;
   var ts=S.trades.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)});
+  var outs=0;
   ts.forEach(function(t){
+    if(t.side==='out'){var am=t.price*(t.market==='US'?t.fx:1);outs+=am;cash-=am;contrib-=am;if(cash<0){contrib-=cash;cash=0}return}
     var p=by[t.ticker]||(by[t.ticker]={ticker:t.ticker,market:t.market,qty:0,cN:0,cB:0,rA:0,rF:0,lastFx:1});
     var F=t.market==='US'?t.fx:1;p.lastFx=F;
     if(t.side==='div'){
@@ -289,7 +291,7 @@ function compute(){
     }
   });
   var ft0=fxToday(),fxNow=ft0?ft0.rate:null;
-  var tot={value:0,cost:0,uA:0,uF:0,rA:0,rF:0,div:divs,bought:bought,proceeds:proceeds,contrib:contrib,cash:cash,missing:[]};
+  var tot={outs:outs,value:0,cost:0,uA:0,uF:0,rA:0,rF:0,div:divs,bought:bought,proceeds:proceeds,contrib:contrib,cash:cash,missing:[]};
   var held=[],closed=[];
   Object.keys(by).sort().forEach(function(k){
     var p=by[k];tot.rA+=p.rA;tot.rF+=p.rF;
@@ -332,7 +334,7 @@ function renderSummary(R){
   h+='<div class="panel" style="margin-top:16px"><ul class="calc" style="margin:0;font-size:15px">'+
     '<li><span>Aplicado do seu bolso</span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
     '<li><span>Valor atual</span><span class="num">'+brl.format(T.value+T.cash)+'</span></li>'+
-    (T.cash>0.005?'<li class="muted small"><span>'+brl.format(T.value)+' em ativos + '+brl.format(T.cash)+' de vendas ainda não reinvestidas</span><span></span></li>':'')+
+    (T.cash>0.005?'<li class="muted small"><span>'+brl.format(T.value)+' em ativos + '+brl.format(T.cash)+' de saldo parado nas corretoras</span><span></span></li>':'')+
     '<li class="tot"><span>'+(T.gain>=0?'Lucro':'Prejuízo')+'</span><span class="num '+cls(T.gain)+'">'+sgn(T.gain)+' ('+pct(T.simple)+')</span></li></ul></div>';
   h+='<div class="panel" style="margin-top:16px"><div class="split">'+
     '<div><span class="lbl">Variação das ações</span><span class="num '+cls(T.uA+T.rA)+'">'+sgn(T.uA+T.rA)+'</span></div>'+
@@ -391,8 +393,8 @@ function renderTrades(){
   var ts=S.trades.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:(a.id<b.id?1:-1)});
   el.innerHTML=ts.map(function(t){
     var us=t.market==='US',cur=us?usd:brl,tot=t.qty*t.price*(us?t.fx:1);
-    return '<div class="tr"><span class="side '+(t.side==='sell'?'s':'b')+'">'+(t.side==='buy'?'COMPRA':t.side==='sell'?'VENDA':'PROVENTO')+'</span><span><b>'+esc(t.ticker)+'</b> <span class="d">'+fmtDate(t.date)+'</span></span><span class="num">'+brl.format(tot)+'</span>'+
-      '<div class="x"><span class="num">'+(t.side==='div'?'':num(t.qty)+' × ')+cur.format(t.price)+(us?' · dólar '+brl.format(t.fx):'')+'</span><button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></div></div>';
+    return '<div class="tr"><span class="side '+(t.side==='sell'||t.side==='out'?'s':'b')+'">'+(t.side==='buy'?'COMPRA':t.side==='sell'?'VENDA':t.side==='out'?'RETIRADA':'PROVENTO')+'</span><span><b>'+esc(t.side==='out'?(t.note||'Dinheiro retirado da corretora'):t.ticker)+'</b> <span class="d">'+fmtDate(t.date)+'</span></span><span class="num">'+brl.format(tot)+'</span>'+
+      '<div class="x"><span class="num">'+(t.side==='div'||t.side==='out'?'':num(t.qty)+' × ')+cur.format(t.price)+(us?' · dólar '+brl.format(t.fx):'')+'</span><button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></div></div>';
   }).join('');
 }
 
@@ -462,10 +464,11 @@ function render(){
 /* formulário */
 var fxCustom=false;
 function syncForm(){
-  var dv=$('f-side').value==='div';
+  var ot=$('f-side').value==='out',dv=$('f-side').value==='div'||ot;
   var us=$('f-market').value==='US';
   $('w-fx').hidden=!us;$('w-qty').hidden=dv;
-  $('l-price').textContent=dv?(us?'Valor recebido (US$)':'Valor recebido (R$)'):(us?'Preço (US$)':'Preço (R$)');
+  var tl=$('f-ticker').closest('label');tl.hidden=ot;$('f-ticker').required=!ot;
+  $('l-price').textContent=ot?(us?'Valor retirado (US$)':'Valor retirado (R$)'):dv?(us?'Valor recebido (US$)':'Valor recebido (R$)'):(us?'Preço (US$)':'Preço (R$)');
   var d=$('f-date').value||today();
   var look=fxOn(d),ft=fxToday();
   var auto=look?{rate:look.rate,date:look.date}:(ft?{rate:ft.rate,date:null}:null);
@@ -486,14 +489,14 @@ $('addform').addEventListener('submit',function(e){
   if(S.example){m.className='msg err';m.textContent='Limpe o exemplo antes de lançar seus dados.';return}
   var us=$('f-market').value==='US';
   var t={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),side:$('f-side').value,market:$('f-market').value,
-    ticker:$('f-ticker').value.toUpperCase().replace(/[^A-Z0-9.\-]/g,''),date:$('f-date').value,
-    qty:$('f-side').value==='div'?1:parseNum($('f-qty').value),price:parseNum($('f-price').value),fx:us?parseNum($('f-fx').value):1};
+    ticker:$('f-side').value==='out'?'CAIXA':$('f-ticker').value.toUpperCase().replace(/[^A-Z0-9.\-]/g,''),date:$('f-date').value,
+    qty:($('f-side').value==='div'||$('f-side').value==='out')?1:parseNum($('f-qty').value),price:parseNum($('f-price').value),fx:us?parseNum($('f-fx').value):1};
   if(!t.ticker||!t.date||!(t.qty>0)||!(t.price>0)||(us&&!(t.fx>0))){m.className='msg err';m.textContent='Confira os campos: quantidade, preço e dólar precisam ser números maiores que zero.';return}
   S.trades.push(t);
   if(us&&t.date===today()&&fxCustom)S.fx={rate:t.fx,at:Date.now(),src:'manual'};
   save();
   $('f-ticker').value='';$('f-qty').value='';$('f-price').value='';fxCustom=false;$('f-fx').value='';
-  m.textContent=(t.side==='buy'?'Compra':t.side==='sell'?'Venda':'Provento')+' de '+t.ticker+' lançado.';
+  m.textContent=t.side==='out'?'Retirada lançada.':(t.side==='buy'?'Compra':t.side==='sell'?'Venda':'Provento')+' de '+t.ticker+' lançado.';
   render();
 });
 syncForm();
@@ -559,7 +562,7 @@ function bkApply(txt){
     var k=txt.indexOf('importar=');if(k>=0){var b=txt.slice(k+9).replace(/\s/g,'').replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';txt=new TextDecoder().decode(Uint8Array.from(atob(b),function(c){return c.charCodeAt(0)}))}
     var i=txt.indexOf('{');if(i>0)txt=txt.slice(i);
     var d=JSON.parse(txt);if(!d||!Array.isArray(d.trades))throw 0;
-    S.trades=d.trades;S.cambio=Array.isArray(d.cambio)?d.cambio:(S.cambio||[]);S.quotes=d.quotes||{};S.fx=d.fx||null;S.example=false;save();
+    S.trades=d.trades;S.cambio=Array.isArray(d.cambio)?d.cambio:(S.cambio||[]);var nq=d.quotes||{},oq=S.quotes||{};Object.keys(oq).forEach(function(k){if(!nq[k]||(oq[k]&&(oq[k].at||0)>(nq[k].at||0)))nq[k]=oq[k]});S.quotes=nq;if(d.fx&&(!S.fx||(d.fx.at||0)>(S.fx.at||0)))S.fx=d.fx;S.example=false;save();
     try{location.hash='resumo'}catch(e){}showTab('resumo');render();
     m.textContent='Dados restaurados: '+S.trades.length+' lançamentos.';
     st.className='msg muted';st.textContent='Pronto! Importei '+S.trades.length+' lançamentos. Buscando preços e dólar...';
