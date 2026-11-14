@@ -152,6 +152,8 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 .yrs button,.seg button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500}
 .yrs button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#maisseg{grid-template-columns:repeat(3,minmax(0,1fr))}
+.irbar{height:10px;border-radius:5px;background:var(--tint);overflow:hidden;margin:10px 0 4px}.irbar i{display:block;height:100%;background:var(--c1);border-radius:5px}.irbar.over i{background:var(--loss)}
 .seg button{border-radius:10px;padding:9px 12px;font-size:14px}
 .mon{font:600 13px/1.3 var(--sans);color:var(--muted);margin:16px 0 2px}
 .tr{display:grid;grid-template-columns:auto 1fr auto;gap:3px 10px;align-items:baseline;padding-block:10px;border-top:1px solid var(--line);font-size:14.5px}
@@ -247,7 +249,8 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
     <div id="trades"></div>
   </section>
 
-  <div class="seg" id="maisseg" data-tab="mais" hidden><button type="button" data-mais="cambio">Câmbio</button><button type="button" data-mais="ajustes">Ajustes</button></div>
+  <div class="seg" id="maisseg" data-tab="mais" hidden><button type="button" data-mais="cambio">Câmbio</button><button type="button" data-mais="imposto">Imposto</button><button type="button" data-mais="ajustes">Ajustes</button></div>
+  <section id="irtab" class="col" aria-label="Imposto de renda" data-tab="mais" data-sub="imposto" hidden></section>
 
   <div class="col" data-tab="mais" data-sub="cambio" hidden>
     <div class="panel fxbar"><div class="fxl"><label for="c-fx">Dólar de hoje</label><span class="fxsrc" id="fx-src"></span></div><input id="c-fx" inputmode="decimal" placeholder="online" aria-describedby="fx-src"></div>
@@ -664,7 +667,7 @@ function renderFx(){
 }
 function render(){
   var R=compute();
-  renderBanner();renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();
+  renderBanner();renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();renderIR();
   $('divtab').innerHTML=renderDivPanel()||'<div class="panel"><p class="muted">Nenhum provento ainda. Quando cair o primeiro, ele aparece aqui.</p></div>';
   var f0=fxToday();$('pill-fx').textContent=f0?'Dólar R$ '+num(f0.rate,4):'';
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
@@ -791,6 +794,7 @@ document.addEventListener('click',function(e){
   else if(t.dataset&&t.dataset.edit){startEdit(t.dataset.edit)}
   else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
   else if(t.dataset&&t.dataset.evy){EVY=t.dataset.evy;renderEvo()}
+  else if(t.dataset&&t.dataset.iry){IRY=t.dataset.iry;renderIR()}
   else if(t.dataset&&t.dataset.mais){try{location.hash=t.dataset.mais}catch(e){}showTab(t.dataset.mais)}
   else if(t.dataset&&t.dataset.goto){try{location.hash=t.dataset.goto}catch(e){}showTab(t.dataset.goto)}
   else if(t.dataset&&t.dataset.rfok){
@@ -829,6 +833,81 @@ document.addEventListener('change',function(e){
 });
 
 var SEED=[];
+
+/* imposto de renda: ações e FIIs no Brasil (swing trade), proventos e bens para a declaração */
+var FIIS={HGLG11:1},IRY=null;
+function isFII(tk){return !!FIIS[tk]}
+function irData(){
+  var ts=S.trades.filter(function(t){return t.market==='BR'&&(t.side==='buy'||t.side==='sell')}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.side==='buy'?-1:1)});
+  var pos={},mo={},dts={},warn=[];
+  ts.forEach(function(t){
+    var p=pos[t.ticker]||(pos[t.ticker]={q:0,c:0});(dts[t.ticker+'|'+t.date]=dts[t.ticker+'|'+t.date]||{})[t.side]=1;
+    if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*t.price;return}
+    var q=Math.min(t.qty,p.q);if(q<=0)return;var avg=p.c/p.q,g=q*(t.price-avg),m=t.date.slice(0,7),k=isFII(t.ticker)?'fii':'acao';
+    var r=mo[m]||(mo[m]={m:m,acao:{v:0,g:0,it:[]},fii:{v:0,g:0,it:[]}});r[k].v+=q*t.price;r[k].g+=g;r[k].it.push({tk:t.ticker,d:t.date,q:q,v:q*t.price,g:g});
+    p.c-=avg*q;p.q-=q;if(p.q<1e-9){p.q=0;p.c=0}
+  });
+  Object.keys(dts).forEach(function(k){if(dts[k].buy&&dts[k].sell)warn.push(k.split('|')[0]+' em '+fmtDate(k.split('|')[1]))});
+  var pa=0,pf=0,rows=Object.keys(mo).sort().map(function(m){
+    var r=mo[m],a=r.acao,f=r.fii;
+    r.isento=a.v<=20000;
+    if(r.isento){if(a.g<0)pa+=-a.g;r.baseA=0}else{var b=a.g-pa;if(b>0){r.baseA=b;pa=0}else{r.baseA=0;pa=-b}}
+    var bf=f.g-pf;if(f.v>0||f.g){if(bf>0){r.baseF=bf;pf=0}else{r.baseF=0;pf=-bf}}else r.baseF=0;
+    r.imp=r.baseA*0.15+r.baseF*0.20;r.pa=pa;r.pf=pf;
+    var y=+m.slice(0,4),mm=+m.slice(5,7)+1;if(mm>12){mm=1;y++}var ld=new Date(Date.UTC(y,mm,0));while(ld.getUTCDay()===0||ld.getUTCDay()===6)ld.setUTCDate(ld.getUTCDate()-1);r.venc=ld.toISOString().slice(0,10);
+    return r});
+  return {rows:rows,pa:pa,pf:pf,warn:warn};
+}
+function bensEm(dt){
+  var pos={};S.trades.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0}).forEach(function(t){
+    if(t.date>dt)return;
+    if(t.side==='rf'){pos['rf'+t.id]={tk:t.ticker,rf:1,q:1,c:t.price,mk:'RF'};return}
+    if(t.side==='rfout'){delete pos['rf'+t.ref];return}
+    if(t.side!=='buy'&&t.side!=='sell')return;
+    var p=pos[t.ticker]||(pos[t.ticker]={tk:t.ticker,mk:t.market,q:0,c:0,cu:0});var F=t.market==='US'?t.fx:1;
+    if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*t.price*F;p.cu+=t.qty*t.price}else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.c-=p.c*q/p.q;p.cu-=p.cu*q/p.q;p.q-=q}
+  });
+  return Object.keys(pos).map(function(k){return pos[k]}).filter(function(p){return p.q>1e-9});
+}
+function renderIR(){
+  var el=$('irtab');if(!el)return;
+  var D=irData(),cm=today().slice(0,7),cur=D.rows.filter(function(r){return r.m===cm})[0]||{acao:{v:0,g:0},fii:{v:0,g:0},isento:true};
+  var mn=function(m){var x=MESL[+m.slice(5,7)-1];return x.charAt(0).toUpperCase()+x.slice(1)};
+  var h='',va=cur.acao.v,over=va>20000;
+  h+='<div class="panel"><h2>Vendas de ações em '+mn(cm).toLowerCase()+'</h2><div class="grp" style="margin:0"><span class="num gt">'+brl.format(va)+'</span><span class="det">de R$ 20.000,00 isentos</span></div>'+
+    '<div class="irbar'+(over?' over':'')+'"><i style="width:'+Math.min(100,va/200)+'%"></i></div>'+
+    '<p class="note" style="margin-top:6px">'+(over?'Passou de R$ 20 mil: o lucro das vendas deste mês paga 15% de IR (DARF código 6015 até '+fmtDate(cur.venc||today())+').':'Ainda pode vender '+brl.format(20000-va)+' em ações este mês sem pagar IR sobre o lucro.')+(cur.fii.v?' FIIs não têm isenção: o lucro paga 20%.':'')+'</p></div>';
+  var due=D.rows.filter(function(r){return r.imp>0.005});
+  h+='<div class="panel"><h2>DARF a pagar</h2>'+(due.length?'<ul class="calc">'+due.map(function(r){return '<li><span>'+mn(r.m)+' de '+r.m.slice(0,4)+'<br><span class="muted small">código 6015, vence em '+fmtDate(r.venc)+'</span></span><span class="num loss">'+brl.format(r.imp)+'</span></li>'}).join('')+'</ul>':'<p class="muted small">Nenhum. Em todos os meses, suas vendas de ações ficaram abaixo de R$ 20 mil ou não deram lucro.</p>')+
+    (D.pa>0.005||D.pf>0.005?'<ul class="calc" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">'+(D.pa>0.005?'<li><span>Prejuízo em ações para descontar de lucros futuros</span><span class="num">'+brl.format(D.pa)+'</span></li>':'')+(D.pf>0.005?'<li><span>Prejuízo em FIIs para descontar de lucros futuros</span><span class="num">'+brl.format(D.pf)+'</span></li>':'')+'</ul>':'')+
+    (D.warn.length?'<p class="warn" style="margin-top:10px">Compra e venda do mesmo ativo no mesmo dia ('+esc(D.warn.join(', '))+'). Isso pode ser day trade, que paga 20% sem isenção. Confira com a nota da corretora.</p>':'')+'</div>';
+  if(D.rows.length){
+    h+='<div class="panel"><h2>Mês a mês</h2><div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Vendas</th><th>Lucro</th><th>Situação</th></tr></thead><tbody>'+
+      D.rows.slice().reverse().map(function(r){var v=r.acao.v+r.fii.v,g=r.acao.g+r.fii.g;
+        var st=r.imp>0.005?'<span class="loss">DARF '+brl.format(r.imp)+'</span>':r.isento&&r.acao.g>0?'<span class="gain">Isento</span>':g<0?'Prejuízo':'Sem imposto';
+        return '<tr><td>'+mn(r.m).slice(0,3)+'/'+r.m.slice(2,4)+'</td><td>'+brl.format(v)+'</td><td class="'+cls(g)+'">'+sgn(g)+'</td><td>'+st+'</td></tr>'}).join('')+'</tbody></table></div>'+
+      '<details><summary>Ver cada venda</summary><ul class="calc small" style="margin-top:12px">'+D.rows.slice().reverse().map(function(r){return r.acao.it.concat(r.fii.it).map(function(x){return '<li><span><b>'+esc(x.tk)+'</b> <span class="muted">'+fmtDate(x.d)+', '+num(x.q)+' un., '+brl.format(x.v)+'</span></span><span class="num '+cls(x.g)+'">'+sgn(x.g)+'</span></li>'}).join('')}).join('')+'</ul></details></div>';
+  }
+  var ys={};S.trades.forEach(function(t){ys[t.date.slice(0,4)]=1});var years=Object.keys(ys).sort();if(!IRY||!ys[IRY])IRY=years[years.length-1]||today().slice(0,4);
+  var Y=+IRY,end=IRY+'-12-31',prev=(Y-1)+'-12-31',b1=bensEm(end),b0=bensEm(prev),b0m={};b0.forEach(function(p){b0m[p.tk]=p});
+  var dv=S.trades.filter(function(t){return t.side==='div'&&t.date.slice(0,4)===IRY}),byT={};
+  dv.forEach(function(t){var k=t.market==='US'?'ext':(t.tipo==='JCP'||/JCP/.test(t.note||''))?'jcp':'div';var o=(byT[k]=byT[k]||{});var r=o[t.ticker]||(o[t.ticker]={v:0,b:0,ir:0});r.v+=t.price*(t.market==='US'?t.fx:1);r.b+=(t.bruto||t.price)*(t.market==='US'?t.fx:1);r.ir+=(t.irExt||0)*(t.market==='US'?t.fx:1)});
+  var lst=function(o,f){return Object.keys(o||{}).sort().map(function(k){return '<li><span><b>'+esc(k)+'</b></span><span class="num">'+f(o[k])+'</span></li>'}).join('')};
+  var tot=function(o,f){return Object.keys(o||{}).reduce(function(a,k){return a+f(o[k])},0)};
+  var cod=function(p){return p.rf?'Grupo 04 (aplicações de renda fixa)':p.mk==='US'?'Grupo 07 ou 04, conforme o tipo (ETF no exterior)':isFII(p.tk)?'Grupo 07, código 03 (FII)':'Grupo 03, código 01 (ações)'};
+  h+='<div class="panel"><div class="grp"><h2>Declaração de IR</h2>'+(years.length>1?'<div class="yrs">'+years.map(function(y){return '<button type="button" data-iry="'+y+'" aria-pressed="'+(y===IRY)+'">'+y+'</button>'}).join('')+'</div>':'<span class="det">ano '+IRY+'</span>')+'</div>'+
+    '<p class="note" style="margin:0 0 10px">O que vai na declaração entregue em '+(Y+1)+', referente a '+IRY+'.'+(IRY===today().slice(0,4)?' O ano ainda não acabou: os valores mudam até 31/12.':'')+'</p>'+
+    '<h3 style="margin:12px 0 6px">Bens e Direitos</h3><p class="note" style="margin:0 0 8px">Cada ativo pelo custo (preço médio × quantidade), não pelo valor de mercado. Ativos dos EUA em reais, pelo dólar de cada compra.</p>'+
+    (b1.length||b0.length?'<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Ativo</th><th>31/12/'+(Y-1)+'</th><th>31/12/'+Y+'</th></tr></thead><tbody>'+
+      b1.concat(b0.filter(function(p){return !b1.some(function(x){return x.tk===p.tk&&!!x.rf===!!p.rf})}).map(function(p){return {tk:p.tk,mk:p.mk,rf:p.rf,q:0,c:0,gone:1}})).map(function(p){var o=b0m[p.tk];
+        return '<tr><td><b>'+esc(p.tk)+'</b><br><span class="muted small">'+(p.gone?'vendido no ano':num(p.q)+(p.rf?'':' un.')+(p.mk==='US'?' · '+usd.format(p.cu):''))+'<br>'+cod(p)+'</span></td><td>'+(o?brl.format(o.c):'R$ 0,00')+'</td><td>'+brl.format(p.c)+'</td></tr>'}).join('')+'</tbody></table></div>':'<p class="muted small">Nenhum bem nesse ano.</p>')+
+    '<h3 style="margin:16px 0 6px">Rendimentos isentos (dividendos)</h3>'+(byT.div?'<ul class="calc">'+lst(byT.div,function(r){return brl.format(r.v)})+'<li class="tot"><span>Total</span><span class="num">'+brl.format(tot(byT.div,function(r){return r.v}))+'</span></li></ul>':'<p class="muted small">Nenhum.</p>')+
+    '<h3 style="margin:16px 0 6px">Tributação exclusiva (JCP)</h3>'+(byT.jcp?'<ul class="calc">'+lst(byT.jcp,function(r){return brl.format(r.v)})+'<li class="tot"><span>Total líquido</span><span class="num">'+brl.format(tot(byT.jcp,function(r){return r.v}))+'</span></li></ul><p class="note">Valor líquido, como caiu na conta. O informe de rendimentos da corretora traz o valor bruto, que é o que vai na declaração.</p>':'<p class="muted small">Nenhum.</p>')+
+    (byT.ext?'<h3 style="margin:16px 0 6px">Dividendos do exterior</h3><ul class="calc">'+lst(byT.ext,function(r){return brl.format(r.b)+' bruto · '+brl.format(r.ir)+' retido nos EUA'})+'</ul><p class="note">Declarados na ficha de aplicações no exterior. O imposto retido nos EUA (30%) é maior que os 15% do Brasil, então normalmente não sobra nada a pagar aqui.</p>':'')+
+    '</div>';
+  h+='<p class="note" style="margin:0 4px">Regras usadas: ações à vista com isenção para vendas de até R$ 20 mil no mês e 15% acima disso; FIIs sem isenção, 20%; prejuízo descontado de lucros futuros do mesmo tipo. O custo não inclui as taxas da corretora (centavos). Os informes da Nubank e do Inter valem como fonte oficial. Isto é um apoio, não substitui um contador.</p>';
+  el.innerHTML=h;
+}
 
 /* evolução do patrimônio: fechamento de cada mês */
 var HI={px:{},at:0,busy:false,err:''},EVY=null;
@@ -962,7 +1041,7 @@ function loadDivs(force){
       var id='a-'+d.tk+'-'+d.pay+'-'+(jcp?'J':'D')+'-'+Math.round(d.rate*1e6);
       if(S.trades.some(function(t){return t.id===id}))return;
       if(S.trades.some(function(t){return t.side==='div'&&t.ticker===d.tk&&Math.abs(dayDiff(t.date,d.pay))<=5&&Math.abs(t.price-val)<=Math.max(0.1,val*0.02)}))return;
-      add.push({id:id,side:'div',market:'BR',ticker:d.tk,date:d.pay,qty:1,price:val,fx:1,auto:1,note:item.tipo+' automático'});
+      add.push({id:id,side:'div',market:'BR',ticker:d.tk,date:d.pay,qty:1,price:val,fx:1,auto:1,tipo:item.tipo,note:item.tipo+' automático'});
     });
     up.sort(function(a,b){return (a.pay||'9')<(b.pay||'9')?-1:1});
     DV.up=up;DV.at=Date.now();DV.err='';DV.added+=add.length;
@@ -1205,7 +1284,7 @@ setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
 MK.dbOk=true;
 var TABS=['resumo','ativos','proventos','lancamentos','mais'],MAISV='cambio',CARV='pos';
 function showTab(n){
-  if(n==='cambio'||n==='ajustes'){MAISV=n;n='mais'}
+  if(n==='cambio'||n==='ajustes'||n==='imposto'){MAISV=n;n='mais'}
   if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='ativos')CARV='pos';
   if(TABS.indexOf(n)<0)n='resumo';
   Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(el){el.hidden=el.getAttribute('data-tab')!==n||(!!el.dataset.sub&&el.dataset.sub!==MAISV)||(!!el.dataset.sub2&&el.dataset.sub2!==CARV)});
