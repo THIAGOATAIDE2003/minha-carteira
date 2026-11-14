@@ -74,6 +74,7 @@ button{cursor:pointer}
 .patr .duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--hero-line)}
 .patr .duo div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .patr .duo .wide{grid-column:1/-1}
+.evolink{margin-top:14px;align-self:flex-start;background:rgba(255,255,255,.1);color:var(--hero-fg);border:1px solid var(--hero-line);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600}
 .hcalc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .hcalc li{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
 .hcalc li span:first-child{color:var(--hero-muted)}
@@ -167,6 +168,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 .dvlbl{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:5px;font-size:11px;color:var(--muted);text-align:center}
 .dvleg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
 .dvleg span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c1)}
+.dvleg span.ln::before{height:3px;border-radius:2px;background:var(--c2);vertical-align:3px;width:14px}
 .dvleg span.p::before{background:repeating-linear-gradient(45deg,var(--c2) 0 3px,transparent 3px 6px);border:1px solid var(--c2)}
 .dvtab{width:100%;border-collapse:collapse;font-size:13.5px}
 .dvtab th{font-weight:500;color:var(--muted);font-size:12.5px}
@@ -197,7 +199,9 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 
   <section id="summary" class="col" aria-label="Início" data-tab="resumo"></section>
 
-  <section id="positions" class="col" aria-label="Carteira" data-tab="ativos" hidden></section>
+  <div class="seg" id="carseg" data-tab="ativos" hidden><button type="button" data-cv="pos">Ativos</button><button type="button" data-cv="evo">Evolução</button></div>
+  <section id="positions" class="col" aria-label="Ativos" data-tab="ativos" data-sub2="pos" hidden></section>
+  <section id="evotab" class="col" aria-label="Evolução do patrimônio" data-tab="ativos" data-sub2="evo" hidden></section>
 
   <section id="divtab" class="col" aria-label="Proventos" data-tab="proventos" hidden></section>
 
@@ -469,7 +473,7 @@ function renderSummary(R){
       '<li><span>'+(pa0<0?'Desvalorização':'Valorização')+' das ações (só o preço, sem o dólar)</span><span class="num '+cls(pa0)+'">'+sgn(pa0)+' ('+pct(T.cost?pa0/T.cost:0)+')</span></li>'+
       '<li class="tot"><span>Total</span><span class="num">'+brl.format(T.contrib+pa0)+'</span></li></ul></div>'+
     '<div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre o aplicado</small></div>'+
-    '</div></div>';
+    '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
 
@@ -640,7 +644,7 @@ function renderFx(){
 }
 function render(){
   var R=compute();
-  renderBanner();renderSummary(R);renderPositions(R);renderTrades();renderFx();
+  renderBanner();renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();
   $('divtab').innerHTML=renderDivPanel()||'<div class="panel"><p class="muted">Nenhum provento ainda. Quando cair o primeiro, ele aparece aqui.</p></div>';
   var f0=fxToday();$('pill-fx').textContent=f0?'Dólar R$ '+num(f0.rate,4):'';
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
@@ -742,6 +746,8 @@ document.addEventListener('click',function(e){
   else if(t.id==='sync-now'){ghSync(true)}
   else if(t.dataset&&t.dataset.dvy){DVY=t.dataset.dvy;render()}
   else if(t.dataset&&t.dataset.trf){TRF=t.dataset.trf;renderTrades()}
+  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
+  else if(t.dataset&&t.dataset.evy){EVY=t.dataset.evy;renderEvo()}
   else if(t.dataset&&t.dataset.mais){try{location.hash=t.dataset.mais}catch(e){}showTab(t.dataset.mais)}
   else if(t.dataset&&t.dataset.goto){try{location.hash=t.dataset.goto}catch(e){}showTab(t.dataset.goto)}
   else if(t.dataset&&t.dataset.rfok){
@@ -780,6 +786,98 @@ document.addEventListener('change',function(e){
 });
 
 var SEED=[];
+
+/* evolução do patrimônio: fechamento de cada mês */
+var HI={px:{},at:0,busy:false,err:''},EVY=null;
+try{var h0=JSON.parse(localStorage.getItem(LS+'-hist')||'null');if(h0){HI.px=h0.px||{};HI.at=h0.at||0}}catch(e){}
+function monthEnd(m){var y=+m.slice(0,4),mm=+m.slice(5,7);var d=new Date(Date.UTC(y,mm,0));return d.toISOString().slice(0,10)}
+function evoMonths(){
+  var ds=S.trades.map(function(t){return t.date}).sort();if(!ds.length)return [];
+  var out=[],m=ds[0].slice(0,7),end=today().slice(0,7);
+  while(m<=end){out.push(m);var y=+m.slice(0,4),mm=+m.slice(5,7)+1;if(mm>12){mm=1;y++}m=y+'-'+(mm<10?'0':'')+mm}
+  return out;
+}
+function brHeldTickers(){
+  var tks={};evoMonths().forEach(function(m){var e=monthEnd(m),q={};S.trades.forEach(function(t){if(t.market==='BR'&&t.date<=e&&(t.side==='buy'||t.side==='sell'))q[t.ticker]=(q[t.ticker]||0)+(t.side==='buy'?t.qty:-t.qty)});Object.keys(q).forEach(function(k){if(q[k]>1e-9)tks[k]=1})});
+  return Object.keys(tks);
+}
+function loadHist(force){
+  if(!S.keys.brapi||HI.busy)return Promise.resolve();
+  if(!force&&Date.now()-HI.at<12*3600000)return Promise.resolve();
+  var tks=brHeldTickers();if(!tks.length)return Promise.resolve();
+  HI.busy=true;var fails=0,wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+  var one=function(tk,ranges){
+    if(!ranges.length){fails++;return Promise.resolve()}
+    return getJSON('https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?range='+ranges[0]+'&interval=1d&token='+encodeURIComponent(S.keys.brapi)).then(function(d){
+      var r=d&&d.results&&d.results[0],a=r&&r.historicalDataPrice;if(!a||!a.length)throw 0;
+      var px=HI.px[tk]=HI.px[tk]||{};a.forEach(function(x){var dt=new Date((x.date>1e12?x.date:x.date*1000)-3*3600000).toISOString().slice(0,10);if(x.close>0){var mm=dt.slice(0,7);if(!px['d'+mm]||px['d'+mm]<=dt){px[mm]=x.close;px['d'+mm]=dt}}});
+    }).catch(function(){return wait(800).then(function(){return one(tk,ranges.slice(1))})});
+  };
+  return tks.reduce(function(p,tk,i){return p.then(function(){return i?wait(700):null}).then(function(){return one(tk,['1y','6mo','3mo'])})},Promise.resolve()).then(function(){
+    HI.at=Date.now();HI.err=fails?'Sem histórico de '+fails+(fails>1?' ativos':' ativo')+' no brapi.':'';
+    try{localStorage.setItem(LS+'-hist',JSON.stringify({px:HI.px,at:HI.at}))}catch(e){}
+    HI.busy=false;renderEvo();
+  });
+}
+function evoData(){
+  var ms=evoMonths(),cur=today().slice(0,7),R=compute(),rows=[];
+  var ts=S.trades.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)});
+  ms.forEach(function(m){
+    var e=m===cur?today():monthEnd(m),pos={},cash=0,contrib=0,divs=0,rfo={},approx=[];
+    ts.forEach(function(t){if(t.date>e)return;
+      var F=t.market==='US'?t.fx:1;
+      if(t.side==='out'){var am=t.price*F;cash-=am;contrib-=am;if(cash<0){contrib-=cash;cash=0}return}
+      if(t.side==='rf'){rfo[t.id]=t;cash-=t.price;if(cash<0){contrib-=cash;cash=0}return}
+      if(t.side==='rfout'){delete rfo[t.ref];cash+=t.price;return}
+      var p=pos[t.ticker]||(pos[t.ticker]={tk:t.ticker,mk:t.market,q:0,cN:0});
+      if(t.side==='div'){cash+=t.price*F;divs+=t.price*F;return}
+      if(t.side==='buy'){p.q+=t.qty;p.cN+=t.qty*t.price;cash-=t.qty*t.price*F;if(cash<0){contrib-=cash;cash=0}}
+      else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.cN-=p.cN*q/p.q;p.q-=q;if(p.q<1e-9){p.q=0;p.cN=0}cash+=q*t.price*F}
+    });
+    var fx=m===cur?(fxToday()||{}).rate:(fxOn(e)||{}).rate,val=0;
+    Object.keys(pos).forEach(function(k){var p=pos[k];if(p.q<1e-9)return;
+      var px=null;
+      if(m===cur){var gq=getQuote(k);px=gq&&gq.price}
+      if(!px&&HI.px[k]&&HI.px[k][m])px=HI.px[k][m];
+      if(!px&&S.mclose&&S.mclose[k]&&S.mclose[k][m])px=S.mclose[k][m];
+      if(!px){px=p.cN/p.q;approx.push(k)}
+      var F2=p.mk==='US'?(fx||1):1;if(p.mk==='US'&&!fx)approx.push('dólar');
+      val+=p.q*px*F2});
+    Object.keys(rfo).forEach(function(id){var t=rfo[id];var c=rfCalc(t,{date:e,price:0});val+=CDI.dates.length?c.liq:t.price});
+    rows.push({m:m,pat:val+cash,apl:contrib,div:divs,approx:approx});
+  });
+  rows.forEach(function(r,i){var pv=i?rows[i-1]:null;r.lucro=r.pat-r.apl;r.rend=pv?(r.pat-pv.pat)-(r.apl-pv.apl):r.pat-r.apl;r.rendP=pv&&pv.pat?r.rend/(pv.pat+Math.max(0,r.apl-pv.apl)):null});
+  return rows;
+}
+function renderEvo(){
+  var el=$('evotab');if(!el)return;
+  var rows=evoData();if(!rows.length){el.innerHTML='<div class="panel"><p class="muted">Lance sua primeira compra para começar a acompanhar a evolução.</p></div>';return}
+  var ys={};rows.forEach(function(r){ys[r.m.slice(0,4)]=1});var years=Object.keys(ys).sort();if(!EVY||!ys[EVY])EVY=years[years.length-1];
+  var yr=rows.filter(function(r){return r.m.slice(0,4)===EVY}),last=rows[rows.length-1],first=rows[0];
+  var mx=Math.max.apply(null,yr.map(function(r){return Math.max(r.pat,r.apl)}))||1;
+  var W=320,H=150,n=12,bw=W/n,sx=function(i){return i*bw+bw/2},sy=function(v){return H-6-(v/mx)*(H-16)};
+  var byM={};yr.forEach(function(r){byM[+r.m.slice(5,7)-1]=r});
+  var bars='',pts=[];
+  for(var i=0;i<12;i++){var r=byM[i];if(!r)continue;var y0=sy(r.pat);bars+='<rect x="'+(i*bw+bw*.18)+'" y="'+y0+'" width="'+(bw*.64)+'" height="'+(H-6-y0)+'" rx="3" fill="var(--c1)"><title>'+MESES[i]+': patrimônio '+brl.format(r.pat)+', aplicado '+brl.format(r.apl)+'</title></rect>';pts.push([sx(i),sy(r.apl)])}
+  var line=pts.length>1?'<polyline points="'+pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ')+'" fill="none" stroke="var(--c2)" stroke-width="2.2" stroke-linejoin="round"/>':'';
+  var dots=pts.map(function(p){return '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.2" fill="var(--surface)" stroke="var(--c2)" stroke-width="2"/>'}).join('');
+  var gT=last.pat-last.apl;
+  var h='<div class="panel"><div class="split">'+
+    '<div><span class="lbl">Patrimônio agora</span><span class="num">'+brl.format(last.pat)+'</span></div>'+
+    '<div><span class="lbl">Desde '+MESL[+first.m.slice(5,7)-1].slice(0,3)+'/'+first.m.slice(2,4)+'</span><span class="num '+cls(gT)+'">'+sgn(gT)+' sobre o aplicado</span></div></div></div>';
+  h+='<div class="panel"><div class="grp"><h2>Mês a mês</h2>'+(years.length>1?'<div class="yrs">'+years.map(function(y){return '<button type="button" data-evy="'+y+'" aria-pressed="'+(y===EVY)+'">'+y+'</button>'}).join('')+'</div>':'<span class="det">'+EVY+'</span>')+'</div>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;margin:8px 0 2px" role="img" aria-label="Patrimônio e aplicado por mês em '+EVY+'">'+bars+line+dots+'</svg>'+
+    '<div class="dvlbl">'+MESES.map(function(m){return '<span>'+m.charAt(0)+'</span>'}).join('')+'</div>'+
+    '<div class="dvleg"><span>Patrimônio no fim do mês</span><span class="ln">Aplicado do seu bolso</span></div>';
+  h+='<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Patrimônio</th><th>Aplicado</th><th>Rendeu no mês</th></tr></thead><tbody>'+
+    yr.slice().reverse().map(function(r){var mi=+r.m.slice(5,7)-1,cur=r.m===today().slice(0,7);
+      return '<tr><td>'+MESES[mi]+(cur?' <span class="muted small">até hoje</span>':'')+(r.approx.length?' <span class="muted" title="Sem preço de fechamento para '+esc(r.approx.join(', '))+'">*</span>':'')+'</td><td>'+brl.format(r.pat)+'</td><td>'+brl.format(r.apl)+'</td><td class="'+cls(r.rend)+'">'+sgn(r.rend)+(r.rendP!=null?'<br><span class="small">'+pct(r.rendP)+'</span>':'')+'</td></tr>'}).join('')+
+    '</tbody></table></div></div>';
+  var anyA=rows.some(function(r){return r.approx.length});
+  h+='<p class="note" style="margin:0 4px"><b>Patrimônio</b> é o valor de tudo no último dia do mês (ações pelo preço de fechamento, VT convertido pelo dólar do dia, renda fixa líquida). <b>Rendeu no mês</b> é quanto o patrimônio cresceu sem contar o dinheiro novo que você colocou: se você aportou R$ 1.000 e o patrimônio subiu R$ 1.200, rendeu R$ 200.'+
+    (anyA?' * Mês em que faltou o preço de fechamento de algum ativo; usei o preço médio dele.':'')+(HI.busy?' Buscando preços antigos no brapi...':HI.err?' '+esc(HI.err):'')+' O mês atual se atualiza com os preços de agora e fica guardado na nuvem quando o mês fecha.</p>';
+  el.innerHTML=h;
+}
 
 /* proventos automáticos (ações do Brasil, via brapi) */
 var DV={up:[],at:0,err:'',added:0,busy:false};
@@ -877,7 +975,9 @@ function applyOps(trades,ops){
   });
   return out;
 }
+function applyPx(f,ops){var o=JSON.parse(JSON.stringify(f||{}));ops.forEach(function(x){if(x.t==='px'){(o[x.tk]=o[x.tk]||{})[x.m]=x.p}});return o}
 function ghAdopt(d){
+  S.mclose=applyPx(d.fechamentos,S.pend||[]);
   var tr=applyOps(Array.isArray(d.trades)?d.trades:[],S.pend||[]);
   var before=JSON.stringify([S.trades,S.cambio||[]]);
   S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;S.example=false;save();
@@ -895,7 +995,7 @@ function ghRound(attempt){
     }
     var pend=(S.pend||[]).slice();
     if(!pend.length){ghAdopt(remote);return}
-    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend)});
+    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});
     var body={message:'App: '+pend.length+(pend.length>1?' alterações':' alteração'),content:b64enc(JSON.stringify(data,null,1)+'\n'),sha:sha,branch:'main'};
     return ghReq('PUT',body).then(function(w){
       if((w.status===409||w.status===422)&&attempt<2)return ghRound(attempt+1);
@@ -1016,7 +1116,11 @@ function doRefresh(silent){
   };
   jobs.push(br.reduce(function(p,tk,i){return p.then(function(){return i?wait(700):null}).then(function(){return one(tk,2)})},Promise.resolve()));
   Promise.all(jobs).then(function(){
-    RF.busy=false;RF.last=Date.now();save();render();btn.disabled=false;
+    RF.busy=false;RF.last=Date.now();
+    var mo=today().slice(0,7),dd=today(),chg=0;S.mcDay=S.mcDay||{};S.mclose=S.mclose||{};
+    Object.keys(S.quotes).forEach(function(tk){var q=S.quotes[tk];if(!q||q.src!=='auto'||Date.now()-q.at>3600000||!R.held.some(function(x){return x.p.ticker===tk}))return;
+      if(S.mcDay[tk+'|'+mo]===dd)return;S.mcDay[tk+'|'+mo]=dd;(S.mclose[tk]=S.mclose[tk]||{})[mo]=q.price;S.pend.push({t:'px',tk:tk,m:mo,p:q.price});chg++});
+    save();render();btn.disabled=false;if(chg)ghSync();
     if(okc===0){RF.err='Não consegui buscar os preços agora. Confira a internet e as chaves em Ajustes.';if(!silent){st.className='msg err';st.textContent=RF.err}}
     else{RF.err=fails.length?'Sem atualização para: '+fails.join(', '):'';st.className='msg muted';st.textContent=fails.length?'Atualizado, menos: '+fails.join(', ')+'.':''}
   });
@@ -1028,16 +1132,19 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden&&Dat
 setTimeout(function(){doRefresh(true)},600);
 setTimeout(function(){loadCDI()},900);
 setTimeout(function(){loadDivs()},2500);
+setTimeout(function(){loadHist()},5000);
 setInterval(function(){if(!document.hidden)loadDivs()},60*60000);
 setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
 MK.dbOk=true;
-var TABS=['resumo','ativos','proventos','lancamentos','mais'],MAISV='cambio';
+var TABS=['resumo','ativos','proventos','lancamentos','mais'],MAISV='cambio',CARV='pos';
 function showTab(n){
   if(n==='cambio'||n==='ajustes'){MAISV=n;n='mais'}
+  if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='ativos')CARV='pos';
   if(TABS.indexOf(n)<0)n='resumo';
-  Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(el){el.hidden=el.getAttribute('data-tab')!==n||(!!el.dataset.sub&&el.dataset.sub!==MAISV)});
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(el){el.hidden=el.getAttribute('data-tab')!==n||(!!el.dataset.sub&&el.dataset.sub!==MAISV)||(!!el.dataset.sub2&&el.dataset.sub2!==CARV)});
   Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){if(b.dataset.go===n)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
   Array.prototype.forEach.call(document.querySelectorAll('#maisseg button'),function(b){b.setAttribute('aria-pressed',String(b.dataset.mais===MAISV))});
+  Array.prototype.forEach.call(document.querySelectorAll('#carseg button'),function(b){b.setAttribute('aria-pressed',String(b.dataset.cv===CARV))});
   window.scrollTo(0,0);
 }
 Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.addEventListener('click',function(){try{location.hash=b.dataset.go}catch(e){}showTab(b.dataset.go)})});
