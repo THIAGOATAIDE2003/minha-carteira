@@ -119,6 +119,12 @@ details[open]>summary::after{transform:rotate(-135deg);margin-bottom:-3px}
 .grp .gt{font:600 17px/1.2 var(--disp);white-space:nowrap}
 .pos{display:flex;flex-direction:column;gap:6px;padding-block:13px;border-top:1px solid var(--line);min-width:0}
 .grp+.pos{border-top:0}
+.gbox>summary{color:var(--fg);font-weight:inherit;font-size:inherit;align-items:flex-start}
+.gbox>summary::after{margin-top:10px;color:var(--muted)}
+.gbox>summary .grp{flex:1;margin:0;min-width:0;align-items:flex-start}
+.gbox .gr{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none}
+.gbox .gbody{margin-top:6px}
+.gbox .gbody>.pos:first-child{border-top:0}
 .pos:last-child{padding-bottom:0}
 .pos .row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;min-width:0}
 .tk{font-weight:700;font-size:16px;letter-spacing:.01em}
@@ -554,28 +560,30 @@ function rfCard(c){
 function renderPositions(R){
   var el=$('positions'),rfs=R.rfs||[],rfo=rfs.filter(function(c){return !c.rs}),rfc=rfs.filter(function(c){return c.rs}),T=R.tot;
   if(!R.held.length&&!R.closed.length&&!rfs.length){el.innerHTML='<div class="panel"><p class="muted">Nenhum ativo ainda. Lance uma compra no Extrato.</p></div>';return}
-  var grp=function(title,sub,total,body){return '<section class="panel"><div class="grp"><div><h2>'+title+'</h2>'+(sub?'<span class="det">'+sub+'</span>':'')+'</div>'+(total!=null?'<span class="num gt">'+brl.format(total)+'</span>':'')+'</div>'+body+'</section>'};
+  var grp=function(title,sub,total,body,res,key){return '<details class="panel gbox" data-g="'+key+'"'+(GOPEN[key]?' open':'')+'><summary><div class="grp"><div><h2>'+title+'</h2>'+(sub?'<span class="det">'+sub+'</span>':'')+'</div><div class="gr">'+(total!=null?'<span class="num gt">'+brl.format(total)+'</span>':'')+(res?'<span class="num small '+cls(res[0])+'">'+sgn(res[0])+(res[1]!=null?' ('+pct(res[1])+')':'')+'</span>':'')+'</div></div></summary><div class="gbody">'+body+'</div></details>'};
+  var gsum=function(a){var g=sum(a,function(x){return x.gain}),c=sum(a,function(x){return x.p.cB});return [g,c?g/c:null]};
   var sum=function(a,f){return a.reduce(function(s,x){return s+f(x)},0)};
   var br=R.held.filter(function(x){return x.p.market!=='US'}),us=R.held.filter(function(x){return x.p.market==='US'}),h='';
-  if(br.length)h+=grp('Brasil','Nubank, '+br.length+(br.length>1?' ativos':' ativo'),sum(br,function(x){return x.v}),br.map(posCard).join(''));
-  if(us.length)h+=grp('EUA','Inter, '+usd.format(sum(us,function(x){return x.p.qty*x.P1}))+(T.fxNow?' a R$ '+num(T.fxNow,4):''),sum(us,function(x){return x.v}),us.map(posCard).join(''));
+  if(br.length)h+=grp('Brasil','Nubank, '+br.length+(br.length>1?' ativos':' ativo'),sum(br,function(x){return x.v}),br.map(posCard).join(''),gsum(br),'br');
+  if(us.length)h+=grp('EUA','Inter, '+usd.format(sum(us,function(x){return x.p.qty*x.P1}))+(T.fxNow?' a R$ '+num(T.fxNow,4):''),sum(us,function(x){return x.v}),us.map(posCard).join(''),gsum(us),'us');
   if(rfo.length)h+=grp('Renda fixa','Valor líquido, já sem IOF e IR',T.rfV,rfo.map(rfCard).join('')+
     '<details><summary>Como a renda fixa é calculada</summary><div class="small" style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+
     '<p><b>Rendimento:</b> todo dia útil o CDI do dia (taxa do Banco Central) é aplicado sobre o seu saldo, multiplicado pelo seu % do CDI. Por exemplo, CDI de 0,055% ao dia × 110% dá 0,0605% naquele dia. O banco credita de manhã cedo, com o CDI do dia anterior, e o app faz igual.</p>'+
     '<p><b>IOF:</b> só se resgatar antes de 30 dias. Começa em 96% do rendimento no 1º dia e cai até zerar no 30º.</p>'+
     '<p><b>IR:</b> sobre o rendimento, pela tabela regressiva: 22,5% até 180 dias, 20% até 360, 17,5% até 720 e 15% depois. LCI e LCA são isentas.</p>'+
     '<p><b>Líquido:</b> aplicado + rendimento − IOF − IR. É o que cai na conta se resgatar hoje. Pode diferir alguns centavos do banco por arredondamento do CDI.</p>'+
-    (CDI.err?'<p class="msg err">'+esc(CDI.err)+'</p>':'')+'</div></details>');
+    (CDI.err?'<p class="msg err">'+esc(CDI.err)+'</p>':'')+'</div></details>',[T.rfU,T.rfC?T.rfU/T.rfC:null],'rf');
   if(R.closed.length||rfc.length){
     var rows=R.closed.map(function(p){return {n:p.ticker,g:p.rA+p.rF+(p.div||0),rf:0}}).concat(rfc.map(function(c){return {n:c.t.ticker,g:c.realized,rf:1}}));
     rows.sort(function(a,b){return b.g-a.g});
-    h+=grp('Encerradas','Resultado de cada posição que você já vendeu, com proventos',sum(rows,function(r){return r.g}),'<ul class="calc" style="margin-top:10px">'+rows.map(function(r){
-      return '<li><span><b>'+esc(r.n)+'</b>'+(r.rf?' <span class="tag">Renda fixa</span>':'')+'</span><span class="num '+cls(r.g)+'">'+sgn(r.g)+'</span></li>'}).join('')+'</ul>');
+    h+=grp('Encerradas',rows.length+' posições já vendidas, com proventos',null,'<ul class="calc" style="margin-top:10px">'+rows.map(function(r){
+      return '<li><span><b>'+esc(r.n)+'</b>'+(r.rf?' <span class="tag">Renda fixa</span>':'')+'</span><span class="num '+cls(r.g)+'">'+sgn(r.g)+'</span></li>'}).join('')+'</ul>',[sum(rows,function(r){return r.g}),null],'enc');
   }
   el.innerHTML=h;
 }
 
-var TRF='all';
+var TRF='all',GOPEN={};
+document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.dataset&&d.dataset.g)GOPEN[d.dataset.g]=d.open},true);
 function trKind(t){return t.side==='div'?'div':(t.side==='rf'||t.side==='rfout')?'rf':t.side==='buy'?'buy':t.side==='sell'?'sell':'out'}
 function renderTrades(){
   var el=$('trades');
