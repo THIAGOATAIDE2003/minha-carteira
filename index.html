@@ -167,7 +167,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 .yrs button,.seg button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500}
 .yrs button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-#carseg{grid-template-columns:repeat(3,minmax(0,1fr))}
+#carseg{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}#carseg button{padding:9px 4px;font-size:13px}
 .alv{display:grid;grid-template-columns:minmax(0,1fr) 74px;gap:6px 10px;align-items:center}
 .alv input{padding:8px;text-align:right}
 .alvbar{grid-column:1/-1;position:relative;height:8px;border-radius:4px;background:var(--tint);margin:-2px 0 6px}
@@ -176,7 +176,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 .meta-bar.r i{background:var(--c2)}
 .mt+.mt{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .alvbar b{position:absolute;top:-3px;bottom:-3px;width:3px;border-radius:2px;background:var(--c2)}
-#maisseg{grid-template-columns:repeat(3,minmax(0,1fr))}
+#maisseg{grid-template-columns:repeat(3,minmax(0,1fr))}#dvseg{grid-template-columns:repeat(2,minmax(0,1fr))}.rcl li{align-items:center}
 .irbar{height:10px;border-radius:5px;background:var(--tint);overflow:hidden;margin:10px 0 4px}.irbar i{display:block;height:100%;background:var(--c1);border-radius:5px}.irbar.over i{background:var(--loss)}
 .seg button{border-radius:10px;padding:9px 12px;font-size:14px}
 details.info{border:0;padding:0;margin:10px 0 0}details.info>summary{display:inline-flex;justify-content:flex-start;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
@@ -199,6 +199,10 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .dvbar{display:flex;flex-direction:column-reverse;height:100%;justify-content:flex-start;gap:2px}
 .dvbar i{display:block;border-radius:4px 4px 0 0;min-height:0}
 .dvbar .r{background:var(--c1)}
+.bal{background:none;border:0;padding:0 2px;margin:0;color:inherit;font:inherit;display:inline;vertical-align:baseline;cursor:pointer}
+.bal .bi{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1.5px solid currentColor;font:700 9.5px/1 var(--sans);opacity:.7;vertical-align:1px}
+.bal .u{border-bottom:1.5px dotted currentColor}
+#balpop{position:absolute;z-index:60;max-width:min(270px,calc(100vw - 24px));background:var(--fg);color:var(--bg);font-size:13px;line-height:1.4;border-radius:10px;padding:8px 11px;box-shadow:0 6px 20px rgba(0,0,0,.3);pointer-events:none}
 .tipc{position:relative;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;cursor:crosshair}
 .tipg{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--muted);pointer-events:none}
 .tipb{position:absolute;top:0;z-index:5;min-width:170px;max-width:min(290px,96%);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:none;font-size:13px;display:flex;flex-direction:column;gap:4px}
@@ -242,9 +246,10 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 
   <section id="summary" class="col" aria-label="Início" data-tab="resumo"></section>
 
-  <div class="seg" id="carseg" data-tab="ativos" hidden><button type="button" data-cv="pos">Ativos</button><button type="button" data-cv="evo">Evolução</button><button type="button" data-cv="apo">Aporte</button></div>
+  <div class="seg" id="carseg" data-tab="ativos" hidden><button type="button" data-cv="pos">Ativos</button><button type="button" data-cv="evo">Evolução</button><button type="button" data-cv="apo">Aporte</button><button type="button" data-cv="perf">Desempenho</button></div>
   <section id="apotab" class="col" aria-label="Próximo aporte" data-tab="ativos" data-sub2="apo" hidden></section>
   <section id="positions" class="col" aria-label="Ativos" data-tab="ativos" data-sub2="pos" hidden></section>
+  <section id="perftab" class="col" aria-label="Desempenho" data-tab="ativos" data-sub2="perf" hidden></section>
   <section id="evotab" class="col" aria-label="Evolução do patrimônio" data-tab="ativos" data-sub2="evo" hidden></section>
 
   <section id="divtab" class="col" aria-label="Proventos" data-tab="proventos" hidden></section>
@@ -459,6 +464,17 @@ function compute(){
 
 var DVY=null,MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],MESL=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 var hm=function(t){return new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+var DVV='mes';
+function recHtml(){
+  if(!DV.up.length)return '<div class="panel"><p class="muted">Nenhum provento anunciado agora. Quando uma empresa anunciar e você tiver a ação na data-com, ele aparece aqui.</p></div>';
+  var g={},ord=[];DV.up.forEach(function(u){var k=u.pay?u.pay.slice(0,4):'def';if(!g[k]){g[k]=[];ord.push(k)}g[k].push(u)});
+  ord.sort(function(a,b){return a==='def'?1:b==='def'?-1:a<b?-1:1});
+  return ord.map(function(k){var it=g[k],tot=it.reduce(function(a,u){return a+u.val},0);
+    return '<div class="panel"><div class="grp"><h2>'+(k==='def'?'Pagamento a definir':'Em '+k)+'</h2><span class="num gt">'+brl.format(tot)+'</span></div><ul class="calc rcl">'+it.map(function(u){
+      return '<li><span><b>'+esc(u.tk)+'</b> <span class="tag">'+esc(u.tipo)+'</span><br><span class="muted small">'+(u.pay?'Paga em '+fmtDate(u.pay):'Data de pagamento ainda não divulgada')+(u.dc?' · data-com '+fmtDate(u.dc):'')+' · '+num(u.q,u.us?4:0)+(u.us?' cotas':' ações')+'</span></span>'+
+        (u.us?bal('Em dólar: '+usd.format(u.usd)+', já sem os 30% retidos nos EUA. Em reais pelo dólar de hoje.','<span class="num u">'+brl.format(u.val)+'</span>'):'<span class="num">'+brl.format(u.val)+'</span>')+'</li>'}).join('')+'</ul></div>'}).join('')+
+    '<p class="note exp" style="margin:0 4px">São os proventos já anunciados das ações que você tinha na data-com, já líquidos de IR. Quando chega o dia do pagamento, o app lança sozinho no Extrato. O Brasil vem do brapi e o VT da Alpha Vantage, conferidos 2 vezes por dia.</p>';
+}
 function renderDivPanel(){
   var rec={},pro={},tbd=[],ys={},cy=today().slice(0,4),all=0;ys[cy]=1;
   var z=function(){return [0,0,0,0,0,0,0,0,0,0,0,0]};
@@ -479,6 +495,8 @@ function renderDivPanel(){
   var h='<div class="panel"><div class="split">'+
     '<div><span class="lbl">Recebido desde o início</span><span class="num gain">'+brl.format(all)+'</span></div>'+
     '<div><span class="lbl">A receber (já anunciado)</span><span class="num">'+brl.format(upAll)+'</span></div></div></div>';
+  h+='<div class="seg" id="dvseg"><button type="button" data-dvv="mes" aria-pressed="'+(DVV==='mes')+'">Mês a mês</button><button type="button" data-dvv="rec" aria-pressed="'+(DVV==='rec')+'">A receber'+(DV.up.length?' ('+DV.up.length+')':'')+'</button></div>';
+  if(DVV==='rec')return h+recHtml();
   h+='<div class="panel"><div class="grp"><h2>Mês a mês</h2><div class="yrs" style="flex-direction:row">'+years.map(function(y){return '<button type="button" data-dvy="'+y+'" aria-pressed="'+(y===DVY)+'">'+y+'</button>'}).join('')+'</div></div>';
   h+='<div class="tipc"'+tipAttr({n:12,pts:dpts})+'><div class="dvbars" role="img" aria-label="Proventos por mês em '+DVY+'">'+R0.map(function(v,i){var p=P0[i];
     return '<div class="dvbar" data-slot="'+i+'"><i class="r" style="height:'+(v/mx*100)+'%"></i><i class="p" style="height:'+(p/mx*100)+'%;'+(p?'':'border:0')+'"></i></div>'}).join('')+'</div></div>';
@@ -489,15 +507,11 @@ function renderDivPanel(){
     R0.map(function(v,i){var p=P0[i];acc+=v+p;if(i<fi)return '';if(!v&&!p)return '<tr class="muted"><td>'+MESES[i]+'</td><td>—</td><td>—</td><td>'+(acc?brl.format(acc):'—')+'</td></tr>';
       return '<tr><td>'+MESES[i]+'</td><td class="'+(v?'gain':'')+'">'+(v?brl.format(v):'—')+'</td><td>'+(p?brl.format(p):'—')+'</td><td>'+brl.format(acc)+'</td></tr>'}).join('')+
     '<tr class="tot"><td>'+DVY+'</td><td class="gain">'+brl.format(tr)+'</td><td>'+brl.format(tp)+'</td><td>'+brl.format(tr+tp)+'</td></tr></tbody></table></div></div>';
-  var ups=DV.up.filter(function(u){return u.pay&&u.pay.slice(0,4)===DVY}).concat(DVY===cy?tbd:[]);
-  if(ups.length)h+='<div class="panel"><h2>A receber em '+DVY+'</h2><ul class="calc">'+ups.map(function(u){
-    return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+u.tipo+(u.us?' de '+usd.format(u.usd)+' (já sem os 30% dos EUA)':'')+', '+num(u.q,u.us?4:0)+(u.us?' cotas':' ações')+' na data-com '+fmtDate(u.dc)+'. '+(u.pay?'Paga em '+fmtDate(u.pay):'Pagamento a definir')+'</span></span><span class="num">'+brl.format(u.val)+'</span></li>'}).join('')+
-    '<li class="tot"><span>Total</span><span class="num">'+brl.format(ups.reduce(function(a,u){return a+u.val},0))+'</span></li></ul></div>';
   h+=divPorAtivo();
   var got=S.trades.filter(function(t){return t.side==='div'&&t.date.slice(0,4)===DVY}).sort(function(a,b){return a.date<b.date?1:-1});
   if(got.length)h+='<details class="panel"><summary>Recebidos em '+DVY+' ('+got.length+')</summary><ul class="calc" style="margin-top:12px">'+got.map(function(t){
     return '<li><span><b>'+esc(t.ticker)+'</b> <span class="muted small">'+fmtDate(t.date)+(t.auto?', automático':'')+'</span></span><span class="num gain">'+brl.format(t.price*(t.market==='US'?t.fx:1))+'</span></li>'}).join('')+'</ul></details>';
-  h+='<p class="note exp" style="margin:0 4px">Recebido é o que já caiu na conta, do Brasil e do VT (em reais). A receber são os proventos já anunciados das ações que você tinha na data-com, inclusive das que já vendeu. Quando chega o dia do pagamento, o app lança sozinho.'+(tbd.length&&DVY!==cy?' Há '+tbd.length+' com pagamento a definir, listados no ano atual.':'')+'</p>';
+  h+='<p class="note exp" style="margin:0 4px">Recebido é o que já caiu na conta, do Brasil e do VT (em reais). A receber são os proventos já anunciados das ações que você tinha na data-com, inclusive das que já vendeu. Quando chega o dia do pagamento, o app lança sozinho.'+'</p>';
   return h;
 }
 
@@ -519,6 +533,17 @@ function divPorAtivo(){
     (sold>0.005?'<p class="note">Mais '+brl.format(sold)+' de ações que você já vendeu, que não entram na tabela.</p>':'')+
     '<p class="note">Renda estimada por ano, no ritmo atual: <b>'+brl.format(tr/mesesH*12)+'</b> ('+brl.format(tr/mesesH)+' por mês).'+(full?'':' Com menos de 12 meses de carteira, os percentuais ainda estão abaixo do que seria um ano inteiro, e um mês de provento grande puxa a média para cima.')+'</p></div>';
 }
+/* balão pequeno: toca num item com data-bal e aparece a explicação; toca fora e some */
+function bal(txt,inner){return '<button type="button" class="bal" data-bal="'+esc(txt)+'">'+(inner||'<span class="bi">i</span>')+'</button>'}
+function balHide(){var b=$('balpop');if(b)b.hidden=true}
+function balShow(el){var b=$('balpop');if(!b){b=document.createElement('div');b.id='balpop';b.setAttribute('role','tooltip');document.body.appendChild(b)}
+  b.textContent=el.getAttribute('data-bal');b.hidden=false;
+  var r=el.getBoundingClientRect(),bw=b.offsetWidth,vw=document.documentElement.clientWidth,lf=Math.min(Math.max(12,r.left+r.width/2-bw/2),vw-bw-12);
+  var top=r.bottom+8,up=top+b.offsetHeight>window.innerHeight-90;if(up)top=r.top-8-b.offsetHeight;
+  b.style.left=lf+'px';b.style.top=(top+window.scrollY)+'px';b.className=up?'up':''}
+document.addEventListener('click',function(e){var el=e.target.closest&&e.target.closest('.bal');var b=$('balpop');
+  if(el){e.stopPropagation();if(b&&!b.hidden&&b._el===el){balHide();return}balShow(el);$('balpop')._el=el}else if(b&&!b.hidden){balHide();b._el=null}},true);
+window.addEventListener('scroll',function(){balHide()},{passive:true});
 /* toque e arraste nos gráficos: mostra o mês embaixo do dedo */
 function tipAttr(o){return ' data-tip="'+esc(JSON.stringify(o))+'"'}
 var TIPA=null;
@@ -576,10 +601,10 @@ function renderSummary(R){
   var dn=0,dp=0,dok=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,Fp=us?(S.fx&&S.fx.prev?S.fx.prev:F):1;dn+=x.p.qty*q.price*F;dp+=x.p.qty*q.prev*Fp;dok++});
   var pa0=T.uA+T.rfU;
   var h='<div class="patr"><span class="lbl">Patrimônio</span><div class="big">'+brl.format(T.value+T.cash)+'</div>'+
-    '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>hoje</span>':'')+(times.length?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
-    '<div class="duo"><div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre '+brl.format(T.contrib)+' aplicados do bolso</small></div>'+
-    '<div><small>Preço das ações agora (sem o dólar)</small><b class="'+cls(pa0)+'">'+sgn(pa0)+'</b><small>'+pct(T.cost?pa0/T.cost:0)+' sobre o que você pagou</small></div>'+
-    '</div>'+(function(){var rw=[];try{rw=evoData()}catch(e){}return rw.length>1?'<button type="button" class="spkbtn" data-goto="evolucao" aria-label="Ver evolução do patrimônio">'+spark(rw)+'</button>':'<button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button>'})()+'</div>';
+    '<div class="day">'+(dok&&dp>0?'<span class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+' ('+pct((dn-dp)/dp)+')</span><span>hoje '+bal('Quanto suas ações e o VT subiram ou caíram hoje, comparando o preço de agora com o fechamento de ontem.')+'</span>':'')+(times.length?'<span>Preços de '+hm(times[times.length-1])+'</span>':'')+'</div>'+
+    '<div class="duo"><div><small>'+(T.gain>=0?'Lucro':'Prejuízo')+' total desde o início '+bal('Tudo que você ganhou desde o começo: preço das ações, dólar, vendas já feitas e proventos, menos as taxas. A conta completa está em "De onde vem o lucro total".')+'</small><b class="'+cls(T.gain)+'">'+sgn(T.gain)+'</b><small>'+pct(T.simple)+' sobre '+brl.format(T.contrib)+' aplicados do bolso</small></div>'+
+    '<div><small>Preço das ações agora (sem o dólar) '+bal('Quanto as ações que você tem hoje subiram ou caíram desde que você comprou, comparando o preço de agora com o preço médio. Não conta o dólar do VT, vendas antigas nem proventos.')+'</small><b class="'+cls(pa0)+'">'+sgn(pa0)+'</b><small>'+pct(T.cost?pa0/T.cost:0)+' sobre o que você pagou</small></div>'+
+    '</div><button type="button" class="evolink" data-goto="evolucao">Ver evolução do patrimônio</button></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   h+=metasHtml(R);
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
@@ -592,10 +617,9 @@ function renderSummary(R){
   if(nBR||nUS||nRF){var vt=vBR+vUS+T.rfV,ct=cBR+cUS+T.rfC;
     h+='<div class="panel"><h2>Carteira hoje</h2><ul class="calc">'+
     (nBR?'<li><span>Brasil <span class="muted small">Nubank</span><br>'+res(vBR,cBR)+'</span><span class="num">'+brl.format(vBR)+'</span></li>':'')+
-    (nUS?'<li><span>EUA <span class="muted small">Inter</span><br><span class="num muted small">'+usd.format(vUSu)+'</span> '+res(vUSu,cUSu,sgu)+'<br><span class="muted small">em reais </span>'+res(vUS,cUS)+'</span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
+    (nUS?'<li><span>EUA <span class="muted small">Inter</span><br>'+bal('Em reais: '+sgn(vUS-cUS)+' ('+pct(cUS?(vUS-cUS)/cUS:0)+'), com o dólar a R$ '+num(T.fxNow,4)+'. Você tem '+usd.format(vUSu)+' no VT.',res(vUSu,cUSu,sgu).replace('class="num small','class="num small u'))+'</span><span class="num">'+brl.format(vUS)+'</span></li>':'')+
     (nRF?'<li><span>Renda fixa <span class="muted small">líquido</span><br>'+res(T.rfV,T.rfC)+'</span><span class="num">'+brl.format(T.rfV)+'</span></li>':'')+
-    '<li class="tot"><span>Total<br>'+res(vt,ct)+'</span><span class="num">'+brl.format(vt)+'</span></li></ul>'+
-    '<p class="note exp">Só o que você tem hoje: valor atual comparado com o que pagou (preço médio). Não conta vendas antigas nem proventos.</p></div>';
+    '<li class="tot"><span>Total<br>'+res(vt,ct)+' '+bal('Quanto o que você tem hoje vale a mais (ou a menos) do que você pagou por ele, pelo preço médio. Não conta o lucro de ações que você já vendeu nem os proventos: esses entram no Lucro total.')+'</span><span class="num">'+brl.format(vt)+'</span></li></ul></div>';
     var dA=ct-T.contrib;
     h+='<div class="panel"><h2>Quanto você investiu</h2><ul class="calc">'+
       '<li><span>Valor investido<br><span class="muted small">o que você pagou pelo que tem hoje (preço médio × quantidade), como no Nubank e no Inter</span></span><span class="num">'+brl.format(ct)+'</span></li>'+
@@ -603,14 +627,14 @@ function renderSummary(R){
       '<li class="tot"><span>Diferença</span><span class="num">'+brl.format(Math.abs(dA))+'</span></li></ul>'+
       '<p class="note exp">'+(dA>=0?'O valor investido é maior porque parte das compras foi paga com lucro de vendas e com proventos, e não com dinheiro novo do seu bolso.':'O valor investido é menor porque parte do dinheiro aplicado ainda está parada, ou foi perdida em vendas com prejuízo.')+' O lucro total é calculado sobre o aplicado do seu bolso.</p></div>'}
 
-  var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR,bm=cdiBench(R);
+  var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR;
   var wfi=[['Preço das ações que você tem',pz]];if(nUS||Math.abs(T.uF)>0.005)wfi.push(['Dólar (sobre o VT que você tem)',T.uF]);wfi.push(['Vendas já feitas',rz],['Proventos recebidos',T.div]);if(T.fees>0.005)wfi.push(['Taxas da B3 pagas nas notas',-T.fees]);
   var wmx=Math.max.apply(null,wfi.map(function(w){return Math.abs(w[1])}))||1;
   h+='<div class="panel"><h2>De onde vem o '+(T.gain>=0?'lucro':'prejuízo')+' total</h2><ul class="calc wf">'+
     wfi.map(function(w){return '<li><span>'+w[0]+'</span><span class="num '+cls(w[1])+'">'+sgn(w[1])+'</span><span class="trk"><i class="'+(w[1]>=0?'g':'l')+'" style="width:'+Math.max(1.5,Math.abs(w[1])/wmx*100).toFixed(1)+'%"></i></span></li>'}).join('')+
     '<li class="tot"><span>'+(T.gain>=0?'Lucro':'Prejuízo')+' total</span><span class="num '+cls(T.gain)+'">'+sgn(T.gain)+'</span></li></ul>'+
-    '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Rentabilidade simples</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div>'+
-    '<div><span class="lbl">Anualizada (XIRR)</span><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div></div>'+
+    '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Rentabilidade simples '+bal('O lucro total dividido pelo que saiu do seu bolso. Ex.: aplicou R$ 100 e ganhou R$ 7, rendeu 7%. Não importa quando cada aporte entrou.')+'</span><span class="num '+cls(T.gain)+'">'+pct(T.simple)+'</span></div>'+
+    '<div><span class="lbl">Anualizada (XIRR) '+bal('Quanto a carteira renderia em 1 ano inteiro no ritmo atual, levando em conta a data de cada compra e venda. Com menos de 1 ano de carteira, esse número exagera: olhe mais a simples.')+'</span><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div></div>'+
     '<details><summary>Como a conta é feita</summary><ul class="calc small" style="margin-top:12px">'+
     '<li><span>Valor atual dos ativos</span><span class="num">'+brl.format(T.value)+'</span></li>'+
     '<li><span>+ Saldo parado (vendas e proventos não reinvestidos)</span><span class="num">'+brl.format(T.cash)+'</span></li>'+
@@ -620,6 +644,20 @@ function renderSummary(R){
     (Math.abs(T.check-T.gain)>0.01?'<p class="warn">A conta não fecha em '+brl.format(Math.abs(T.check-T.gain))+'. Revise os lançamentos.</p>':'')+
     '</details></div>';
 
+  if(T.value>0){
+    var cs=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+    var its=R.held.map(function(x){return {n:x.p.ticker,v:x.v}});if(T.rfV>0)its.push({n:'Renda fixa',v:T.rfV});
+    its.sort(function(a,b){return b.v-a.v});
+    var top=its.slice(0,6),rest=its.slice(6).reduce(function(s,x){return s+x.v},0);
+    top.forEach(function(x,i){x.c=cs[i]});if(rest>0)top.push({n:'Outros',v:rest,c:'var(--muted)'});
+    h+='<div class="panel"><h2>Distribuição</h2><div class="dbox"><div class="dwrap">'+donut(top,T.value)+'<div class="dc"><b class="num">'+its.length+'</b><span>ativos</span></div></div><ul class="leg">'+
+      top.map(function(i){return '<li><i style="background:'+i.c+'"></i><span>'+esc(i.n)+'</span><span class="num">'+pf.format(i.v/T.value*100)+'%</span></li>'}).join('')+'</ul></div></div>';
+  }
+  el.innerHTML=h;
+}
+
+function perfHtml(R){
+  var T=R.tot,h='',bm=cdiBench(R),nBR=R.held.some(function(x){return x.p.market==='BR'}),nUS=R.held.some(function(x){return x.p.market==='US'});
   var sb=nBR?benchSeg('BR','BOVA11'):null,su=nUS?benchSeg('US','IVVB11'):null;
   if(sb||su){var ln=function(lab,a,bl,b){var d=a.gP-a.gB;return '<li class="vsli"><span><b>'+lab+'</b></span><span class="num '+cls(d)+'">'+sgn(d)+'</span>'+vsBars(a.pP,'Você',a.pB,bl)+'</li>'};
     h+='<div class="panel"><h2>Sua carteira contra o mercado</h2><ul class="calc">'+(sb?ln('Ações do Brasil',sb,'Ibovespa'):'')+(su?ln('VT (em reais)',su,'S&P 500'):'')+'</ul>'+
@@ -633,22 +671,9 @@ function renderSummary(R){
       '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">'+vsBars(T.simple,'Sua carteira',bm.gain/bm.apl,'CDI')+'</div>'+
       '<p class="note exp">Cada real que você aplicou foi colocado no CDI na mesma data em que entrou na carteira, rendendo 100% do CDI até '+fmtDate(bm.last)+' (último CDI do Banco Central). Retiradas saem do CDI na mesma data. Sem IR, para comparar com a carteira, que também está sem IR.</p></div>'}
   else if(S.trades.length&&!CDI.dates.length)h+='<div class="panel"><h2>Sua carteira contra o CDI</h2><p class="muted small">'+(CDI.err?esc(CDI.err):'Buscando o CDI no Banco Central...')+'</p></div>';
-  if(T.value>0){
-    var cs=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
-    var its=R.held.map(function(x){return {n:x.p.ticker,v:x.v}});if(T.rfV>0)its.push({n:'Renda fixa',v:T.rfV});
-    its.sort(function(a,b){return b.v-a.v});
-    var top=its.slice(0,6),rest=its.slice(6).reduce(function(s,x){return s+x.v},0);
-    top.forEach(function(x,i){x.c=cs[i]});if(rest>0)top.push({n:'Outros',v:rest,c:'var(--muted)'});
-    h+='<div class="panel"><h2>Distribuição</h2><div class="dbox"><div class="dwrap">'+donut(top,T.value)+'<div class="dc"><b class="num">'+its.length+'</b><span>ativos</span></div></div><ul class="leg">'+
-      top.map(function(i){return '<li><i style="background:'+i.c+'"></i><span>'+esc(i.n)+'</span><span class="num">'+pf.format(i.v/T.value*100)+'%</span></li>'}).join('')+'</ul></div></div>';
-  }
-  if(DV.up.length){var u0=DV.up.slice(0,3);
-    h+='<div class="panel"><div class="grp"><h2>Proventos a receber</h2><span class="num gt">'+brl.format(DV.up.reduce(function(a,u){return a+u.val},0))+'</span></div><ul class="calc">'+
-      u0.map(function(u){return '<li><span><b>'+esc(u.tk)+'</b> <span class="muted small">'+(u.pay?'paga em '+fmtDate(u.pay):'pagamento a definir')+'</span></span><span class="num">'+brl.format(u.val)+'</span></li>'}).join('')+'</ul>'+
-      '<p class="note"><button class="link" type="button" data-goto="proventos">Ver todos os proventos</button></p></div>'}
-  el.innerHTML=h;
+  return h;
 }
-
+function renderPerf(R){var el=$('perftab');if(!el)return;var h=S.trades.length?perfHtml(R):'';el.innerHTML=h||'<div class="panel"><p class="muted">Lance suas compras para comparar a carteira com o mercado e com o CDI.</p></div>'}
 function posCard(x){
   var p=x.p,us=p.market==='US',cur=us?usd:brl;
   return '<div class="pos"><div class="row"><span class="tk">'+esc(p.ticker)+'</span><span class="val num">'+brl.format(x.v)+'</span></div>'+
@@ -771,7 +796,7 @@ function renderFx(){
 }
 function render(){
   var R=compute();
-  renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
+  renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderPerf(R);renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
   $('divtab').innerHTML=renderDivPanel()||'<div class="panel"><p class="muted">Nenhum provento ainda. Quando cair o primeiro, ele aparece aqui.</p></div>';
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
   $('c-fx').placeholder=S.fx&&S.fx.src==='auto'?String(S.fx.rate).replace('.',','):(MK.fxLatest?String(MK.fxLatest).replace('.',','):'5,35');
@@ -905,6 +930,7 @@ function setTema(tm){try{localStorage.setItem(LS+'-tema',tm)}catch(e){}
 function markTema(){var tm=getTema();[].forEach.call(document.querySelectorAll('[data-tema]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-tema')===tm))})}
 document.addEventListener('click',function(e){
   var t=e.target;
+  var dvb=t.closest&&t.closest('[data-dvv]');if(dvb){DVV=dvb.getAttribute('data-dvv');render();return}
   var tb=t.closest&&t.closest('[data-tema]');
   if(tb){setTema(tb.getAttribute('data-tema'));return}
   var gb=t.closest&&t.closest('.spkbtn');if(gb)t=gb;
@@ -914,7 +940,7 @@ document.addEventListener('click',function(e){
   else if(t.dataset&&t.dataset.dvy){DVY=t.dataset.dvy;render()}
   else if(t.dataset&&t.dataset.trf){TRF=t.dataset.trf;renderTrades()}
   else if(t.dataset&&t.dataset.edit){startEdit(t.dataset.edit)}
-  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':t.dataset.cv==='apo'?'aporte':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
+  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':t.dataset.cv==='apo'?'aporte':t.dataset.cv==='perf'?'desempenho':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
   else if(t.dataset&&t.dataset.evy){EVY=t.dataset.evy;renderEvo()}
   else if(t.dataset&&t.dataset.iry){IRY=t.dataset.iry;renderIR()}
   else if(t.id==='apo-go'){apoCalc()}
@@ -1546,7 +1572,7 @@ setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
 var TABS=['resumo','ativos','proventos','lancamentos','mais'],MAISV='cambio',CARV='pos';
 function showTab(n){
   if(n==='cambio'||n==='ajustes'||n==='imposto'){MAISV=n;n='mais'}
-  if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='aporte'){CARV='apo';n='ativos'}else if(n==='ativos')CARV='pos';
+  if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='aporte'){CARV='apo';n='ativos'}else if(n==='desempenho'){CARV='perf';n='ativos'}else if(n==='ativos')CARV='pos';
   if(TABS.indexOf(n)<0)n='resumo';
   Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(el){el.hidden=el.getAttribute('data-tab')!==n||(!!el.dataset.sub&&el.dataset.sub!==MAISV)||(!!el.dataset.sub2&&el.dataset.sub2!==CARV)});
   Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){if(b.dataset.go===n)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
