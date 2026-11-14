@@ -191,7 +191,7 @@ form.add label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:v
 <div class="wrap">
   <header class="top">
     <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0f2a3f"/><path d="M120 356l92-104 68 60 112-148" fill="none" stroke="#f4f8fb" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="392" cy="164" r="34" fill="#e3b657"/></svg><h1>Aporte</h1></div>
-    <div class="pills"><span class="pill" id="pill-fx"></span><span class="pill" id="syncbar"></span></div>
+    <div class="pills"><span class="pill" id="pill-fx"></span><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button></div>
   </header>
   <button id="refresh" type="button" hidden>Atualizar preços</button>
   <div class="msg muted" id="status" role="status"></div>
@@ -963,7 +963,7 @@ function b64dec(x){var b=atob(String(x).replace(/\s/g,'')),u=new Uint8Array(b.le
 function b64enc(x){var u=new TextEncoder().encode(x),b='';for(var i=0;i<u.length;i+=8192)b+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(b)}
 function ghReq(method,body){
   var c=new AbortController(),to=setTimeout(function(){c.abort()},15000);
-  return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/carteira.json'+(method==='GET'?'?ref=main':''),{method:method,signal:c.signal,cache:'no-store',
+  return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/carteira.json'+(method==='GET'?'?ref=main&_='+Date.now():''),{method:method,signal:c.signal,cache:'no-store',
     headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github+json'},body:body?JSON.stringify(body):undefined})
     .then(function(r){clearTimeout(to);return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j}},function(){return {ok:r.ok,status:r.status,j:{}}})});
 }
@@ -987,6 +987,7 @@ function ghRound(attempt){
   return ghReq('GET').then(function(r){
     var remote,sha=null;
     if(!r.ok)throw {status:r.status};
+    GH.readOk=true;
     remote=JSON.parse(b64dec(r.j.content||''));sha=r.j.sha;
     if(!S.ghInit){
       var ids={};(remote.trades||[]).forEach(function(x){ids[x.id]=1});
@@ -998,7 +999,7 @@ function ghRound(attempt){
     var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});
     var body={message:'App: '+pend.length+(pend.length>1?' alterações':' alteração'),content:b64enc(JSON.stringify(data,null,1)+'\n'),sha:sha,branch:'main'};
     return ghReq('PUT',body).then(function(w){
-      if((w.status===409||w.status===422)&&attempt<2)return ghRound(attempt+1);
+      if((w.status===409||w.status===422)&&attempt<3)return new Promise(function(r){setTimeout(r,1500*(attempt+1))}).then(function(){return ghRound(attempt+1)});
       if(!w.ok)throw {status:w.status};
       S.pend=(S.pend||[]).slice(pend.length);save();ghAdopt(data);
     });
@@ -1010,7 +1011,7 @@ function ghSync(manual){
   GH.busy=true;renderSync();
   ghRound(0).then(function(){GH.last=Date.now();GH.err=''},function(e){
     var st=e&&e.status;
-    GH.err=st===401?'A chave do GitHub não foi aceita (errada ou vencida). Crie outra e cole em Ajustes.':st===403?'A chave do GitHub não tem permissão de gravar. Ela precisa de "Contents: Read and write".':st===404?'Não achei o repositório '+ghRepo()+' com essa chave. Confira o nome e se a chave dá acesso a ele.':'Sem conexão com o GitHub agora. Suas alterações ficam guardadas aqui e eu tento de novo.';
+    GH.err=st===401?'A chave do GitHub não foi aceita (errada ou vencida). Crie outra e cole em Ajustes.':st===403||(st===404&&GH.readOk)?'A chave do GitHub só tem permissão de leitura. No GitHub, edite a chave e mude "Conteúdo" para "Leitura e gravação".':st===404?'Não achei o repositório '+ghRepo()+' com essa chave. Confira o nome e se a chave dá acesso a ele.':'Sem conexão com o GitHub agora. Suas alterações ficam guardadas aqui e eu tento de novo.';
     if(manual)warnIn(GH.err);
   }).then(function(){GH.busy=false;renderSync();if(GH.again){GH.again=false;ghSync()}});
 }
