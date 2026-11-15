@@ -1112,9 +1112,11 @@ function rsNews(tk){var e=rsOf(tk);
   return h}
 function rsMini(tk){var e=rsOf(tk);if(!e||!e.ai)return '';var a=e.ai,sn=RSSN[a.sentimento]||RSSN.neutro;
   return '<div class="panel rsmini"><div class="grp"><h2>O que dizem as notícias '+bal('Resumo rápido da IA sobre as notícias da empresa. Veja tudo na aba Notícias.')+'</h2><b class="'+sn[1]+'">'+sn[0]+'</b></div><p class="anv" style="margin-top:6px">'+esc(a.resumo||'')+'</p><button type="button" class="link" data-stv="news">Ver notícias e eventos</button></div>'}
+var RSCO=false;try{RSCO=localStorage.getItem(LS+'-rsco')==='1'}catch(e){}
+document.addEventListener('toggle',function(e){var t=e.target;if(t&&t.classList&&t.classList.contains('rscart')){RSCO=t.open;try{localStorage.setItem(LS+'-rsco',RSCO?'1':'0')}catch(x){}}},true);
 function rsCart(){var c=MD.d&&MD.d.res&&MD.d.res.cart;if(!c||!c.ai)return '';var a=c.ai;
   var lst=function(t,arr,cl){return arr&&arr.length?'<h3 class="rkh3">'+t+'</h3><ul class="rkl">'+arr.map(function(x){return '<li>'+rkLvl(cl)+'<div><p style="margin:0;color:var(--fg)">'+esc(x)+'</p></div></li>'}).join('')+'</ul>':''};
-  return '<details class="panel rscart" open><summary><span class="lbl">Relatório da carteira · IA '+bal('Uma vez por dia a IA junta as notícias das suas empresas, os números e a economia (juros, dólar, commodities) e escreve o que importa para a sua carteira.')+'</span><b>'+esc(a.titulo||'Relatório')+'</b></summary>'+
+  return '<details class="panel rscart"'+(RSCO?' open':'')+'><summary><span class="lbl">Relatório da carteira · IA '+bal('Uma vez por dia a IA junta as notícias das suas empresas, os números e a economia (juros, dólar, commodities) e escreve o que importa para a sua carteira.')+'</span><b>'+esc(a.titulo||'Relatório')+'</b></summary>'+
     (a.macro?'<p class="anv" style="margin-top:10px">'+esc(a.macro)+'</p>':'')+lst('Destaques',a.destaques,'ok')+lst('Riscos',a.riscos,'al')+lst('Para acompanhar',a.atencao,'at')+
     '<p class="small muted" style="margin:10px 0 0">Escrito pela IA ('+esc(c.mod||'Gemini')+') em '+rsWhen(c.at)+', com as notícias, os números das empresas e a economia. Pode errar e não é recomendação.</p></details>'}
 
