@@ -1,0 +1,166 @@
+{
+ "tot": {
+  "value": 18220.39,
+  "cost": 14840,
+  "gain": 4854.79,
+  "div": 66.8,
+  "fees": 2.4,
+  "rA": 1400,
+  "rF": 0,
+  "uA": 1938.57,
+  "uF": 1291.43,
+  "rfV": 1150.39,
+  "rfC": 1000,
+  "rfU": 150.39,
+  "rfR": 10,
+  "contrib": 52132.4,
+  "cash": 38766.8,
+  "bought": 54801.5,
+  "proceeds": 41435.9,
+  "outs": 0,
+  "simple": 0.09,
+  "xirr": 0.11424
+ },
+ "held": [
+  {
+   "tk": "ITUB4",
+   "qty": 90,
+   "pm": 31,
+   "px": 35,
+   "v": 3150,
+   "ganho": 360,
+   "custo": 2790
+  },
+  {
+   "tk": "VT",
+   "qty": 20,
+   "pm": 105,
+   "px": 120,
+   "v": 13920,
+   "ganho": 2870,
+   "custo": 11050
+  }
+ ],
+ "closed": [
+  {
+   "tk": "HGLG11",
+   "rA": 100,
+   "rF": 0,
+   "div": 0
+  },
+  {
+   "tk": "PETR4",
+   "rA": 2000,
+   "rF": 0,
+   "div": 0
+  },
+  {
+   "tk": "VALE3",
+   "rA": -1000,
+   "rF": 0,
+   "div": 0
+  }
+ ],
+ "valoriz": {
+  "pv": 2250.39,
+  "div": 66.8,
+  "g": 2317.19,
+  "base": 15970,
+  "p": 0.145097
+ },
+ "rf": [
+  {
+   "tk": "CDB Banco X",
+   "bruto": 1182.3,
+   "iof": 0,
+   "ir": 31.9,
+   "liq": 1150.39,
+   "realizado": 0,
+   "dias": 471
+  },
+  {
+   "tk": "LCI Banco Y",
+   "bruto": 504.97,
+   "iof": 0,
+   "ir": 0,
+   "liq": 504.97,
+   "realizado": 10,
+   "dias": 30
+  }
+ ],
+ "ir": {
+  "meses": [
+   {
+    "m": "2025-05",
+    "vendasAcao": 2160,
+    "ganhoAcao": 298.5,
+    "vendasFii": 0,
+    "ganhoFii": 0,
+    "isento": true,
+    "imposto": 0,
+    "venc": "2025-06-30"
+   },
+   {
+    "m": "2025-08",
+    "vendasAcao": 0,
+    "ganhoAcao": 0,
+    "vendasFii": 1700,
+    "ganhoFii": 100,
+    "isento": true,
+    "imposto": 20,
+    "venc": "2025-09-30"
+   },
+   {
+    "m": "2025-09",
+    "vendasAcao": 32000,
+    "ganhoAcao": 2000,
+    "vendasFii": 0,
+    "ganhoFii": 0,
+    "isento": false,
+    "imposto": 300,
+    "venc": "2025-10-31"
+   },
+   {
+    "m": "2025-10",
+    "vendasAcao": 5000,
+    "ganhoAcao": -1000,
+    "vendasFii": 0,
+    "ganhoFii": 0,
+    "isento": true,
+    "imposto": 0,
+    "venc": "2025-11-28"
+   }
+  ],
+  "prejAcao": 1000,
+  "prejFii": 0
+ },
+ "bens": {
+  "data": "2025-12-31",
+  "itens": [
+   {
+    "tk": "ITUB4",
+    "q": 90,
+    "custo": 2790.9
+   },
+   {
+    "tk": "VT",
+    "q": 20,
+    "custo": 11050,
+    "custoUS": 2100
+   },
+   {
+    "tk": "CDB Banco X",
+    "q": 1,
+    "custo": 1000
+   }
+  ]
+ },
+ "proventos": {
+  "n": 2,
+  "recebido": 66.8
+ },
+ "cdiBench": {
+  "val": 62158.73,
+  "apl": 52132.4
+ }
+}

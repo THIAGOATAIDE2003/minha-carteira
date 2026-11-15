@@ -2902,6 +2902,8 @@ showTab((location.hash||'').replace('#',''));
 var fixedMsg=sanitize();
 render();
 if(fixedMsg)warnIn(fixedMsg);
+/* só para os testes automáticos (tests/teste.js): expõe as contas, sem mudar nada no app */
+if(window.__APORTE_TESTE__)window.__aporte={S:S,CDI:CDI,compute:compute,valoriz:valoriz,xirr:xirr,ePx:ePx,irData:irData,bensEm:bensEm,splitNeed:splitNeed,rfCalc:rfCalc,cdiBench:cdiBench,pvItems:pvItems,b3Hol:b3Hol,annRets:annRets,evoData:evoData,dayDiff:dayDiff,irRate:irRate};
 })();
 </script>
 

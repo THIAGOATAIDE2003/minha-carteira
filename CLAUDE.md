@@ -6,7 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 "Aporte" (formerly "Minha Carteira"; repo and localStorage keys keep the old name) is a personal investment-portfolio PWA (pt-BR UI, BRL/USD, Brazilian + US holdings). It is a static site hosted on GitHub Pages (`.nojekyll`); the repo holds only code — user data lives in the browser (localStorage) and in the private repo described under Cloud sync.
 
-There is no build system, package manager, test suite or linter. To develop, edit the files and open `index.html` in a browser (or serve the directory with any static server, e.g. `python3 -m http.server`).
+There is no build system, package manager or linter. To develop, edit the files and open `index.html` in a browser (or serve the directory with any static server, e.g. `python3 -m http.server`).
+
+## Tests (run before every push)
+
+`node tests/teste.js` (needs Playwright) opens `index.html` offline with a frozen clock, loads the example portfolio in the file and checks the money math against values computed by hand in the test (preço médio without fees, realized/unrealized, câmbio, proventos, taxas, CDB/LCI with CDI + IOF + IR, IR mensal with the R$ 20 mil exemption, FII 20%, carried losses, DARF date, Bens e Direitos, XIRR, splitNeed, B3 holidays), then compares everything with the snapshot `tests/esperado-exemplo.json` and clicks through every tab (any JS error fails). `node tests/teste.js --real ../minha-carteira-dados/testes/foto-real.json` does the same with a frozen copy of the user's real trades + quotes, kept only in the private data repo (never copy it here). `--gravar` rewrites a snapshot: only do it when a number changed on purpose, and say what changed. The app exposes its functions to the test only when `window.__APORTE_TESTE__` is set (end of the IIFE). `.github/workflows/teste.yml` runs the example test on every push.
 
 ## Architecture
 
