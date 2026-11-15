@@ -363,6 +363,11 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .rsn{list-style:none;margin:0;padding:0}.rsn li{padding:10px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:3px}.rsn li:first-child{border-top:0}.rsn a{color:var(--fg);text-decoration:none;font-size:14.5px;line-height:1.4}.rsn small{color:var(--muted);font-size:12px}
 .rsmini .grp b.g{color:var(--gain)}.rsmini .grp b.m{color:var(--c2)}.rsmini .grp b.l{color:var(--loss)}
 .rscart summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:2px}.rscart summary::-webkit-details-marker{display:none}.rscart summary b{font:650 17px/1.3 var(--disp)}
+.mkot{font:650 17px/1.35 var(--disp);margin:8px 0 0}.mkoc{color:var(--muted)}
+.mkog{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}.mkog button{background:var(--tint);border:0;border-radius:10px;padding:8px 6px;display:flex;flex-direction:column;gap:2px;align-items:center;color:var(--fg);min-width:0}.mkog span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.mkog b{font-size:14px}
+.mkoy{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}.mkoy small{font-weight:500}
+.mkom{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.mkom>div{display:flex;flex-direction:column;gap:4px}.mkom button{display:flex;justify-content:space-between;background:none;border:0;border-top:1px solid var(--line);padding:7px 0;color:var(--fg);font-size:14px}
+.qch{margin-top:4px}.qlb{display:flex;justify-content:space-around;font-size:10.5px;color:var(--muted);margin-top:4px}
 .dvtab{width:100%;border-collapse:collapse;font-size:13.5px}
 .dvtab th{font-weight:500;color:var(--muted);font-size:12.5px}
 .dvtab th,.dvtab td{padding:7px 4px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
@@ -963,6 +968,7 @@ var IDX=[
  {k:'corn',n:'Milho',t:'Commodity · US$ por bushel',src:'cmd',s:'ZC=F',f:'usd'},
  {k:'coffee',n:'Café arábica',t:'Commodity · US$ por libra-peso',src:'cmd',s:'KC=F',f:'usd',tp:'CAFÉ'},
  {k:'natgas',n:'Gás natural',t:'Commodity · US$ por MMBtu',src:'cmd',s:'NG=F',f:'usd'},
+ {k:'tnx',n:'Juros EUA 10 anos',t:'Rendimento do título de 10 anos do Tesouro americano',src:'cmd',s:'^TNX',f:'pct',tp:'JUROS EUA 10A'},
  {k:'selic',n:'Selic (ao ano)',t:'Taxa básica de juros, definida pelo Copom',src:'selic',f:'pct'},
  {k:'cdi',n:'CDI (ao ano)',t:'Juro entre bancos, que rende a renda fixa',src:'cdi',f:'pct'},
  {k:'ipca',n:'IPCA (12 meses)',t:'Inflação oficial',src:'ipca',f:'pct'}];
@@ -970,7 +976,7 @@ var IDXDEF=['ibov','SPY','QQQ','ifix','usd','eur','btc','cdi'],MKED=false;
 function idxSel(){var a=Array.isArray(S.idxSel)?S.idxSel:IDXDEF;return a.filter(function(k){return IDX.some(function(x){return x.k===k})})}
 function idxSet(a){S.idxSel=a;S.pend.push({t:'cfg',k:'idx',v:a});save();ghSync()}
 /* novidades colocadas uma vez nos cartões do usuário (depois da primeira sincronização, para não apagar a escolha da nuvem) */
-var IDXMIG=[['-idxcmd',['brent','iron','GLD']],['-idxselic',['selic','cdi']]];
+var IDXMIG=[['-idxcmd',['brent','iron','GLD']],['-idxselic',['selic','cdi']],['-idxtnx',['tnx']]];
 function idxCmdAdd(){try{if(S.keys.gh&&!GH.last)return false;var a=idxSel().slice(),ch=0;IDXMIG.forEach(function(m){if(localStorage.getItem(LS+m[0]))return;localStorage.setItem(LS+m[0],'1');m[1].forEach(function(k){if(a.indexOf(k)<0){a.push(k);ch=1}})});if(ch){idxSet(a);render()}return true}catch(e){return true}}
 var IDXCI=setInterval(function(){if(idxCmdAdd())clearInterval(IDXCI)},3000);
 function idxDef(k){return IDX.filter(function(x){return x.k===k})[0]}
@@ -1112,6 +1118,36 @@ function rsCart(){var c=MD.d&&MD.d.res&&MD.d.res.cart;if(!c||!c.ai)return '';var
     (a.macro?'<p class="anv" style="margin-top:10px">'+esc(a.macro)+'</p>':'')+lst('Destaques',a.destaques,'ok')+lst('Riscos',a.riscos,'al')+lst('Para acompanhar',a.atencao,'at')+
     '<p class="small muted" style="margin:10px 0 0">Escrito pela IA ('+esc(c.mod||'Gemini')+') em '+rsWhen(c.at)+', com as notícias, os números das empresas e a economia. Pode errar e não é recomendação.</p></details>'}
 
+/* ===== Market Overview: resumo do mercado no topo dos Índices ===== */
+function mktOverview(){var it=tapeItems();if(it.length<3)return '';
+  var by={};it.forEach(function(x){by[x.l]=x});
+  var key=[['IBOV','Ibovespa','ibov'],['S&P 500','S&P 500','SPY'],['NASDAQ','Nasdaq','QQQ'],['DÓLAR','Dólar','usd'],['JUROS EUA 10A','Juros EUA','tnx'],['PETRÓLEO','Petróleo','brent'],['MINÉRIO','Minério','iron'],['OURO','Ouro','GLD'],['BITCOIN','Bitcoin','btc']].filter(function(k){return by[k[0]]});
+  var sg=function(p){return (p>=0?'+':'−')+pf.format(Math.abs(p))+'%'};
+  var st=it.filter(function(x){return x.st}).slice().sort(function(a,b){return b.p-a.p}),up=st.filter(function(x){return x.p>0}).slice(0,3),dn=st.filter(function(x){return x.p<0}).slice(-3).reverse();
+  var R=compute(),dv=0,dp=0;R.held.forEach(function(x){var lv=livePx(x.p.ticker);if(!lv||lv.pct==null)return;var F=x.p.market==='US'?(R.tot.fxNow||1):1,a=x.p.qty*lv.p*F,b=a/(1+lv.pct/100);dv+=a-b;dp+=b});
+  var d=MD.d&&MD.d.res&&MD.d.res.dia,a=d&&d.ai,dl=dayLbl();
+  var h='<div class="panel mko"><div class="grp"><h2>Resumo do mercado</h2><span class="det">'+(dl.t==='hoje'?'hoje':'último pregão')+'</span></div>';
+  if(a)h+='<p class="mkot">'+esc(a.titulo||'')+'</p><p class="anv" style="margin-top:4px">'+esc(a.texto||'')+'</p>'+(a.carteira?'<p class="anv mkoc">'+esc(a.carteira)+'</p>':'');
+  h+='<div class="mkog">'+key.map(function(k){var x=by[k[0]],c=Math.abs(x.p)<0.005?'':x.p>0?'gain':'loss';return '<button type="button" data-idxo="'+k[2]+'"><span>'+k[1]+'</span><b class="num '+c+'">'+sg(x.p)+'</b></button>'}).join('')+'</div>';
+  if(dp)h+='<div class="mkoy"><span>Sua carteira '+(dl.t==='hoje'?'hoje':'no último pregão')+'</span><b class="num '+cls(dv)+'">'+sgn(dv)+' <small>('+sg(dv/dp*100)+')</small></b></div>';
+  if(up.length||dn.length)h+='<div class="mkom"><div><span class="lbl">Maiores altas</span>'+up.map(function(x){return '<button type="button" data-stk="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span class="gain">'+sg(x.p)+'</span></button>'}).join('')+'</div><div><span class="lbl">Maiores quedas</span>'+dn.map(function(x){return '<button type="button" data-stk="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span class="loss">'+sg(x.p)+'</span></button>'}).join('')+'</div></div>';
+  h+='<p class="small muted" style="margin:10px 0 0">'+(a?'Texto da IA ('+esc(d.mod||'')+') em '+rsWhen(d.at)+'. ':'')+'Números da faixa de cotações, entre as grandes empresas do Brasil e dos EUA.</p></div>';
+  return h}
+/* ===== Resultados trimestrais (CVM) na página da ação ===== */
+function cvmQ(tk){var c=MD.d&&MD.d.cvm&&MD.d.cvm.q,q=c&&c[tk];return q?q.map(function(x){return [x[0],x[1],x[2]?x[2]:null,x[3]]}):null}
+function qfmt(v){if(v==null)return '—';var a=Math.abs(v),s=v<0?'−':'';return s+'R$ '+(a>=1e9?num(a/1e9,a>=1e10?1:2)+' bi':num(a/1e6,0)+' mi')}
+function qTtm(q){if(!q||q.length<8)return null;var s=function(a,i){var t=0;for(var k=0;k<4;k++){var v=a[a.length-1-i-k][3];if(v==null)return null;t+=v}return t},a=s(q,0),b=s(q,4);return a==null||b==null?null:{a:a,b:b,g:b>0?a/b-1:null}}
+function qChart(q,ix,tit){var vs=q.map(function(x){return x[ix]}),ok=vs.filter(function(v){return v!=null});if(ok.length<2)return '';
+  var mx=Math.max.apply(null,ok.concat([0])),mn=Math.min.apply(null,ok.concat([0])),rg=mx-mn||1,H=120,n=q.length,W=300,bw=W/n,y0=H*(mx/rg);
+  var bars=q.map(function(x,i){var v=x[ix];if(v==null)return '';var hh=Math.abs(v)/rg*H,yy=v>=0?y0-hh:y0;return '<g data-slot="'+i+'"><rect x="'+(i*bw+bw*.18).toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+(bw*.64).toFixed(1)+'" height="'+Math.max(1,hh).toFixed(1)+'" rx="3" fill="'+(v<0?'var(--loss)':ix===2?'var(--c1)':'var(--c6)')+'"/></g>'}).join('');
+  var tip={n:n,pts:q.map(function(x,i){var p=null;for(var j=0;j<i;j++)if(q[j][0]===x[0]-1&&q[j][1]===x[1])p=q[j];var g=p&&p[ix]&&x[ix]!=null&&p[ix]>0?x[ix]/p[ix]-1:null;return {i:i,t:x[1]+'º tri de '+x[0],r:[['',tit,qfmt(x[ix])]].concat(g!=null?[['','vs mesmo tri do ano antes',(g>=0?'+':'−')+pf.format(Math.abs(g*100))+'%',g>=0?'gain':'loss']]:[])}})};
+  return '<h3 class="rkh3">'+tit+' por trimestre</h3><div class="tipc evpl qch"'+tipAttr(tip)+'><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" width="100%" height="'+H+'" role="img" aria-label="'+tit+' por trimestre"><line x1="0" x2="'+W+'" y1="'+y0.toFixed(1)+'" y2="'+y0.toFixed(1)+'" stroke="var(--line)"/>'+bars+'</svg></div>'+
+    '<div class="qlb">'+q.map(function(x){return '<span>'+x[1]+'T'+String(x[0]).slice(2)+'</span>'}).join('')+'</div>'}
+function qHtml(tk){var q=cvmQ(tk);if(!q||q.length<2)return '';var l=q[q.length-1],t=qTtm(q),p=null;q.forEach(function(x){if(x[0]===l[0]-1&&x[1]===l[1])p=x});
+  var gl=p&&p[3]>0&&l[3]!=null?l[3]/p[3]-1:null,gr=p&&p[2]>0&&l[2]!=null?l[2]/p[2]-1:null,sg=function(g){return '<b class="'+(g>=0?'gain':'loss')+'">'+(g>=0?'+':'−')+pf.format(Math.abs(g*100))+'%</b>'};
+  return '<div class="panel"><h2>Resultados trimestrais</h2><p class="anv" style="margin:4px 0 0">No '+l[1]+'º tri de '+l[0]+': '+(l[2]!=null?'receita de <b>'+qfmt(l[2])+'</b>'+(gr!=null?' ('+sg(gr)+' no ano)':'')+' e ':'')+'lucro de <b>'+qfmt(l[3])+'</b>'+(gl!=null?' ('+sg(gl)+' no ano)':'')+'.'+(t?' Lucro dos últimos 12 meses: <b>'+qfmt(t.a)+'</b>'+(t.g!=null?' ('+sg(t.g)+' contra os 12 meses anteriores)':'')+'.':'')+'</p>'+
+    qChart(q,2,'Receita')+qChart(q,3,'Lucro')+'<p class="note">Balanços entregues à CVM (consolidado). O 4º trimestre é o ano inteiro menos os 9 primeiros meses. Toque nas barras para ver cada trimestre.</p></div>'}
+
 function anaHtml(){
   var f=MD.d&&MD.d.fund;if(!f||!f.d)return '<div class="panel"><p class="muted">Os indicadores chegam com o robô diário. Volte em alguns minutos.</p></div>';
   var sc=SCRS.filter(function(x){return x.k===SCR})[0]||SCRS[0],W=wlist(),mine={};compute().held.forEach(function(x){mine[x.p.ticker]=1});
@@ -1140,6 +1176,7 @@ function renderMkt(){
   var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
   h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice ou moeda':MKV==='ana'?'Buscar ação para analisar':'Buscar ação para ver ou acompanhar')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
+  try{h+=mktOverview()}catch(e){}
   h+='<div class="panel"><div class="grp"><h2>Índices</h2><span style="display:flex;gap:10px;align-items:center"><span class="det">'+(MKT.busy?'atualizando...':MKT.at?'às '+new Date(MKT.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'</span><button type="button" class="link" data-mked="1">'+(MKED?'Pronto':'Editar')+'</button></span></div>'+
     (sel.length?'<div class="idxg'+(MKED?' ed':'')+'">'+sel.map(function(k){var x=idxDef(k),o=idxVal(x);
       return '<div class="idx"'+(MKED?'':' data-idxo="'+k+'" role="button" tabindex="0"')+'>'+(MKED?'<button type="button" class="idxx" data-idxt="'+k+'" aria-label="Remover '+esc(x.n)+'">✕</button>':'')+'<small>'+esc(x.n)+'</small><b>'+(o&&isFinite(o.v)?idxFmt(x,o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+(o.p>=0?'+':'−')+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">'+(o&&o.sub?esc(o.sub):'sem dado')+'</span>')+'</div>'}).join('')+'</div>':'<p class="muted small">Nenhum índice escolhido. Use a busca acima para adicionar.</p>')+
@@ -1195,7 +1232,7 @@ function stkOpen(tk){STK={tk:tk,rng:STK.rng||'1y',d:null,busy:false,err:''};$('s
 function idxOpen(k){var x=idxDef(k);STK={tk:'',idx:k,rng:STK.rng&&STK.rng!=='2y'?STK.rng:'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=x?x.n:k;idxRender();if(!MD.d||!MD.d.idx)loadMD(true)}
 function idxRender(){
   var b=$('stk-b'),k=STK.idx,x=idxDef(k),D=MD.d&&MD.d.idx&&MD.d.idx[k],rg=STK.rng;if(!b||!x)return;
-  var rate=x.src==='cdi'||x.src==='ipca'||x.src==='selic',sym=D&&D.sym||'',same=!D||x.src==='usd'||x.src==='fx'||sym===x.s||sym===x.s+'.SA';
+  var rate=x.src==='cdi'||x.src==='ipca'||x.src==='selic'||x.k==='tnx',sym=D&&D.sym||'',same=!D||x.src==='usd'||x.src==='fx'||sym===x.s||sym===x.s+'.SA';
   var fmt=rate?function(v){return pf.format(v)+'%'}:same?function(v){return idxFmt(x,v)}:sym.charAt(0)==='^'?function(v){return num(v,0)+' pts'}:function(v){return usd.format(v)};
   if(!D||!D.d||D.d.length<2){b.innerHTML='<p class="muted">'+(MD.busy?'Buscando o histórico...':'O histórico de '+esc(x.n)+' chega com o robô diário. Volte em alguns minutos.')+'</p>';return}
   if(rate&&rg==='yr')rg=STK.rng='1y';
@@ -1263,6 +1300,7 @@ function stkAna(tk,d){
   if(!fin&&has(N.ml)){if(N.ml<0)neg.push(['Margem negativa','Gasta mais do que fatura.']);else if(pe&&has(pe.ml)&&N.ml>pe.ml*1.25&&N.ml>=8)pos.push(['Margem acima do setor','Margem líquida de '+f1(N.ml)+'%, contra '+f1(pe.ml)+'% das concorrentes.']);else if(N.ml<5)neg.push(['Margem apertada','Margem líquida de '+f1(N.ml)+'%: sobra pouco do que vende.'])}
   if(!fin&&has(N.divpl)){if(N.divpl<=0.5){pos.push(['Pouca dívida','Dívida bruta de '+num(N.divpl,2)+' vez o patrimônio.']);q.push(2)}else if(N.divpl>=1.5){neg.push(['Empresa endividada','Dívida bruta de '+num(N.divpl,2)+' vezes o patrimônio. Juros altos pesam no lucro.']);q.push(0)}else q.push(1)}
   if(!fin&&has(N.lc)&&N.lc>0&&N.lc<1)neg.push(['Caixa de curto prazo apertado','Liquidez corrente de '+num(N.lc,2)+': tem menos dinheiro de curto prazo do que contas a pagar no ano.']);
+  var QQ=us?null:cvmQ(tk),TT=QQ&&qTtm(QQ);if(TT&&TT.g!=null){if(TT.a<0)neg.push(['Prejuízo nos últimos 12 meses','Somando os 4 últimos trimestres, a empresa perdeu '+qfmt(Math.abs(TT.a))+'.']);else if(TT.g>=0.15)pos.push(['Lucro crescendo','Lucro dos últimos 12 meses '+pf.format(TT.g*100)+'% maior que nos 12 meses anteriores ('+qfmt(TT.a)+').']);else if(TT.g<=-0.15)neg.push(['Lucro caindo','Lucro dos últimos 12 meses '+pf.format(Math.abs(TT.g)*100)+'% menor que nos 12 meses anteriores ('+qfmt(TT.a)+').'])}
   if(has(N.cr5)){if(N.cr5>=10)pos.push(['Receita crescendo','Cresceu uns '+f1(N.cr5)+'% ao ano nos últimos 5 anos.']);else if(N.cr5<0)neg.push(['Receita encolhendo','Caiu uns '+f1(Math.abs(N.cr5))+'% ao ano nos últimos 5 anos.'])}
   /* preço */
   if(has(N.pl)&&N.pl>0){if(pe&&has(pe.pl)){if(N.pl<pe.pl*0.8){pos.push(['Mais barata que o setor pelo lucro','P/L de '+num(N.pl,1)+', contra '+num(pe.pl,1)+' das concorrentes.']);p.push(2)}else if(N.pl>pe.pl*1.3){neg.push(['Mais cara que o setor pelo lucro','P/L de '+num(N.pl,1)+', contra '+num(pe.pl,1)+' das concorrentes.']);p.push(0)}else p.push(1)}
@@ -1427,6 +1465,7 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
   if(STV==='val')h+=anVal(tk,d);
   else if(STV==='news')h+=rsNews(tk);
   else if(STV==='ind'){
+  h+=qHtml(tk);
   h+='<div class="kpis" style="margin-top:6px">'+
     [['P/L',nm(K.pl),sm('pl',sn)],['P/VP',nm(pvp),sm('pvp',function(v){return num(v,2)})],['Dividend yield',pc(dyC),sm('dy',sp)],['ROE',pc(K.roe),sm('roe',sp)],['LPA',K.lpa==null?'—':F.format(K.lpa)],['Margem líquida',pc(K.ml),sm('ml',sp)],['Máx. 52 sem.',K.hi==null?'—':F.format(K.hi)],['Mín. 52 sem.',K.lo==null?'—':F.format(K.lo)],['Valor de mercado',big(K.mc)],['EV/EBITDA',nm(K.evebitda),sm('evebitda',sn)],['Dívida/PL',K.div==null?'—':(K.div>5?num(K.div,0)+'%':nm(K.div)),sm('divpl',function(v){return num(v,2)})],['ROIC',pc(K.roic),sm('roic',sp)],['Liquidez corrente',nm(K.lc)],['Receita 5 anos',pc(K.cr5)]].filter(function(r){return r[1]!=='—'||['P/L','P/VP','Dividend yield','ROE'].indexOf(r[0])>=0})
       .map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+(r[2]||'')+'</b></div>'}).join('')+'</div>'+
@@ -2611,7 +2650,7 @@ function tapeItems(){
   if(R)R.held.forEach(function(x){var tk=x.p.ticker,lv=livePx(tk);if(lv&&lv.pct!=null)add(tk,lv.p,lv.p/(1+lv.pct/100),x.p.market==='US'?'USD':'BRL',1)});
   if(!seen['DÓLAR']&&S.fx&&S.fx.prev)add('DÓLAR',S.fx.rate,S.fx.prev,'BRL',0,'usd');
   return it}
-function tapeVal(x){if(TPIX[x.l])return num(x.v,x.v>=1000?0:2);if(x.l==='DÓLAR'||x.l==='EURO')return 'R$ '+num(x.v,4);if(x.c==='USD')return x.v>=1000?'US$ '+num(x.v,0):usd.format(x.v);return brl.format(x.v)}
+function tapeVal(x){if(/^JUROS/.test(x.l))return pf.format(x.v)+'%';if(TPIX[x.l])return num(x.v,x.v>=1000?0:2);if(x.l==='DÓLAR'||x.l==='EURO')return 'R$ '+num(x.v,4);if(x.c==='USD')return x.v>=1000?'US$ '+num(x.v,0):usd.format(x.v);return brl.format(x.v)}
 function tapeIn(x){var c=Math.abs(x.p)<0.005?'z':x.p>0?'g':'l';return [tapeVal(x),c,(c==='z'?'':x.p>0?'▲ ':'▼ ')+pf.format(Math.abs(x.p))+'%']}
 function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems();if(it.length<3){el.hidden=true;return}el.hidden=false;
   var key=it.map(function(x){return x.l}).join('|');
