@@ -1010,7 +1010,7 @@ function renderMkt(){
 var MD={d:null,etag:'',at:0,busy:false,err:''};
 try{var md0=JSON.parse(localStorage.getItem(LS+'-md')||'null');if(md0&&md0.d){MD.d=md0.d;MD.etag=md0.etag||'';MD.at=md0.at||0}}catch(e){}
 function loadMD(force){
-  if(!S.keys.gh||MD.busy)return Promise.resolve();if(!force&&Date.now()-MD.at<30*60000&&MD.d)return Promise.resolve();
+  if(!S.keys.gh||MD.busy)return Promise.resolve();if(!force&&Date.now()-MD.at<30*60000&&MD.d&&MD.d.prov)return Promise.resolve();
   MD.busy=true;var c=new AbortController(),to=setTimeout(function(){c.abort()},15000),h={'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'};if(MD.etag&&MD.d)h['If-None-Match']=MD.etag;
   return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/mercado.json?ref=main',{headers:h,signal:c.signal,cache:'no-store'}).then(function(r){clearTimeout(to);
     if(r.status===304){MD.at=Date.now();return null}if(r.status===404){MD.err='O robô ainda não rodou.';return null}if(!r.ok)throw new Error(r.status);
