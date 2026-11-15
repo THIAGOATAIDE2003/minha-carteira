@@ -342,7 +342,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .rksim{display:flex;flex-direction:column;gap:10px}.rksim input[type=range]{width:100%;accent-color:var(--accent)}.rksq{font-size:15px;margin:12px 0 6px}
 .rkh3{font-size:14px;margin:14px 0 10px;color:var(--muted);font-weight:600}
 .rkcm{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}.rkcm th{font-weight:600;padding:6px;white-space:nowrap;font-size:12px}.rkcm td{padding:8px 6px;text-align:center;border:1px solid var(--line);min-width:52px}
-.stseg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0 10px}.stseg button{padding:9px 4px}
+.stseg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:14px 0 10px}.stseg button{padding:9px 2px;font-size:12.5px}
 .anp .lbl{display:block}.anh{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.anv{margin:4px 0 0;font-size:15px;line-height:1.45}.ans{flex:none;width:64px;height:64px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid currentColor}.ans b{font:700 22px/1 var(--disp)}.ans small{font-size:10.5px;opacity:.8}.ans.g{color:var(--gain)}.ans.m{color:var(--c2)}.ans.l{color:var(--loss)}
 .anc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:12px}.anc div{background:var(--tint);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;gap:2px;min-width:0}.anc span{font-size:11.5px;color:var(--muted)}.anc b{font-size:13.5px}.anc b.g,.vg{color:var(--gain)}.anc b.m,.vm{color:var(--c2)}.anc b.l,.vl{color:var(--loss)}
 .anl{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
@@ -358,6 +358,11 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .opn{text-align:center;font-weight:700;border-radius:8px;padding:4px 0;font-size:14px;background:var(--tint)}.opn.g{color:var(--gain)}.opn.m{color:var(--c2)}.opn.l{color:var(--loss)}
 .opu{text-align:center;font-weight:600;font-size:13.5px}.opa{background:none;border:0;color:var(--c2);font-size:20px;padding:0 4px;width:28px}
 .opal{grid-column:1/-1;list-style:none;margin:2px 0 0;padding:0 0 0 38px;display:flex;flex-direction:column;gap:4px}.opal li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45}.opal .rkd{margin-top:5px;width:8px;height:8px}.opal b{color:var(--fg);font-weight:600}
+.rsg{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:12px}.rsg>div{background:var(--tint);border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:3px}.rsg span{font-size:12px;color:var(--muted)}.rsg b{font-size:16px}.rsg b.g{color:var(--gain)}.rsg b.m{color:var(--c2)}.rsg b.l{color:var(--loss)}.rsg small{font-size:11px;color:var(--muted);font-weight:500}.rsg i{height:6px;border-radius:3px;background:color-mix(in srgb,var(--fg) 12%,transparent);display:block;overflow:hidden}.rsg em{display:block;height:100%;background:var(--c1);border-radius:3px}
+.rstg{display:flex;gap:6px;flex-wrap:wrap;margin:5px 0 2px}.rstg span{font-size:11.5px;border-radius:6px;padding:2px 7px;background:var(--tint);color:var(--muted)}.rstg .rsi.alto{color:var(--loss);font-weight:700}.rstg .rsi.medio{color:var(--c2);font-weight:700}
+.rsn{list-style:none;margin:0;padding:0}.rsn li{padding:10px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:3px}.rsn li:first-child{border-top:0}.rsn a{color:var(--fg);text-decoration:none;font-size:14.5px;line-height:1.4}.rsn small{color:var(--muted);font-size:12px}
+.rsmini .grp b.g{color:var(--gain)}.rsmini .grp b.m{color:var(--c2)}.rsmini .grp b.l{color:var(--loss)}
+.rscart summary{list-style:none;cursor:pointer;display:flex;flex-direction:column;gap:2px}.rscart summary::-webkit-details-marker{display:none}.rscart summary b{font:650 17px/1.3 var(--disp)}
 .dvtab{width:100%;border-collapse:collapse;font-size:13.5px}
 .dvtab th{font-weight:500;color:var(--muted);font-size:12.5px}
 .dvtab th,.dvtab td{padding:7px 4px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
@@ -1078,12 +1083,41 @@ function oppHtml(){var r=opData();if(!r)return '';
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-opv]');if(!b)return;OPV=b.getAttribute('data-opv');try{localStorage.setItem(LS+'-opv',OPV)}catch(x){}renderMkt()});
 try{OPV=localStorage.getItem(LS+'-opv')||'lst'}catch(e){}
 
+/* ===== Research: notícias das empresas e resumo da IA, feitos pelo robô (o celular só mostra) ===== */
+function rsOf(tk){var r=MD.d&&MD.d.res;return r&&r.acoes&&r.acoes[tk]||null}
+function rsWhen(s){if(!s)return '';var d=new Date(s);return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
+var RSSN={positivo:['Positivo','g'],neutro:['Neutro','m'],negativo:['Negativo','l']},RSIM2={alto:'Alto',medio:'Médio',baixo:'Baixo'};
+function rsNoAI(){var r=MD.d&&MD.d.res;return r&&!r.ia?'<p class="note">O resumo da IA aparece quando a chave do Gemini estiver guardada no GitHub (segredo <b>GEMINI_KEY</b>). As manchetes já funcionam.</p>':'<p class="note">O resumo da IA chega na próxima rodada do robô (6h17 ou 18h40).</p>'}
+function rsNews(tk){var e=rsOf(tk);
+  if(!e)return '<div class="panel"><p class="muted" style="margin:0">As notícias e o resumo da IA são feitos para as ações da sua carteira e da sua lista. Toque em <b>Acompanhar</b> que o robô passa a buscar essa também.</p></div>';
+  var a=e.ai,h='';
+  if(a){var sn=RSSN[a.sentimento]||RSSN.neutro,cf=Math.max(0,Math.min(100,+a.confianca||0));
+    h+='<div class="panel anp"><div class="anh"><div><span class="lbl">Resumo da IA</span><p class="anv">'+esc(a.resumo||'')+'</p></div></div>'+
+      '<div class="rsg"><div><span>Tom das notícias</span><b class="'+sn[1]+'">'+sn[0]+'</b></div><div><span>Confiança do mercado</span><b>'+cf+'<small>/100</small></b><i><em style="width:'+cf+'%"></em></i></div></div>'+
+      '<p class="small muted" style="margin:10px 0 0">Feito pela IA ('+esc(e.mod||'Gemini')+') com as manchetes abaixo, em '+rsWhen(e.aiAt)+'. Pode errar: confira nas notícias.</p></div>';
+    if(a.eventos&&a.eventos.length)h+='<div class="panel"><h2>O que pode mexer com a ação</h2><ul class="rkl">'+a.eventos.map(function(v){var dc=v.direcao==='positivo'?'ok':v.direcao==='negativo'?'al':'at';
+      return '<li>'+rkLvl(dc)+'<div><b>'+esc(v.titulo||'')+'</b><div class="rstg"><span class="rsi '+(v.impacto||'')+'">Impacto '+(RSIM2[v.impacto]||esc(v.impacto||'?'))+'</span><span>'+(v.direcao==='positivo'?'pode valorizar':v.direcao==='negativo'?'pode desvalorizar':'efeito incerto')+'</span><span>'+(v.prazo==='anos'?'nos próximos anos':'nos próximos meses')+'</span></div><p>'+esc(v.porque||'')+'</p></div></li>'}).join('')+'</ul></div>';
+    var lst=function(t,arr,c){return arr&&arr.length?'<div class="panel"><h2>'+t+'</h2><ul class="rkl">'+arr.map(function(x){return '<li>'+rkLvl(c)+'<div><p style="margin:0;color:var(--fg)">'+esc(x)+'</p></div></li>'}).join('')+'</ul></div>':''};
+    h+=lst('Riscos',a.riscos,'al')+lst('Oportunidades',a.oportunidades,'ok')}
+  else h+='<div class="panel">'+rsNoAI()+'</div>';
+  var nw=e.news||[];
+  h+='<div class="panel"><h2>Manchetes dos últimos 30 dias</h2>'+(nw.length?'<ul class="rsn">'+nw.map(function(n){return '<li><a href="'+esc(n.l)+'" target="_blank" rel="noopener">'+esc(n.t)+'</a><small>'+(n.d?fmtDate(n.d):'')+(n.s?' · '+esc(n.s):'')+'</small></li>'}).join('')+'</ul>':'<p class="muted" style="margin:0">Nenhuma manchete encontrada no último mês.</p>')+
+    '<p class="note">Manchetes do Google Notícias, buscadas pelo robô'+(MD.d.res.at?' em '+rsWhen(MD.d.res.at):'')+'. Tocando, abre a notícia no navegador.</p></div>';
+  return h}
+function rsMini(tk){var e=rsOf(tk);if(!e||!e.ai)return '';var a=e.ai,sn=RSSN[a.sentimento]||RSSN.neutro;
+  return '<div class="panel rsmini"><div class="grp"><h2>O que dizem as notícias</h2><b class="'+sn[1]+'">'+sn[0]+'</b></div><p class="anv" style="margin-top:6px">'+esc(a.resumo||'')+'</p><button type="button" class="link" data-stv="news">Ver notícias e eventos</button></div>'}
+function rsCart(){var c=MD.d&&MD.d.res&&MD.d.res.cart;if(!c||!c.ai)return '';var a=c.ai;
+  var lst=function(t,arr,cl){return arr&&arr.length?'<h3 class="rkh3">'+t+'</h3><ul class="rkl">'+arr.map(function(x){return '<li>'+rkLvl(cl)+'<div><p style="margin:0;color:var(--fg)">'+esc(x)+'</p></div></li>'}).join('')+'</ul>':''};
+  return '<details class="panel rscart" open><summary><span class="lbl">Relatório da carteira · IA</span><b>'+esc(a.titulo||'Relatório')+'</b></summary>'+
+    (a.macro?'<p class="anv" style="margin-top:10px">'+esc(a.macro)+'</p>':'')+lst('Destaques',a.destaques,'ok')+lst('Riscos',a.riscos,'al')+lst('Para acompanhar',a.atencao,'at')+
+    '<p class="small muted" style="margin:10px 0 0">Escrito pela IA ('+esc(c.mod||'Gemini')+') em '+rsWhen(c.at)+', com as notícias, os números das empresas e a economia. Pode errar e não é recomendação.</p></details>'}
+
 function anaHtml(){
   var f=MD.d&&MD.d.fund;if(!f||!f.d)return '<div class="panel"><p class="muted">Os indicadores chegam com o robô diário. Volte em alguns minutos.</p></div>';
   var sc=SCRS.filter(function(x){return x.k===SCR})[0]||SCRS[0],W=wlist(),mine={};compute().held.forEach(function(x){mine[x.p.ticker]=1});
   var all=Object.keys(f.d).map(function(tk){var F=fundOf(tk);F.tk=tk;return F}).filter(function(F){return F.liq2m>=1e6&&sc.f(F)});
   var seen={},list=all.sort(sc.s).filter(function(F){var b=F.tk.slice(0,4);if(seen[b])return false;seen[b]=1;return true}).slice(0,15);
-  var h=oppHtml()+'<div class="panel"><div class="grp"><h2>Ranking de ações</h2><span class="det">'+all.length+' ações</span></div><div class="chips" style="margin:10px 0 4px">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
+  var h=rsCart()+oppHtml()+'<div class="panel"><div class="grp"><h2>Ranking de ações</h2><span class="det">'+all.length+' ações</span></div><div class="chips" style="margin:10px 0 4px">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
     '<p class="note" style="margin:6px 0 4px">'+sc.d+' Só ações com mais de R$ 1 milhão negociados por dia.</p>'+
     '<div class="scr"><div class="scrr scrh"><span>Ação</span><span>P/L</span><span>P/VP</span><span>DY</span><span>ROE</span></div>'+list.map(function(F,i){
       return '<div class="scrr"><button type="button" class="scrt" data-stk="'+esc(F.tk)+'"><i>'+(i+1)+'</i>'+esc(F.tk)+(mine[F.tk]?' <span class="tag">sua</span>':W.indexOf(F.tk)>=0?' <span class="tag">★</span>':'')+'</button><span>'+(F.pl!=null?num(F.pl,1):'—')+'</span><span>'+(F.pvp!=null?num(F.pvp,2):'—')+'</span><span>'+(F.dy!=null?pf.format(F.dy)+'%':'—')+'</span><span>'+(F.roe!=null?pf.format(F.roe)+'%':'—')+'</span></div>'}).join('')+'</div>'+
@@ -1388,9 +1422,10 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
   var h='<p class="muted small" style="margin:0 0 4px">'+esc(d.name||'')+(d.sector?' · '+esc(d.sector):'')+'</p><div class="stkhd"><b class="num">'+F.format(d.price)+'</b>'+(d.pct!=null?'<span class="num '+cls(d.pct)+'">'+(d.pct>=0?'+':'−')+pf.format(Math.abs(d.pct))+'% hoje</span>':'')+'</div>'+
     '<div class="rng">'+[['1mo','1M'],['3mo','3M'],['6mo','6M'],['1y','1A'],['2y','2A'],['5y','5A'],['yr','Anual']].filter(function(r){return d.fast||r[0]!=='2y'}).map(function(r){var got=STK.rng==='yr'?'yr':d.rgGot===undefined?STK.rng:d.rgGot;return '<button type="button" data-rng="'+r[0]+'" aria-pressed="'+(got===r[0])+'">'+r[1]+'</button>'}).join('')+(ch!=null&&STK.rng!=='yr'?'<span class="num '+cls(ch)+'" style="margin-left:auto;align-self:center;font-weight:600">'+(ch>=0?'+':'−')+pf.format(Math.abs(ch*100))+'%</span>':'')+'</div>'+
     (STK.busy?'<p class="muted small">Atualizando...</p>':'')+(d.rgGot!==undefined&&d.rgGot!==rgEff()&&STK.rng!=='yr'?'<p class="note" style="margin:0 0 6px">O plano grátis do brapi '+(d.rgGot?'só liberou até '+({'1mo':'1 mês','3mo':'3 meses','6mo':'6 meses','1y':'1 ano'}[d.rgGot]||d.rgGot)+' de gráfico':'não liberou o gráfico')+' para essa ação.</p>':'')+(STK.rng==='yr'?annHtml(annRets(d.hist,d.price)):lineChart(d.hist,d.cur,pm));
-  h+='<div class="seg stseg">'+[['res','Resumo'],['val','Valuation'],['ind','Indicadores']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="seg stseg">'+[['res','Resumo'],['val','Valuation'],['ind','Indicadores'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
   var PE=d.cur==='USD'?null:anPeers(tk),sm=function(k,f){return PE&&PE[k]!=null?' <small class="ksec">setor '+f(PE[k])+'</small>':''},sp=function(v){return pf.format(v)+'%'},sn=function(v){return num(v,1)};
   if(STV==='val')h+=anVal(tk,d);
+  else if(STV==='news')h+=rsNews(tk);
   else if(STV==='ind'){
   h+='<div class="kpis" style="margin-top:6px">'+
     [['P/L',nm(K.pl),sm('pl',sn)],['P/VP',nm(pvp),sm('pvp',function(v){return num(v,2)})],['Dividend yield',pc(dyC),sm('dy',sp)],['ROE',pc(K.roe),sm('roe',sp)],['LPA',K.lpa==null?'—':F.format(K.lpa)],['Margem líquida',pc(K.ml),sm('ml',sp)],['Máx. 52 sem.',K.hi==null?'—':F.format(K.hi)],['Mín. 52 sem.',K.lo==null?'—':F.format(K.lo)],['Valor de mercado',big(K.mc)],['EV/EBITDA',nm(K.evebitda),sm('evebitda',sn)],['Dívida/PL',K.div==null?'—':(K.div>5?num(K.div,0)+'%':nm(K.div)),sm('divpl',function(v){return num(v,2)})],['ROIC',pc(K.roic),sm('roic',sp)],['Liquidez corrente',nm(K.lc)],['Receita 5 anos',pc(K.cr5)]].filter(function(r){return r[1]!=='—'||['P/L','P/VP','Dividend yield','ROE'].indexOf(r[0])>=0})
@@ -1398,7 +1433,7 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
     (PE&&PE.n?'<p class="note">"Setor" é a mediana de '+PE.n+' empresas do setor '+esc(String(PE.name).toLowerCase())+'.</p>':'')+
     (!d.mods?'<p class="note">Indicadores ainda não disponíveis para essa ação. Eles chegam com o robô diário (até a próxima atualização).</p>':'');
   }else{
-  h+=anResumo(tk,d);
+  h+=anResumo(tk,d)+rsMini(tk);
   if(mine)h+='<div class="panel"><h2>Sua posição</h2><ul class="calc" style="margin-top:8px"><li><span>'+num(mine.p.qty,4)+(mine.p.market==='US'?' cotas':' ações')+' a '+F.format(pm)+' (preço médio)</span><span class="num '+cls(d.price-pm)+'">'+(d.price>=pm?'+':'−')+pf.format(Math.abs((d.price/pm-1)*100))+'%</span></li></ul></div>';
   if(d.divs&&d.divs.length)h+='<h3 style="margin:18px 0 6px">Últimos proventos'+(K.d12&&d.price?' <span class="muted small">('+F.format(K.d12)+' por ação em 12 meses)</span>':'')+'</h3><ul class="calc small">'+d.divs.slice(0,8).map(function(c){return '<li><span>'+esc(String(c.label||'').replace('JUROS SOBRE CAPITAL PRÓPRIO','JCP'))+' <span class="muted">'+(c.exDate?'data ex '+fmtDate(c.exDate):c.paymentDate?'pago em '+fmtDate(String(c.paymentDate).slice(0,10)):'a definir')+'</span></span><span class="num">'+(d.cur==='USD'?'US$ ':'R$ ')+num(+c.rate,4)+'</span></li>'}).join('')+'</ul>';
   }
@@ -1767,6 +1802,7 @@ function render(){
     rows.push(row('Dólar (AwesomeAPI)',!RF.last?'wait':fl.indexOf('dólar')>-1?'err':'ok',RF.last?(fl.indexOf('dólar')>-1?'Não respondeu na última busca.':'Atualizado às '+hhm(RF.last)+'.'):'Busca ao abrir o app.'));
     if(hasBR)rows.push(row('Ações do Brasil (brapi)',!S.keys.brapi?'off':!RF.last?'wait':brF.length?'err':'ok',!S.keys.brapi?'Falta o token brapi abaixo.':brF.length?'Sem preço para '+esc(brF.join(', ')):!mktOpen()?'Bolsa fechada: mostrando o preço de fechamento. Volta a atualizar às 10h do próximo dia útil.':RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
     if(hasUS)rows.push(row('Ações dos EUA (Finnhub)',!S.keys.finnhub?'off':!RF.last?'wait':usF.length?'err':'ok',!S.keys.finnhub?'Falta a chave Finnhub abaixo.':usF.length?'Sem preço para '+esc(usF.join(', ')):RF.last?'Atualizado às '+hhm(RF.last)+'.':'Busca ao abrir o app.'));
+    rows.push(row('Notícias e resumo da IA (robô)',!(MD.d&&MD.d.res)?'wait':MD.d.res.ia?(MD.d.res.err&&MD.d.res.err.length?'err':'ok'):'off',!(MD.d&&MD.d.res)?'Esperando o robô rodar.':MD.d.res.ia?(MD.d.res.err&&MD.d.res.err.length?esc(MD.d.res.err[0]):'Notícias e IA conferidas em '+rsWhen(MD.d.res.at)+'.'):'Manchetes funcionando. Para o resumo da IA, guarde a chave do Gemini no GitHub como segredo GEMINI_KEY.'));
     rows.push(row('Proventos anunciados (robô)',MD.d&&MD.d.prov?'ok':'wait',MD.d&&MD.d.prov?'Fundamentus, de '+Object.keys(MD.d.prov).length+' ações que você já comprou, inclusive as vendidas. Atualiza 2 vezes por dia.':'Esperando o robô rodar.'));
     rows.push(row('Proventos automáticos (brapi)',!S.keys.brapi?'off':DV.err?'err':DV.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':DV.err?esc(DV.err):DV.at?'Conferidos às '+hhm(DV.at)+'. Lança sozinho os pagos a partir de '+fmtDate(S.divFrom)+'.':'Confere de hora em hora.'));
     if(hasUS)rows.push(row('Dividendos do VT (Alpha Vantage)',!S.keys.av?'off':DU.err?'err':DU.at?'ok':'wait',!S.keys.av?'Falta a chave da Alpha Vantage.':DU.err?esc(DU.err):DU.at?'Conferidos às '+hhm(DU.at)+'. '+(DU.up.length?DU.up.length+' anunciado'+(DU.up.length>1?'s':'')+' a receber.':'Nenhum anunciado agora.')+' Lança sozinho no dia do pagamento.':'Confere 2 vezes por dia.'));
