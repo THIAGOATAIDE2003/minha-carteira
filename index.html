@@ -2817,6 +2817,57 @@ function pfRisco(P,T,uS){var p=pfOk();if(!p)return [['at','Responda seu perfil d
   if(p.prazo==='5'&&P&&P.vol!=null&&P.vol>0.12)out.push(['at','Prazo curto para tanta oscilação','Você pretende usar o dinheiro em até 5 anos, e a carteira oscila uns '+pf.format(P.vol*100)+'% ao ano. Em prazo curto, uma queda pode não dar tempo de voltar.']);
   return out}
 function pfCtx(){var p=pfOk();if(!p)return 'PERFIL DO INVESTIDOR: ainda não respondido.';return 'PERFIL DO INVESTIDOR: '+pfResumo(p).map(function(r){return r[0]+': '+r[1]}).join('; ')+'.'}
+/* ----- assistente como analista: reconhece a empresa pelo nome e manda tudo que o app sabe dela, com a fonte de cada número ----- */
+function asNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+function asDt(ms){if(!ms)return '?';var d=new Date(ms);return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+var ASAL={magalu:'MGLU3','magazine luiza':'MGLU3',itau:'ITUB4','banco do brasil':'BBAS3','bb seguridade':'BBSE3',petrobras:'PETR4',ambev:'ABEV3',bradesco:'BBDC4',santander:'SANB11',eletrobras:'AXIA3',axia:'AXIA3',copel:'CPLE6',gerdau:'GGBR4',usiminas:'USIM5',suzano:'SUZB3',klabin:'KLBN11',embraer:'EMBJ3',localiza:'RENT3',raia:'RADL3','raia drogasil':'RADL3','rede dor':'RDOR3',hapvida:'HAPV3',natura:'NATU3',taesa:'TAEE11','isa cteep':'ISAE4',cteep:'ISAE4',btg:'BPAC11','btg pactual':'BPAC11',tim:'TIMS3',vivo:'VIVT3',telefonica:'VIVT3','caixa seguridade':'CXSE3',b3:'B3SA3',weg:'WEGE3',vale:'VALE3',engie:'EGIE3',cemig:'CMIG4',sabesp:'SBSP3',sanepar:'SAPR11',copasa:'CSMG3',alupar:'ALUP11',jbs:'JBSS3',marfrig:'MRFG3',brf:'BRFS3',cosan:'CSAN3',rumo:'RAIL3',ultrapar:'UGPA3',vibra:'VBBR3',prio:'PRIO3',petrorio:'PRIO3',braskem:'BRKM5',assai:'ASAI3',carrefour:'CRFB3',renner:'LREN3',arezzo:'AZZA3',azzas:'AZZA3',cyrela:'CYRE3',mrv:'MRVE3',direcional:'DIRR3',tenda:'TEND3',jhsf:'JHSF3',multiplan:'MULT3',iguatemi:'IGTI11',irani:'RANI3','porto seguro':'PSSA3',totvs:'TOTS3',equatorial:'EQTL3',energisa:'ENGI11',neoenergia:'NEOE3','cpfl':'CPFE3',auren:'AURE3',csn:'CSNA3',fleury:'FLRY3',grendene:'GRND3'};
+var ASSTOP={banco:1,bco:1,cia:1,companhia:1,energia:1,energetica:1,brasil:1,brasileira:1,centrais:1,empresa:1,grupo:1,industrias:1,industria:1,petroleo:1,saneamento:1,concessionaria:1,construtora:1,fundo:1,telecomunicacoes:1,investimentos:1,servicos:1,comercio:1,participacoes:1,holding:1,sao:1,minas:1,estado:1,santa:1,nova:1,novo:1,gerais:1,metalurgica:1,acoes:1,acao:1,lojas:1,mineracao:1,alimentos:1,seguros:1,tecnologia:1,saude:1,educacao:1,transmissao:1,distribuidora:1,geracao:1,cosmeticos:1,eletrica:1,eletricas:1,paulista:1,sul:1,norte:1,rio:1,global:1,capital:1,rede:1,casa:1,ouro:1,mais:1,grande:1,alta:1,cidade:1,total:1,plano:1,marca:1,uniao:1,vida:1,boa:1,bem:1,forte:1,primeira:1,todos:1};
+var ASIX={k:'',m:null};
+/* índice nome → ticker mais negociado da empresa */
+function asIdx(){var ck=MD.d&&MD.d.ts;if(ASIX.k===ck&&ASIX.m)return ASIX.m;var f=MD.d&&MD.d.fund&&MD.d.fund.d||{},nm={},m={};
+  var put=function(tk,n){if(n&&!nm[tk])nm[tk]=n};var cv=MD.d&&MD.d.cvm&&MD.d.cvm.nomes||{};Object.keys(cv).forEach(function(tk){put(tk,cv[tk])});
+  var H=MD.d&&MD.d.hist||{};Object.keys(H).forEach(function(tk){put(tk,H[tk].name)});var rs=MD.d&&MD.d.res&&MD.d.res.acoes||{};Object.keys(rs).forEach(function(tk){put(tk,rs[tk].nome)});
+  var liq=function(tk){var x=fundOf(tk);return x&&x.liq2m||0};
+  var add=function(key,tk){if(!key||key.length<3)return;var o=m[key];if(!o||liq(tk)>liq(o))m[key]=tk};
+  Object.keys(nm).forEach(function(tk){if(!f[tk]&&!H[tk])return;var n=asNorm(nm[tk]),parts=n.split(' - ');
+    parts.forEach(function(pt,i){var w=pt.replace(/\b(s\.?a\.?|s\/a|cia\.?|companhia|holding|participacoes|brasileira|inc\.?|corp\.?|ltda)(?=[\s,.]|$)/g,' ').replace(/[^a-z0-9& ]/g,' ').split(/\s+/).filter(function(x){return x&&['do','da','de','dos','das','e'].indexOf(x)<0});
+      if(!w.length)return;if(w.length>=2)add(w.slice(0,2).join(' '),tk);if(w.length>=3)add(w.slice(0,3).join(' '),tk);if(w[0].length>=4&&!ASSTOP[w[0]])add(w[0],tk);if(i>0&&w.length===1)add(w[0],tk)})});
+  Object.keys(ASAL).forEach(function(k){if(ASAL[k])m[k]=ASAL[k]});
+  ASIX={k:ck,m:m};return m}
+/* acha as empresas citadas na pergunta: pelo código (SBSP3) ou pelo nome (Sabesp, Itaú, Weg) */
+function asFind(q){var out=[],add=function(tk){if(tk&&out.indexOf(tk)<0)out.push(tk)};
+  (String(q||'').toUpperCase().match(/\b[A-Z]{4}\d{1,2}\b/g)||[]).forEach(add);
+  var n=' '+asNorm(q).replace(/vale a pena|vale mais|vale menos|vale muito|vale o|vale ter|quanto vale|vale comprar|vale investir/g,' ').replace(/[^a-z0-9& ]/g,' ').replace(/\s+/g,' ')+' ',m=asIdx(),ks=Object.keys(m).sort(function(a,b){return b.length-a.length}),used=[];
+  ks.forEach(function(k){var p=n.indexOf(' '+k+' ');if(p<0)return;if(used.some(function(u){return p>=u[0]&&p<u[1]}))return;used.push([p,p+k.length+2]);add(m[k])});
+  return out.slice(0,3)}
+/* tudo que o app sabe de uma empresa, com a origem de cada número */
+function asEmp(tk,held){var F=fundOf(tk),lv=livePx(tk),d=opD(tk),h=MD.d&&MD.d.hist&&MD.d.hist[tk],e=rsOf(tk),robo=MD.d&&MD.d.ts?asDt(MD.d.ts*1000):'?',L=[],falta=[];
+  var nm=(MD.d&&MD.d.cvm&&MD.d.cvm.nomes&&MD.d.cvm.nomes[tk])||(h&&h.name)||(e&&e.nome)||'';
+  L.push('=== EMPRESA '+tk+(nm?' — '+nm:'')+(held?' (está na carteira do Thiago)':' (fora da carteira)'));
+  if(!F&&!d){L.push('O app não tem dados dessa ação (só tem indicadores das ações da B3; ações americanas só têm o preço quando estão na lista).');return L.join('\n')}
+  if(d)L.push('Preço: '+(d.cur==='USD'?'US$ ':'R$ ')+num(d.price,2)+(d.pct!=null?' ('+asP(d.pct,2)+' no dia)':'')+' [fonte: cotação '+(lv&&lv.at?'de '+asDt(lv.at):'do robô em '+robo)+']'+(d.k&&d.k.hi?'. Máxima de 12 meses '+num(d.k.hi,2)+', mínima '+num(d.k.lo,2)+' [fonte: histórico Yahoo, robô]':''));
+  if(F){L.push('Indicadores dos últimos 12 meses [fonte: Fundamentus, baixado pelo robô em '+robo+']: P/L '+(F.pl!=null?num(F.pl,1):'?')+'; P/VP '+(F.pvp!=null?num(F.pvp,2):'?')+'; DY '+(F.dy!=null?num(F.dy,1)+'%':'?')+'; ROE '+(F.roe!=null?num(F.roe,1)+'%':'?')+'; ROIC '+(F.roic!=null?num(F.roic,1)+'%':'?')+'; margem líquida '+(F.ml!=null?num(F.ml,1)+'%':'?')+'; EV/EBITDA '+(F.evebitda!=null?num(F.evebitda,1):'?')+'; dívida bruta/patrimônio '+(F.divpl!=null?num(F.divpl,2):'?')+'; liquidez corrente '+(F.lc!=null?num(F.lc,2):'?')+'; crescimento da receita em 5 anos '+(F.cr5!=null?num(F.cr5,1)+'% ao ano':'?')+'; negociação média R$ '+(F.liq2m!=null?num(F.liq2m/1e6,1)+' mi/dia':'?')+'.');
+    var pe=anPeers(tk);if(pe&&pe.n)L.push('Setor '+pe.name+' — mediana de '+pe.n+' concorrentes negociadas [fonte: Fundamentus, mesmo setor]: P/L '+(pe.pl!=null?num(pe.pl,1):'?')+'; P/VP '+(pe.pvp!=null?num(pe.pvp,2):'?')+'; DY '+(pe.dy!=null?num(pe.dy,1)+'%':'?')+'; ROE '+(pe.roe!=null?num(pe.roe,1)+'%':'?')+'; margem líquida '+(pe.ml!=null?num(pe.ml,1)+'%':'?')+'. Concorrentes: '+pe.t.slice(0,8).join(', ')+'.');
+    else falta.push('comparação com o setor (setor não encontrado ou poucas concorrentes)')}
+  else falta.push('indicadores do Fundamentus');
+  /* resultados trimestrais */
+  var Q=cvmQ(tk);if(Q&&Q.length){var cv=MD.d.cvm.ts?asDt(MD.d.cvm.ts*1000):'?';
+    L.push('Resultados trimestrais [fonte: balanços entregues à CVM (ITR/DFP), consolidado; 4º tri = ano − 9 meses; é o lucro contábil, que pode diferir do lucro ajustado ou recorrente citado na imprensa; atualizado pelo robô em '+cv+']: '+Q.slice(-8).map(function(x){var p=Q.filter(function(y){return y[0]===x[0]-1&&y[1]===x[1]})[0],g=p&&p[3]>0&&x[3]!=null?(x[3]/p[3]-1)*100:null;return x[1]+'T'+String(x[0]).slice(2)+': receita '+qfmt(x[2])+', lucro '+qfmt(x[3])+(g!=null?' ('+asP(g,0)+' vs mesmo tri do ano anterior)':'')}).join('; ')+'.');
+    var T=qTtm(Q);if(T)L.push('Lucro dos últimos 12 meses (4 trimestres) '+qfmt(T.a)+' contra '+qfmt(T.b)+' nos 12 meses anteriores'+(T.g!=null?' ('+asP(T.g*100,1)+')':'')+' [fonte: CVM, soma dos trimestres].');
+    var l=Q[Q.length-1],ag=Date.now()-Date.UTC(l[0],l[1]*3,1);if(ag>200*864e5)falta.push('o último balanço na base é do '+l[1]+'º tri de '+l[0]+' (pode haver um mais novo)')}
+  else falta.push('resultados trimestrais da CVM (o robô só baixa para ações da carteira e da lista de acompanhamento)');
+  /* análise automática do app */
+  if(d&&d.cur!=='USD'){try{var A=stkAna(tk,d);if(!A.etf){var t=function(a){return a.map(function(x){return x[0]+' ('+asTxt(x[1])+')'}).join('; ')};
+    L.push('Análise automática do app [regras fixas do Aporte sobre os números acima, não é IA]: nota '+(A.score!=null?num(A.score,1)+'/10':'?')+'; '+A.chips.map(function(c){return c[0]+' '+c[1]}).join(', ')+'.'+(A.pos.length?' Pontos positivos: '+t(A.pos)+'.':'')+(A.neg.length?' Pontos de atenção: '+t(A.neg)+'.':'')+(A.inf.length?' Vale saber: '+t(A.inf)+'.':''));
+    var V=anValCalc(tk,d,A);if(V&&V.ms&&V.ms.length)L.push('Preço justo do app [cálculo do Aporte; premissas: crescimento do lucro '+V.g+'% ao ano por 5 anos e depois 3%, desconto de '+V.r+'% ao ano (Selic + prêmio), dividendo mínimo de '+V.y+'% para o Bazin]: '+V.ms.map(function(m){return m[0]+' R$ '+num(m[1],2)}).join('; ')+'. Mediana R$ '+num(V.med,2)+' ('+asP(V.up*100,0)+' em relação ao preço).');
+    else falta.push('preço justo (precisa de lucro e patrimônio positivos)')}}catch(x){}}
+  if(held){try{var fit=asTxt(String(anFit(tk,d,stkAna(tk,d))||'').replace(/<button[^>]*class="bal"[\s\S]*?<\/button>/g,'').replace(/<\/(p|li|div|h\d)>/g,'. ').replace(/<br>/g,' ')).replace(/\.\s*\./g,'.');if(fit)L.push('Na carteira [cálculo do app]: '+fit.slice(0,400))}catch(x){}}
+  /* notícias */
+  if(e&&e.ai){var a=e.ai;L.push('Resumo das notícias [IA do robô ('+(e.mod||'?')+') em '+(e.aiAt?asDt(Date.parse(e.aiAt)):'?')+', feito a partir das manchetes abaixo]: '+asTxt(a.resumo)+' Tom: '+a.sentimento+'.'+(a.eventos&&a.eventos.length?' Eventos: '+a.eventos.slice(0,4).map(function(v){return v.titulo+' ('+v.direcao+', impacto '+v.impacto+')'}).join('; ')+'.':''))}
+  if(e&&e.news&&e.news.length)L.push('Manchetes [fonte: Google Notícias, buscadas pelo robô em '+(MD.d.res.at?asDt(Date.parse(MD.d.res.at)):'?')+']: '+e.news.slice(0,8).map(function(n){return n.t+' ('+(n.s||'?')+(n.d?', '+fmtDate(n.d):'')+')'}).join(' | '));
+  else falta.push('notícias (o robô só busca para ações da carteira e da lista de acompanhamento)');
+  if(falta.length)L.push('NÃO DISPONÍVEL NO APP: '+falta.join('; ')+'.');
+  return L.join('\n')}
 /* ===== Assistente: conversa com a IA sobre a sua carteira (Groq rápido, Gemini de reserva) ===== */
 var AS={m:[],busy:false,ab:null,mod:'',err:''};
 try{AS.m=JSON.parse(localStorage.getItem(LS+'-assist')||'[]')||[]}catch(e){AS.m=[]}
@@ -2828,6 +2879,7 @@ function asR(v){return v==null||!isFinite(v)?'?':(v<0?'−':'')+'R$ '+num(Math.a
 function asP(v,d){return v==null||!isFinite(v)?'?':(v>=0?'+':'')+num(v,d==null?1:d)+'%'}
 /* o que a IA fica sabendo: um resumo curto do app (sem chaves, sem dados pessoais) */
 function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
+  L.push('FONTES DO CONTEXTO: cotações ao vivo (brapi para o Brasil, Finnhub para os EUA, robô a cada 15 min); indicadores do Fundamentus, histórico do Yahoo e setores baixados pelo robô em '+(MD.d&&MD.d.ts?asDt(MD.d.ts*1000):'?')+'; balanços da CVM; notícias do Google Notícias; nota, preço justo e diagnóstico de risco são cálculos fixos do próprio app (não IA); resumos de notícias e relatórios são de outra IA (o robô).');
   L.push('Hoje: '+fmtDate(today())+'. Bolsa: '+(mktOpen&&mktOpen()?'aberta agora':'fechada agora')+'. Dólar: R$ '+(fx?num(fx,2):'?')+'.');
   L.push(pfCtx());
   var pat=T.value+T.cash,V=valoriz(R);
@@ -2842,6 +2894,7 @@ function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
     var ex='';
     if(!us){try{var o=opEval(tk);if(o){ex='nota '+(o.score!=null?num(o.score,1):'?')+'/10; '+o.A.chips.map(function(c){return c[0]+' '+c[1]}).join(', ');if(o.V)ex+='; preço justo R$ '+num(o.V.med,2)+' ('+asP(o.V.up*100,0)+' do preço)'}}catch(e){}
       var F=fundOf(tk);if(F)ex+='; P/L '+(F.pl!=null?num(F.pl,1):'?')+', P/VP '+(F.pvp!=null?num(F.pvp,2):'?')+', DY '+(F.dy!=null?num(F.dy,1)+'%':'?')+', ROE '+(F.roe!=null?num(F.roe,1)+'%':'?')}
+    if(!us){var QQ=cvmQ(tk),TT=QQ&&qTtm(QQ),lq=QQ&&QQ[QQ.length-1];if(lq)ex+='; último balanço '+lq[1]+'T'+String(lq[0]).slice(2)+' lucro '+qfmt(lq[3])+(TT&&TT.g!=null?', lucro 12m '+asP(TT.g*100,0)+' vs 12m anteriores':'')+' (CVM)'}
     var e2=rsOf(tk);if(e2&&e2.ai)ex+='; notícias ('+e2.ai.sentimento+'): '+String(e2.ai.resumo||'').slice(0,220);
     L.push('- '+s.join(' | ')+(ex?' | '+ex:''))});
   if(T.rfV)L.push('- Renda fixa: '+asR(T.rfV)+' ('+num(T.rfV/tot*100,1)+'%), rendimento até agora '+asR(T.rfU)+'.');
@@ -2865,19 +2918,11 @@ function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
   var M=S.metas||{};if(M.pat&&M.pat.valor)L.push('META DE PATRIMÔNIO: '+asR(M.pat.valor)+(M.pat.data?' até '+fmtDate(M.pat.data):'')+' (falta '+asR(Math.max(0,M.pat.valor-pat))+').');
   if(M.renda&&M.renda.valor)L.push('META DE RENDA MENSAL COM PROVENTOS: '+asR(M.renda.valor)+'.');
   if(S.alvos&&S.alvos.classes){var A=S.alvos.classes;L.push('ALVOS DE APORTE: Brasil '+(A.BR||0)+'%, exterior '+(A.US||0)+'%, renda fixa '+(A.RF||0)+'%.')}
-  /* ações citadas na pergunta: números e manchetes */
+  /* empresas citadas na pergunta (código ou nome): tudo que o app sabe, com a fonte de cada número */
   var held={};R.held.forEach(function(x){held[x.p.ticker]=1});
-  var tks=(String(q||'').toUpperCase().match(/\b[A-Z]{4}\d{1,2}\b/g)||[]).filter(function(t,i,a){return a.indexOf(t)===i}).slice(0,3);
-  R.held.forEach(function(x){var tk=x.p.ticker,e=rsOf(tk);if(tks.indexOf(tk)<0&&e&&e.news&&e.news.length&&new RegExp('\\b'+tk.slice(0,4),'i').test(q))tks.push(tk)});
-  tks.forEach(function(tk){var F=fundOf(tk),e=rsOf(tk),lv=livePx(tk),s='DETALHE '+tk+(held[tk]?' (na carteira)':' (fora da carteira)')+': ';
-    if(lv)s+='preço '+num(lv.p,2)+(lv.pct!=null?' ('+asP(lv.pct,2)+' no dia)':'')+'. ';
-    if(!held[tk]&&F){try{var o=opEval(tk);if(o)s+='nota '+num(o.score,1)+'/10, '+o.A.chips.map(function(c){return c[0]+' '+c[1]}).join(', ')+(o.V?', preço justo R$ '+num(o.V.med,2):'')+'. '}catch(x){}s+='P/L '+(F.pl!=null?num(F.pl,1):'?')+', P/VP '+(F.pvp!=null?num(F.pvp,2):'?')+', DY '+(F.dy!=null?num(F.dy,1)+'%':'?')+'. '}
-    if(e&&e.ai){s+='Resumo das notícias: '+asTxt(e.ai.resumo)+' ';if(e.ai.eventos&&e.ai.eventos.length)s+='Eventos: '+e.ai.eventos.slice(0,3).map(function(v){return v.titulo+' ('+v.direcao+')'}).join('; ')+'. '}
-    if(e&&e.news&&e.news.length)s+='Manchetes: '+e.news.slice(0,6).map(function(n){return n.t+(n.d?' ['+fmtDate(n.d)+']':'')}).join(' | ');
-    else if(!F&&!lv)s+='o app não tem dados dessa ação.';
-    L.push(s)});
+  var tks=asFind(q);if(tks.length)L.push('');tks.forEach(function(tk){try{L.push(asEmp(tk,!!held[tk]))}catch(x){L.push('=== EMPRESA '+tk+': erro ao montar os dados.')}});
   return L.join('\n')}
-var ASSYS='Você é o assistente do Aporte, o app de investimentos pessoal do Thiago (investidor pessoa física no Brasil, com ações da B3, o ETF VT nos EUA e renda fixa). Responda em português do Brasil, simples e direto, como um amigo que entende de investimentos: frases curtas, sem jargão (se usar um termo técnico, explique em poucas palavras). Use os números do contexto abaixo, que vêm do próprio app; não invente números, notícias ou datas. Se o contexto não tiver a informação, diga que o app não tem esse dado. Respostas curtas: até uns 8 itens ou 150 palavras, a não ser que ele peça mais. Use **negrito** para os números importantes e listas com "- " quando ajudar. Você pode analisar, comparar e apontar pontos fortes e riscos, mas não dê ordem de compra ou venda: mostre os fatos e deixe a decisão com ele. Leve em conta o PERFIL DO INVESTIDOR dele (objetivo, prazo, quanto aguenta cair) ao avaliar se algo combina com ele; se o perfil não foi respondido e a pergunta depender disso, sugira responder em Mais → Ajustes.';
+var ASSYS='Você é o assistente do Aporte, o app de investimentos pessoal do Thiago (investidor pessoa física no Brasil, com ações da B3, o ETF VT nos EUA e renda fixa), e também um analista fundamentalista. Responda em português do Brasil, simples e direto, como um amigo que entende de investimentos: frases curtas, sem jargão (se usar um termo técnico, explique em poucas palavras).\n\nREGRAS DE DADOS (obrigatórias):\n1. Use só os números do CONTEXTO abaixo, que vêm do app. Nunca invente número, data, notícia, balanço ou concorrente. Não use números que você "lembra" de fora.\n2. Se a informação não está no contexto, diga claramente que o app não tem esse dado (veja as linhas NÃO DISPONÍVEL NO APP) e não faça uma análise que pareça fundamentada sem ele.\n3. Ao citar um número, diga de onde veio entre parênteses, curto: (CVM, 3T26), (Fundamentus), (cálculo do app), (Google Notícias, 06/11).\n4. Separe o que é dado do que é opinião sua.\n\nFORMATO: Pergunta simples → resposta curta (até uns 120 palavras) com a fonte entre parênteses. Análise de empresa ou comparação → use estas partes em negrito, cada uma curta: **Os números** (dados com a fonte de cada um), **Minha leitura** (sua interpretação: se o negócio melhorou ou piorou, se a queda é só de preço ou do resultado, como está frente ao setor), **O que falta saber** (dados ausentes, antigos ou insuficientes). Use listas com "- " quando ajudar.\n\nPara saber se uma queda é só de preço ou piora do negócio, compare a variação do preço com a evolução do lucro e da receita nos trimestres (mesmo tri do ano anterior e 12 meses). Você pode analisar, comparar e apontar pontos fortes e riscos, e pode dizer que nada parece interessante agora, mas não dê ordem de compra ou venda: mostre os fatos e deixe a decisão com ele. Leve em conta o PERFIL DO INVESTIDOR dele (objetivo, prazo, quanto aguenta cair) ao avaliar se algo combina com ele; se o perfil não foi respondido e a pergunta depender disso, sugira responder em Mais → Ajustes.';
 function asMsgs(q){var ctx=asCtx(q),h=AS.m.filter(function(x){return x.t&&!x.e}).slice(-9,-1).map(function(x){return {role:x.r==='u'?'user':'assistant',content:x.t}});
   return [{role:'system',content:ASSYS+'\n\nCONTEXTO DO APP AGORA:\n'+ctx}].concat(h,[{role:'user',content:q}])}
 /* lê um fluxo SSE (data: {...}) e entrega cada pedaço de texto */
@@ -2897,7 +2942,7 @@ function asGemModels(key){var c=asCache('m');if(c)return Promise.resolve(c);
     var vr=function(n){var m=n.match(/(\d+(?:\.\d+)?)/);return m?+m[1]:0};l.sort(function(a,b){return (/lite/.test(a)-/lite/.test(b))||vr(b)-vr(a)});l=l.slice(0,4);if(!l.length)l=['gemini-2.5-flash','gemini-flash-latest'];asCacheSet('m',l);return l}).catch(function(e){if(e.st===400||e.st===403)throw e;return ['gemini-2.5-flash','gemini-flash-latest']})}
 function asGroq(key,msgs,on,sig){return asGroqModels(key).then(function(ms){var i=0,last=null;
   var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i++],got=0;
-    return fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',signal:sig,headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify({model:m,messages:msgs,temperature:0.4,max_tokens:900,stream:true})})
+    return fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',signal:sig,headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify({model:m,messages:msgs,temperature:0.3,max_tokens:1300,stream:true})})
       .then(asHttp).then(function(r){AS.mod='Groq · '+m.replace(/^.*\//,'');return asSSE(r,function(j){var c=j.choices&&j.choices[0];return c&&c.delta&&c.delta.content},function(t){got=1;on(t)})})
       .catch(function(e){if(e.name==='AbortError'||got||e.st===401)throw e;last=e;return go()})};return go()})}
 function asGem(key,msgs,on,sig){return asGemModels(key).then(function(ms){var i=0,last=null,sys=msgs[0].content,ct=msgs.slice(1).map(function(x){return {role:x.role==='assistant'?'model':'user',parts:[{text:x.content}]}});
