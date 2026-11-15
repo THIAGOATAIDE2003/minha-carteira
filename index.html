@@ -1033,7 +1033,7 @@ function loadMD(force){
   MD.busy=true;var c=new AbortController(),to=setTimeout(function(){c.abort()},15000),h={'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'};if(MD.etag&&MD.d)h['If-None-Match']=MD.etag;
   return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/mercado.json?ref=main',{headers:h,signal:c.signal,cache:'no-store'}).then(function(r){clearTimeout(to);
     if(r.status===304){MD.at=Date.now();return null}if(r.status===404){MD.err='O robô ainda não rodou.';return null}if(!r.ok)throw new Error(r.status);
-    var et=r.headers.get('ETag')||'';return r.json().then(function(j){MD.d=j;MD.etag=et;MD.at=Date.now();MD.err='';STKC={};try{provMD()}catch(e){}try{localStorage.setItem(LS+'-md',JSON.stringify({d:j,etag:et,at:MD.at}))}catch(e){}render();if(!$('stk').hidden&&(STK.tk||STK.idx))stkLoad()})})
+    var et=r.headers.get('ETag')||'';return r.json().then(function(j){MD.d=j;MD.etag=et;MD.at=Date.now();MD.err='';STKC={};try{provMD()}catch(e){}if(!USR.tape||Date.now()-USR.at>4*60000)usRefresh().then(function(){render()});try{localStorage.setItem(LS+'-md',JSON.stringify({d:j,etag:et,at:MD.at}))}catch(e){}render();if(!$('stk').hidden&&(STK.tk||STK.idx))stkLoad()})})
     .catch(function(e){MD.err='Não consegui ler os dados do robô agora'+(e&&e.message&&e.message!=='The user aborted a request.'?' ('+e.message+')':'')+'.'}).then(function(){MD.busy=false;MD.at=MD.at||Date.now()});
 }
 function fundOf(tk){var f=MD.d&&MD.d.fund;if(!f||!f.d||!f.d[tk])return null;var o={};f.cols.forEach(function(c,i){var v=f.d[tk][i];o[c]=v===0&&c!=='dy'?null:v});return o}
@@ -2234,6 +2234,19 @@ function lastClose(){var b=brt(),d=new Date(b.d.getTime());
   if(!(bDay(b.d)&&b.min>=1095)){do{d.setUTCDate(d.getUTCDate()-1)}while(!bDay(d))}
   d.setUTCHours(18,15,0,0);return d.getTime()+3*3600000}
 function needQuote(tk){if(mktOpen())return true;var q=S.quotes[tk];return !q||q.src!=='auto'||!(q.at>=lastClose())}
+var USR={at:0};
+/* tudo que é americano a cada 5 min: grandes da faixa, lista de acompanhamento e índices pelos ETFs (Finnhub, bem abaixo de 60 por minuto) */
+function usRefresh(R){if(!S.keys.finnhub)return Promise.resolve();USR.at=Date.now();USR.tape=!!(MD.d&&MD.d.tape);R=R||compute();{var heldUS={};R.held.forEach(function(x){if(x.p.market==='US')heldUS[x.p.ticker]=1});
+    var ex=[],seenU={};var addU=function(tk,ik){if(!tk||heldUS[tk]||seenU[tk+'|'+(ik||'')])return;seenU[tk+'|'+(ik||'')]=1;ex.push({tk:tk,ik:ik})};
+    ((MD.d&&MD.d.tape&&MD.d.tape.it)||[]).forEach(function(x){if(x[3]==='USD'&&/^[A-Z]{1,5}$/.test(x[0]))addU(x[0])});
+    wlist().forEach(function(tk){if(!isBR(tk)&&tk.charAt(0)!=='^')addU(tk)});
+    idxSel().map(idxDef).forEach(function(x){if(x&&x.src==='us')addU(x.s,x.k)});
+    return ex.reduce(function(pr,o,i){return pr.then(function(){return i&&ex.length>40?new Promise(function(r){setTimeout(r,1100)}):null}).then(function(){
+      return getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(o.tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(!d||!(d.c>0))return;
+        var pc=d.dp!=null?d.dp:(d.pc>0?(d.c/d.pc-1)*100:null),now=Date.now();
+        if(o.ik){MKT.idx[o.ik]={v:d.c,p:pc};return}
+        var m0=MKT.q[o.tk];MKT.q[o.tk]={price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now}}).catch(function(){})})},Promise.resolve());
+  }}
 function doRefresh(silent){
   var st=$('status'),R=compute();
   if(RF.busy)return;
@@ -2249,6 +2262,7 @@ function doRefresh(silent){
       jobs.push(getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(d&&d.c>0){S.quotes[tk]={price:d.c,prev:d.pc>0?d.pc:null,at:Date.now(),src:'auto'};okc++}else fails.push(tk)}).catch(function(){fails.push(tk)}));
     }else br.push(tk);
   });
+  jobs.push(usRefresh(R));
   var skipped=0,brDue=!silent||!(Date.now()-(RF.lastBr||0)<15*60000-30000);br=brDue?br.filter(function(tk){if(needQuote(tk))return true;skipped++;return false}):[];if(br.length)RF.lastBr=Date.now();RF.closed=skipped>0&&!mktOpen();
   if(br.length&&!S.keys.brapi){br.forEach(function(tk){fails.push(tk+' (falta o token brapi)')});br=[]}
   var wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
