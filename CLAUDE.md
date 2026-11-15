@@ -56,3 +56,14 @@ Key pieces inside the script:
 - **Imposto**: `irData()` replays BR buys/sells (average cost) per month: ações isentas até R$ 20 mil de vendas no mês, senão 15%; FIIs (`FIIS` list) 20%; prejuízo carried per category. `bensEm(date)` gives Bens e Direitos cost at 31/12; proventos split by `tipo` (JCP/Dividendo) and exterior (`bruto`, `irExt`).
 
 Keep user data and API keys out of the repo; the app must keep working offline from `localStorage` when network calls fail.
+
+## Content-Security-Policy (check on every change that touches the network)
+
+`index.html` has a `<meta http-equiv="Content-Security-Policy">` right after `<meta charset>` that lists every external domain the app may talk to. The browser silently blocks anything not listed, so a new API, image host, font or script source **must be added to the CSP in the same change**, or the feature just stops loading (shows up only as a "Refused to connect" console error):
+
+- `connect-src`: every `fetch`/`getJSON` host (APIs: brapi, Finnhub, AwesomeAPI, BCB, Alpha Vantage, GitHub, Groq, Gemini).
+- `img-src`: logo/image hosts (icons.brapi.dev, financialmodelingprep.com).
+- `style-src` / `font-src`: Google Fonts.
+- Removing an API? Drop its domain too.
+
+Check with `grep -oE "https?://[a-zA-Z0-9.-]+" index.html | sort -u` against the CSP. If the user reports that something "parou de carregar do nada", suspect the CSP first.
