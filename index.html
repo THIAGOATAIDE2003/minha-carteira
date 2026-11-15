@@ -520,6 +520,8 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
           <input id="k-gq" type="password" placeholder="cole a chave gsk_..." autocomplete="off">
           <label class="small muted" for="k-gem">Chave do Gemini (reserva, grátis em aistudio.google.com)</label>
           <input id="k-gem" type="password" placeholder="cole a chave AIza..." autocomplete="off">
+          <label class="small muted" for="k-asia">Qual IA responde primeiro</label>
+          <select id="k-asia" class="pvsel"><option value="groq">Groq: mais rápida</option><option value="gem">Gemini: mais caprichada (demora um pouco mais)</option></select>
         </div>
         <p class="note" style="margin:0">As chaves ficam só neste aparelho. A pergunta e um resumo da carteira (números, sem seu nome ou documentos) vão para a IA escolhida.</p>
       </div>
@@ -1897,7 +1899,7 @@ function render(){
     rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'err':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
     si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note exp">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
-  pfBox();if(document.activeElement!==$('k-gq'))$('k-gq').value=S.keys.gq||'';if(document.activeElement!==$('k-gem'))$('k-gem').value=S.keys.gem||'';$('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
+  pfBox();$('k-asia').value=S.asia==='gem'?'gem':'groq';if(document.activeElement!==$('k-gq'))$('k-gq').value=S.keys.gq||'';if(document.activeElement!==$('k-gem'))$('k-gem').value=S.keys.gem||'';$('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
   markTema();foldNotes();
   syncForm();
 }
@@ -2076,6 +2078,7 @@ document.addEventListener('change',function(e){
     var r=parseNum(t.value);
     if(r>0&&(r<3||r>10)){warnIn('O dólar digitado ('+num(r,2)+') parece errado. Confira a vírgula, por exemplo 5,58.');t.value=S.fx&&S.fx.rate?String(S.fx.rate).replace('.',','):'';return}
     S.fx=r>0?{rate:r,at:Date.now(),src:'manual'}:null;save();$('status').textContent='';render();
+  }else if(t.id==='k-asia'){S.asia=t.value==='gem'?'gem':'groq';save();
   }else if(t.id==='k-gq'||t.id==='k-gem'){
     S.keys.gq=$('k-gq').value.trim();S.keys.gem=$('k-gem').value.trim();save();
   }else if(t.id==='k-fh'||t.id==='k-br'||t.id==='k-av'){
@@ -2988,7 +2991,7 @@ function asGroq(key,mk,on,sig){var full=mk(false),small=null;return asGroqModels
       .catch(function(e){if(e.name==='AbortError'||got||e.st===401)throw e;last=e;if(e.st===413&&!cmp){cmp=true;return go()}i++;cmp=false;return go()})};return go()})}
 function asGem(key,msgs,on,sig){return asGemModels(key).then(function(ms){var i=0,last=null,sys=msgs[0].content,ct=msgs.slice(1).map(function(x){return {role:x.role==='assistant'?'model':'user',parts:[{text:x.content}]}});
   var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i++],got=0;
-    return fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':streamGenerateContent?alt=sse',{method:'POST',signal:sig,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:ct,generationConfig:{temperature:0.4,maxOutputTokens:1200}})})
+    return fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':streamGenerateContent?alt=sse',{method:'POST',signal:sig,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:ct,generationConfig:{temperature:0.3,maxOutputTokens:6000}})})
       .then(asHttp).then(function(r){AS.mod='Gemini · '+m;return asSSE(r,function(j){var c=j.candidates&&j.candidates[0];return c&&c.content&&c.content.parts&&c.content.parts.map(function(p){return p.text||''}).join('')},function(t){got=1;on(t)})})
       .catch(function(e){if(e.name==='AbortError'||got)throw e;last=e;return go()})};return go()})}
 function asErrTxt(e,who){var s=e&&e.st;if(s===401||s===403||s===400&&who==='Gemini')return 'a chave '+(who==='Groq'?'da Groq':'do Gemini')+' não foi aceita. Confira em Mais → Ajustes.';if(s===413)return 'a pergunta ficou grande demais para o limite grátis da '+who+'. Tente perguntar sobre uma empresa por vez, ou toque em Limpar conversa.';if(s===429)return 'limite de uso '+(who==='Groq'?'da Groq':'do Gemini')+' atingido por agora. Tente de novo em 1 minuto.';if(s>=500)return who+' está fora do ar agora.';return who+': '+(e&&e.message==='Failed to fetch'?'sem internet ou bloqueado':e&&e.message||'erro')}
@@ -2996,11 +2999,13 @@ function asAsk(q){q=String(q||'').trim();if(!q||AS.busy)return;var gq=S.keys.gq,
   AS.m.push({r:'u',t:q});var a={r:'a',t:'',mod:''};AS.m.push(a);AS.busy=true;asRender();
   if(!gq&&!gm){a.e=1;a.t='Para eu responder, cole a chave da Groq em **Mais → Ajustes → Assistente**. É grátis em console.groq.com (a mesma que você criou para o robô serve).';AS.busy=false;asSave();asRender();return}
   var mk=function(c){try{return asMsgs(q,c)}catch(e){return [{role:'system',content:ASSYS},{role:'user',content:q}]}},msgs=null,gmk=function(){return msgs||(msgs=mk(false))};
-  var ab=window.AbortController?new AbortController():null;AS.ab=ab;var sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab&&!a.t)ab.abort()},30000),errs=[];
+  var ab=window.AbortController?new AbortController():null;AS.ab=ab;var sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab&&!a.t)ab.abort()},S.asia==='gem'?60000:30000),errs=[];
   var on=function(t){a.t+=t;asTick()};
-  var p=gq?asGroq(gq,mk,on,sig).catch(function(e){if(e.name==='AbortError'&&a.t)throw e;errs.push(asErrTxt(e,'Groq'));if(!gm||a.t)throw e;a.t='';return asGem(gm,gmk(),on,sig)}):asGem(gm,gmk(),on,sig);
-  p.then(function(){a.mod=AS.mod;if(!a.t){a.e=1;a.t='A IA não mandou resposta. Tente de novo.'}}).catch(function(e){if(e&&e.name==='AbortError'){if(a.t){a.mod=AS.mod;a.t+=' …';return}a.e=1;a.t='Demorou demais para responder. Tente de novo.';return}
-    if(a.t){a.mod=AS.mod;return}if(errs.length<(gq&&gm?2:1))errs.push(asErrTxt(e,gq&&!errs.length?'Groq':'Gemini'));a.e=1;a.t='Não consegui responder: '+errs.join(' E ')})
+  /* ordem das IAs: Groq primeiro (rápida) ou Gemini primeiro (mais caprichada), conforme Ajustes; a outra fica de reserva */
+  var provs=[];if(gq)provs.push(['Groq',function(){return asGroq(gq,mk,on,sig)}]);if(gm)provs.push(['Gemini',function(){return asGem(gm,gmk(),on,sig)}]);if(S.asia==='gem'&&gm)provs.reverse();
+  var run=function(k){return provs[k][1]().catch(function(e){if((e&&e.name==='AbortError')||a.t)throw e;errs.push(asErrTxt(e,provs[k][0]));if(k+1<provs.length)return run(k+1);throw e})};
+  run(0).then(function(){a.mod=AS.mod;if(!a.t){a.e=1;a.t='A IA não mandou resposta. Tente de novo.'}}).catch(function(e){if(e&&e.name==='AbortError'){if(a.t){a.mod=AS.mod;a.t+=' …';return}a.e=1;a.t='Demorou demais para responder. Tente de novo.';return}
+    if(a.t){a.mod=AS.mod;return}a.e=1;a.t='Não consegui responder: '+errs.join(' E ')})
    .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;asSave();asRender()})}
 var ASRF=0;function asTick(){if(ASRF)return;ASRF=requestAnimationFrame(function(){ASRF=0;var el=document.querySelector('#as-b .asm.a:last-child .ast'),a=AS.m[AS.m.length-1];if(el&&a){el.innerHTML=asMd(a.t);asScroll()}})}
 /* markdown simples: **negrito**, listas com "- ", parágrafos */
