@@ -221,6 +221,13 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .wl .wtk{flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;color:var(--fg);display:flex;flex-direction:column}.wl .wtk b{font-size:15.5px}.wl .wtk small{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wl .wpx{text-align:right;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}.wl .wpx span{font-weight:600}.wl .wx{background:none;border:0;color:var(--muted);font-size:16px;padding:4px}
 .wadd{display:flex;gap:8px;margin-top:12px}
+#mkseg{grid-template-columns:repeat(3,minmax(0,1fr))}
+.wtk2{flex-direction:row!important;align-items:center;gap:10px}.wtk2 .an{min-width:0}
+.scr{margin-top:6px}.scrr{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(4,minmax(0,1fr));gap:4px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px;font-variant-numeric:tabular-nums}.scrr>span{text-align:right}
+.scrh{border-top:0;color:var(--muted);font-size:12px;padding-bottom:4px}.scrt{background:none;border:0;padding:0;color:var(--fg);text-align:left;font-weight:700;font-size:14.5px;display:flex;align-items:center;gap:6px;min-width:0}.scrt i{font-style:normal;font-weight:500;color:var(--muted);font-size:12px;width:18px}
+.cmpf{display:flex;align-items:center;gap:8px;margin:10px 0 6px}.cmpf input{text-transform:uppercase;text-align:center}.cmpf span{color:var(--muted)}
+.cmpr{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr 1fr;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;align-items:center}.cmpr span{color:var(--muted)}.cmpr b{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}.cmpr b.gain{color:var(--gain)}
+.cmph{border-top:0}.cmph button{background:none;border:0;color:var(--accent);font-weight:700;font-size:15px;text-align:right;padding:0}
 .dpanel{padding-bottom:12px}.dcar{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:6px -16px 4px;-webkit-overflow-scrolling:touch}.dcar::-webkit-scrollbar{display:none}
 .dpg{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;padding:0 16px;min-width:0}
 .dttl{display:flex;justify-content:space-between;align-items:baseline;font-weight:600;font-size:14.5px;margin-bottom:6px}.dttl span{font-weight:500;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -796,29 +803,73 @@ function idxFmt(x,v){return x.f==='pts'?num(v,0)+' pts':x.f==='usd'?usd.format(v
 function mkSearch(q){
   var el=$('mk-res');if(!el)return;q=String(q||'').trim();if(!q){el.innerHTML='';el.hidden=true;return}
   var nq=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''),sel=idxSel();
-  var hits=IDX.filter(function(x){return (x.n+' '+x.t+' '+(x.s||'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(nq)>=0});
+  var hits=MKV!=='idx'?[]:IDX.filter(function(x){return (x.n+' '+x.t+' '+(x.s||'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(nq)>=0});
   var h=hits.map(function(x){var on=sel.indexOf(x.k)>=0;return '<li><span><b>'+esc(x.n)+'</b><small>'+esc(x.t)+'</small></span><button type="button" class="btn small'+(on?' ghost':'')+'" data-idxt="'+x.k+'">'+(on?'Remover':'Adicionar')+'</button></li>'}).join('');
   var tk=q.toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(/^[A-Z0-9]{2,7}$/.test(tk)&&(/\d/.test(tk)||!hits.length)){var inW=wlist().indexOf(tk)>=0,F=fundOf(tk);
+  if(MKV!=='idx'&&MD.d&&MD.d.fund&&tk.length>=2){Object.keys(MD.d.fund.d).filter(function(x){return x!==tk&&x.indexOf(tk)===0}).sort().slice(0,6).forEach(function(x){var iw=wlist().indexOf(x)>=0;
+    h+='<li><span><b>'+esc(x)+'</b><small>'+fundSub(x)+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(x)+'">Ver</button><button type="button" class="btn small'+(iw?' ghost':'')+'" data-wtog="'+esc(x)+'">'+(iw?'Remover':'Acompanhar')+'</button></span></li>'})}
+  if(MKV!=='idx'&&/^[A-Z0-9]{2,7}$/.test(tk)&&(/\d/.test(tk)||!hits.length)){var inW=wlist().indexOf(tk)>=0,F=fundOf(tk);
     h+='<li><span><b>'+esc(tk)+'</b><small>'+(F?'Ação do Brasil · P/L '+(F.pl!=null?num(F.pl,1):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):'Ação ou ETF')+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(tk)+'">Ver</button><button type="button" class="btn small'+(inW?' ghost':'')+'" data-wtog="'+esc(tk)+'">'+(inW?'Remover':'Acompanhar')+'</button></span></li>'}
   el.innerHTML=h?'<ul class="mkres">'+h+'</ul>':'<p class="muted small" style="padding:8px 2px">Nada encontrado.</p>';el.hidden=false}
 function idxCard(lbl,o,fmt){return '<div class="idx"><small>'+lbl+'</small><b>'+(o&&isFinite(o.v)?fmt(o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+(o.p>=0?'+':'−')+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">sem dado</span>')+'</div>'}
+/* Mercado em 3 partes: Minhas ações, Índices e Análise */
+var MKV='min',SCR='dy',CMP=null;
+try{var mv0=localStorage.getItem(LS+'-mkv');if(mv0==='min'||mv0==='idx'||mv0==='ana')MKV=mv0}catch(e){}
+function tkRow(tk,us,sub){var lv=livePx(tk),q=MKT.q[tk],p=lv?lv.p:q&&q.price,pc=lv&&lv.pct!=null?lv.pct:q&&q.pct,F=us?usd:brl;
+  return '<li><button type="button" class="wtk wtk2" data-stk="'+esc(tk)+'">'+tkLogo(tk,us)+'<span class="an"><b>'+esc(tk)+'</b><small>'+sub+'</small></span></button><span class="wpx">'+(p?'<span>'+F.format(p)+'</span><span class="num small '+cls(pc||0)+'">'+(pc!=null?(pc>=0?'+':'−')+pf.format(Math.abs(pc))+'%':'')+'</span>':'<span class="muted">—</span>')+'</span>'}
+function fundSub(tk){var F=fundOf(tk);return F?'P/L '+(F.pl!=null?num(F.pl,1):'—')+' · P/VP '+(F.pvp!=null?num(F.pvp,2):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):''}
+function mineHtml(){
+  var R=compute();if(!R.held.length)return '<div class="panel"><p class="muted">Você ainda não tem ações na carteira.</p></div>';
+  var dl=dayLbl();
+  return '<div class="panel"><div class="grp"><h2>Minhas ações</h2><span class="det">'+(dl.t==='hoje'?'variação de hoje':'último pregão ('+dl.d+')')+'</span></div><ul class="wl">'+
+    R.held.slice().sort(function(a,b){return b.v-a.v}).map(function(x){var us=x.p.market==='US',pm=x.p.cN/x.p.qty;
+      return tkRow(x.p.ticker,us,fundSub(x.p.ticker)||(us?'ETF internacional':'Ação'))+'</li>'}).join('')+'</ul><p class="note" style="margin-top:8px">Toque numa ação para ver gráfico, indicadores e proventos.</p></div>';
+}
+var SCRS=[
+ {k:'dy',n:'Maiores dividendos',d:'Dividend yield dos últimos 12 meses, do maior para o menor.',f:function(F){return F.dy>0&&F.dy<30&&F.pl>0},s:function(a,b){return b.dy-a.dy}},
+ {k:'pl',n:'Mais baratas (P/L)',d:'Menor preço sobre lucro, só empresas com lucro e ROE positivo.',f:function(F){return F.pl>0&&F.roe>0},s:function(a,b){return a.pl-b.pl}},
+ {k:'roe',n:'Mais rentáveis (ROE)',d:'Maior retorno sobre o patrimônio.',f:function(F){return F.roe>0&&F.roe<150&&F.pl>0},s:function(a,b){return b.roe-a.roe}},
+ {k:'pvp',n:'Abaixo do patrimônio',d:'P/VP menor que 1: a bolsa paga menos do que o patrimônio da empresa.',f:function(F){return F.pvp>0&&F.pvp<1&&F.pl>0},s:function(a,b){return a.pvp-b.pvp}},
+ {k:'qual',n:'Boas e baratas',d:'DY de 6% ou mais, ROE de 12% ou mais e P/L até 12.',f:function(F){return F.dy>=6&&F.roe>=12&&F.pl>0&&F.pl<=12},s:function(a,b){return b.dy-a.dy}}];
+function anaHtml(){
+  var f=MD.d&&MD.d.fund;if(!f||!f.d)return '<div class="panel"><p class="muted">Os indicadores chegam com o robô diário. Volte em alguns minutos.</p></div>';
+  var sc=SCRS.filter(function(x){return x.k===SCR})[0]||SCRS[0],W=wlist(),mine={};compute().held.forEach(function(x){mine[x.p.ticker]=1});
+  var all=Object.keys(f.d).map(function(tk){var F=fundOf(tk);F.tk=tk;return F}).filter(function(F){return F.liq2m>=1e6&&sc.f(F)});
+  var seen={},list=all.sort(sc.s).filter(function(F){var b=F.tk.slice(0,4);if(seen[b])return false;seen[b]=1;return true}).slice(0,15);
+  var h='<div class="panel"><div class="grp"><h2>Ranking de ações</h2><span class="det">'+all.length+' ações</span></div><div class="chips" style="margin:10px 0 4px">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
+    '<p class="note" style="margin:6px 0 4px">'+sc.d+' Só ações com mais de R$ 1 milhão negociados por dia.</p>'+
+    '<div class="scr"><div class="scrr scrh"><span>Ação</span><span>P/L</span><span>P/VP</span><span>DY</span><span>ROE</span></div>'+list.map(function(F,i){
+      return '<div class="scrr"><button type="button" class="scrt" data-stk="'+esc(F.tk)+'"><i>'+(i+1)+'</i>'+esc(F.tk)+(mine[F.tk]?' <span class="tag">sua</span>':W.indexOf(F.tk)>=0?' <span class="tag">★</span>':'')+'</button><span>'+(F.pl!=null?num(F.pl,1):'—')+'</span><span>'+(F.pvp!=null?num(F.pvp,2):'—')+'</span><span>'+(F.dy!=null?pf.format(F.dy)+'%':'—')+'</span><span>'+(F.roe!=null?pf.format(F.roe)+'%':'—')+'</span></div>'}).join('')+'</div>'+
+    '<p class="note" style="margin-top:8px">Indicadores do Fundamentus, atualizados pelo robô diário. Ranking é ponto de partida para estudar, não recomendação.</p></div>';
+  var R=compute(),dflt=R.held.filter(function(x){return x.p.market!=='US'}).map(function(x){return x.p.ticker});if(!CMP)CMP=[dflt[0]||'ITUB4',dflt[1]||'BBSE3'];
+  var A=fundOf(CMP[0]),B=fundOf(CMP[1]),row=function(l,k,fm,better){var a=A&&A[k],b=B&&B[k],wa=a!=null&&b!=null&&(better>0?a>b:a<b),wb=a!=null&&b!=null&&(better>0?b>a:b<a);
+    return '<div class="cmpr"><span>'+l+'</span><b class="'+(wa?'gain':'')+'">'+(a!=null?fm(a):'—')+'</b><b class="'+(wb?'gain':'')+'">'+(b!=null?fm(b):'—')+'</b></div>'};
+  var n1=function(v){return num(v,2)},pc=function(v){return pf.format(v)+'%'};
+  h+='<div class="panel"><h2>Comparar duas ações</h2><form class="cmpf" id="cmpf"><input id="cmp-a" value="'+esc(CMP[0])+'" maxlength="8" autocomplete="off"><span>×</span><input id="cmp-b" value="'+esc(CMP[1])+'" maxlength="8" autocomplete="off"><button class="btn small" type="submit">Comparar</button></form>'+
+    '<div class="cmp"><div class="cmpr cmph"><span></span><button type="button" data-stk="'+esc(CMP[0])+'">'+esc(CMP[0])+'</button><button type="button" data-stk="'+esc(CMP[1])+'">'+esc(CMP[1])+'</button></div>'+
+    row('Cotação','cot',function(v){return brl.format(v)},0)+row('P/L','pl',n1,-1)+row('P/VP','pvp',n1,-1)+row('Dividend yield','dy',pc,1)+row('ROE','roe',pc,1)+row('ROIC','roic',pc,1)+row('Margem líquida','ml',pc,1)+row('EV/EBITDA','evebitda',n1,-1)+row('Liquidez corrente','lc',n1,1)+row('Receita 5 anos','cr5',pc,1)+'</div>'+
+    ((!A||!B)?'<p class="warn" style="margin-top:8px">'+(!A?esc(CMP[0]):esc(CMP[1]))+' não está no Fundamentus (só ações do Brasil).</p>':'')+
+    '<p class="note" style="margin-top:8px">Em verde, o melhor dos dois em cada linha. Toque no código para abrir a análise completa.</p></div>';
+  return h;
+}
 function renderMkt(){
   var el=$('mkttab');if(!el)return;var I=MKT.idx,f0=fxToday(),fxp=S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null;
   var q0=$('mk-q')?$('mk-q').value:'',sel=idxSel();
-  var h='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="Buscar índice, moeda ou ação" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
+  var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['ana','Análise']].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice ou moeda':MKV==='ana'?'Buscar ação para analisar':'Buscar ação para ver ou acompanhar')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
+  if(MKV==='idx'){
   h+='<div class="panel"><div class="grp"><h2>Índices</h2><span style="display:flex;gap:10px;align-items:center"><span class="det">'+(MKT.busy?'atualizando...':MKT.at?'às '+new Date(MKT.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'</span><button type="button" class="link" data-mked="1">'+(MKED?'Pronto':'Editar')+'</button></span></div>'+
     (sel.length?'<div class="idxg'+(MKED?' ed':'')+'">'+sel.map(function(k){var x=idxDef(k),o=idxVal(x);
       return '<div class="idx"'+(MKED?'':' data-idxo="'+k+'" role="button" tabindex="0"')+'>'+(MKED?'<button type="button" class="idxx" data-idxt="'+k+'" aria-label="Remover '+esc(x.n)+'">✕</button>':'')+'<small>'+esc(x.n)+'</small><b>'+(o&&isFinite(o.v)?idxFmt(x,o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+(o.p>=0?'+':'−')+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">'+(o&&o.sub?esc(o.sub):'sem dado')+'</span>')+'</div>'}).join('')+'</div>':'<p class="muted small">Nenhum índice escolhido. Use a busca acima para adicionar.</p>')+
     (MKED?'<p class="note">Toque no ✕ para tirar. Para colocar outro, procure na busca acima.</p>':'')+'</div>';
+  h+='<p class="note exp" style="margin:0 4px">Ibovespa e IFIX vêm do brapi, S&P 500 e Nasdaq do Finnhub (pelos ETFs SPY e QQQ), dólar, euro e bitcoin da AwesomeAPI, CDI do Banco Central. Toque numa ação para ver gráfico e indicadores. A lista de acompanhamento fica salva na nuvem.</p>';
+  }else if(MKV==='ana'){h+=anaHtml()}else{h+=mineHtml();
   var W=wlist();
   h+='<div class="panel"><div class="grp"><h2>Acompanhando</h2><span class="det">'+W.length+' ações</span></div>'+
     (W.length?'<ul class="wl">'+W.map(function(tk){var q=MKT.q[tk];return '<li><button type="button" class="wtk" data-stk="'+esc(tk)+'"><b>'+esc(tk)+'</b><small>'+(function(){var F=fundOf(tk);return F?'P/L '+(F.pl!=null?num(F.pl,1):'—')+' · P/VP '+(F.pvp!=null?num(F.pvp,2):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):esc(q&&q.name||(isBR(tk)?'Brasil':'EUA'))})()+'</small></button><span class="wpx">'+(q?'<span>'+(q.cur==='USD'?usd:brl).format(q.price)+'</span><span class="num small '+cls(q.pct)+'">'+(q.pct>=0?'+':'−')+pf.format(Math.abs(q.pct||0))+'%</span>':'<span class="muted">—</span>')+'</span><button type="button" class="wx" data-wdel="'+esc(tk)+'" aria-label="Parar de acompanhar '+esc(tk)+'">✕</button></li>'}).join('')+'</ul>':'<p class="muted small">Adicione ações que você quer vigiar, mesmo sem ter. Ex.: PETR4, VALE3, WEGE3, AAPL.</p>')+
     '<form class="wadd" id="wadd"><input id="w-tk" placeholder="Código da ação" maxlength="12" autocomplete="off"><button class="btn" type="submit">Adicionar</button></form>'+
     (MKT.err?'<p class="warn" style="margin-top:8px">'+esc(MKT.err)+'</p>':'')+'</div>';
-  var R=compute(),mine=R.held.map(function(x){return x.p.ticker});
-  if(mine.length)h+='<div class="panel"><h2>Analisar suas ações</h2><div class="tkchips" style="margin-top:10px">'+mine.map(function(tk){return '<button type="button" data-stk="'+esc(tk)+'">'+esc(tk)+'</button>'}).join('')+'</div></div>';
-  h+='<p class="note exp" style="margin:0 4px">Ibovespa e IFIX vêm do brapi, S&P 500 e Nasdaq do Finnhub (pelos ETFs SPY e QQQ), dólar, euro e bitcoin da AwesomeAPI, CDI do Banco Central. Toque numa ação para ver gráfico e indicadores. A lista de acompanhamento fica salva na nuvem.</p>';
+  }
   el.innerHTML=h;
 }
 /* dados prontos do robô diário (mercado.json no repositório de dados): indicadores do Fundamentus e históricos do Yahoo */
@@ -1266,6 +1317,7 @@ $('f-date').addEventListener('change',syncForm);
 $('fx-edit').addEventListener('click',function(){fxCustom=true;syncForm();$('f-fx').focus()});
 document.addEventListener('input',function(e){if(e.target&&e.target.id==='mk-q')mkSearch(e.target.value)});
 document.addEventListener('submit',function(e){var f=e.target;
+  if(f.id==='cmpf'){e.preventDefault();var ca=String($('cmp-a').value||'').trim().toUpperCase(),cb=String($('cmp-b').value||'').trim().toUpperCase();if(ca&&cb){CMP=[ca,cb];renderMkt()}return}
   if(f.id==='wadd'){e.preventDefault();var tk=String($('w-tk').value||'').trim().toUpperCase().replace(/[^A-Z0-9^.]/g,'');if(!tk)return;var W=wlist().slice();if(W.indexOf(tk)<0){W.push(tk);watchSet(W)}$('w-tk').value='';renderMkt();loadMkt(true)}},true);
 $('addform').addEventListener('submit',function(e){
   e.preventDefault();var m=$('formmsg');m.className='msg';m.textContent='';
@@ -1324,6 +1376,8 @@ document.addEventListener('click',function(e){
   var wd=t.closest&&t.closest('[data-wdel]');if(wd){var dk=wd.getAttribute('data-wdel');watchSet(wlist().filter(function(x){return x!==dk}));renderMkt();return}
   var wt=t.closest&&t.closest('[data-wtog]');if(wt){var tk2=wt.getAttribute('data-wtog'),W2=wlist().slice();if(W2.indexOf(tk2)>=0)W2=W2.filter(function(x){return x!==tk2});else W2.push(tk2);watchSet(W2);stkRender();renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(W2.indexOf(tk2)>=0)loadMkt(true);return}
   var io=t.closest&&t.closest('[data-idxo]');if(io&&!(t.closest('.idxx'))){idxOpen(io.getAttribute('data-idxo'));return}
+  var mv=t.closest&&t.closest('[data-mkv]');if(mv){MKV=mv.getAttribute('data-mkv');try{localStorage.setItem(LS+'-mkv',MKV)}catch(e){}if($('mk-q'))$('mk-q').value='';renderMkt();return}
+  var sr=t.closest&&t.closest('[data-scr]');if(sr){SCR=sr.getAttribute('data-scr');renderMkt();return}
   var it=t.closest&&t.closest('[data-idxt]');if(it){var ik=it.getAttribute('data-idxt'),A=idxSel().slice();if(A.indexOf(ik)>=0)A=A.filter(function(x){return x!==ik});else A.push(ik);idxSet(A);renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(A.indexOf(ik)>=0)loadMkt(true);return}
   if(t.closest&&t.closest('[data-mked]')){MKED=!MKED;renderMkt();return}
   var af=t.closest&&t.closest('[data-atf]');if(af){ATF=af.getAttribute('data-atf');renderPositions(compute());return}
