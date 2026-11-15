@@ -32,7 +32,7 @@
 svg:focus,svg *:focus{outline:none}
 [hidden]{display:none!important}
 html{padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);padding-block:16px calc(92px + env(safe-area-inset-bottom,0px));
+body{overflow-x:clip;margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);padding-block:16px calc(92px + env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-text-size-adjust:100%}
 .wrap{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:14px;min-width:0}
 .col{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -73,6 +73,16 @@ button{cursor:pointer}
 .banner{background:var(--tint);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .warn{color:var(--loss);font-size:13px}
 
+
+/* faixa de cotações */
+.tape{margin:-2px calc(50% - 50vw) 0;background:#000;color:#f2f5f8;overflow:hidden;border-block:1px solid #1b2229;position:relative;height:38px;display:flex;align-items:center;-webkit-mask:linear-gradient(90deg,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask:linear-gradient(90deg,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
+.tape[hidden]{display:none}
+.tptr{display:flex;width:max-content;animation:tpmv var(--tpd,60s) linear infinite;will-change:transform}
+.tape:active .tptr{animation-play-state:paused}
+@keyframes tpmv{to{transform:translateX(-50%)}}
+.tpi{display:inline-flex;align-items:baseline;gap:7px;padding:0 16px;border:0;background:none;color:inherit;font:inherit;font-size:13px;white-space:nowrap;border-right:1px solid #1f262d;font-variant-numeric:tabular-nums}
+.tpi b{font-weight:700;letter-spacing:.02em;font-size:12.5px}.tpi span{color:#b7c0c9}.tpi em{font-style:normal;font-weight:700;font-size:12.5px}.tpi em.g{color:#34d17d}.tpi em.l{color:#ff5d5d}.tpi em.z{color:#8b96a1}
+@media (prefers-reduced-motion:reduce){.tape{overflow-x:auto}.tptr{animation:none}}
 /* cartões */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
 :root[data-theme="preto"] .panel{border-color:transparent}
@@ -346,6 +356,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
     <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0f2a3f"/><path d="M120 356l92-104 68 60 112-148" fill="none" stroke="#f4f8fb" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="392" cy="164" r="34" fill="#e3b657"/></svg><h1>Aporte</h1></div>
     <div class="pills"><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button><div id="mktst" aria-label="Situação das bolsas"></div></div>
   </header>
+  <div class="tape" id="tape" hidden aria-label="Cotações de índices e ações"></div>
   <div class="msg muted" id="status" role="status"></div>
   <div id="banner"></div>
 
@@ -1373,6 +1384,7 @@ function renderFx(){
 }
 function render(){
   var R=compute();
+  try{renderTape()}catch(e){}
   renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderPerf(R);renderMkt();renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
   pvRedraw();
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
@@ -2179,6 +2191,30 @@ function mktState(){
     var ut=uo?'Bolsa americana (onde está o VT) aberta. Fecha às '+c0+' de Brasília, daqui a '+dur(960-ny.min)+'.':(usBDay(ny.d)&&ny.min<570?'Bolsa americana fechada. Abre hoje às '+o0+' de Brasília.':'Bolsa americana fechada. Abre '+(function(){var n=nextOpen(ny.d,usBDay),dd=Math.round((n-ny.d)/864e5);return dd===1?'amanhã':DSEM[n.getUTCDay()]+' ('+fmtDate(n.toISOString().slice(0,10)).slice(0,5)+')'})()+' às '+o0+' de Brasília.')+' Horário normal: '+o0+' às '+c0+'.';
     out.push({n:'EUA',on:uo,t:ut})}
   return out}
+
+/* faixa de cotações no topo: índices e grandes empresas do robô (a cada 30 min no pregão), com os preços ao vivo do app por cima */
+var TPK='';
+var TPIX={IBOV:1,'S&P 500':1,NASDAQ:1,DOW:1};
+function tapeItems(){
+  var it=[],seen={},R=null,add=function(l,v,p,c){if(!(v>0)||!(p>0)||seen[l])return;seen[l]=1;it.push({l:l,v:v,p:(v/p-1)*100,c:c})};
+  var t=MD.d&&MD.d.tape&&MD.d.tape.it||[];
+  t.forEach(function(x){var l=x[0],v=x[1],p=x[2],c=x[3];
+    if(l==='DÓLAR'&&S.fx&&S.fx.src==='auto'&&S.fx.prev){v=S.fx.rate;p=S.fx.prev}
+    var q=S.quotes[l];if(q&&q.src==='auto'&&q.prev&&Date.now()-q.at<6*3600000){v=q.price;p=q.prev}
+    else{var m=MKT.q[l];if(m&&m.price>0&&m.pct!=null&&Date.now()-m.at<6*3600000){v=m.price;p=m.price/(1+m.pct/100)}}
+    add(l,v,p,c)});
+  try{R=compute()}catch(e){}
+  if(R)R.held.forEach(function(x){var tk=x.p.ticker,q=S.quotes[tk];if(q&&q.prev)add(tk,q.price,q.prev,x.p.market==='US'?'USD':'BRL')});
+  if(!seen['DÓLAR']&&S.fx&&S.fx.prev)add('DÓLAR',S.fx.rate,S.fx.prev,'BRL');
+  return it}
+function tapeVal(x){if(TPIX[x.l])return num(x.v,x.v>=1000?0:2);if(x.l==='DÓLAR'||x.l==='EURO')return 'R$ '+num(x.v,4);if(x.c==='USD')return 'US$ '+num(x.v,x.v>=1000?0:2);return 'R$ '+num(x.v,2)}
+function tapeIn(x){var c=Math.abs(x.p)<0.005?'z':x.p>0?'g':'l';return [tapeVal(x),c,(c==='z'?'':x.p>0?'▲ ':'▼ ')+pf.format(Math.abs(x.p))+'%']}
+function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems();if(it.length<3){el.hidden=true;return}el.hidden=false;
+  var key=it.map(function(x){return x.l}).join('|');
+  if(key===TPK&&el.firstChild){it.forEach(function(x){var r=tapeIn(x);[].forEach.call(el.querySelectorAll('[data-tp="'+x.l.replace(/"/g,'')+'"]'),function(n){n.querySelector('span').textContent=r[0];var e=n.querySelector('em');e.className=r[1];e.textContent=r[2]})});return}
+  TPK=key;var one=it.map(function(x){var r=tapeIn(x),stk=!TPIX[x.l]&&/^[A-Z0-9]{2,6}$/.test(x.l);
+    return '<'+(stk?'button type="button" data-stk="'+esc(x.l)+'"':'span')+' class="tpi" data-tp="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(stk?'button':'span')+'>'}).join('');
+  el.innerHTML='<div class="tptr" style="--tpd:'+Math.max(30,it.length*5)+'s">'+one+one+'</div>'}
 function renderMktSt(){var el=$('mktst');if(!el)return;el.innerHTML=mktState().map(function(m){return bal(m.t,'<span class="mks'+(m.on?' on':'')+'"><i></i><b>'+m.n+'</b><small>'+(m.on?'Aberta':'Fechada')+'</small></span>')}).join('')}
 setInterval(renderMktSt,60000);setTimeout(renderMktSt,0);
 
