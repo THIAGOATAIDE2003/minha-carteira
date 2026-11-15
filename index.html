@@ -2846,7 +2846,7 @@ function asFind(q){var out=[],add=function(tk){if(tk&&out.indexOf(tk)<0)out.push
   ks.forEach(function(k){var p=n.indexOf(' '+k+' ');if(p<0)return;if(used.some(function(u){return p>=u[0]&&p<u[1]}))return;used.push([p,p+k.length+2]);add(m[k])});
   return out.slice(0,3)}
 /* tudo que o app sabe de uma empresa, com a origem de cada número */
-var ASSC=1;function asBi(v){return v==null?'?':qfmt(v*ASSC)}
+var ASSC=1;function asBi(v){return v==null||v===0?'não informado':qfmt(v*ASSC)}
 /* variação do preço e dividendos por ação, do histórico que o robô baixa (Yahoo) */
 function asPxHist(tk,P){var h=MD.d&&MD.d.hist&&MD.d.hist[tk];if(!h||!P)return null;var day=Math.floor(Date.now()/864e5),at=function(a,dd){if(!a||!a.length)return null;var best=null;for(var i=0;i<a.length;i++){if(a[i][0]<=day-dd)best=a[i][1];else break}return best};
   var src=function(dd){return dd<=360?at(h.d,dd)||at(h.w,dd):at(h.w,dd)},o={},ps=[[30,'1 mês'],[91,'3 meses'],[182,'6 meses'],[365,'12 meses'],[1095,'3 anos'],[1825,'5 anos']];
