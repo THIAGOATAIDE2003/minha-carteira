@@ -350,6 +350,14 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .anvh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:2px}.anvh b{font:700 30px/1.1 var(--disp)}.anvh span{font-weight:600}
 .vlb{display:flex;flex-direction:column;gap:10px;margin-top:14px}.vlr{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.6fr) auto;gap:8px;align-items:center;font-size:13.5px}.vlr i{position:relative;height:10px;border-radius:5px;background:var(--tint);display:block}.vlr em{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--c1)}.vlr u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--fg);border-radius:1px}
 .vlin{display:flex;flex-direction:column;gap:10px}.vlin label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}.vlin input{width:90px;text-align:right}
+.mkb{font-style:normal;display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--loss);color:#fff;font-size:11px;font-weight:700;padding:0 5px;margin-left:4px;vertical-align:1px}
+.opb{background:color-mix(in srgb,var(--loss) 18%,transparent);color:var(--loss);font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px}
+.opseg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 6px}.opseg button{padding:8px 2px;font-size:12.5px}
+.opr{display:grid;grid-template-columns:minmax(0,1fr) 46px 70px auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.oph{border-top:0;color:var(--muted);font-size:12px;padding:6px 0 2px;grid-template-columns:minmax(0,1fr) 46px 70px 28px}.oph span:nth-child(n+2){text-align:center}
+.opt{display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--fg);padding:0;text-align:left;min-width:0}.opt>span{display:flex;flex-direction:column;min-width:0}.opt small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.opt .tlg{width:30px;height:30px;border-radius:8px}
+.opn{text-align:center;font-weight:700;border-radius:8px;padding:4px 0;font-size:14px;background:var(--tint)}.opn.g{color:var(--gain)}.opn.m{color:var(--c2)}.opn.l{color:var(--loss)}
+.opu{text-align:center;font-weight:600;font-size:13.5px}.opa{background:none;border:0;color:var(--c2);font-size:20px;padding:0 4px;width:28px}
+.opal{grid-column:1/-1;list-style:none;margin:2px 0 0;padding:0 0 0 38px;display:flex;flex-direction:column;gap:4px}.opal li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45}.opal .rkd{margin-top:5px;width:8px;height:8px}.opal b{color:var(--fg);font-weight:600}
 .dvtab{width:100%;border-collapse:collapse;font-size:13.5px}
 .dvtab th{font-weight:500;color:var(--muted);font-size:12.5px}
 .dvtab th,.dvtab td{padding:7px 4px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
@@ -1019,12 +1027,63 @@ var SCRS=[
  {k:'roe',n:'Mais rentáveis (ROE)',d:'Maior retorno sobre o patrimônio.',f:function(F){return F.roe>0&&F.roe<150&&F.pl>0},s:function(a,b){return b.roe-a.roe}},
  {k:'pvp',n:'Abaixo do patrimônio',d:'P/VP menor que 1: a bolsa paga menos do que o patrimônio da empresa.',f:function(F){return F.pvp>0&&F.pvp<1&&F.pl>0},s:function(a,b){return a.pvp-b.pvp}},
  {k:'qual',n:'Boas e baratas',d:'DY de 6% ou mais, ROE de 12% ou mais e P/L até 12.',f:function(F){return F.dy>=6&&F.roe>=12&&F.pl>0&&F.pl<=12},s:function(a,b){return b.dy-a.dy}}];
+/* ===== Oportunidades: sua lista e o garimpo automático, com alertas quando algo muda ===== */
+var OPC={k:'',r:null},OPV='lst';
+function opD(tk){var F=fundOf(tk),lv=livePx(tk),h=MD.d&&MD.d.hist&&MD.d.hist[tk],us=!F&&h&&h.cur==='USD';
+  var P=lv?lv.p:h&&h.last?h.last:F&&F.cot;if(!(P>0))return null;
+  var k={};if(h&&h.d&&h.d.length>20){var y=h.d.map(function(p){return p[1]});k.hi=Math.max.apply(null,y);k.lo=Math.min.apply(null,y)}
+  return {cur:us?'USD':'BRL',price:P,pct:lv&&lv.pct,k:k}}
+function opEval(tk){var d=opD(tk);if(!d)return null;var A=stkAna(tk,d);if(A.etf)return null;var V=anValCalc(tk,d,A);
+  return {tk:tk,d:d,A:A,V:V.ms&&V.ms.length?V:null,score:A.score}}
+function opHist(){try{return JSON.parse(localStorage.getItem(LS+'-opp')||'{}')||{}}catch(e){return {}}}
+/* guarda uma foto por dia de cada ação (nota, preço justo, preço) para comparar depois */
+function opSnap(list){var H=opHist(),td=today(),ch=0;list.forEach(function(o){if(!o)return;var a=H[o.tk]=H[o.tk]||[];if(a.length&&a[a.length-1][0]===td)return;a.push([td,o.score,o.V?Math.round(o.V.med*100)/100:null,Math.round(o.d.price*100)/100]);if(a.length>60)a.splice(0,a.length-60);ch=1});
+  if(ch)try{localStorage.setItem(LS+'-opp',JSON.stringify(H))}catch(e){}return H}
+function opAlerts(o,H,mine){var al=[],F=o.d.cur==='USD'?usd:brl;
+  if(o.V&&o.V.up>=0.2)al.push(['ok','Abaixo do preço justo','Preço justo '+F.format(o.V.med)+', '+pf.format(o.V.up*100)+'% acima do preço de hoje.']);
+  else if(o.V&&o.V.up<=-0.2&&mine)al.push(['at','Acima do preço justo','Está '+pf.format(Math.abs(o.V.up)*100)+'% acima do preço justo ('+F.format(o.V.med)+').']);
+  if(o.d.k.hi){var dd=o.d.price/o.d.k.hi-1;if(dd<=-0.25)al.push(['at','Caiu '+pf.format(Math.abs(dd*100))+'% da máxima do ano','Vale entender o motivo antes de comprar.'])}
+  var a=H[o.tk]||[],old=null;for(var i=a.length-1;i>=0;i--){if(dayDiff(a[i][0],today())>=6){old=a[i];break}}
+  if(old){if(o.score!=null&&old[1]!=null&&o.score-old[1]>=1)al.push(['ok','A nota melhorou','De '+num(old[1],1)+' para '+num(o.score,1)+' desde '+fmtDate(old[0])+'.']);
+    else if(o.score!=null&&old[1]!=null&&old[1]-o.score>=1)al.push(['al','A nota piorou','De '+num(old[1],1)+' para '+num(o.score,1)+' desde '+fmtDate(old[0])+'.']);
+    if(old[3]&&Math.abs(o.d.price/old[3]-1)>=0.1)al.push([o.d.price<old[3]?'ok':'at',(o.d.price<old[3]?'Ficou ':'Subiu ')+pf.format(Math.abs(o.d.price/old[3]-1)*100)+'%'+(o.d.price<old[3]?' mais barata':''),'Era '+F.format(old[3])+' em '+fmtDate(old[0])+'.'])}
+  if(o.A.N&&o.A.N.dy>=6&&o.A.N.dy<=15&&!mine)al.push(['ok','Paga bons dividendos','DY de '+pf.format(o.A.N.dy)+'%.']);
+  return al}
+function opData(){var f=MD.d&&MD.d.fund;if(!f||!f.d)return null;var R=compute(),mine={};R.held.forEach(function(x){mine[x.p.ticker]=1});
+  var key=MD.d.ts+'|'+wlist().join(',')+'|'+Object.keys(mine).join(',')+'|'+Math.floor(Date.now()/9e5);if(OPC.k===key)return OPC.r;
+  var W=wlist().map(opEval).filter(Boolean),M=Object.keys(mine).filter(function(t){return R.held.some(function(x){return x.p.ticker===t&&x.p.market!=='US'})}).map(opEval).filter(Boolean);
+  /* garimpo: empresas de qualidade abaixo do preço justo, entre as ações com boa liquidez */
+  var seen={},cand=Object.keys(f.d).filter(function(tk){var F=fundOf(tk);return F&&F.liq2m>=2e6&&F.pl>2&&F.roe>0}).map(function(tk){var F=fundOf(tk);F.tk=tk;return F}).sort(function(a,b){return b.liq2m-a.liq2m});
+  var D=[];cand.forEach(function(F){var b=F.tk.slice(0,4);if(seen[b]||mine[F.tk])return;seen[b]=1;var o=opEval(F.tk);if(!o||!o.V||o.score==null)return;
+    var Q=o.A.chips[0][1],Pq=o.A.chips[1][1];if(Q==='Baixa'||o.V.up<0.2||o.score<6)return;if(o.A.N.dy>20)return;
+    o.rank=o.score*10+Math.min(60,o.V.up*100)*0.6+(Q==='Alta'?10:0);D.push(o)});
+  D.sort(function(a,b){return b.rank-a.rank});D=D.slice(0,12);
+  var H=opSnap(W.concat(M,D));
+  var mk=function(o,m){o.al=opAlerts(o,H,m);return o};W=W.map(function(o){return mk(o,!!mine[o.tk])});M=M.map(function(o){return mk(o,1)});D=D.map(function(o){return mk(o,0)});
+  var n=W.concat(M).reduce(function(s,o){return s+o.al.filter(function(a){return a[0]!=='at'||!mine[o.tk]}).length},0);
+  OPC={k:key,r:{W:W,M:M,D:D,n:n,cand:cand.length}};return OPC.r}
+function opRow(o,add){var F=o.d.cur==='USD'?usd:brl,sc=o.score,cl=sc==null?'':sc>=7?'g':sc>=4.5?'m':'l',inW=wlist().indexOf(o.tk)>=0;
+  return '<div class="opr"><button type="button" class="opt" data-stk="'+esc(o.tk)+'">'+tkLogo(o.tk,o.d.cur==='USD')+'<span><b>'+esc(o.tk)+'</b><small>'+F.format(o.d.price)+(o.V?' · justo '+F.format(o.V.med):'')+'</small></span></button>'+
+    '<span class="opn '+cl+'">'+(sc!=null?num(sc,1):'—')+'</span>'+(o.V?'<span class="num opu '+(o.V.up>=0?'gain':'loss')+'">'+(o.V.up>=0?'+':'−')+pf.format(Math.abs(o.V.up*100))+'%</span>':'<span class="opu muted">—</span>')+
+    (add?'<button type="button" class="opa" data-wtog="'+esc(o.tk)+'" aria-label="'+(inW?'Parar de acompanhar ':'Acompanhar ')+esc(o.tk)+'">'+(inW?'★':'☆')+'</button>':'')+
+    (o.al&&o.al.length?'<ul class="opal">'+o.al.slice(0,3).map(function(a){return '<li>'+rkLvl(a[0])+'<span><b>'+a[1]+'</b> '+a[2]+'</span></li>'}).join('')+'</ul>':'')+'</div>'}
+function oppHtml(){var r=opData();if(!r)return '';
+  var h='<div class="panel opp"><div class="grp"><h2>Oportunidades</h2>'+(r.n?'<span class="opb">'+r.n+' aviso'+(r.n>1?'s':'')+'</span>':'')+'</div>'+
+    '<div class="seg opseg">'+[['lst','Sua lista ('+r.W.length+')'],['car','Sua carteira'],['gar','Garimpo']].map(function(x){return '<button type="button" data-opv="'+x[0]+'" aria-pressed="'+(OPV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  var cab='<div class="opr oph"><span>Ação</span><span>Nota</span><span>Potencial</span></div>';
+  if(OPV==='car')h+=r.M.length?cab+r.M.map(function(o){return opRow(o,0)}).join('')+'<p class="note">Suas ações do Brasil com nota, preço justo e avisos. Abaixo do preço justo pode ser hora de aportar; acima, de esperar.</p>':'<p class="muted">Sem ações do Brasil na carteira.</p>';
+  else if(OPV==='gar')h+=(r.D.length?cab+r.D.map(function(o){return opRow(o,1)}).join(''):'<p class="muted">Nenhuma empresa passou nos critérios agora.</p>')+'<p class="note">O app olhou sozinho '+r.cand+' ações com mais de R$ 2 milhões negociados por dia e separou as que têm nota boa (6 ou mais), qualidade média ou alta e preço justo pelo menos 20% acima do preço de hoje. Toque na estrela para colocar na sua lista e receber os avisos.</p>';
+  else h+=r.W.length?cab+r.W.map(function(o){return opRow(o,1)}).join('')+'<p class="note">Os avisos aparecem quando a ação fica abaixo do preço justo, cai muito, ou quando a nota e o preço mudam em relação a uma semana atrás.</p>':'<p class="muted">Sua lista está vazia. Busque uma ação ali em cima e toque em Acompanhar, ou veja o Garimpo.</p>';
+  return h+'<p class="note">Avisos e notas são automáticos, para estudar; não são recomendação de compra ou venda.</p></div>'}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-opv]');if(!b)return;OPV=b.getAttribute('data-opv');try{localStorage.setItem(LS+'-opv',OPV)}catch(x){}renderMkt()});
+try{OPV=localStorage.getItem(LS+'-opv')||'lst'}catch(e){}
+
 function anaHtml(){
   var f=MD.d&&MD.d.fund;if(!f||!f.d)return '<div class="panel"><p class="muted">Os indicadores chegam com o robô diário. Volte em alguns minutos.</p></div>';
   var sc=SCRS.filter(function(x){return x.k===SCR})[0]||SCRS[0],W=wlist(),mine={};compute().held.forEach(function(x){mine[x.p.ticker]=1});
   var all=Object.keys(f.d).map(function(tk){var F=fundOf(tk);F.tk=tk;return F}).filter(function(F){return F.liq2m>=1e6&&sc.f(F)});
   var seen={},list=all.sort(sc.s).filter(function(F){var b=F.tk.slice(0,4);if(seen[b])return false;seen[b]=1;return true}).slice(0,15);
-  var h='<div class="panel"><div class="grp"><h2>Ranking de ações</h2><span class="det">'+all.length+' ações</span></div><div class="chips" style="margin:10px 0 4px">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
+  var h=oppHtml()+'<div class="panel"><div class="grp"><h2>Ranking de ações</h2><span class="det">'+all.length+' ações</span></div><div class="chips" style="margin:10px 0 4px">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
     '<p class="note" style="margin:6px 0 4px">'+sc.d+' Só ações com mais de R$ 1 milhão negociados por dia.</p>'+
     '<div class="scr"><div class="scrr scrh"><span>Ação</span><span>P/L</span><span>P/VP</span><span>DY</span><span>ROE</span></div>'+list.map(function(F,i){
       return '<div class="scrr"><button type="button" class="scrt" data-stk="'+esc(F.tk)+'"><i>'+(i+1)+'</i>'+esc(F.tk)+(mine[F.tk]?' <span class="tag">sua</span>':W.indexOf(F.tk)>=0?' <span class="tag">★</span>':'')+'</button><span>'+(F.pl!=null?num(F.pl,1):'—')+'</span><span>'+(F.pvp!=null?num(F.pvp,2):'—')+'</span><span>'+(F.dy!=null?pf.format(F.dy)+'%':'—')+'</span><span>'+(F.roe!=null?pf.format(F.roe)+'%':'—')+'</span></div>'}).join('')+'</div>'+
@@ -1043,7 +1102,8 @@ function anaHtml(){
 function renderMkt(){
   var el=$('mkttab');if(!el)return;var I=MKT.idx,f0=fxToday(),fxp=S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null;
   var q0=$('mk-q')?$('mk-q').value:'',sel=idxSel();
-  var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['ana','Análise']].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
+  var on=0;try{var od=opData();on=od?od.n:0}catch(e){}
+  var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
   h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice ou moeda':MKV==='ana'?'Buscar ação para analisar':'Buscar ação para ver ou acompanhar')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
   h+='<div class="panel"><div class="grp"><h2>Índices</h2><span style="display:flex;gap:10px;align-items:center"><span class="det">'+(MKT.busy?'atualizando...':MKT.at?'às '+new Date(MKT.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'</span><button type="button" class="link" data-mked="1">'+(MKED?'Pronto':'Editar')+'</button></span></div>'+
@@ -1142,7 +1202,9 @@ function annHtml(rows){if(!rows.length)return '<p class="muted small" style="mar
 var STV='res',VALP={};
 try{STV=localStorage.getItem(LS+'-stv')||'res'}catch(e){}
 function anMed(a){a=a.filter(function(v){return v!=null&&isFinite(v)}).sort(function(x,y){return x-y});if(a.length<3)return null;var m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
-function anPeers(tk){var sc=MD.d&&MD.d.sect&&MD.d.sect[tk],P=MD.d&&MD.d.peers||{},sid=sc&&sc[2]!=null?String(sc[2]):null,name=sc?sc[0]:'';
+var ANPC={k:'',m:{}};
+function anPeers(tk){var ck=MD.d&&MD.d.ts;if(ANPC.k!==ck)ANPC={k:ck,m:{}};if(tk in ANPC.m)return ANPC.m[tk];return ANPC.m[tk]=anPeers0(tk)}
+function anPeers0(tk){var sc=MD.d&&MD.d.sect&&MD.d.sect[tk],P=MD.d&&MD.d.peers||{},sid=sc&&sc[2]!=null?String(sc[2]):null,name=sc?sc[0]:'';
   if(!sid)Object.keys(P).some(function(k){if(P[k].indexOf(tk)>=0){sid=k;return true}return false});
   if(!sid&&!name)return null;
   if(!name)Object.keys(MD.d.sect||{}).some(function(t){var s=MD.d.sect[t];if(String(s[2])===sid){name=s[0];return true}return false});
@@ -1182,7 +1244,7 @@ function stkAna(tk,d){
   if(!fin&&has(N.divpl))rk.push(N.divpl>=1.5?2:N.divpl<=0.5?0:1);
   var avg=function(a){return a.length?a.reduce(function(s,x){return s+x},0)/a.length:null},qa=avg(q),pa=avg(p),ra=avg(rk);
   var chips=[['Qualidade',qa==null?'—':qa>=1.4?'Alta':qa>=0.7?'Média':'Baixa',qa==null?'':qa>=1.4?'g':qa>=0.7?'m':'l'],['Preço',pa==null?'—':pa>=1.4?'Barata':pa>=0.7?'Justa':'Cara',pa==null?'':pa>=1.4?'g':pa>=0.7?'m':'l'],['Dividendos',dyL||'—',dyL==='Altos'?'g':dyL==='Médios'?'m':dyL?'l':''],['Risco',ra==null?'—':ra>=1.4?'Alto':ra>=0.7?'Médio':'Baixo',ra==null?'':ra>=1.4?'l':ra>=0.7?'m':'g']];
-  var nt=pos.length+neg.length,score=nt>=3?Math.round(pos.length/nt*100)/10:null;
+  var nt=pos.length+neg.length,score=nt>=2?Math.round(pos.length/nt*100)/10:null;
   return {pos:pos,neg:neg,inf:inf,chips:chips,score:score,pe:pe,N:N,fin:fin,sec:sec,us:us}}
 /* a ação dentro da sua carteira */
 function anFit(tk,d,A){var R=compute(),r=null;try{r=riskData(R)}catch(e){}if(!r)return '';
@@ -1210,7 +1272,8 @@ function anResumo(tk,d){var A=stkAna(tk,d);
   if(A.inf.length)h+='<div class="panel"><h2>Vale saber</h2><ul class="rkl">'+li(A.inf,'at')+'</ul></div>';
   return h+anFit(tk,d,A)}
 /* preço justo por vários métodos */
-function anVal(tk,d){var A=stkAna(tk,d);if(A.etf)return '<div class="panel"><p class="muted" style="margin:0">ETF não tem preço justo de empresa: o preço dele é a soma das empresas que tem dentro.</p></div>';
+/* preço justo por vários métodos (usado na aba Valuation e nas Oportunidades) */
+function anValCalc(tk,d,A){
   var N=A.N,P=d.price,F=d.cur==='USD'?usd:brl,ms=[];
   var lpa=N.pl>0&&P?P/N.pl:null,vpa=N.pvp>0&&P?P/N.pvp:null,dpa=N.dy>0&&P?P*N.dy/100:null;
   var sel=MD.d&&MD.d.idx&&MD.d.idx.selic&&MD.d.idx.selic.last,cfg=VALP[tk]||{};
@@ -1220,8 +1283,13 @@ function anVal(tk,d){var A=stkAna(tk,d);if(A.etf)return '<div class="panel"><p c
   if(lpa&&A.pe&&A.pe.pl)ms.push(['P/L do setor',lpa*A.pe.pl,'Lucro por ação × P/L médio das concorrentes ('+num(A.pe.pl,1)+'). Quanto valeria se o mercado pagasse por ela o mesmo que paga pelo setor.']);
   if(lpa&&r>3){var v=0,e=lpa;for(var i=1;i<=5;i++){e*=1+g/100;v+=e/Math.pow(1+r/100,i)}v+=e*1.03/((r-3)/100)/Math.pow(1+r/100,5);
     ms.push(['Fluxo de caixa descontado',v,'O lucro por ação cresce '+g+'% ao ano por 5 anos e depois 3% para sempre, trazido para hoje com desconto de '+r+'% ao ano (Selic + prêmio). Versão simples: usa o lucro no lugar do caixa.'])}
-  if(!ms.length)return '<div class="panel"><p class="muted" style="margin:0">Sem dados suficientes para calcular o preço justo (a empresa precisa ter lucro e patrimônio positivos).</p></div>';
+  if(!ms.length)return {ms:ms};
   var vs=ms.map(function(m){return m[1]}).sort(function(a,b){return a-b}),med=vs.length%2?vs[(vs.length-1)/2]:(vs[vs.length/2-1]+vs[vs.length/2])/2,up=med/P-1,mg=(med-P)/med;
+  return {ms:ms,g:g,r:r,y:y,F:F,P:P,med:med,up:up,mg:mg,vs:vs}}
+function anVal(tk,d){var A=stkAna(tk,d);if(A.etf)return '<div class="panel"><p class="muted" style="margin:0">ETF não tem preço justo de empresa: o preço dele é a soma das empresas que tem dentro.</p></div>';
+  var C=anValCalc(tk,d,A);
+  if(!C.ms.length)return '<div class="panel"><p class="muted" style="margin:0">Sem dados suficientes para calcular o preço justo (a empresa precisa ter lucro e patrimônio positivos).</p></div>';
+  var ms=C.ms,g=C.g,r=C.r,y=C.y,F=C.F,P=C.P,med=C.med,up=C.up,mg=C.mg,vs=C.vs;
   var lab=up>=0.2?['Abaixo do preço justo','g']:up<=-0.15?['Acima do preço justo','l']:['Perto do preço justo','m'];
   var mx=Math.max(P,vs[vs.length-1])*1.08,pp=function(v){return Math.max(0,Math.min(100,v/mx*100)).toFixed(1)};
   var h='<div class="panel anp"><span class="lbl">Preço justo (mediana de '+ms.length+' métodos)</span><div class="anvh"><b class="num">'+F.format(med)+'</b><span class="num '+(up>=0?'gain':'loss')+'">'+(up>=0?'+':'−')+pf.format(Math.abs(up*100))+'% de potencial</span></div>'+
