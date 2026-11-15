@@ -795,7 +795,7 @@ function divPorAtivo(){
   if(!rows.length)return '';
   var tr=rows.reduce(function(a,x){return a+x.r},0),tc=R.held.reduce(function(a,x){return a+x.p.cB},0),tv=R.held.reduce(function(a,x){return a+x.v},0);
   var mesesH=Math.max(1,Math.round(dayDiff(full?from:d0,today())/30.44));
-  return '<div class="panel"><h2>Quanto cada ativo paga</h2><p class="note" style="margin:0 0 10px">Proventos '+(full?'dos últimos 12 meses':'desde '+fmtDate(d0)+' ('+mesesH+' meses)')+' comparados com o que você pagou (yield sobre o custo) e com o valor de hoje.</p>'+
+  return '<div class="panel"><h2>Quanto cada ativo paga</h2><p class="note" style="margin:0 0 10px">Proventos '+(full?'dos últimos 12 meses':'desde '+fmtDate(d0)+' ('+mesesH+' meses)')+' comparados com o que você pagou (rendimento sobre o custo) e com o valor de hoje.</p>'+
     '<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Ativo</th><th>Recebido</th><th>Sobre o custo</th><th>Sobre o valor</th></tr></thead><tbody>'+
     rows.map(function(x){return '<tr><td><b>'+esc(x.tk)+'</b>'+(x.up?'<br><span class="small muted">+'+brl.format(x.up)+' a receber</span>':'')+'</td><td class="'+(x.r?'gain':'')+'">'+(x.r?brl.format(x.r):'—')+'</td><td>'+(x.r?pf.format(x.yc*100)+'%':'—')+'</td><td>'+(x.r?pf.format(x.dy*100)+'%':'—')+'</td></tr>'}).join('')+
     '<tr class="tot"><td>Carteira</td><td class="gain">'+brl.format(tr)+'</td><td>'+pf.format(tc?tr/tc*100:0)+'%</td><td>'+pf.format(tv?tr/tv*100:0)+'%</td></tr></tbody></table></div>'+
@@ -1033,7 +1033,7 @@ function mineHtml(){
       return tkRow(x.p.ticker,us,fundSub(x.p.ticker)||(us?'ETF internacional':'Ação'))+'</li>'}).join('')+'</ul><p class="note" style="margin-top:8px">Toque numa ação para ver gráfico, indicadores e proventos.</p></div>';
 }
 var SCRS=[
- {k:'dy',n:'Maiores dividendos',d:'Dividend yield dos últimos 12 meses, do maior para o menor.',f:function(F){return F.dy>0&&F.dy<30&&F.pl>0},s:function(a,b){return b.dy-a.dy}},
+ {k:'dy',n:'Maiores dividendos',d:'Dividendos (DY) dos últimos 12 meses, do maior para o menor.',f:function(F){return F.dy>0&&F.dy<30&&F.pl>0},s:function(a,b){return b.dy-a.dy}},
  {k:'pl',n:'Mais baratas (P/L)',d:'Menor preço sobre lucro, só empresas com lucro e ROE positivo.',f:function(F){return F.pl>0&&F.roe>0},s:function(a,b){return a.pl-b.pl}},
  {k:'roe',n:'Mais rentáveis (ROE)',d:'Maior retorno sobre o patrimônio.',f:function(F){return F.roe>0&&F.roe<150&&F.pl>0},s:function(a,b){return b.roe-a.roe}},
  {k:'pvp',n:'Abaixo do patrimônio',d:'P/VP menor que 1: a bolsa paga menos do que o patrimônio da empresa.',f:function(F){return F.pvp>0&&F.pvp<1&&F.pl>0},s:function(a,b){return a.pvp-b.pvp}},
@@ -1153,18 +1153,18 @@ function anaHtml(){
   var sc=SCRS.filter(function(x){return x.k===SCR})[0]||SCRS[0],W=wlist(),mine={};compute().held.forEach(function(x){mine[x.p.ticker]=1});
   var all=Object.keys(f.d).map(function(tk){var F=fundOf(tk);F.tk=tk;return F}).filter(function(F){return F.liq2m>=1e6&&sc.f(F)});
   var seen={},list=all.sort(sc.s).filter(function(F){var b=F.tk.slice(0,4);if(seen[b])return false;seen[b]=1;return true}).slice(0,15);
-  var h=rsCart()+oppHtml()+'<div class="panel"><div class="grp"><h2>Ranking de ações</h2><span class="det">'+all.length+' ações</span></div><div class="chips" style="margin:10px 0 4px">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
+  var h=rsCart()+oppHtml()+'<div class="panel"><div class="grp"><h2>Classificação de ações</h2><span class="det">'+all.length+' ações</span></div><div class="chips" style="margin:10px 0 4px">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
     '<p class="note" style="margin:6px 0 4px">'+sc.d+' Só ações com mais de R$ 1 milhão negociados por dia.</p>'+
     '<div class="scr"><div class="scrr scrh"><span>Ação</span><span>P/L</span><span>P/VP</span><span>DY</span><span>ROE</span></div>'+list.map(function(F,i){
       return '<div class="scrr"><button type="button" class="scrt" data-stk="'+esc(F.tk)+'"><i>'+(i+1)+'</i>'+esc(F.tk)+(mine[F.tk]?' <span class="tag">sua</span>':W.indexOf(F.tk)>=0?' <span class="tag">★</span>':'')+'</button><span>'+(F.pl!=null?num(F.pl,1):'—')+'</span><span>'+(F.pvp!=null?num(F.pvp,2):'—')+'</span><span>'+(F.dy!=null?pf.format(F.dy)+'%':'—')+'</span><span>'+(F.roe!=null?pf.format(F.roe)+'%':'—')+'</span></div>'}).join('')+'</div>'+
-    '<p class="note" style="margin-top:8px">Indicadores do Fundamentus, atualizados pelo robô diário. Ranking é ponto de partida para estudar, não recomendação.</p></div>';
+    '<p class="note" style="margin-top:8px">Indicadores do Fundamentus, atualizados pelo robô diário. A classificação é ponto de partida para estudar, não recomendação.</p></div>';
   var R=compute(),dflt=R.held.filter(function(x){return x.p.market!=='US'}).map(function(x){return x.p.ticker});if(!CMP)CMP=[dflt[0]||'ITUB4',dflt[1]||'BBSE3'];
   var A=fundOf(CMP[0]),B=fundOf(CMP[1]),row=function(l,k,fm,better){var a=A&&A[k],b=B&&B[k],wa=a!=null&&b!=null&&(better>0?a>b:a<b),wb=a!=null&&b!=null&&(better>0?b>a:b<a);
     return '<div class="cmpr"><span>'+l+'</span><b class="'+(wa?'gain':'')+'">'+(a!=null?fm(a):'—')+'</b><b class="'+(wb?'gain':'')+'">'+(b!=null?fm(b):'—')+'</b></div>'};
   var n1=function(v){return num(v,2)},pc=function(v){return pf.format(v)+'%'};
   h+='<div class="panel"><h2>Comparar duas ações</h2><form class="cmpf" id="cmpf"><input id="cmp-a" value="'+esc(CMP[0])+'" maxlength="8" autocomplete="off"><span>×</span><input id="cmp-b" value="'+esc(CMP[1])+'" maxlength="8" autocomplete="off"><button class="btn small" type="submit">Comparar</button></form>'+
     '<div class="cmp"><div class="cmpr cmph"><span></span><button type="button" data-stk="'+esc(CMP[0])+'">'+esc(CMP[0])+'</button><button type="button" data-stk="'+esc(CMP[1])+'">'+esc(CMP[1])+'</button></div>'+
-    row('Cotação','cot',function(v){return brl.format(v)},0)+row('P/L','pl',n1,-1)+row('P/VP','pvp',n1,-1)+row('Dividend yield','dy',pc,1)+row('ROE','roe',pc,1)+row('ROIC','roic',pc,1)+row('Margem líquida','ml',pc,1)+row('EV/EBITDA','evebitda',n1,-1)+row('Liquidez corrente','lc',n1,1)+row('Receita 5 anos','cr5',pc,1)+'</div>'+
+    row('Cotação','cot',function(v){return brl.format(v)},0)+row('P/L','pl',n1,-1)+row('P/VP','pvp',n1,-1)+row('Dividendos (DY)','dy',pc,1)+row('ROE','roe',pc,1)+row('ROIC','roic',pc,1)+row('Margem líquida','ml',pc,1)+row('EV/EBITDA','evebitda',n1,-1)+row('Liquidez corrente','lc',n1,1)+row('Receita 5 anos','cr5',pc,1)+'</div>'+
     ((!A||!B)?'<p class="warn" style="margin-top:8px">'+(!A?esc(CMP[0]):esc(CMP[1]))+' não está no Fundamentus (só ações do Brasil).</p>':'')+
     '<p class="note" style="margin-top:8px">Em verde, o melhor dos dois em cada linha. Toque no código para abrir a análise completa.</p></div>';
   return h;
@@ -1460,14 +1460,14 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
   var h='<p class="muted small" style="margin:0 0 4px">'+esc(d.name||'')+(d.sector?' · '+esc(d.sector):'')+'</p><div class="stkhd"><b class="num">'+F.format(d.price)+'</b>'+(d.pct!=null?'<span class="num '+cls(d.pct)+'">'+(d.pct>=0?'+':'−')+pf.format(Math.abs(d.pct))+'% hoje</span>':'')+'</div>'+
     '<div class="rng">'+[['1mo','1M'],['3mo','3M'],['6mo','6M'],['1y','1A'],['2y','2A'],['5y','5A'],['yr','Anual']].filter(function(r){return d.fast||r[0]!=='2y'}).map(function(r){var got=STK.rng==='yr'?'yr':d.rgGot===undefined?STK.rng:d.rgGot;return '<button type="button" data-rng="'+r[0]+'" aria-pressed="'+(got===r[0])+'">'+r[1]+'</button>'}).join('')+(ch!=null&&STK.rng!=='yr'?'<span class="num '+cls(ch)+'" style="margin-left:auto;align-self:center;font-weight:600">'+(ch>=0?'+':'−')+pf.format(Math.abs(ch*100))+'%</span>':'')+'</div>'+
     (STK.busy?'<p class="muted small">Atualizando...</p>':'')+(d.rgGot!==undefined&&d.rgGot!==rgEff()&&STK.rng!=='yr'?'<p class="note" style="margin:0 0 6px">O plano grátis do brapi '+(d.rgGot?'só liberou até '+({'1mo':'1 mês','3mo':'3 meses','6mo':'6 meses','1y':'1 ano'}[d.rgGot]||d.rgGot)+' de gráfico':'não liberou o gráfico')+' para essa ação.</p>':'')+(STK.rng==='yr'?annHtml(annRets(d.hist,d.price)):lineChart(d.hist,d.cur,pm));
-  h+='<div class="seg stseg">'+[['res','Resumo'],['val','Valuation'],['ind','Indicadores'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="seg stseg">'+[['res','Resumo'],['val','Preço justo'],['ind','Indicadores'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
   var PE=d.cur==='USD'?null:anPeers(tk),sm=function(k,f){return PE&&PE[k]!=null?' <small class="ksec">setor '+f(PE[k])+'</small>':''},sp=function(v){return pf.format(v)+'%'},sn=function(v){return num(v,1)};
   if(STV==='val')h+=anVal(tk,d);
   else if(STV==='news')h+=rsNews(tk);
   else if(STV==='ind'){
   h+=qHtml(tk);
   h+='<div class="kpis" style="margin-top:6px">'+
-    [['P/L',nm(K.pl),sm('pl',sn)],['P/VP',nm(pvp),sm('pvp',function(v){return num(v,2)})],['Dividend yield',pc(dyC),sm('dy',sp)],['ROE',pc(K.roe),sm('roe',sp)],['LPA',K.lpa==null?'—':F.format(K.lpa)],['Margem líquida',pc(K.ml),sm('ml',sp)],['Máx. 52 sem.',K.hi==null?'—':F.format(K.hi)],['Mín. 52 sem.',K.lo==null?'—':F.format(K.lo)],['Valor de mercado',big(K.mc)],['EV/EBITDA',nm(K.evebitda),sm('evebitda',sn)],['Dívida/PL',K.div==null?'—':(K.div>5?num(K.div,0)+'%':nm(K.div)),sm('divpl',function(v){return num(v,2)})],['ROIC',pc(K.roic),sm('roic',sp)],['Liquidez corrente',nm(K.lc)],['Receita 5 anos',pc(K.cr5)]].filter(function(r){return r[1]!=='—'||['P/L','P/VP','Dividend yield','ROE'].indexOf(r[0])>=0})
+    [['P/L',nm(K.pl),sm('pl',sn)],['P/VP',nm(pvp),sm('pvp',function(v){return num(v,2)})],['Dividendos (DY)',pc(dyC),sm('dy',sp)],['ROE',pc(K.roe),sm('roe',sp)],['LPA',K.lpa==null?'—':F.format(K.lpa)],['Margem líquida',pc(K.ml),sm('ml',sp)],['Máx. 52 sem.',K.hi==null?'—':F.format(K.hi)],['Mín. 52 sem.',K.lo==null?'—':F.format(K.lo)],['Valor de mercado',big(K.mc)],['EV/EBITDA',nm(K.evebitda),sm('evebitda',sn)],['Dívida/PL',K.div==null?'—':(K.div>5?num(K.div,0)+'%':nm(K.div)),sm('divpl',function(v){return num(v,2)})],['ROIC',pc(K.roic),sm('roic',sp)],['Liquidez corrente',nm(K.lc)],['Receita 5 anos',pc(K.cr5)]].filter(function(r){return r[1]!=='—'||['P/L','P/VP','Dividendos (DY)','ROE'].indexOf(r[0])>=0})
       .map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+(r[2]||'')+'</b></div>'}).join('')+'</div>'+
     (PE&&PE.n?'<p class="note">"Setor" é a mediana de '+PE.n+' empresas do setor '+esc(String(PE.name).toLowerCase())+'.</p>':'')+
     (!d.mods?'<p class="note">Indicadores ainda não disponíveis para essa ação. Eles chegam com o robô diário (até a próxima atualização).</p>':'');
