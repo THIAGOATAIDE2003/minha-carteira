@@ -2017,7 +2017,7 @@ function doRefresh(silent){
       jobs.push(getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(d&&d.c>0){S.quotes[tk]={price:d.c,prev:d.pc>0?d.pc:null,at:Date.now(),src:'auto'};okc++}else fails.push(tk)}).catch(function(){fails.push(tk)}));
     }else br.push(tk);
   });
-  var skipped=0;br=br.filter(function(tk){if(needQuote(tk))return true;skipped++;return false});RF.closed=skipped>0&&!mktOpen();
+  var skipped=0,brDue=!silent||!(Date.now()-(RF.lastBr||0)<15*60000-30000);br=brDue?br.filter(function(tk){if(needQuote(tk))return true;skipped++;return false}):[];if(br.length)RF.lastBr=Date.now();RF.closed=skipped>0&&!mktOpen();
   if(br.length&&!S.keys.brapi){br.forEach(function(tk){fails.push(tk+' (falta o token brapi)')});br=[]}
   var wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
   var one=function(tk,tries){
@@ -2037,8 +2037,8 @@ function doRefresh(silent){
   });
 }
 try{var fh=JSON.parse(localStorage.getItem(LS+'-fxh')||'null');if(fh&&fh.ser)ingestFx({series:fh.ser,source:'AwesomeAPI'});if(!fh||Date.now()-fh.at>6*3600000)loadFxHistory().then(function(){render()})}catch(e){loadFxHistory()}
-setInterval(function(){if(!document.hidden)doRefresh(true)},15*60000);
-document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-RF.last>15*60000)doRefresh(true)});
+setInterval(function(){if(!document.hidden)doRefresh(true)},5*60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-RF.last>5*60000)doRefresh(true)});
 setTimeout(function(){doRefresh(true)},600);
 setTimeout(function(){loadCDI()},900);
 setTimeout(function(){loadDivs()},2500);
