@@ -933,13 +933,16 @@ var IDX=[
  {k:'corn',n:'Milho',t:'Commodity · US$ por bushel',src:'cmd',s:'ZC=F',f:'usd'},
  {k:'coffee',n:'Café arábica',t:'Commodity · US$ por libra-peso',src:'cmd',s:'KC=F',f:'usd',tp:'CAFÉ'},
  {k:'natgas',n:'Gás natural',t:'Commodity · US$ por MMBtu',src:'cmd',s:'NG=F',f:'usd'},
- {k:'cdi',n:'CDI (ao ano)',t:'Taxa do Banco Central',src:'cdi',f:'pct'},
+ {k:'selic',n:'Selic (ao ano)',t:'Taxa básica de juros, definida pelo Copom',src:'selic',f:'pct'},
+ {k:'cdi',n:'CDI (ao ano)',t:'Juro entre bancos, que rende a renda fixa',src:'cdi',f:'pct'},
  {k:'ipca',n:'IPCA (12 meses)',t:'Inflação oficial',src:'ipca',f:'pct'}];
 var IDXDEF=['ibov','SPY','QQQ','ifix','usd','eur','btc','cdi'],MKED=false;
 function idxSel(){var a=Array.isArray(S.idxSel)?S.idxSel:IDXDEF;return a.filter(function(k){return IDX.some(function(x){return x.k===k})})}
 function idxSet(a){S.idxSel=a;S.pend.push({t:'cfg',k:'idx',v:a});save();ghSync()}
-function idxCmdAdd(){try{if(localStorage.getItem(LS+'-idxcmd'))return;if(S.keys.gh&&!GH.last)return;localStorage.setItem(LS+'-idxcmd','1');var a=idxSel().slice();['brent','iron','GLD'].forEach(function(k){if(a.indexOf(k)<0)a.push(k)});idxSet(a);render()}catch(e){}}
-var IDXCI=setInterval(function(){idxCmdAdd();try{if(localStorage.getItem(LS+'-idxcmd'))clearInterval(IDXCI)}catch(e){clearInterval(IDXCI)}},3000);
+/* novidades colocadas uma vez nos cartões do usuário (depois da primeira sincronização, para não apagar a escolha da nuvem) */
+var IDXMIG=[['-idxcmd',['brent','iron','GLD']],['-idxselic',['selic','cdi']]];
+function idxCmdAdd(){try{if(S.keys.gh&&!GH.last)return false;var a=idxSel().slice(),ch=0;IDXMIG.forEach(function(m){if(localStorage.getItem(LS+m[0]))return;localStorage.setItem(LS+m[0],'1');m[1].forEach(function(k){if(a.indexOf(k)<0){a.push(k);ch=1}})});if(ch){idxSet(a);render()}return true}catch(e){return true}}
+var IDXCI=setInterval(function(){if(idxCmdAdd())clearInterval(IDXCI)},3000);
 function idxDef(k){return IDX.filter(function(x){return x.k===k})[0]}
 function loadMkt(force){
   if(MKT.busy)return;if(!force&&Date.now()-MKT.at<(mktOpen()?15:120)*60000&&Object.keys(MKT.idx).length){return}
@@ -948,6 +951,7 @@ function loadMkt(force){
   if(fx.length)jobs.push(getJSON('https://economia.awesomeapi.com.br/json/last/'+fx.map(function(x){return x.s}).join(',')).then(function(d){
     fx.forEach(function(x){var o=d[x.s.replace('-','')];if(o)MKT.idx[x.k]={v:parseFloat(o.bid),p:parseFloat(o.pctChange)}})}).catch(function(){}));
   if(S.keys.finnhub)sel.filter(function(x){return x.src==='us'}).forEach(function(x){jobs.push(usQuote(x.s).then(function(q){MKT.idx[x.k]={v:q.price,p:q.pct}}).catch(function(){}))});
+  if(sel.some(function(x){return x.src==='selic'}))jobs.push(getJSON('https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json').then(function(a){if(Array.isArray(a)&&a.length){var v=parseFloat(String(a[a.length-1].valor).replace(',','.'));if(v>0)MKT.idx.selic={v:v,m:a[a.length-1].data}}}).catch(function(){}));
   if(sel.some(function(x){return x.src==='ipca'}))jobs.push(getJSON('https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/12?formato=json').then(function(a){
     if(Array.isArray(a)&&a.length){var f=a.reduce(function(m,r){return m*(1+parseFloat(String(r.valor).replace(',','.'))/100)},1);MKT.idx.ipca={v:(f-1)*100,m:a[a.length-1].data}}}).catch(function(){}));
   var seq=sel.filter(function(x){return x.src==='br'}).map(function(x){return {k:x.k,tk:x.s}}).concat(wlist().map(function(tk){return {w:1,tk:tk}}));
@@ -963,6 +967,7 @@ function idxVal(x){var I=MKT.idx;
   if(x.src==='cmd'){var tv=x.tp&&tapeIdx(x.tp),D0=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(tv)return {v:tv.v,p:tv.p,sub:'robô, a cada 15 min no pregão'};if(D0&&D0.d&&D0.d.length>1){var l0=D0.d[D0.d.length-1][1],l1=D0.d[D0.d.length-2][1];return {v:l0,p:(l0/l1-1)*100,sub:'último fechamento'}}return null}
   if(x.src==='usd'){var f0=fxToday();return f0?{v:f0.rate,p:S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null}:null}
   if(x.src==='cdi')return CDI.dates.length?{v:(Math.pow(1+CDI.s[CDI.dates[CDI.dates.length-1]]/100,252)-1)*100,sub:'Banco Central'}:null;
+  if(x.src==='selic'){if(I.selic)return {v:I.selic.v,sub:'Copom'};var Ds=MD.d&&MD.d.idx&&MD.d.idx.selic;return Ds&&Ds.last?{v:Ds.last,sub:'Copom'}:null}
   if(x.src==='ipca')return I.ipca?{v:I.ipca.v,sub:'até '+String(I.ipca.m||'').slice(3)}:null;
   return I[x.k]||null}
 function idxFmt(x,v){return x.f==='pts'?num(v,0)+' pts':x.f==='usd'?usd.format(v):x.f==='fx'?'R$ '+v.toFixed(4).replace('.',','):x.f==='pct'?pf.format(v)+'%':brl.format(v)}
@@ -1079,7 +1084,7 @@ function stkOpen(tk){STK={tk:tk,rng:STK.rng||'1y',d:null,busy:false,err:''};$('s
 function idxOpen(k){var x=idxDef(k);STK={tk:'',idx:k,rng:STK.rng&&STK.rng!=='2y'?STK.rng:'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=x?x.n:k;idxRender();if(!MD.d||!MD.d.idx)loadMD(true)}
 function idxRender(){
   var b=$('stk-b'),k=STK.idx,x=idxDef(k),D=MD.d&&MD.d.idx&&MD.d.idx[k],rg=STK.rng;if(!b||!x)return;
-  var rate=x.src==='cdi'||x.src==='ipca',sym=D&&D.sym||'',same=!D||x.src==='usd'||x.src==='fx'||sym===x.s||sym===x.s+'.SA';
+  var rate=x.src==='cdi'||x.src==='ipca'||x.src==='selic',sym=D&&D.sym||'',same=!D||x.src==='usd'||x.src==='fx'||sym===x.s||sym===x.s+'.SA';
   var fmt=rate?function(v){return pf.format(v)+'%'}:same?function(v){return idxFmt(x,v)}:sym.charAt(0)==='^'?function(v){return num(v,0)+' pts'}:function(v){return usd.format(v)};
   if(!D||!D.d||D.d.length<2){b.innerHTML='<p class="muted">'+(MD.busy?'Buscando o histórico...':'O histórico de '+esc(x.n)+' chega com o robô diário. Volte em alguns minutos.')+'</p>';return}
   if(rate&&rg==='yr')rg=STK.rng='1y';
@@ -1099,7 +1104,7 @@ function idxRender(){
     .concat(k==='cdi'&&D.acc12!=null?[['Rendeu em 12 meses',pf.format(D.acc12)+'%']]:[]).concat(k==='ipca'&&D.mes!=null?[['Último mês',pf.format(D.mes)+'%']]:[])
     :[['Em 12 meses',chg(v1)],['Em 5 anos',chg(v5)],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)],['Distância da máxima',last&&hi?'−'+pf.format(Math.abs((last/hi-1)*100))+'%':'—']];
   h+='<h3 style="margin:18px 0 6px">Resumo</h3><div class="kpis">'+rows.map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'}).join('')+'</div>'+
-    '<p class="note">'+(rate?(k==='cdi'?'CDI em % ao ano, do Banco Central.':'IPCA acumulado em 12 meses, do Banco Central (IBGE).'):(same?'Histórico do Yahoo Finance'+(sym?' ('+esc(sym)+')':'')+', atualizado pelo robô diário; o valor de agora vem das APIs do app.':'Gráfico do próprio índice ('+esc(sym)+', Yahoo Finance) pelo fechamento mais recente; a variação de hoje vem do '+esc(x.s)+', que acompanha o índice.'))+'</p>';
+    '<p class="note">'+(rate?(k==='cdi'?'CDI em % ao ano, do Banco Central. É o juro que os bancos cobram entre si e fica sempre um pouco abaixo da Selic; é ele que rende CDB, LCI e LCA.':k==='selic'?'Selic meta em % ao ano, do Banco Central. É a taxa básica de juros, definida pelo Copom a cada 45 dias; o CDI anda colado nela, uns 0,10 ponto abaixo.':'IPCA acumulado em 12 meses, do Banco Central (IBGE).'):(same?'Histórico do Yahoo Finance'+(sym?' ('+esc(sym)+')':'')+', atualizado pelo robô diário; o valor de agora vem das APIs do app.':'Gráfico do próprio índice ('+esc(sym)+', Yahoo Finance) pelo fechamento mais recente; a variação de hoje vem do '+esc(x.s)+', que acompanha o índice.'))+'</p>';
   b.innerHTML=h;
 }
 function rgEff(){return STK.rng==='yr'?'5y':STK.rng}
