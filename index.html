@@ -306,6 +306,11 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .asft{display:flex;gap:8px;align-items:flex-end;padding:10px 14px;border-top:1px solid var(--line);background:var(--surface)}
 .asft textarea{flex:1;min-width:0;resize:none;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:18px;padding:10px 14px;font:15px/1.35 var(--sans);max-height:120px;min-height:0;height:42px;width:auto}
 .asft button{border:0;border-radius:999px;background:var(--accent);color:var(--accent-fg);font:600 14px/1 var(--sans);padding:12px 16px}.asft button.stop{background:var(--tint);color:var(--fg);border:1px solid var(--line)}
+.pfhd{display:flex;flex-direction:column;gap:2px;margin:2px 0 12px}.pfhd b{font:700 22px/1.2 var(--disp)}.pfhd span{color:var(--muted);font-size:13.5px}
+.pfdl{margin:0 0 14px;display:grid;gap:8px}.pfdl div{display:flex;justify-content:space-between;gap:12px;font-size:14px;border-top:1px solid var(--line);padding-top:8px}.pfdl dt{color:var(--muted)}.pfdl dd{margin:0;text-align:right;font-weight:600}
+.pfpr{height:4px;border-radius:2px;background:var(--line);margin:10px 0 4px;overflow:hidden}.pfpr i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.pfop{display:grid;gap:8px}.pfop button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:12px;padding:11px 14px;font-size:14.5px}.pfop button small{color:var(--muted);font-size:12.5px}.pfop button[aria-pressed=true]{border-color:var(--accent);background:var(--tint);box-shadow:inset 0 0 0 1px var(--accent)}
+.pfsug{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--tint);border-radius:10px;padding:9px 12px;margin:0 0 12px;font-size:13.5px}
 .sheet{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
 .sbox{background:var(--surface);color:var(--fg);width:100%;max-width:620px;border-radius:18px 18px 0 0;max-height:88vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
 .shd{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 18px 14px;border-bottom:1px solid var(--line);font-size:16px}.shx{background:none;border:0;color:var(--muted);font-size:20px;padding:0 4px}
@@ -474,6 +479,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
   </div>
 
   <div class="col" data-tab="mais" data-sub="ajustes" hidden>
+    <section class="panel" id="perfbox"></section>
     <section class="panel"><h2>Aparência</h2><div class="seg" id="temas" role="group" aria-label="Tema do app">
       <button type="button" data-tema="atual"><i style="background:#16293b;border:1px solid #63b7e2"></i>Azul</button>
       <button type="button" data-tema="branco"><i style="background:#fff;border:1px solid #ccd"></i>Branco</button>
@@ -1092,13 +1098,13 @@ function opAlerts(o,H,mine){var al=[],F=o.d.cur==='USD'?usd:brl;
   if(o.A.N&&o.A.N.dy>=6&&o.A.N.dy<=15&&!mine)al.push(['ok','Paga bons dividendos','DY de '+pf.format(o.A.N.dy)+'%.']);
   return al}
 function opData(){var f=MD.d&&MD.d.fund;if(!f||!f.d)return null;var R=compute(),mine={};R.held.forEach(function(x){mine[x.p.ticker]=1});
-  var key=MD.d.ts+'|'+wlist().join(',')+'|'+Object.keys(mine).join(',')+'|'+Math.floor(Date.now()/9e5);if(OPC.k===key)return OPC.r;
+  var key=MD.d.ts+'|'+wlist().join(',')+'|'+Object.keys(mine).join(',')+'|'+Math.floor(Date.now()/9e5)+'|'+(S.perfil&&S.perfil.obj||'');if(OPC.k===key)return OPC.r;
   var W=wlist().map(opEval).filter(Boolean),M=Object.keys(mine).filter(function(t){return R.held.some(function(x){return x.p.ticker===t&&x.p.market!=='US'})}).map(opEval).filter(Boolean);
   /* garimpo: empresas de qualidade abaixo do preço justo, entre as ações com boa liquidez */
   var seen={},cand=Object.keys(f.d).filter(function(tk){var F=fundOf(tk);return F&&F.liq2m>=2e6&&F.pl>2&&F.roe>0}).map(function(tk){var F=fundOf(tk);F.tk=tk;return F}).sort(function(a,b){return b.liq2m-a.liq2m});
   var D=[];cand.forEach(function(F){var b=F.tk.slice(0,4);if(seen[b]||mine[F.tk])return;seen[b]=1;var o=opEval(F.tk);if(!o||!o.V||o.score==null)return;
     var Q=o.A.chips[0][1],Pq=o.A.chips[1][1];if(Q==='Baixa'||o.V.up<0.2||o.score<6)return;if(o.A.N.dy>20)return;
-    o.rank=o.score*10+Math.min(60,o.V.up*100)*0.6+(Q==='Alta'?10:0);D.push(o)});
+    var pfo=S.perfil&&S.perfil.obj,Nn=o.A.N||{};o.rank=o.score*10+Math.min(60,o.V.up*100)*0.6+(Q==='Alta'?10:0)+(pfo==='renda'&&Nn.dy?Math.min(15,Nn.dy*1.5):0)+(pfo==='cresc'&&Nn.cr5>0?Math.min(15,Nn.cr5/2):0);D.push(o)});
   D.sort(function(a,b){return b.rank-a.rank});D=D.slice(0,12);
   var H=opSnap(W.concat(M,D));
   var mk=function(o,m){o.al=opAlerts(o,H,m);return o};W=W.map(function(o){return mk(o,!!mine[o.tk])});M=M.map(function(o){return mk(o,1)});D=D.map(function(o){return mk(o,0)});
@@ -1610,6 +1616,7 @@ function riskHtml(R){
     if(P.var95!=null)D.push(['ok','Perda normal num mês ruim','Em 95% dos meses, a carteira não perdeu mais que <b>'+pf.format(Math.abs(Math.min(0,P.var95))*100)+'%</b> (uns '+brl.format(Math.abs(Math.min(0,P.var95))*T)+'). Um mês pior que isso acontece mais ou menos 1 vez a cada 20.'])}
   /* 6. diversificação */
   D.push([r.effN<3&&!r.as.some(function(a){return a.us})?'at':'ok','Diversificação','Pelo peso de cada ativo, sua carteira equivale a uns <b>'+num(r.effN,1)+' ativos de mesmo tamanho</b>'+(r.as.some(function(a){return a.us})?' (e o VT sozinho já tem milhares de empresas do mundo)':'')+'.']);
+  D=pfRisco(P,T,r.usdV/T).concat(D);
   var nAl=D.filter(function(d){return d[0]==='al'}).length,nAt=D.filter(function(d){return d[0]==='at'}).length;
   var grau=P.vol==null?'—':P.vol<0.1?'Baixo':P.vol<0.18?'Moderado':'Alto';
   var main=D.filter(function(d){return d[0]==='al'})[0]||D.filter(function(d){return d[0]==='at'})[0];
@@ -1884,7 +1891,7 @@ function render(){
     rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'err':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
     si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><p class="note exp">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
-  if(document.activeElement!==$('k-gq'))$('k-gq').value=S.keys.gq||'';if(document.activeElement!==$('k-gem'))$('k-gem').value=S.keys.gem||'';$('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
+  pfBox();if(document.activeElement!==$('k-gq'))$('k-gq').value=S.keys.gq||'';if(document.activeElement!==$('k-gem'))$('k-gem').value=S.keys.gem||'';$('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
   markTema();foldNotes();
   syncForm();
 }
@@ -2034,6 +2041,7 @@ document.addEventListener('click',function(e){
   else if(t.dataset&&t.dataset.iry){IRY=t.dataset.iry;renderIR()}
   else if(t.id==='apo-go'){apoCalc()}
   else if(t.id==='al-save'){alvSave()}
+  else if(t.id==='al-pf'){var a=pfAlvo();if(a){['BR','US','RF'].forEach(function(k){var i=$('al-'+k);if(i)i.value=String(a[k])});var m=$('al-msg');if(m){m.className='msg';m.textContent='Preenchi com o seu perfil. Toque em Salvar divisão.'}}}
   else if(t.id==='mt-save'){metasSave()}
   else if(t.dataset&&t.dataset.mais){try{location.hash=t.dataset.mais}catch(e){}showTab(t.dataset.mais)}
   else if(t.dataset&&t.dataset.goto){try{location.hash=t.dataset.goto}catch(e){}showTab(t.dataset.goto)}
@@ -2111,7 +2119,7 @@ function bensEm(dt){
 }
 
 /* alocação alvo e próximo aporte (só compras, sem vender nada) */
-var APV='';
+var APV='';try{if(S.perfil&&S.perfil.ap>0)APV=String(S.perfil.ap).replace('.',',')}catch(e){}
 function splitNeed(cur,tgt,amt){
   var tot=0,ks=Object.keys(tgt);ks.forEach(function(k){tot+=cur[k]||0});
   var after=tot+amt,need={},sn=0;ks.forEach(function(k){need[k]=Math.max(0,tgt[k]/100*after-(cur[k]||0));sn+=need[k]});
@@ -2127,7 +2135,7 @@ function renderApo(){
   var inB=A.br||{};br.forEach(function(x){if(inB[x.p.ticker]==null)inB[x.p.ticker]=+(100/br.length).toFixed(1)});
   var nm={BR:'Brasil (ações)',US:'EUA (VT)',RF:'Renda fixa'},h='';
   var row=function(k,lab,c,tg,id){return '<span>'+lab+'<br><span class="muted small">hoje '+pf.format(c)+'%</span></span><input id="'+id+'" inputmode="decimal" value="'+String(tg).replace('.',',')+'" aria-label="'+lab+' alvo em %"><div class="alvbar"><i style="width:'+Math.min(100,c)+'%"></i><b style="left:calc('+Math.min(100,tg)+'% - 1px)"></b></div>'};
-  h+='<div class="panel"><h2>Sua divisão ideal</h2><p class="note exp" style="margin:0 0 12px">Quanto de cada parte você quer ter, em %. A barra azul é como está hoje; o traço dourado é o seu alvo.'+(S.alvos?'':' Preenchi com a divisão de hoje, ajuste e salve.')+'</p><div class="alv">'+
+  h+='<div class="panel"><h2>Sua divisão ideal</h2><p class="note exp" style="margin:0 0 12px">Quanto de cada parte você quer ter, em %. A barra azul é como está hoje; o traço dourado é o seu alvo.'+(S.alvos?'':' Preenchi com a divisão de hoje, ajuste e salve.')+'</p>'+(function(){var a=pfAlvo();if(!a||(cl.BR===a.BR&&cl.US===a.US&&cl.RF===a.RF))return '';return '<div class="pfsug"><span>Pelo seu perfil: <b>Brasil '+a.BR+'%</b>, <b>exterior '+a.US+'%</b>, <b>renda fixa '+a.RF+'%</b></span><button type="button" class="link" id="al-pf">Usar</button></div>'})()+'<div class="alv">'+
     ['BR','US','RF'].map(function(k){return row(k,nm[k],cur[k]/tot*100,cl[k],'al-'+k)}).join('')+'</div>'+
     (br.length>1?'<details><summary>Divisão dentro do Brasil</summary><p class="note" style="margin:8px 0 10px">Quanto cada ação representa dentro da parte do Brasil. Começa igual para todas.</p><div class="alv">'+
       br.map(function(x){return row('',esc(x.p.ticker),cur.BR?x.v/cur.BR*100:0,inB[x.p.ticker],'ab-'+x.p.ticker)}).join('')+'</div></details>':'')+
@@ -2568,7 +2576,7 @@ function applyOps(trades,ops){
 function applyPx(f,ops){var o=JSON.parse(JSON.stringify(f||{}));ops.forEach(function(x){if(x.t==='px'){(o[x.tk]=o[x.tk]||{})[x.m]=x.p}});return o}
 function applyCfg(d,ops,k){k=k||'alvos';var a=d[k]||null;ops.forEach(function(x){if(x.t==='cfg'&&x.k===k)a=x.v});return a}
 function ghAdopt(d){
-  S.mclose=applyPx(d.fechamentos,S.pend||[]);var na=applyCfg(d,S.pend||[]);if(na)S.alvos=na;var nm2=applyCfg(d,S.pend||[],'metas');if(nm2)S.metas=nm2;var nw2=applyCfg(d,S.pend||[],'watch');if(nw2)S.watch=nw2;var ni2=applyCfg(d,S.pend||[],'idx');if(ni2)S.idxSel=ni2;
+  S.mclose=applyPx(d.fechamentos,S.pend||[]);var na=applyCfg(d,S.pend||[]);if(na)S.alvos=na;var nm2=applyCfg(d,S.pend||[],'metas');if(nm2)S.metas=nm2;var nw2=applyCfg(d,S.pend||[],'watch');if(nw2)S.watch=nw2;var ni2=applyCfg(d,S.pend||[],'idx');if(ni2)S.idxSel=ni2;var np2=applyCfg(d,S.pend||[],'perfil');if(np2)S.perfil=np2;
   var tr=applyOps(Array.isArray(d.trades)?d.trades:[],S.pend||[]);
   var before=JSON.stringify([S.trades,S.cambio||[]]);
   S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;save();
@@ -2587,7 +2595,7 @@ function ghRound(attempt){
     }
     var pend=(S.pend||[]).slice();
     if(!pend.length){ghAdopt(remote);return}
-    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});var a2=applyCfg(remote,pend);if(a2)data.alvos=a2;var m2=applyCfg(remote,pend,'metas');if(m2)data.metas=m2;var w2=applyCfg(remote,pend,'watch');if(w2)data.watch=w2;var i2=applyCfg(remote,pend,'idx');if(i2)data.idx=i2;
+    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});var a2=applyCfg(remote,pend);if(a2)data.alvos=a2;var m2=applyCfg(remote,pend,'metas');if(m2)data.metas=m2;var w2=applyCfg(remote,pend,'watch');if(w2)data.watch=w2;var i2=applyCfg(remote,pend,'idx');if(i2)data.idx=i2;var p2=applyCfg(remote,pend,'perfil');if(p2)data.perfil=p2;
     var body={message:'App: '+pend.length+(pend.length>1?' alterações':' alteração'),content:b64enc(JSON.stringify(data,null,1)+'\n'),sha:sha,branch:'main'};
     return ghReq('PUT',body).then(function(w){
       if((w.status===409||w.status===422)&&attempt<3)return new Promise(function(r){setTimeout(r,1500*(attempt+1))}).then(function(){return ghRound(attempt+1)});
@@ -2762,6 +2770,53 @@ setTimeout(function(){loadHist()},5000);
 setTimeout(function(){loadBench()},3500);
 setInterval(function(){if(!document.hidden){loadDivs();loadDivsUS()}},60*60000);
 setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
+/* ===== Perfil do investidor: objetivo, prazo, quanto aguenta cair... usado no Risco, no assistente, no garimpo e no Aporte ===== */
+var PFQ=[
+  ['obj','Qual é o seu objetivo principal?',[['renda','Viver de renda','receber dividendos todo mês'],['cresc','Crescer o patrimônio','ver o dinheiro multiplicar'],['ambos','Os dois','um pouco de cada']]],
+  ['prazo','Quando pretende usar esse dinheiro?',[['5','Em até 5 anos'],['10','De 5 a 10 anos'],['20','De 10 a 20 anos'],['30','Daqui a mais de 20 anos']]],
+  ['reac','Se a carteira cair 20% em um mês, você...',[['vende','Vende para não perder mais'],['espera','Espera passar'],['compra','Aproveita para comprar mais']]],
+  ['queda','Quanto aceita ver a carteira cair, no pior momento, sem perder o sono?',[['10','Até 10%'],['20','Até 20%'],['30','Até 30%'],['40','Mais de 30%']]],
+  ['ext','Quanto quer ter no exterior (em dólar)?',[['15','Pouco (até 20%)'],['30','Médio (20 a 40%)'],['50','Bastante (40 a 60%)'],['65','Muito (mais de 60%)']]],
+  ['rf','Quanto quer ter em renda fixa?',[['0','Nada'],['10','Uns 10%'],['20','Uns 20%'],['35','30% ou mais']]],
+  ['res','Já tem reserva de emergência (uns 6 meses de gastos guardados)?',[['sim','Sim, completa'],['parcial','Uma parte'],['nao','Ainda não']]]];
+var PFD=null;
+function pfOk(){var p=S.perfil;return p&&p.obj&&p.prazo&&p.queda?p:null}
+function pfOpt(k,v){var q=PFQ.filter(function(x){return x[0]===k})[0];if(!q)return null;var o=q[2].filter(function(x){return x[0]===String(v)})[0];return o?o[1]:null}
+/* nível de risco que combina com as respostas */
+function pfTipo(p){p=p||pfOk();if(!p)return null;var s=0;s+=p.prazo==='5'?0:p.prazo==='10'?1:p.prazo==='20'?2:3;s+=p.reac==='vende'?0:p.reac==='espera'?1.5:3;s+=+p.queda<=10?0:+p.queda<=20?1:+p.queda<=30?2:3;
+  return s<=3?['Conservador','prefere segurança, aceita ganhar menos para cair pouco']:s<=6?['Moderado','aceita algumas quedas para ganhar mais no longo prazo']:['Arrojado','aguenta quedas fortes em troca de mais retorno no longo prazo']}
+function pfAlvo(p){p=p||pfOk();if(!p)return null;var us=+p.ext||0,rf=+p.rf||0;if(us+rf>100)us=100-rf;return {BR:100-us-rf,US:us,RF:rf}}
+function pfResumo(p){var t=pfTipo(p),a=pfAlvo(p);return [['Perfil',t?t[0]:'—'],['Objetivo',pfOpt('obj',p.obj)],['Prazo',pfOpt('prazo',p.prazo)],['Se cair 20%',pfOpt('reac',p.reac)],['Aceita cair',pfOpt('queda',p.queda)],['Aporte por mês',p.ap>0?brl.format(p.ap):'—'],['Divisão ideal',a?'Brasil '+a.BR+'% · exterior '+a.US+'% · renda fixa '+a.RF+'%':'—'],['Reserva',pfOpt('res',p.res)]]}
+function pfBox(){var el=$('perfbox');if(!el)return;var p=pfOk(),t=pfTipo(p);
+  el.innerHTML='<h2>Seu perfil de investidor '+bal('Suas respostas sobre objetivo, prazo e quanto aceita perder. O app usa isso para dizer se o risco da carteira combina com você, para o assistente responder pensando no seu objetivo, para ordenar o garimpo e para sugerir a divisão do aporte.')+'</h2>'+
+    (p?'<div class="pfhd"><b>'+t[0]+'</b><span>'+t[1]+'</span></div><dl class="pfdl">'+pfResumo(p).slice(1).map(function(r){return '<div><dt>'+r[0]+'</dt><dd>'+esc(r[1]||'—')+'</dd></div>'}).join('')+'</dl><button type="button" class="btn small" data-pf="open">Refazer perfil</button>'
+      :'<p class="muted" style="margin:0 0 12px">Responda 8 perguntas rápidas (uns 2 minutos). Assim o app compara o risco da carteira com o que você aguenta e o assistente responde pensando no seu objetivo.</p><button type="button" class="btn" data-pf="open">Responder perfil</button>')}
+function pfSheet(){var d=PFD,n=PFQ.filter(function(q){return d[q[0]]!=null}).length+(d.ap>0?1:0),tot=PFQ.length+1;
+  var h='<div class="sheet" id="pfsheet"><div class="sbox big" role="dialog" aria-label="Perfil do investidor"><div class="shd"><b>Perfil do investidor</b><button type="button" class="shx" data-pf="close" aria-label="Fechar">✕</button></div><div class="sbd">'+
+    '<div class="pfpr"><i style="width:'+Math.round(n/tot*100)+'%"></i></div>'+
+    (function(){var c=0;return PFQ.map(function(q){var x='<h3>'+(++c)+'. '+q[1]+'</h3><div class="pfop">'+q[2].map(function(o){return '<button type="button" data-pf="'+q[0]+':'+o[0]+'" aria-pressed="'+(String(d[q[0]])===o[0])+'"><b>'+o[1]+'</b>'+(o[2]?'<small>'+o[2]+'</small>':'')+'</button>'}).join('')+'</div>';
+      if(q[0]==='queda')x+='<h3>'+(++c)+'. Quanto pretende investir por mês?</h3><input id="pf-ap" inputmode="decimal" placeholder="1.000,00" value="'+(d.ap>0?String(d.ap).replace('.',','):'')+'" aria-label="Aporte por mês em reais">';return x}).join('')})()+
+    (d.ext!=null&&d.rf!=null?'<p class="note" style="margin-top:14px">Divisão ideal pelas suas respostas: <b>Brasil '+pfAlvo(d).BR+'%</b>, <b>exterior '+pfAlvo(d).US+'%</b> e <b>renda fixa '+pfAlvo(d).RF+'%</b>. Dá para ajustar depois em Carteira → Aporte.</p>':'')+
+    '<p class="msg" id="pf-msg"></p></div><div class="sft"><button type="button" class="link" data-pf="close">Cancelar</button><button type="button" class="btn" data-pf="save">Salvar perfil</button></div></div></div>';
+  var o=$('pfsheet');if(o)o.outerHTML=h;else document.body.insertAdjacentHTML('beforeend',h)}
+function pfOpen(){PFD=Object.assign({},S.perfil||{});pfSheet();document.body.style.overflow='hidden'}
+function pfClose(){var o=$('pfsheet');if(o)o.remove();PFD=null;document.body.style.overflow=''}
+function pfReadAp(){var i=$('pf-ap');if(!i||!PFD)return;var r=String(i.value||'').trim(),v=/^\d{1,3}(\.\d{3})+$/.test(r)?parseFloat(r.replace(/\./g,'')):parseNum(r);PFD.ap=v>0?v:0}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-pf]');if(!b)return;var k=b.getAttribute('data-pf');
+  if(k==='open'){pfOpen();return}if(k==='close'){pfClose();return}
+  if(k==='save'){pfReadAp();var miss=PFQ.filter(function(q){return PFD[q[0]]==null});if(miss.length){var m=$('pf-msg');m.className='msg err';m.textContent=miss.length===1?'Falta responder a pergunta: '+miss[0][1]:'Faltam '+miss.length+' perguntas para responder.';return}
+    PFD.at=today();if(PFD.ap>0&&!APV)APV=String(PFD.ap).replace('.',',');S.perfil=PFD;S.pend.push({t:'cfg',k:'perfil',v:PFD});save();pfClose();RKC={};OPC={};render();pfBox();ghSync();return}
+  var i=k.indexOf(':');if(i<0||!PFD)return;pfReadAp();PFD[k.slice(0,i)]=k.slice(i+1);var sc=document.querySelector('#pfsheet .sbd'),y=sc?sc.scrollTop:0;pfSheet();var sc2=document.querySelector('#pfsheet .sbd');if(sc2)sc2.scrollTop=y});
+/* risco x perfil: entra no diagnóstico do Risco */
+function pfRisco(P,T,uS){var p=pfOk();if(!p)return [['at','Responda seu perfil de investidor','Assim o app diz se esse risco combina com você. <button type="button" class="link" data-pf="open">Responder agora</button>']];
+  var out=[],tol=+p.queda/100,t=pfTipo(p);
+  if(P&&P.dd!=null){var dd=Math.abs(P.dd);out.push([dd>tol*1.15?'al':dd>tol*0.85?'at':'ok',dd>tol*1.15?'A carteira já caiu mais do que você aguenta':dd>tol*0.85?'Perto do limite que você aguenta':'Combina com o que você aguenta',
+    'Você disse que aceita ver a carteira cair <b>'+(p.queda==='40'?'mais de 30%':'até '+p.queda+'%')+'</b>. Com os ativos de hoje, a pior queda dos últimos anos foi de <b>'+pf.format(dd*100)+'%</b>'+(dd>tol*1.15?'. Se acontecer de novo, pode ser difícil segurar: vale ter mais renda fixa ou ativos mais calmos.':'.')+' Seu perfil: <b>'+t[0].toLowerCase()+'</b>.'])}
+  var a=pfAlvo(p);if(a&&uS!=null){var d=uS*100-a.US;if(Math.abs(d)>=15)out.push(['at','Exterior '+(d>0?'acima':'abaixo')+' do que você quer','Hoje <b>'+pf.format(uS*100)+'%</b> está em dólar; no seu perfil você quer uns <b>'+a.US+'%</b>. Dá para ajustar com os próximos aportes (Carteira → Aporte).'])}
+  if(p.res==='nao'||p.res==='parcial')out.push([p.res==='nao'?'al':'at','Reserva de emergência '+(p.res==='nao'?'ainda não montada':'incompleta'),'Sem reserva, um imprevisto pode obrigar você a vender ações numa hora ruim. O comum é guardar uns 6 meses de gastos em renda fixa com liquidez diária antes de aumentar o risco.']);
+  if(p.prazo==='5'&&P&&P.vol!=null&&P.vol>0.12)out.push(['at','Prazo curto para tanta oscilação','Você pretende usar o dinheiro em até 5 anos, e a carteira oscila uns '+pf.format(P.vol*100)+'% ao ano. Em prazo curto, uma queda pode não dar tempo de voltar.']);
+  return out}
+function pfCtx(){var p=pfOk();if(!p)return 'PERFIL DO INVESTIDOR: ainda não respondido.';return 'PERFIL DO INVESTIDOR: '+pfResumo(p).map(function(r){return r[0]+': '+r[1]}).join('; ')+'.'}
 /* ===== Assistente: conversa com a IA sobre a sua carteira (Groq rápido, Gemini de reserva) ===== */
 var AS={m:[],busy:false,ab:null,mod:'',err:''};
 try{AS.m=JSON.parse(localStorage.getItem(LS+'-assist')||'[]')||[]}catch(e){AS.m=[]}
@@ -2774,6 +2829,7 @@ function asP(v,d){return v==null||!isFinite(v)?'?':(v>=0?'+':'')+num(v,d==null?1
 /* o que a IA fica sabendo: um resumo curto do app (sem chaves, sem dados pessoais) */
 function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
   L.push('Hoje: '+fmtDate(today())+'. Bolsa: '+(mktOpen&&mktOpen()?'aberta agora':'fechada agora')+'. Dólar: R$ '+(fx?num(fx,2):'?')+'.');
+  L.push(pfCtx());
   var pat=T.value+T.cash,V=valoriz(R);
   L.push('PATRIMÔNIO: '+asR(pat)+' (investido ao custo: '+asR(T.cost)+'). Valorização dos ativos que tem hoje (preço + proventos, dólar de hoje): '+asR(V.g)+' ('+asP(V.p*100)+'). Lucro total desde o início (inclui câmbio, vendas, proventos, menos taxas): '+asR(T.gain)+'. Rentabilidade anual (XIRR): '+(T.xirr!=null?asP(T.xirr*100):'?')+'. Proventos recebidos no total: '+asR(T.div)+'.');
   var dv=0,dp=0;R.held.forEach(function(x){var lv=livePx(x.p.ticker);if(!lv||lv.pct==null)return;var F=x.p.market==='US'?(fx||1):1,a=x.p.qty*lv.p*F,b=a/(1+lv.pct/100);dv+=a-b;dp+=b});
@@ -2821,7 +2877,7 @@ function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
     else if(!F&&!lv)s+='o app não tem dados dessa ação.';
     L.push(s)});
   return L.join('\n')}
-var ASSYS='Você é o assistente do Aporte, o app de investimentos pessoal do Thiago (investidor pessoa física no Brasil, com ações da B3, o ETF VT nos EUA e renda fixa). Responda em português do Brasil, simples e direto, como um amigo que entende de investimentos: frases curtas, sem jargão (se usar um termo técnico, explique em poucas palavras). Use os números do contexto abaixo, que vêm do próprio app; não invente números, notícias ou datas. Se o contexto não tiver a informação, diga que o app não tem esse dado. Respostas curtas: até uns 8 itens ou 150 palavras, a não ser que ele peça mais. Use **negrito** para os números importantes e listas com "- " quando ajudar. Você pode analisar, comparar e apontar pontos fortes e riscos, mas não dê ordem de compra ou venda: mostre os fatos e deixe a decisão com ele.';
+var ASSYS='Você é o assistente do Aporte, o app de investimentos pessoal do Thiago (investidor pessoa física no Brasil, com ações da B3, o ETF VT nos EUA e renda fixa). Responda em português do Brasil, simples e direto, como um amigo que entende de investimentos: frases curtas, sem jargão (se usar um termo técnico, explique em poucas palavras). Use os números do contexto abaixo, que vêm do próprio app; não invente números, notícias ou datas. Se o contexto não tiver a informação, diga que o app não tem esse dado. Respostas curtas: até uns 8 itens ou 150 palavras, a não ser que ele peça mais. Use **negrito** para os números importantes e listas com "- " quando ajudar. Você pode analisar, comparar e apontar pontos fortes e riscos, mas não dê ordem de compra ou venda: mostre os fatos e deixe a decisão com ele. Leve em conta o PERFIL DO INVESTIDOR dele (objetivo, prazo, quanto aguenta cair) ao avaliar se algo combina com ele; se o perfil não foi respondido e a pergunta depender disso, sugira responder em Mais → Ajustes.';
 function asMsgs(q){var ctx=asCtx(q),h=AS.m.filter(function(x){return x.t&&!x.e}).slice(-9,-1).map(function(x){return {role:x.r==='u'?'user':'assistant',content:x.t}});
   return [{role:'system',content:ASSYS+'\n\nCONTEXTO DO APP AGORA:\n'+ctx}].concat(h,[{role:'user',content:q}])}
 /* lê um fluxo SSE (data: {...}) e entrega cada pedaço de texto */

@@ -97,11 +97,12 @@ async function abas(pg) {
   const vistos = [];
   for (const t of ['resumo', 'ativos', 'proventos', 'mercado', 'mais']) {
     await pg.click('[data-go=' + t + ']'); await pg.waitForTimeout(150); vistos.push(t);
-    const subs = await pg.$$eval('[data-sub2],[data-mkv],[data-sub]', els => els.filter(e => e.offsetParent).map(e => e.getAttribute('data-sub2') ? '[data-sub2="' + e.getAttribute('data-sub2') + '"]' : e.getAttribute('data-mkv') ? '[data-mkv="' + e.getAttribute('data-mkv') + '"]' : '[data-sub="' + e.getAttribute('data-sub') + '"]'));
+    const subs = await pg.$$eval('[data-cv],[data-mkv],[data-mais]', els => els.filter(e => e.offsetParent).map(e => { for (const a of ['data-cv', 'data-mkv', 'data-mais']) if (e.hasAttribute(a)) return '[' + a + '="' + e.getAttribute(a) + '"]'; }));
     for (const s of subs) { const l = pg.locator(s).filter({ visible: true }).first(); if (await l.count()) { await l.click(); await pg.waitForTimeout(120); vistos.push(t + ' ' + s); } }
   }
   await pg.click('[data-go=resumo]'); await pg.waitForTimeout(100);
   await pg.click('[data-as=open]'); await pg.waitForTimeout(100); await pg.click('[data-as=close]');
+  await pg.click('[data-go=mais]'); await pg.click('[data-mais=ajustes]'); await pg.click('#perfbox [data-pf=open]'); await pg.click('[data-pf="obj:renda"]'); await pg.click('#pfsheet [data-pf=close]'); vistos.push('perfil');
   return vistos;
 }
 
