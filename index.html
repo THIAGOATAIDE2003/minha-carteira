@@ -54,10 +54,17 @@ button{cursor:pointer}
 
 /* cabeçalho */
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:36px}
-.brand{display:flex;align-items:center;gap:9px;min-width:0}
-.brand svg{width:28px;height:28px;flex:none;border-radius:8px}
-.brand h1{font:700 21px/1 var(--disp);letter-spacing:-.02em}
-.pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.brand svg{width:36px;height:36px;flex:none;border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 6px 16px -6px rgba(0,0,0,.6)}
+.brand h1{font:700 27px/1 var(--disp);letter-spacing:-.04em;font-variation-settings:'opsz' 96}
+.top{min-height:44px;padding-top:2px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;min-width:0}
+#mktst{display:flex;gap:5px}.top .pills{flex:1 1 auto}
+.mks{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 9px 6px 8px;line-height:1;white-space:nowrap}
+.mks i{width:8px;height:8px;border-radius:50%;flex:none;background:var(--loss);box-shadow:0 0 0 3px color-mix(in srgb,var(--loss) 22%,transparent)}
+.mks.on i{background:var(--gain);box-shadow:0 0 0 3px color-mix(in srgb,var(--gain) 25%,transparent)}
+.mks b{font-size:12px;font-weight:700;letter-spacing:.01em}.mks small{font-size:11.5px;color:var(--muted);font-weight:500}.mks.on small{color:var(--gain)}
+@media (max-width:400px){.brand h1{font-size:25px}.brand svg{width:34px;height:34px}}@media (max-width:360px){.mks small{display:none}}
 .pill{font-size:12px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .pill:empty{display:none}.pill.perr{color:var(--loss);border-color:var(--loss);font-weight:600}
 .msg{font-size:13px}
@@ -337,7 +344,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 <div class="wrap">
   <header class="top">
     <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0f2a3f"/><path d="M120 356l92-104 68 60 112-148" fill="none" stroke="#f4f8fb" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="392" cy="164" r="34" fill="#e3b657"/></svg><h1>Aporte</h1></div>
-    <div class="pills"><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button></div>
+    <div class="pills"><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button><div id="mktst" aria-label="Situação das bolsas"></div></div>
   </header>
   <div class="msg muted" id="status" role="status"></div>
   <div id="banner"></div>
@@ -2151,6 +2158,30 @@ function b3Hol(ymd){var y=+ymd.slice(0,4);if(!HOLC[y]){var a=y%19,b=Math.floor(y
   ['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-24','12-25','12-31'].forEach(function(md){o[y+'-'+md]=1});HOLC[y]=o}
   return !!HOLC[y][ymd]}
 function bDay(d){var w=d.getUTCDay();return w>=1&&w<=5&&!b3Hol(d.toISOString().slice(0,10))}
+/* bolsas abertas ou fechadas no topo: B3 (10h às 18h de Brasília) e EUA (NYSE 9h30 às 16h de Nova York, com feriados) */
+var USHC={};
+function usHol(ymd){var y=+ymd.slice(0,4);if(!USHC[y]){var o={},f=function(m,d){return y+'-'+(m<10?'0':'')+m+'-'+(d<10?'0':'')+d},nth=function(m,wd,n){var d=new Date(Date.UTC(y,m-1,1)),c=0;while(true){if(d.getUTCDay()===wd&&++c===n)return d.toISOString().slice(0,10);d=new Date(d.getTime()+864e5)}},last=function(m,wd){var d=new Date(Date.UTC(y,m,0));while(d.getUTCDay()!==wd)d=new Date(d.getTime()-864e5);return d.toISOString().slice(0,10)},obs=function(m,dd){var d=new Date(Date.UTC(y,m-1,dd)),w=d.getUTCDay();if(w===6)d=new Date(d.getTime()-864e5);else if(w===0)d=new Date(d.getTime()+864e5);o[d.toISOString().slice(0,10)]=1};
+  obs(1,1);obs(6,19);obs(7,4);obs(12,25);o[nth(1,1,3)]=1;o[nth(2,1,3)]=1;o[last(5,1)]=1;o[nth(9,1,1)]=1;o[nth(11,4,4)]=1;
+  var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,g0=Math.floor((b+8)/25),g=Math.floor((b-g0+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=(h+l-7*m+114)%31+1;
+  o[new Date(Date.UTC(y,mo-1,da)-2*864e5).toISOString().slice(0,10)]=1;USHC[y]=o}return !!USHC[y][ymd]}
+function nyNow(){try{var p={};new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value});
+  var d=new Date(Date.UTC(+p.year,+p.month-1,+p.day));return {d:d,min:(+p.hour%24)*60+ +p.minute}}catch(e){return null}}
+function usBDay(d){var w=d.getUTCDay();return w>=1&&w<=5&&!usHol(d.toISOString().slice(0,10))}
+function hfm(m){var h=Math.floor(m/60),n=m%60;return h+'h'+(n?(n<10?'0':'')+n:'')}
+function dur(m){return m<60?m+' min':hfm(m)}
+var DSEM=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+function nextOpen(d,ok){var x=new Date(d.getTime()+864e5),k=0;while(!ok(x)&&k<15){x=new Date(x.getTime()+864e5);k++}return x}
+function mktState(){
+  var b=brt(),bo=bDay(b.d)&&b.min>=600&&b.min<1080,out=[];
+  var bt=bo?'Bolsa brasileira aberta, em negociação. Fecha às 18h (Brasília), daqui a '+dur(1080-b.min)+'.':(bDay(b.d)&&b.min<600?'Bolsa brasileira fechada. Abre hoje às 10h (Brasília).':'Bolsa brasileira fechada. Abre '+(function(){var n=nextOpen(b.d,bDay),dd=Math.round((n-b.d)/864e5);return dd===1?'amanhã':DSEM[n.getUTCDay()]+' ('+fmtDate(n.toISOString().slice(0,10)).slice(0,5)+')'})()+' às 10h (Brasília).');
+  out.push({n:'B3',on:bo,t:bt});
+  var ny=nyNow();if(ny){var off=Math.round(((b.min-ny.min)+1440)%1440/60)*60;if(off>720)off-=1440;var uo=usBDay(ny.d)&&ny.min>=570&&ny.min<960,o0=hfm(570+off),c0=hfm(960+off);
+    var ut=uo?'Bolsa americana (onde está o VT) aberta. Fecha às '+c0+' de Brasília, daqui a '+dur(960-ny.min)+'.':(usBDay(ny.d)&&ny.min<570?'Bolsa americana fechada. Abre hoje às '+o0+' de Brasília.':'Bolsa americana fechada. Abre '+(function(){var n=nextOpen(ny.d,usBDay),dd=Math.round((n-ny.d)/864e5);return dd===1?'amanhã':DSEM[n.getUTCDay()]+' ('+fmtDate(n.toISOString().slice(0,10)).slice(0,5)+')'})()+' às '+o0+' de Brasília.')+' Horário normal: '+o0+' às '+c0+'.';
+    out.push({n:'EUA',on:uo,t:ut})}
+  return out}
+function renderMktSt(){var el=$('mktst');if(!el)return;el.innerHTML=mktState().map(function(m){return bal(m.t,'<span class="mks'+(m.on?' on':'')+'"><i></i><b>'+m.n+'</b><small>'+(m.on?'Aberta':'Fechada')+'</small></span>')}).join('')}
+setInterval(renderMktSt,60000);setTimeout(renderMktSt,0);
+
 function mktOpen(){var b=brt();return bDay(b.d)&&b.min>=600&&b.min<1095}
 function lastClose(){var b=brt(),d=new Date(b.d.getTime());
   if(!(bDay(b.d)&&b.min>=1095)){do{d.setUTCDate(d.getUTCDate()-1)}while(!bDay(d))}
