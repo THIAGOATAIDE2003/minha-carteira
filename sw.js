@@ -1,7 +1,7 @@
 /* Aporte: abre sem internet. Página: rede primeiro, cópia salva se estiver offline. Fontes: cache. APIs nunca passam por aqui.
    A versão vem do app (sw.js?v=...): cada versão nova usa um cache novo e apaga os antigos. */
 var V=new URL(self.location.href).searchParams.get('v')||'0',C='aporte-v'+V;
-self.addEventListener('install',function(e){e.waitUntil(caches.open(C).then(function(c){return c.addAll(['./','index.html','style.css','app.js','manifest.webmanifest','icon.svg'])}).then(function(){return self.skipWaiting()}))});
+self.addEventListener('install',function(e){e.waitUntil(caches.open(C).then(function(c){return c.addAll(['./','index.html','style.css','tema.js','app.js','manifest.webmanifest','icon.svg'])}).then(function(){return self.skipWaiting()}))});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==C}).map(function(k){return caches.delete(k)}))}).then(function(){return self.clients.claim()}))});
 self.addEventListener('fetch',function(e){
   var r=e.request,u=new URL(r.url);if(r.method!=='GET')return;

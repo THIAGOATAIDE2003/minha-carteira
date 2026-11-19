@@ -32,6 +32,6 @@ const regras = Object.assign({}, js.configs.recommended.rules, {
 
 module.exports = [
   { ignores: ['node_modules/**', 'tests/**'] },
-  { files: ['app.js', 'sw.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: navegador }, rules: regras },
+  { files: ['app.js', 'sw.js', 'tema.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: navegador }, rules: regras },
   { files: ['eslint.config.js', 'tests/**/*.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'commonjs', globals: { require: 'readonly', module: 'writable', __dirname: 'readonly', process: 'readonly', console: 'readonly', window: 'readonly', document: 'readonly' } }, rules: {} }
 ];

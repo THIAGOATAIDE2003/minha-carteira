@@ -80,6 +80,7 @@ function foto() {
 async function abrir(b, fx) {
   const pg = await b.newPage({ viewport: { width: 400, height: 900 } }), erros = [];
   pg.on('pageerror', e => erros.push(e.message));
+  pg.on('console', m => { if (/Content Security Policy|Refused to (load|connect|execute|apply)/i.test(m.text())) erros.push('CSP bloqueou algo: ' + m.text().slice(0, 160)); });
   await pg.clock.setFixedTime(new Date(fx.now));
   await pg.route('**/*', r => r.request().url().startsWith('file:') ? r.continue() : r.abort());
   const ls = {

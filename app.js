@@ -1,8 +1,12 @@
 (function(){
 /* Versão do app: sobe a cada mudança que o usuário vê (veja CLAUDE.md). O sw.js usa este número no nome do cache offline. */
-var VERSAO='1.1.0';
+var VERSAO='1.1.1';
 window.addEventListener('error',function(e){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent='Erro na página: '+e.message}});
-var LS='minha-carteira-v1';try{var vE=document.getElementById('ver');if(vE)vE.textContent=VERSAO}catch(e){}
+var LS='minha-carteira-v1';
+/* Logo que não carrega some (a CSP não aceita onerror escrito no HTML). O evento error não sobe, por isso a captura. */
+document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&t.closest&&t.closest('.tlg'))t.remove()},true);
+/* Só abre link http(s): o endereço da notícia vem do robô e nunca pode virar javascript: */
+function safeUrl(u){u=String(u||'');return /^https?:\/\//i.test(u)?u:'#'}try{var vE=document.getElementById('ver');if(vE)vE.textContent=VERSAO}catch(e){}
 var $=function(id){return document.getElementById(id)};
 var today=function(){return new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)};
 var S={trades:[],quotes:{},fx:null,keys:{finnhub:'',brapi:'',gh:'',repo:''},example:false,pend:[]};
@@ -606,7 +610,7 @@ function rsNews(tk){var e=rsOf(tk);
     h+=lst('Riscos',a.riscos,'al')+lst('Oportunidades',a.oportunidades,'ok')}
   else h+='<div class="panel">'+rsNoAI()+'</div>';
   var nw=e.news||[];
-  h+='<div class="panel"><h2>Manchetes dos últimos 30 dias '+bal('Notícias sobre a empresa buscadas pelo robô no Google Notícias. Toque para abrir a notícia inteira.')+'</h2>'+(nw.length?'<ul class="rsn">'+nw.map(function(n){return '<li><a href="'+esc(n.l)+'" target="_blank" rel="noopener">'+esc(n.t)+'</a><small>'+(n.d?fmtDate(n.d):'')+(n.s?' · '+esc(n.s):'')+'</small></li>'}).join('')+'</ul>':'<p class="muted" style="margin:0">Nenhuma manchete encontrada no último mês.</p>')+
+  h+='<div class="panel"><h2>Manchetes dos últimos 30 dias '+bal('Notícias sobre a empresa buscadas pelo robô no Google Notícias. Toque para abrir a notícia inteira.')+'</h2>'+(nw.length?'<ul class="rsn">'+nw.map(function(n){return '<li><a href="'+esc(safeUrl(n.l))+'" target="_blank" rel="noopener">'+esc(n.t)+'</a><small>'+(n.d?fmtDate(n.d):'')+(n.s?' · '+esc(n.s):'')+'</small></li>'}).join('')+'</ul>':'<p class="muted" style="margin:0">Nenhuma manchete encontrada no último mês.</p>')+
     '<p class="note">Manchetes do Google Notícias, buscadas pelo robô'+(MD.d.res.at?' em '+rsWhen(MD.d.res.at):'')+'. Tocando, abre a notícia no navegador.</p></div>';
   return h}
 function rsMini(tk){var e=rsOf(tk);if(!e||!e.ai)return '';var a=e.ai,sn=RSSN[a.sentimento]||RSSN.neutro;
@@ -1235,7 +1239,7 @@ function renderPositions(R){
 
 /* tabela de ativos (estilo Investidor10): logo, quantidade, variação total e do dia; toque no % mostra o valor, toque na linha abre a análise */
 var ATF='all',ASRT={k:'v',d:-1};
-function tkLogo(tk,us){var ini=esc(tk.slice(0,2));return '<span class="tlg"><span>'+ini+'</span><img alt="" loading="lazy" src="'+(us?'https://financialmodelingprep.com/image-stock/'+encodeURIComponent(tk)+'.png':'https://icons.brapi.dev/icons/'+encodeURIComponent(tk)+'.svg')+'" onerror="this.remove()"></span>'}
+function tkLogo(tk,us){var ini=esc(tk.slice(0,2));return '<span class="tlg"><span>'+ini+'</span><img alt="" loading="lazy" src="'+(us?'https://financialmodelingprep.com/image-stock/'+encodeURIComponent(tk)+'.png':'https://icons.brapi.dev/icons/'+encodeURIComponent(tk)+'.svg')+'"></span>'}
 function vpill(p,txt){if(p==null||!isFinite(p))return '<span class="vpl n">—</span>';return bal(txt,'<span class="vpl '+(p>=0?'g':'l')+'">'+(p>=0?'+':'−')+pf.format(Math.abs(p*100))+'% <i>'+(p>=0?'▲':'▼')+'</i></span>')}
 function atvTable(R){
   var T=R.tot,fx=T.fxNow||1,dl=dayLbl(),rows=R.held.map(function(x){var us=x.p.market==='US',F=us?fx:1,pm=x.p.cN/x.p.qty,q=S.quotes[x.p.ticker];

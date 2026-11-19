@@ -45,7 +45,7 @@ Testes das contas (rodam também no GitHub Actions a cada push):
 
 ```sh
 npm install --no-save playwright eslint@9 && npx playwright install chromium
-npx eslint app.js sw.js   # erros de código (variável que não existe etc.)
+npx eslint app.js sw.js tema.js   # erros de código (variável que não existe etc.)
 node tests/teste.js       # contas e abas
 ```
 

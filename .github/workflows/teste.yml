@@ -12,5 +12,5 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-save playwright@1.63.0 eslint@9 && npx playwright install --with-deps chromium
-      - run: npx eslint app.js sw.js
+      - run: npx eslint app.js sw.js tema.js
       - run: node tests/teste.js
