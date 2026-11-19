@@ -66,7 +66,9 @@ function loadMkt(force){
   jobs.push(p);
   Promise.all(jobs).then(function(){MKT.at=Date.now();MKT.busy=false;mktSave();renderMkt()});
 }
-function idxVal(x){var I=MKT.idx;
+var IDZ={ibov:0,XFIX11:0,SMAL11:0,DIVO11:0,SPY:1,QQQ:1,DIA:1,ACWI:1,EEM:1};
+function idxVal(x){var r=idxVal0(x);if(r&&r.p!=null&&IDZ[x.k]!=null&&dzero(!!IDZ[x.k],MKT.at))return {v:r.v,p:0,sub:r.sub};return r}
+function idxVal0(x){var I=MKT.idx;
   if(x.k==='ibov'||x.k==='eur'){var tv=tapeIdx(x.k==='ibov'?'IBOV':'EURO');if(tv&&(!I[x.k]||MKT.at<tv.at))return {v:tv.v,p:tv.p}}
   if(x.src==='cmd'){var tv=x.tp&&tapeIdx(x.tp),D0=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(tv)return {v:tv.v,p:tv.p,sub:'robô, a cada 15 min no pregão'};if(D0&&D0.d&&D0.d.length>1){var l0=D0.d[D0.d.length-1][1],l1=D0.d[D0.d.length-2][1];return {v:l0,p:(l0/l1-1)*100,sub:'último fechamento'}}return null}
   if(x.src==='usd'){var f0=fxToday();return f0?{v:f0.rate,p:S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null}:null}
@@ -274,7 +276,7 @@ function loadMD(force){
 }
 function fundOf(tk){var f=MD.d&&MD.d.fund;if(!f||!f.d||!f.d[tk])return null;var o={};f.cols.forEach(function(c,i){var v=f.d[tk][i];o[c]=v===0&&c!=='dy'?null:v});
   var b=MD.d.bal&&MD.d.bal[tk];if(o.divpl==null&&b&&b.divb>0&&b.pl>0)o.divpl=b.divb/b.pl;return o}
-function livePx(tk){var q=S.quotes[tk],m=MKT.q[tk],a=q&&q.src==='auto'&&q.price>0?{p:q.price,pct:q.prev?(q.price/q.prev-1)*100:null,at:q.at||0}:null,b=m&&m.price>0?{p:m.price,pct:m.pct,at:m.at||0}:null;return a&&b?(b.at>a.at?b:a):a||b}
+function livePx(tk){var q=S.quotes[tk],m=MKT.q[tk],a=q&&q.src==='auto'&&q.price>0?{p:q.price,pct:q.prev?(q.price/q.prev-1)*100:null,at:q.at||0}:null,b=m&&m.price>0?{p:m.price,pct:m.pct,at:m.at||0}:null;var r=a&&b?(b.at>a.at?b:a):a||b;if(r&&r.pct!=null&&tk.charAt(0)!=='^'&&dzero(!isBR(tk),r.at))r={p:r.p,pct:0,pr:r.pct,at:r.at};return r}
 /* um preço só em todo o app: o mais recente entre o que o app buscou e o que o robô trouxe na faixa vale para todas as abas */
 var TPTS=0;
 function tapeMerge(){var t=MD.d&&MD.d.tape;if(!t||!t.it||t.ts===TPTS)return;TPTS=t.ts;var at=t.ts*1000,ch=0;
@@ -287,7 +289,7 @@ function mdStk(tk,rg){
   var h=MD.d&&MD.d.hist&&MD.d.hist[tk];if(!h||!h.d||h.d.length<2)return null;
   var days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'2y':731}[rg],src=rg==='5y'||rg==='2y'?(h.w||[]):h.d,t0=days?Date.now()/864e5-days:0;
   var hist=src.filter(function(p){return p[0]>=t0}).map(function(p){return {t:p[0]*864e5,c:p[1]}});
-  var pv=h.d.length>1?h.d[h.d.length-2][1]:null,lv=livePx(tk),price=lv?lv.p:h.last,pct=lv&&lv.pct!=null?lv.pct:(h.last&&pv?(h.last/pv-1)*100:null);
+  var pv=h.d.length>1?h.d[h.d.length-2][1]:null,lv=livePx(tk),price=lv?lv.p:h.last,pct=lv&&lv.pct!=null?(lv.pr!=null?lv.pr:lv.pct):(h.last&&pv?(h.last/pv-1)*100:null);
   if(lv&&hist.length&&lv.p>0)hist.push({t:Date.now(),c:lv.p});
   var F=fundOf(tk),y1=h.d.map(function(p){return p[1]}),yr=Date.now()/864e5-365,d12=(h.div||[]).filter(function(x){return x[0]>=yr}).reduce(function(a,x){return a+x[1]},0);
   var pc=function(v){return v==null?null:v/100};

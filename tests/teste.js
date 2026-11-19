@@ -194,6 +194,13 @@ function contasAMao(F, P) {
     } else if (GRAVAR || !esperado) {
       fx.esperado = F; fs.writeFileSync(REAL, JSON.stringify(fx)); console.log('Foto da carteira real gravada em ' + REAL);
     } else { console.log('Carteira real: comparação com a foto gravada'); difere(F, esperado, 'real'); }
+    /* variação do dia zera fora do pregão: segunda 23/11/2026 antes das 10h, fim de semana, e volta com a primeira cotação do dia */
+    const zer = [];
+    for (const [iso, us, atras] of [['2026-11-23T12:00:00Z', false, 0], ['2026-11-23T13:30:00Z', false, 0], ['2026-11-23T13:30:00Z', false, 1], ['2026-11-24T01:00:00Z', false, 0], ['2026-11-28T15:00:00Z', false, 0], ['2026-11-23T12:00:00Z', true, 0], ['2026-11-23T15:00:00Z', true, 0], ['2026-11-22T15:00:00Z', true, 0]]) {
+      await pg.clock.setFixedTime(new Date(iso)); zer.push(await pg.evaluate(([u, at]) => dzero(u, at ? Date.now() - 20 * 3600000 : Date.now()), [us, atras]));
+    }
+    await pg.clock.setFixedTime(new Date(fx.now));
+    confere('variação do dia zera antes da abertura e no fim de semana, volta com cotação nova', zer, [true, false, true, false, true, true, false, true]);
     const vistos = await abas(pg);
     console.log('Abas abertas: ' + vistos.length);
     /* gráfico estilo Google: página da ação com histórico de mentira e os três números do Início */

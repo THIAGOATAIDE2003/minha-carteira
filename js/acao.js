@@ -172,7 +172,7 @@ function avHist(tk,rg){var fn=rg==='1mo'||rg==='3mo'?'TIME_SERIES_DAILY':'TIME_S
   return getJSON('https://www.alphavantage.co/query?function='+fn+'&symbol='+encodeURIComponent(tk)+'&apikey='+encodeURIComponent(S.keys.av)).then(function(j){
     var ser=j&&(j['Time Series (Daily)']||j['Weekly Time Series']);if(!ser)throw new Error('0');
     var h=Object.keys(ser).sort().map(function(dt){return {t:Date.parse(dt),c:parseFloat(ser[dt]['4. close'])}});try{localStorage.setItem(ck,JSON.stringify({at:Date.now(),h:h}))}catch(e){}return cut(h)})}
-function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0=livePx(STK.tk);if(lv0&&(!STK.d.at||lv0.at>STK.d.at)){STK.d.price=lv0.p;if(lv0.pct!=null)STK.d.pct=lv0.pct}}
+function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0=livePx(STK.tk);if(lv0&&(!STK.d.at||lv0.at>STK.d.at)){STK.d.price=lv0.p;if(lv0.pct!=null)STK.d.pct=lv0.pr!=null?lv0.pr:lv0.pct}}
   var b=$('stk-b');if(!b||$('stk').hidden)return;var d=STK.d,tk=STK.tk;
   if(!d){b.innerHTML=STK.err?'<p class="warn">'+esc(STK.err)+'</p><button type="button" class="btn ghost" style="margin-top:12px" data-rng="'+STK.rng+'">Tentar de novo</button>':'<p class="muted">Carregando '+esc(tk)+'...</p>';return}
   var F=d.cur==='USD'?usd:brl,K=d.k||{},R=compute(),mine=R.held.filter(function(x){return x.p.ticker===tk})[0],pm=mine?mine.p.cN/mine.p.qty:null;
@@ -181,8 +181,8 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
   var big=function(v){return v==null?'—':(d.cur==='USD'?'US$ ':'R$ ')+(v>=1e9?num(v/1e9,1)+' bi':num(v/1e6,0)+' mi')};
   var dyC=K.dy!=null?K.dy:(K.d12&&d.price?K.d12/d.price:null),pvp=K.pvp!=null?K.pvp:(K.vpa&&d.price?d.price/K.vpa:null);
   var hs=rgCut(d.hist,STK.rng),fv=finView(ySym(tk),STK.rng),fo=null,fmsg='',fat=0;if(fv){if(fv.st==='ok'){hs=fv.hist;fo=fv.o;fat=fv.at||0}else fmsg=fv.msg}
-  var ch=hs.length>1?hs[hs.length-1].c/((fo&&fo.prev)||hs[0].c)-1:null,lv1=livePx(tk),prv=d.pct!=null?d.price/(1+d.pct/100):null,
-    perPct=STK.rng==='yr'?d.pct:ch!=null?ch*100:d.pct,perAbs=STK.rng==='yr'||ch==null?(prv!=null?d.price-prv:null):hs[hs.length-1].c-((fo&&fo.prev)||hs[0].c),perRg=STK.rng==='yr'||ch==null?'1d':STK.rng;
+  var ch=hs.length>1?hs[hs.length-1].c/((fo&&fo.prev)||hs[0].c)-1:null,lv1=livePx(tk),zd,prv=d.pct!=null?d.price/(1+d.pct/100):null,
+    zd=tk.charAt(0)!=='^'&&dzero(!isBR(tk),Math.max(lv1&&lv1.at||0,d.at||0)),perPct=STK.rng==='yr'?(zd?0:d.pct):ch!=null?ch*100:(zd?0:d.pct),perAbs=STK.rng==='yr'||ch==null?(prv!=null?(zd?0:d.price-prv):null):hs[hs.length-1].c-((fo&&fo.prev)||hs[0].c),perRg=STK.rng==='yr'||ch==null?'1d':STK.rng;
   var h=gHead(d.name,d.sector,F.format(d.price),perAbs,perPct,perRg,perAbs!=null?(perAbs>=0?'+':'−')+F.format(Math.abs(perAbs)):'',gWhen(Math.max(lv1&&lv1.at||0,fat)||d.at))+
     rngBar(STK.rng,d.fast?[]:['max'])+
     (STK.busy?'<p class="muted small">Atualizando...</p>':'')+(d.rgGot!==undefined&&d.rgGot!==rgEff()&&STK.rng!=='yr'&&STK.rng!=='1d'&&STK.rng!=='5d'&&STK.rng!=='max'?'<p class="note" style="margin:0 0 6px">O plano grátis do brapi '+(d.rgGot?'só liberou até '+({'1mo':'1 mês','3mo':'3 meses','6mo':'6 meses','1y':'1 ano'}[d.rgGot]||d.rgGot)+' de gráfico':'não liberou o gráfico')+' para essa ação.</p>':'')+(STK.rng==='yr'?annHtml(annRets(d.hist,d.price)):fmsg?'<p class="muted small" style="margin:12px 0">'+esc(fmsg)+'</p>':lineChart(hs,d.cur,pm,null,fo));

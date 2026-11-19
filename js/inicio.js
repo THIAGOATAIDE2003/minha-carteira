@@ -3,8 +3,7 @@
 /* rótulo da variação do dia: fora do pregão mostra o último dia de negociação */
 function dayLbl(){var b=brt();
   if(bDay(b.d)&&b.min>=600)return {t:'hoje',b:'Quanto suas ações e o VT subiram ou caíram hoje, comparando o preço de agora com o fechamento do pregão anterior.'};
-  var d=new Date(lastClose()-3*3600000),dn=['domingo','segunda','terça','quarta','quinta','sexta','sábado'][d.getUTCDay()];
-  return {d:dn,t:'no último pregão ('+dn+')',b:'A bolsa está fechada agora. Esse é quanto suas ações e o VT subiram ou caíram no último dia de negociação ('+dn+'), comparado com o fechamento do dia anterior. Volta a mexer quando a bolsa abrir.'}}
+  return {t:'hoje',d:'',b:'A bolsa ainda não abriu (ou está fechada hoje): a variação do dia fica zerada e volta a mexer quando o pregão abrir.'}}
 /* valorização só pelo preço (VT pelo dólar de hoje, sem câmbio) + proventos recebidos */
 function valoriz(R){var T=R.tot,fx=T.fxNow||1,pv=0,base=0;
   R.held.forEach(function(x){if(x.p.market==='US'){pv+=(x.p.qty*x.P1-x.p.cN)*fx;base+=x.p.cN*fx}else{pv+=x.v-x.p.cB;base+=x.p.cB}});
@@ -40,7 +39,7 @@ function renderSummary(R){
     return;
   }
   var times=Object.keys(S.quotes).map(function(k){return S.quotes[k].at}).filter(Boolean);times.sort();
-  var dn=0,dp=0,dok=0,dB=0,dU=0,pB=0,pU=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,a=x.p.qty*q.price*F,c=x.p.qty*q.prev*F;dn+=a;dp+=c;if(us){dU+=a-c;pU+=c}else{dB+=a-c;pB+=c}dok++});
+  var dn=0,dp=0,dok=0,dB=0,dU=0,pB=0,pU=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,a=x.p.qty*q.price*F,c=dzero(us,q.at)?a:x.p.qty*q.prev*F;dn+=a;dp+=c;if(us){dU+=a-c;pU+=c}else{dB+=a-c;pB+=c}dok++});
   var VZ=valoriz(R),dl=dayLbl(),ctp=0,vtp=0;R.held.forEach(function(x){if(x.p.market==='US'){ctp+=x.p.cN*T.fxNow;vtp+=x.p.qty*x.P1*T.fxNow}else{ctp+=x.p.cB;vtp+=x.v}});ctp+=T.rfC;vtp+=T.rfV;
   var pv=vtp-ctp,arrow=function(v){return '<span class="arw '+cls(v)+'">'+(v>=0?'▲':'▼')+'</span>'};
   var card=function(ic,tit,info,main,sub,hk){return '<div class="hc"><div class="hct"><span class="hci">'+ic+'</span><span>'+tit+'</span>'+bal(info)+'</div><div class="hcg" data-hero="'+hk+'" role="button" tabindex="0">'+main+'</div><div class="hcs">'+sub+'</div></div>'};

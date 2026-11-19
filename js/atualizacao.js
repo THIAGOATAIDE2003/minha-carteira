@@ -53,7 +53,7 @@ function tapeItems(){
   var t=MD.d&&MD.d.tape&&MD.d.tape.it||[];
   t.forEach(function(x){var l=x[0],v=x[1],p=x[2],c=x[3];
     if(l==='DÓLAR'&&S.fx&&S.fx.src==='auto'&&S.fx.prev){v=S.fx.rate;p=S.fx.prev}
-    var st=tpStk(x);if(st){var lv=livePx(l);if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}}
+    var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if(TPIX[l]&&dzero(l!=='IBOV',tat))p=v
     var ik=l==='IBOV'?'ibov':l==='EURO'?'eur':'',mi=ik&&MKT.idx[ik];if(mi&&mi.v>0&&mi.p!=null&&MKT.at>MD.d.tape.ts*1000){v=mi.v;p=mi.v/(1+mi.p/100)}
     add(l,v,p,c,st,x[5])});
   try{R=compute()}catch(e){}
@@ -70,6 +70,11 @@ function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems();if(it.le
   el.innerHTML='<div class="tptr" style="--tpd:'+Math.max(30,it.length*5)+'s">'+one+one+'</div>'}
 function renderMktSt(){var el=$('mktst');if(!el)return;el.innerHTML=mktState().map(function(m){return bal(m.t,'<span class="mks'+(m.on?' on':'')+'"><i></i><b>'+m.n+'</b><small>'+(m.on?'Aberta':'Fechada')+'</small></span>')}).join('')}
 
+/* variação do dia zerada fora do pregão: antes da abertura (ou fim de semana/feriado) até chegar a primeira cotação do dia */
+function dzero(us,at){var now=Date.now(),open;
+  if(us){var n=nyNow();if(!n)return false;if(!usBDay(n.d)||n.min<570)return true;open=now-(n.min-570)*60000}
+  else{var b=brt();if(!bDay(b.d)||b.min<600)return true;open=now-(b.min-600)*60000}
+  return !!at&&at<open-60000}
 function mktOpen(){var b=brt();return bDay(b.d)&&b.min>=600&&b.min<1095}
 function lastClose(){var b=brt(),d=new Date(b.d.getTime());
   if(!(bDay(b.d)&&b.min>=1095)){do{d.setUTCDate(d.getUTCDate()-1)}while(!bDay(d))}

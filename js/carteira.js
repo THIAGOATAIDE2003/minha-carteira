@@ -113,8 +113,8 @@ function tkLogo(tk,us){var ini=esc(tk.slice(0,2));return '<span class="tlg"><spa
 function vpill(p,txt){if(p==null||!isFinite(p))return '<span class="vpl n">—</span>';return bal(txt,'<span class="vpl '+(p>=0?'g':'l')+'">'+(p>=0?'+':'−')+pf.format(Math.abs(p*100))+'% <i>'+(p>=0?'▲':'▼')+'</i></span>')}
 function atvTable(R){
   var T=R.tot,fx=T.fxNow||1,dl=dayLbl(),rows=R.held.map(function(x){var us=x.p.market==='US',F=us?fx:1,pm=x.p.cN/x.p.qty,q=S.quotes[x.p.ticker];
-    var tg=(x.P1-pm)*x.p.qty*F,dd=q&&q.prev&&q.src==='auto'?(q.price-q.prev)*x.p.qty*F:null;
-    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,pm:pm,px:x.P1,t:pm?x.P1/pm-1:null,tg:tg,d:dd!=null?q.price/q.prev-1:null,dg:dd,prev:q&&q.prev}});
+    var tg=(x.P1-pm)*x.p.qty*F,dd=q&&q.prev&&q.src==='auto'?(dzero(us,q.at)?0:(q.price-q.prev)*x.p.qty*F):null;
+    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,pm:pm,px:x.P1,t:pm?x.P1/pm-1:null,tg:tg,d:dd!=null?(dzero(us,q.at)?0:q.price/q.prev-1):null,dg:dd,prev:q&&q.prev}});
   var has={BR:rows.some(function(r){return !r.us}),US:rows.some(function(r){return r.us})};if(ATF!=='all'&&!has[ATF])ATF='all';
   var vis=rows.filter(function(r){return ATF==='all'||(ATF==='US')===r.us});
   vis.sort(function(a,b){var k=ASRT.k,A=k==='n'?a.tk:a[k],B=k==='n'?b.tk:b[k];if(A==null)return 1;if(B==null)return -1;return (A<B?-1:A>B?1:0)*ASRT.d});
