@@ -141,13 +141,15 @@ document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.classList&
 function getTema(){try{return localStorage.getItem(LS+'-tema')||'atual'}catch(e){return 'atual'}}
 function setTema(tm){try{localStorage.setItem(LS+'-tema',tm)}catch(e){}
   var r=document.documentElement;if(tm==='atual')r.removeAttribute('data-theme');else r.setAttribute('data-theme',tm);
-  var mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.content=tm==='preto'?'#000000':tm==='branco'?'#ffffff':'#0a1017';
+  var mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.content=tm==='preto'?'#000000':tm==='branco'?'#ffffff':'#202124';
   markTema();render()}
 function markTema(){var tm=getTema();[].forEach.call(document.querySelectorAll('[data-tema]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-tema')===tm))})}
 document.addEventListener('click',function(e){
   var t=e.target;
+  var hr=t.closest&&t.closest('[data-hero]');if(hr){heroOpen(hr.getAttribute('data-hero'));return}
   var sk=t.closest&&t.closest('[data-stk]');if(sk){var sv=sk.getAttribute('data-stk');if(sv==='close')stkClose();else stkOpen(sv);return}
   var sv=t.closest&&t.closest('[data-stv]');if(sv){STV=sv.getAttribute('data-stv');try{localStorage.setItem(LS+'-stv',STV)}catch(e){}stkRender();return}
+  if(t.closest&&t.closest('[data-rmore]')){RMORE=!RMORE;if(STK.hero)heroRender();else if(STK.idx)idxRender();else stkRender();return}
   var rg=t.closest&&t.closest('[data-rng]');if(rg){STK.rng=rg.getAttribute('data-rng');stkLoad();return}
   var wd=t.closest&&t.closest('[data-wdel]');if(wd){var dk=wd.getAttribute('data-wdel');watchSet(wlist().filter(function(x){return x!==dk}));renderMkt();return}
   var wt=t.closest&&t.closest('[data-wtog]');if(wt){var tk2=wt.getAttribute('data-wtog'),W2=wlist().slice();if(W2.indexOf(tk2)>=0)W2=W2.filter(function(x){return x!==tk2});else W2.push(tk2);watchSet(W2);stkRender();renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(W2.indexOf(tk2)>=0)loadMkt(true);return}

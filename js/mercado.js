@@ -307,7 +307,7 @@ function idxRender(){
   var fmt=rate?function(v){return pf.format(v)+'%'}:same?function(v){return idxFmt(x,v)}:sym.charAt(0)==='^'?function(v){return num(v,0)+' pts'}:function(v){return usd.format(v)};
   if(!D||!D.d||D.d.length<2){b.innerHTML='<p class="muted">'+(MD.busy?'Buscando o histórico...':'O histórico de '+esc(x.n)+' chega com o robô diário. Volte em alguns minutos.')+'</p>';return}
   if(rate&&rg==='yr')rg=STK.rng='1y';
-  var days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'2y':731}[rg],src=rg==='5y'||rg==='yr'||rg==='2y'||(k==='ipca'&&rg!=='1mo')?(D.w||D.d):D.d,t0=days?Date.now()/864e5-days:0;
+  var days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],src=rg==='5y'||rg==='max'||rg==='yr'||rg==='2y'||(k==='ipca'&&rg!=='1mo')?(D.w||D.d):D.d,t0=days?Date.now()/864e5-days:0;
   var hist=src.filter(function(p){return p[0]>=t0}).map(function(p){return {t:p[0]*864e5,c:p[1]}});
   var o=idxVal(x),last=same&&o&&isFinite(o.v)?o.v:D.last,dp=o&&isFinite(o.p)?o.p:null;
   if(!rate&&same&&o&&isFinite(o.v)&&hist.length)hist.push({t:Date.now(),c:o.v});
@@ -315,10 +315,11 @@ function idxRender(){
   var y1=(D.d||[]).map(function(p){return p[1]}),hi=Math.max.apply(null,y1),lo=Math.min.apply(null,y1);
   var at=function(daysAgo){var t=Date.now()/864e5-daysAgo,a=(daysAgo>370?D.w:D.d)||[];for(var i=a.length-1;i>=0;i--)if(a[i][0]<=t)return a[i][1];return null};
   var v1=at(365),v5=at(1790),chg=function(a){return a==null||!last?'—':((last/a-1)>=0?'+':'−')+pf.format(Math.abs((last/a-1)*100))+'%'};
-  var h='<p class="muted small" style="margin:0 0 4px">'+esc(x.t)+'</p><div class="stkhd"><b class="num">'+(last!=null?fmt(last):'—')+'</b>'+(dp!=null?'<span class="num '+cls(dp)+'">'+(dp>=0?'+':'−')+pf.format(Math.abs(dp))+'% hoje</span>':'')+'</div>'+
-    '<div class="rng">'+[['1mo','1M'],['3mo','3M'],['6mo','6M'],['1y','1A'],['2y','2A'],['5y','5A'],['yr','Anual']].filter(function(r){return !(rate&&r[0]==='yr')}).map(function(r){return '<button type="button" data-rng="'+r[0]+'" aria-pressed="'+(rg===r[0])+'">'+r[1]+'</button>'}).join('')+
-      (ch!=null&&rg!=='yr'?'<span class="num '+cls(ch)+'" style="margin-left:auto;align-self:center;font-weight:600">'+(rate?(ch>=0?'+':'−')+pf.format(Math.abs(ch))+' p.p.':(ch>=0?'+':'−')+pf.format(Math.abs(ch*100))+'%')+'</span>':'')+'</div>'+
-    (rg==='yr'&&!rate?annHtml(annRets(hist,null)):lineChart(hist,'BRL',null,fmt));
+  hist=rgCut(hist,STK.rng);ch=hist.length>1?(rate?hist[hist.length-1].c-hist[0].c:hist[hist.length-1].c/hist[0].c-1):null;
+  var pAbs=ch==null?null:rate?ch:hist[hist.length-1].c-hist[0].c,pPct=ch==null?null:rate?(hist[0].c?ch/hist[0].c*100:null):ch*100,per=rg==='yr'||ch==null?'1d':rg;
+  if(ch==null||rg==='yr'){pPct=dp;pAbs=dp!=null&&last!=null?last-last/(1+dp/100):null}
+  var h=gHead(x.t,'',last!=null?fmt(last):'—',pAbs,pPct,per,pAbs!=null?(pAbs>=0?'+':'−')+(rate?pf.format(Math.abs(pAbs)):fmt(Math.abs(pAbs))):'',o&&o.at?gWhen(o.at):(MD.d&&MD.d.at?gWhen(MD.d.at):''))+
+    rngBar(rg,rate?['yr','max']:[])+(rg==='yr'&&!rate?annHtml(annRets(hist,null)):lineChart(hist,'BRL',null,fmt));
   var rows=rate?[['Agora',last!=null?fmt(last):'—'],['Há 1 ano',v1!=null?fmt(v1):'—'],['Há 5 anos',v5!=null?fmt(v5):'—'],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)]]
     .concat(k==='cdi'&&D.acc12!=null?[['Rendeu em 12 meses',pf.format(D.acc12)+'%']]:[]).concat(k==='ipca'&&D.mes!=null?[['Último mês',pf.format(D.mes)+'%']]:[])
     :[['Em 12 meses',chg(v1)],['Em 5 anos',chg(v5)],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)],['Distância da máxima',last&&hi?'−'+pf.format(Math.abs((last/hi-1)*100))+'%':'—']];
@@ -326,7 +327,7 @@ function idxRender(){
     '<p class="note">'+(rate?(k==='cdi'?'CDI em % ao ano, do Banco Central. É o juro que os bancos cobram entre si e fica sempre um pouco abaixo da Selic; é ele que rende CDB, LCI e LCA.':k==='selic'?'Selic meta em % ao ano, do Banco Central. É a taxa básica de juros, definida pelo Copom a cada 45 dias; o CDI anda colado nela, uns 0,10 ponto abaixo.':'IPCA acumulado em 12 meses, do Banco Central (IBGE).'):(same?'Histórico do Yahoo Finance'+(sym?' ('+esc(sym)+')':'')+', atualizado pelo robô diário; o valor de agora vem das APIs do app.':'Gráfico do próprio índice ('+esc(sym)+', Yahoo Finance) pelo fechamento mais recente; a variação de hoje vem do '+esc(x.s)+', que acompanha o índice.'))+'</p>';
   b.innerHTML=h;
 }
-function rgEff(){return STK.rng==='yr'?'5y':STK.rng}
+function rgEff(){return STK.rng==='yr'||STK.rng==='max'?'5y':STK.rng==='ytd'?'1y':STK.rng}
 /* valorização ano a ano: do último preço do ano anterior ao último do ano (o ano atual vai até hoje) */
 function annRets(hist,live){var by={},ys=[];hist.forEach(function(p){var y=new Date(p.t).getUTCFullYear();if(!by[y]){by[y]=[];ys.push(y)}by[y].push(p)});ys.sort();
   var cy=new Date().getFullYear(),out=[];

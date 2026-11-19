@@ -43,20 +43,20 @@ function renderSummary(R){
   var dn=0,dp=0,dok=0,dB=0,dU=0,pB=0,pU=0;R.held.forEach(function(x){var q=S.quotes[x.p.ticker];if(!q||!q.prev||q.src!=='auto')return;var us=x.p.market==='US',F=us?T.fxNow:1,a=x.p.qty*q.price*F,c=x.p.qty*q.prev*F;dn+=a;dp+=c;if(us){dU+=a-c;pU+=c}else{dB+=a-c;pB+=c}dok++});
   var VZ=valoriz(R),dl=dayLbl(),ctp=0,vtp=0;R.held.forEach(function(x){if(x.p.market==='US'){ctp+=x.p.cN*T.fxNow;vtp+=x.p.qty*x.P1*T.fxNow}else{ctp+=x.p.cB;vtp+=x.v}});ctp+=T.rfC;vtp+=T.rfV;
   var pv=vtp-ctp,arrow=function(v){return '<span class="arw '+cls(v)+'">'+(v>=0?'▲':'▼')+'</span>'};
-  var card=function(ic,tit,info,main,sub){return '<div class="hc"><div class="hct"><span class="hci">'+ic+'</span><span>'+tit+'</span>'+bal(info)+'</div>'+main+'<div class="hcs">'+sub+'</div></div>'};
+  var card=function(ic,tit,info,main,sub,hk){return '<div class="hc"><div class="hct"><span class="hci">'+ic+'</span><span>'+tit+'</span>'+bal(info)+'</div><div class="hcg" data-hero="'+hk+'" role="button" tabindex="0">'+main+'</div><div class="hcs">'+sub+'</div></div>'};
   var IC={pat:'<svg viewBox="0 0 24 24"><path d="M4 11a7 6 0 0 1 13-2h2v4l-2 1-1 3h-3v-2H9v2H6l-1-3a5 5 0 0 1-1-3z"/><circle cx="15" cy="11" r="1"/></svg>',
     val:'<svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>',
     dia:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
   var cards=[
     card(IC.pat,'Patrimônio total','Quanto vale tudo que você tem hoje. A porcentagem compara com o valor investido (o que você pagou, com o VT pelo dólar de hoje), só pelo preço.',
       '<div class="hcm"><b class="num">'+brl.format(T.value+T.cash)+'</b>'+(ctp?'<span class="num '+cls(pv)+'">'+pct(pv/ctp)+' '+arrow(pv)+'</span>':'')+'</div>',
-      '<div><small>Valor investido</small><span class="num">'+brl.format(ctp)+'</span></div><button type="button" class="evolink" data-goto="evolucao">Ver evolução</button>'),
+      '<div><small>Valor investido</small><span class="num">'+brl.format(ctp)+'</span></div><button type="button" class="evolink" data-goto="evolucao">Ver evolução</button>','pat'),
     card(IC.val,'Valorização','Quanto o preço de tudo que você tem subiu ou caiu desde a compra (ganho de capital), mais os proventos que você já recebeu. Sem câmbio e sem vendas: esses ficam em Carteira → Desempenho.',
       '<div class="hcm"><b class="num '+cls(VZ.g)+'">'+sgn(VZ.g)+'</b><span class="num '+cls(VZ.g)+'">'+pct(VZ.p)+' '+arrow(VZ.g)+'</span></div>',
-      '<div><small>Ganho de capital</small><span class="num">'+sgn(VZ.pv)+'</span></div><div><small>Proventos recebidos</small><span class="num">'+brl.format(VZ.div)+'</span></div>'),
+      '<div><small>Ganho de capital</small><span class="num">'+sgn(VZ.pv)+'</span></div><div><small>Proventos recebidos</small><span class="num">'+brl.format(VZ.div)+'</span></div>','val'),
     card(IC.dia,dl.t==='hoje'?'Variação de hoje':'Último pregão ('+dl.d+')',dl.t==='hoje'?'Quanto suas ações (Brasil e VT) subiram ou caíram hoje, só pelo preço. O VT entra pelo dólar de hoje, sem a variação do dólar.':'A bolsa está fechada. Esse é quanto suas ações (Brasil e VT) subiram ou caíram no último dia de negociação ('+dl.d+'), só pelo preço, sem a variação do dólar.',
       (dok&&dp>0?'<div class="hcm"><b class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+'</b><span class="num '+cls(dn-dp)+'">'+pct((dn-dp)/dp)+' '+arrow(dn-dp)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
-      (pB?'<div><small>Brasil</small><span class="num '+cls(dB)+'">'+pct(dB/pB)+'</span></div>':'')+(pU?'<div><small>VT</small><span class="num '+cls(dU)+'">'+pct(dU/pU)+'</span></div>':'')+(times.length&&dl.t==='hoje'?'<div><small>Preços de</small><span>'+hm(times[times.length-1])+'</span></div>':''))];
+      (pB?'<div><small>Brasil</small><span class="num '+cls(dB)+'">'+pct(dB/pB)+'</span></div>':'')+(pU?'<div><small>VT</small><span class="num '+cls(dU)+'">'+pct(dU/pU)+'</span></div>':'')+(times.length&&dl.t==='hoje'?'<div><small>Preços de</small><span>'+hm(times[times.length-1])+'</span></div>':''),'dia')];
   cards=[cards[0],cards[2],cards[1]];
   var h='<div class="hcw"><div class="hcards" id="hcards">'+cards.join('')+'</div><div class="hdots">'+cards.map(function(c,i){return '<i data-hci="'+i+'"'+(i===HCI?' class="on"':'')+'></i>'}).join('')+'</div></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
@@ -70,3 +70,18 @@ function renderSummary(R){
 }
 var HCI=0;
 document.addEventListener('scroll',function(e){var hc=e.target;if(!hc||hc.id!=='hcards')return;var i=Math.round(hc.scrollLeft/Math.max(1,hc.clientWidth));if(i!==HCI){HCI=i;[].forEach.call(document.querySelectorAll('.hdots i'),function(d){d.classList.toggle('on',+d.getAttribute('data-hci')===i)})}},true);
+
+/* toque nos números do Início: gráfico com períodos (evolução mensal) */
+var HERON={pat:'Patrimônio total',val:'Valorização (ganho de capital)',dia:'Variação de hoje'};
+function heroOpen(k){STK={tk:'',hero:k,rng:'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=HERON[k]||'';heroRender()}
+function heroRender(){
+  var b=$('stk-b'),k=STK.hero;if(!b)return;
+  if(k==='dia'){b.innerHTML='<p class="muted">O gráfico do dia, minuto a minuto, chega com a próxima etapa (o robô precisa passar a guardar os preços do dia). Por enquanto, a variação de hoje aparece no cartão.</p>';return}
+  var rows=evoData(),T=compute().tot,rg=STK.rng,days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],t0=days?Date.now()-days*864e5:0;
+  var all=rows.map(function(r){var g=0;['BR','US','RF'].forEach(function(s){var q=r.seg&&r.seg[s];if(q)g+=q.v-q.c});return {t:Date.parse(monthEnd(r.m)),c:k==='pat'?r.pat:g}});
+  var now=k==='pat'?T.value+T.cash:all.length?all[all.length-1].c:0;if(all.length)all[all.length-1]={t:Date.now(),c:k==='pat'?now:all[all.length-1].c};
+  var hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);
+  var ch=hist.length>1?hist[hist.length-1].c-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=ch!=null&&base>0&&k==='pat'?ch/base*100:null,last=hist.length?hist[hist.length-1].c:0;
+  b.innerHTML=gHead(HERON[k],'',brl.format(last),ch,pc!=null?pc:(ch!=null?0:null),rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,['yr'])+lineChart(hist,'BRL',null)+
+    '<p class="note">Pontos de fim de mês (o último é hoje), pela mesma conta da Evolução. Só preço: sem câmbio de vendas e sem proventos.</p>';
+}

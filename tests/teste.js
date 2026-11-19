@@ -196,6 +196,14 @@ function contasAMao(F, P) {
     } else { console.log('Carteira real: comparação com a foto gravada'); difere(F, esperado, 'real'); }
     const vistos = await abas(pg);
     console.log('Abas abertas: ' + vistos.length);
+    /* gráfico estilo Google: página da ação com histórico de mentira e os três números do Início */
+    const g = await pg.evaluate(() => { var d = [], t = Math.floor(Date.now() / 864e5) - 300, p = 30; for (var i = 0; i < 300; i++) { p += Math.sin(i / 9) * .6 + .12; d.push([t + i, +p.toFixed(2)]); }
+      MD.d = { hist: { TESTE3: { d: d, w: d, last: d[299][1], name: 'Teste SA', cur: 'BRL' } }, idx: {}, at: Date.now() }; stkOpen('TESTE3');
+      var q = function (s) { return document.querySelectorAll('#stk-b ' + s).length; }, r = { gh: q('.gh'), svg: q('.gch svg'), dim: q('.rb.dim'), stats: q('.gst') };
+      document.querySelector('[data-rmore]').click(); r.mais = q('.rng2 button'); document.querySelector('[data-rng="ytd"]').click(); r.ytd = q('.gch svg');
+      stkClose(); heroOpen('pat'); r.hero = q('.gch svg'); stkClose(); return r; });
+    confere('página da ação: cabeçalho, gráfico, 1D/5D em breve, números e botão Mais', [g.gh, g.svg, g.dim, g.stats > 0, g.mais > 0, g.ytd], [1, 1, 2, true, true, 1]);
+    confere('gráfico do patrimônio ao tocar no número do Início', g.hero, 1);
     if (erros.length) { falhas += erros.length; erros.forEach(e => console.log('  ✗ erro na página: ' + e)); }
     console.log(falhas ? '\n✗ ' + falhas + ' problema(s), ' + ok + ' conferência(s) certas' : '\n✓ Tudo certo: ' + ok + ' conferências');
   } finally { await b.close(); }
