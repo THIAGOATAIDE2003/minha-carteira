@@ -180,6 +180,10 @@ function contasAMao(F, P) {
     if (REAL) { const j = JSON.parse(fs.readFileSync(REAL, 'utf8')); fx = j; esperado = j.esperado || null; }
     const { pg, erros } = await abrir(b, fx);
     const F = await pg.evaluate(foto);
+    /* versão única: o app mostra em Ajustes e o sw.js usa no nome do cache; todo arquivo local do index.html precisa estar no cache offline */
+    confere('versão do app (formato e texto em Ajustes)', await pg.evaluate(() => /^\d+\.\d+\.\d+$/.test(window.__aporte.VERSAO) && document.getElementById('ver').textContent === window.__aporte.VERSAO), true);
+    const raiz = path.resolve(__dirname, '..'), sw = fs.readFileSync(path.join(raiz, 'sw.js'), 'utf8');
+    for (const m of fs.readFileSync(path.join(raiz, 'index.html'), 'utf8').matchAll(/(?:src|href)="([a-z.\-]+\.(?:css|js|svg|webmanifest))"/g)) confere('sw.js guarda ' + m[1] + ' para abrir offline', sw.includes("'" + m[1] + "'"), true);
     if (!REAL) {
       console.log('Carteira de exemplo: contas feitas à mão');
       await contasAMao(F, pg);

@@ -6,15 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 "Aporte" (formerly "Minha Carteira"; repo and localStorage keys keep the old name) is a personal investment-portfolio PWA (pt-BR UI, BRL/USD, Brazilian + US holdings). It is a static site hosted on GitHub Pages (`.nojekyll`); the repo holds only code — user data lives in the browser (localStorage) and in the private repo described under Cloud sync.
 
-There is no build system, package manager or linter. To develop, edit the files and open `index.html` in a browser (or serve the directory with any static server, e.g. `python3 -m http.server`).
+There is no build system or package manager (Playwright and ESLint are only installed on demand with `npm install --no-save`). To develop, edit the files and open `index.html` in a browser (or serve the directory with any static server, e.g. `python3 -m http.server`).
+
+## Files, version and lint
+
+- `index.html` = markup only (plus the tiny inline theme script in `<head>`, which must run before paint). `style.css` = all CSS. `app.js` = all the logic (one IIFE). `sw.js` = service worker. A new local file referenced by `index.html` must also go in the precache list of `sw.js` (the test fails if it is missing).
+- **Version**: `VERSAO` at the top of `app.js` (`MAJOR.MINOR.PATCH`, shown in Ajustes). It is the single source: the app registers `sw.js?v=VERSAO` and `sw.js` names its offline cache `aporte-v<VERSAO>`, so a new version drops the old cache. **Bump `VERSAO` on every change the user can see** (patch for small fixes, minor for new features).
+- **Lint**: `npx eslint@9 app.js sw.js` (config `eslint.config.js`: only real-error rules such as undefined variables, duplicate keys, unreachable code; style is not enforced). Run it with the tests before every push; CI runs it too.
 
 ## Tests (run before every push)
 
-`node tests/teste.js` (needs Playwright) opens `index.html` offline with a frozen clock, loads the example portfolio in the file and checks the money math against values computed by hand in the test (preço médio without fees, realized/unrealized, câmbio, proventos, taxas, CDB/LCI with CDI + IOF + IR, IR mensal with the R$ 20 mil exemption, FII 20%, carried losses, DARF date, Bens e Direitos, XIRR, splitNeed, B3 holidays), then compares everything with the snapshot `tests/esperado-exemplo.json` and clicks through every tab (any JS error fails). `node tests/teste.js --real ../minha-carteira-dados/testes/foto-real.json` does the same with a frozen copy of the user's real trades + quotes, kept only in the private data repo (never copy it here). `--gravar` rewrites a snapshot: only do it when a number changed on purpose, and say what changed. The app exposes its functions to the test only when `window.__APORTE_TESTE__` is set (end of the IIFE). `.github/workflows/teste.yml` runs the example test on every push.
+`npx eslint@9 app.js sw.js` and `node tests/teste.js` (needs Playwright) opens `index.html` offline with a frozen clock, loads the example portfolio in the file and checks the money math against values computed by hand in the test (preço médio without fees, realized/unrealized, câmbio, proventos, taxas, CDB/LCI with CDI + IOF + IR, IR mensal with the R$ 20 mil exemption, FII 20%, carried losses, DARF date, Bens e Direitos, XIRR, splitNeed, B3 holidays), then compares everything with the snapshot `tests/esperado-exemplo.json` and clicks through every tab (any JS error fails). `node tests/teste.js --real ../minha-carteira-dados/testes/foto-real.json` does the same with a frozen copy of the user's real trades + quotes, kept only in the private data repo (never copy it here). `--gravar` rewrites a snapshot: only do it when a number changed on purpose, and say what changed. The app exposes its functions to the test only when `window.__APORTE_TESTE__` is set (end of the IIFE). `.github/workflows/teste.yml` runs lint + the example test on every push.
 
 ## Architecture
 
-Everything is in a single `index.html` (~1200 lines: inline CSS, markup, then one IIFE `<script>`). `manifest.webmanifest`, `icon.svg` and `sw.js` (service worker: network-first for the app's own files, cache fallback so it opens offline; never touches API calls) make it installable. Code is written in dense ES5 style (`var`, `function`, no modules) — keep that style when editing.
+The app is `index.html` (markup) + `style.css` + `app.js` (~2500 lines, one IIFE). `manifest.webmanifest`, `icon.svg` and `sw.js` (service worker: network-first for the app's own files, cache fallback so it opens offline; never touches API calls) make it installable. Code is written in dense ES5 style (`var`, `function`, no modules) — keep that style when editing.
 
 Key pieces inside the script:
 
@@ -66,4 +72,4 @@ Keep user data and API keys out of the repo; the app must keep working offline f
 - `style-src` / `font-src`: Google Fonts.
 - Removing an API? Drop its domain too.
 
-Check with `grep -oE "https?://[a-zA-Z0-9.-]+" index.html | sort -u` against the CSP. If the user reports that something "parou de carregar do nada", suspect the CSP first.
+Check with `grep -ohE "https?://[a-zA-Z0-9.-]+" index.html app.js style.css | sort -u` against the CSP. If the user reports that something "parou de carregar do nada", suspect the CSP first.

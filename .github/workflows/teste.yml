@@ -11,5 +11,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
+      - run: npm install --no-save playwright@1.63.0 eslint@9 && npx playwright install --with-deps chromium
+      - run: npx eslint app.js sw.js
       - run: node tests/teste.js
