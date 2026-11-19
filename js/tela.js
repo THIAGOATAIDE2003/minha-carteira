@@ -141,7 +141,7 @@ document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.classList&
 function getTema(){try{return localStorage.getItem(LS+'-tema')||'atual'}catch(e){return 'atual'}}
 function setTema(tm){try{localStorage.setItem(LS+'-tema',tm)}catch(e){}
   var r=document.documentElement;if(tm==='atual')r.removeAttribute('data-theme');else r.setAttribute('data-theme',tm);
-  var mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.content=tm==='preto'?'#202124':tm==='branco'?'#ffffff':'#0a1017';
+  var mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.content=tm==='preto'?'#202124':tm==='branco'?'#e8e9eb':'#0a1017';
   markTema();render()}
 function markTema(){var tm=getTema();[].forEach.call(document.querySelectorAll('[data-tema]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-tema')===tm))})}
 document.addEventListener('click',function(e){
