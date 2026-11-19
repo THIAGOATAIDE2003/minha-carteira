@@ -146,6 +146,7 @@ function setTema(tm){try{localStorage.setItem(LS+'-tema',tm)}catch(e){}
 function markTema(){var tm=getTema();[].forEach.call(document.querySelectorAll('[data-tema]'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-tema')===tm))})}
 document.addEventListener('click',function(e){
   var t=e.target;
+  if(t.closest&&t.closest('[data-gan]')){var tp=$('stv-top');if(tp)tp.scrollIntoView({behavior:'smooth',block:'start'});return}
   var hr=t.closest&&t.closest('[data-hero]');if(hr){heroOpen(hr.getAttribute('data-hero'));return}
   var sk=t.closest&&t.closest('[data-stk]');if(sk){var sv=sk.getAttribute('data-stk');if(sv==='close')stkClose();else stkOpen(sv);return}
   var sv=t.closest&&t.closest('[data-stv]');if(sv){STV=sv.getAttribute('data-stv');try{localStorage.setItem(LS+'-stv',STV)}catch(e){}stkRender();return}

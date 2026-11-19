@@ -183,12 +183,13 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
   var hs=rgCut(d.hist,STK.rng),fv=finView(ySym(tk),STK.rng),fo=null,fmsg='',fat=0;if(fv){if(fv.st==='ok'){hs=fv.hist;fo=fv.o;fat=fv.at||0}else fmsg=fv.msg}
   var ch=hs.length>1?hs[hs.length-1].c/((fo&&fo.prev)||hs[0].c)-1:null,lv1=livePx(tk),zd,prv=d.pct!=null?d.price/(1+d.pct/100):null,
     zd=tk.charAt(0)!=='^'&&dzero(!isBR(tk),Math.max(lv1&&lv1.at||0,d.at||0)),perPct=STK.rng==='yr'?(zd?0:d.pct):ch!=null?ch*100:(zd?0:d.pct),perAbs=STK.rng==='yr'||ch==null?(prv!=null?(zd?0:d.price-prv):null):hs[hs.length-1].c-((fo&&fo.prev)||hs[0].c),perRg=STK.rng==='yr'||ch==null?'1d':STK.rng;
-  var h=gHead(d.name,d.sector,F.format(d.price),perAbs,perPct,perRg,perAbs!=null?(perAbs>=0?'+':'−')+F.format(Math.abs(perAbs)):'',gWhen(Math.max(lv1&&lv1.at||0,fat)||d.at))+
+  var st=finStat(ySym(tk)),h='<div class="gcard">'+gHead(d.name,d.sector,F.format(d.price),perAbs,perPct,perRg,'',gWhen(Math.max(lv1&&lv1.at||0,fat)||d.at))+
     rngBar(STK.rng,d.fast?[]:['max'])+
     (STK.busy?'<p class="muted small">Atualizando...</p>':'')+(d.rgGot!==undefined&&d.rgGot!==rgEff()&&STK.rng!=='yr'&&STK.rng!=='1d'&&STK.rng!=='5d'&&STK.rng!=='max'?'<p class="note" style="margin:0 0 6px">O plano grátis do brapi '+(d.rgGot?'só liberou até '+({'1mo':'1 mês','3mo':'3 meses','6mo':'6 meses','1y':'1 ano'}[d.rgGot]||d.rgGot)+' de gráfico':'não liberou o gráfico')+' para essa ação.</p>':'')+(STK.rng==='yr'?annHtml(annRets(d.hist,d.price)):fmsg?'<p class="muted small" style="margin:12px 0">'+esc(fmsg)+'</p>':lineChart(hs,d.cur,pm,null,fo));
 
-  h+=gStats([['Abertura',d.o!=null?F.format(d.o):null],['Alta',d.h!=null?F.format(d.h):null],['Baixa',d.l!=null?F.format(d.l):null],['Fech. ant.',prv!=null?F.format(prv):null],['Alt 52 sem',K.hi!=null?F.format(K.hi):null],['Bai 52 sem',K.lo!=null?F.format(K.lo):null]]);
-  h+='<div class="seg stseg">'+[['res','Resumo'],['val','Preço justo'],['ind','Indicadores'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  var f0=function(v){return v!=null?pf.format(v):null},op=st?st.o:d.o,hh=st?st.h:d.h,ll=st?st.l:d.l;
+  h+=gStats([['Abertura',f0(op)],['Alta',f0(hh)],['Baixa',f0(ll)],['Fech. ant.',f0(st&&st.prev!=null?st.prev:prv)],['Alt 52 sem',f0(K.hi)],['Bai 52 sem',f0(K.lo)]])+(tk.charAt(0)!=='^'?'<button type="button" class="gan" data-gan="1">Analisar '+esc(tk)+' ›</button>':'')+'</div>';
+  h+='<div class="seg stseg" id="stv-top">'+[['res','Resumo'],['val','Preço justo'],['ind','Indicadores'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
   var PE=d.cur==='USD'?null:anPeers(tk),sm=function(k,f){return PE&&PE[k]!=null?' <small class="ksec">setor '+f(PE[k])+'</small>':''},sp=function(v){return pf.format(v)+'%'},sn=function(v){return num(v,1)};
   if(STV==='val')h+=anVal(tk,d);
   else if(STV==='news')h+=rsNews(tk);

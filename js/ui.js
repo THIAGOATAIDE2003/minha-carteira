@@ -23,7 +23,8 @@ function tipShow(c,x){
   if(!g){g=document.createElement('i');g.className='tipg';c.appendChild(g);b=document.createElement('div');b.className='tipb';c.appendChild(b)}
   var cx=(best.i+.5)/d.n*r.width;g.style.left=cx+'px';g.hidden=false;
   var dt=c.querySelector('.tipd');if(best.y!=null){if(!dt){dt=document.createElement('i');dt.className='tipd';c.appendChild(dt)}dt.style.left=cx+'px';dt.style.top=(best.y*100)+'%';dt.style.background=best.c||'var(--accent)';dt.hidden=false}else if(dt)dt.hidden=true;
-  b.innerHTML='<b>'+esc(best.t)+'</b>'+best.r.map(function(w){var sub=/^\s/.test(w[1]);return '<div><span'+(sub?' class="sub"':'')+'>'+(w[0]?'<i style="background:'+w[0]+'"></i>':'')+esc(w[1].trim())+'</span><b class="'+(w[3]||'')+'">'+esc(w[2])+'</b></div>'}).join('');
+  if(d.g){b.className='tipb gtip';b.innerHTML='<b>'+esc(best.v)+'</b><span>'+esc(best.t)+'</span>';b.hidden=false;var gw=b.offsetWidth,gl=cx-gw/2;gl=Math.max(0,Math.min(r.width-gw,gl));b.style.left=gl+'px';c.classList.add('tipon');return}
+  b.className='tipb';b.innerHTML='<b>'+esc(best.t)+'</b>'+best.r.map(function(w){var sub=/^\s/.test(w[1]);return '<div><span'+(sub?' class="sub"':'')+'>'+(w[0]?'<i style="background:'+w[0]+'"></i>':'')+esc(w[1].trim())+'</span><b class="'+(w[3]||'')+'">'+esc(w[2])+'</b></div>'}).join('');
   b.hidden=false;var bw=b.offsetWidth,lf=cx+14;if(lf+bw>r.width)lf=cx-14-bw;if(lf<0)lf=Math.max(0,Math.min(r.width-bw,cx-bw/2));b.style.left=lf+'px';
   [].forEach.call(c.querySelectorAll('[data-slot]'),function(e){e.classList.toggle('on',+e.getAttribute('data-slot')===best.i)});
   c.classList.add('tipon');
