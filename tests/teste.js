@@ -198,12 +198,20 @@ function contasAMao(F, P) {
     console.log('Abas abertas: ' + vistos.length);
     /* gráfico estilo Google: página da ação com histórico de mentira e os três números do Início */
     const g = await pg.evaluate(() => { var d = [], t = Math.floor(Date.now() / 864e5) - 300, p = 30; for (var i = 0; i < 300; i++) { p += Math.sin(i / 9) * .6 + .12; d.push([t + i, +p.toFixed(2)]); }
-      MD.d = { hist: { TESTE3: { d: d, w: d, last: d[299][1], name: 'Teste SA', cur: 'BRL' } }, idx: {}, at: Date.now() }; stkOpen('TESTE3');
+      MD.d = { hist: { TESTE3: { d: d, w: d, last: d[299][1], name: 'Teste SA', cur: 'BRL' }, TEST3: { d: d, w: d, last: d[299][1], name: 'Teste 3', cur: 'BRL' } }, idx: {}, at: Date.now() }; stkOpen('TESTE3');
       var q = function (s) { return document.querySelectorAll('#stk-b ' + s).length; }, r = { gh: q('.gh'), svg: q('.gch svg'), dim: q('.rb.dim'), stats: q('.gst') };
       document.querySelector('[data-rmore]').click(); r.mais = q('.rng2 button'); document.querySelector('[data-rng="ytd"]').click(); r.ytd = q('.gch svg');
       stkClose(); heroOpen('pat'); r.hero = q('.gch svg'); stkClose(); return r; });
-    confere('página da ação: cabeçalho, gráfico, 1D/5D em breve, números e botão Mais', [g.gh, g.svg, g.dim, g.stats > 0, g.mais > 0, g.ytd], [1, 1, 2, true, true, 1]);
+    confere('página da ação: cabeçalho, gráfico, 1D/5D em breve, números e botão Mais', [g.gh, g.svg, g.dim, g.stats > 0, g.mais > 0, g.ytd], [1, 1, 0, true, true, 1]);
     confere('gráfico do patrimônio ao tocar no número do Início', g.hero, 1);
+    /* 1D/5D com pontos de 5 minutos de mentira (arquivos do robô) e a carteira ao longo do dia */
+    const g2 = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), p5 = []; for (var i = 0; i < 40; i++) p5.push([now - (40 - i) * 300, 20 + i * .05]);
+      var mk = function (prev) { return { d: { cur: 'BRL', off: -10800, at: now, prev: prev, p: p5 }, at: Date.now() }; };
+      FIN['intra/TEST3.SA'] = mk(19.5); stkOpen('TEST3'); document.querySelector('[data-rng="1d"]').click(); var r = { um: document.querySelectorAll('#stk-b .gch svg').length, prev: /antes do fechamento/.test(document.getElementById('stk-b').textContent) };
+      document.querySelector('[data-rng="5d"]').click(); r.cinco = document.querySelectorAll('#stk-b .gch svg').length; stkClose();
+      compute().held.forEach(function (x) { FIN['intra/' + ySym(x.p.ticker)] = mk(19.5); }); heroOpen('dia'); r.dia = document.querySelectorAll('#stk-b .gch svg').length; stkClose();
+      FIN['intra/TEST3.SA'] = { d: null, at: Date.now() }; stkOpen('TEST3'); document.querySelector('[data-rng="1d"]').click(); r.sem = /Ainda não há pontos/.test(document.getElementById('stk-b').textContent); stkClose(); return r; });
+    confere('gráfico de 1 dia e 5 dias, linha do fechamento anterior, carteira no dia e aviso sem dados', [g2.um, g2.prev, g2.cinco, g2.dia, g2.sem], [1, true, 1, 1, true]);
     if (erros.length) { falhas += erros.length; erros.forEach(e => console.log('  ✗ erro na página: ' + e)); }
     console.log(falhas ? '\n✗ ' + falhas + ' problema(s), ' + ok + ' conferência(s) certas' : '\n✓ Tudo certo: ' + ok + ' conferências');
   } finally { await b.close(); }

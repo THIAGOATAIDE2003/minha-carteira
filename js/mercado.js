@@ -315,11 +315,12 @@ function idxRender(){
   var y1=(D.d||[]).map(function(p){return p[1]}),hi=Math.max.apply(null,y1),lo=Math.min.apply(null,y1);
   var at=function(daysAgo){var t=Date.now()/864e5-daysAgo,a=(daysAgo>370?D.w:D.d)||[];for(var i=a.length-1;i>=0;i--)if(a[i][0]<=t)return a[i][1];return null};
   var v1=at(365),v5=at(1790),chg=function(a){return a==null||!last?'—':((last/a-1)>=0?'+':'−')+pf.format(Math.abs((last/a-1)*100))+'%'};
-  hist=rgCut(hist,STK.rng);ch=hist.length>1?(rate?hist[hist.length-1].c-hist[0].c:hist[hist.length-1].c/hist[0].c-1):null;
-  var pAbs=ch==null?null:rate?ch:hist[hist.length-1].c-hist[0].c,pPct=ch==null?null:rate?(hist[0].c?ch/hist[0].c*100:null):ch*100,per=rg==='yr'||ch==null?'1d':rg;
+  var fv=finView(sym,rg),fo=null,fmsg='';if(fv){if(fv.st==='ok'){hist=fv.hist;fo=fv.o}else fmsg=fv.msg}
+  hist=rgCut(hist,STK.rng);ch=hist.length>1?(rate?hist[hist.length-1].c-hist[0].c:hist[hist.length-1].c/((fo&&fo.prev)||hist[0].c)-1):null;
+  var pAbs=ch==null?null:rate?ch:hist[hist.length-1].c-((fo&&fo.prev)||hist[0].c),pPct=ch==null?null:rate?(hist[0].c?ch/hist[0].c*100:null):ch*100,per=rg==='yr'||ch==null?'1d':rg;
   if(ch==null||rg==='yr'){pPct=dp;pAbs=dp!=null&&last!=null?last-last/(1+dp/100):null}
   var h=gHead(x.t,'',last!=null?fmt(last):'—',pAbs,pPct,per,pAbs!=null?(pAbs>=0?'+':'−')+(rate?pf.format(Math.abs(pAbs)):fmt(Math.abs(pAbs))):'',o&&o.at?gWhen(o.at):(MD.d&&MD.d.at?gWhen(MD.d.at):''))+
-    rngBar(rg,rate?['yr','max']:[])+(rg==='yr'&&!rate?annHtml(annRets(hist,null)):lineChart(hist,'BRL',null,fmt));
+    rngBar(rg,rate?['yr','max']:[])+(rg==='yr'&&!rate?annHtml(annRets(hist,null)):fmsg?'<p class="muted small" style="margin:12px 0">'+esc(fmsg)+'</p>':lineChart(hist,'BRL',null,fmt,fo));
   var rows=rate?[['Agora',last!=null?fmt(last):'—'],['Há 1 ano',v1!=null?fmt(v1):'—'],['Há 5 anos',v5!=null?fmt(v5):'—'],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)]]
     .concat(k==='cdi'&&D.acc12!=null?[['Rendeu em 12 meses',pf.format(D.acc12)+'%']]:[]).concat(k==='ipca'&&D.mes!=null?[['Último mês',pf.format(D.mes)+'%']]:[])
     :[['Em 12 meses',chg(v1)],['Em 5 anos',chg(v5)],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)],['Distância da máxima',last&&hi?'−'+pf.format(Math.abs((last/hi-1)*100))+'%':'—']];
@@ -327,7 +328,7 @@ function idxRender(){
     '<p class="note">'+(rate?(k==='cdi'?'CDI em % ao ano, do Banco Central. É o juro que os bancos cobram entre si e fica sempre um pouco abaixo da Selic; é ele que rende CDB, LCI e LCA.':k==='selic'?'Selic meta em % ao ano, do Banco Central. É a taxa básica de juros, definida pelo Copom a cada 45 dias; o CDI anda colado nela, uns 0,10 ponto abaixo.':'IPCA acumulado em 12 meses, do Banco Central (IBGE).'):(same?'Histórico do Yahoo Finance'+(sym?' ('+esc(sym)+')':'')+', atualizado pelo robô diário; o valor de agora vem das APIs do app.':'Gráfico do próprio índice ('+esc(sym)+', Yahoo Finance) pelo fechamento mais recente; a variação de hoje vem do '+esc(x.s)+', que acompanha o índice.'))+'</p>';
   b.innerHTML=h;
 }
-function rgEff(){return STK.rng==='yr'||STK.rng==='max'?'5y':STK.rng==='ytd'?'1y':STK.rng}
+function rgEff(){return STK.rng==='yr'||STK.rng==='max'?'5y':STK.rng==='ytd'?'1y':STK.rng==='1d'||STK.rng==='5d'?'1mo':STK.rng}
 /* valorização ano a ano: do último preço do ano anterior ao último do ano (o ano atual vai até hoje) */
 function annRets(hist,live){var by={},ys=[];hist.forEach(function(p){var y=new Date(p.t).getUTCFullYear();if(!by[y]){by[y]=[];ys.push(y)}by[y].push(p)});ys.sort();
   var cy=new Date().getFullYear(),out=[];
