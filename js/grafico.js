@@ -31,7 +31,8 @@ function xTicks(hist,o){var n=hist.length,t0=hist[0].t,t1=hist[n-1].t,span=(t1-t
   if(span>1000){var y0=new Date(t0).getFullYear()+1,st=span>2800?2:1;for(var y=y0;y<=new Date(t1).getFullYear();y+=st)out.push({i:at(new Date(y,0,1).getTime()),l:String(y)});return out}
   if(span>75){var sm=span/30,step=sm<=4?1:sm<=8?2:sm<=14?3:6,d2=new Date(t0);d2=new Date(d2.getFullYear(),d2.getMonth()+1,1);for(;d2.getTime()<t1;d2=new Date(d2.getFullYear(),d2.getMonth()+1,1))if(d2.getMonth()%step===0)out.push({i:at(d2.getTime()),l:mn[d2.getMonth()]+' de '+d2.getFullYear()});return out}
   for(var k=1;k<=3;k++){var t=t0+(t1-t0)*k/4,q2=new Date(t);out.push({i:at(t),l:q2.getDate()+' de '+mn[q2.getMonth()]})}return out}
-function lineChart(hist,cur,pm,fmt,o){o=o||{};
+var GID=0;
+function lineChart(hist,cur,pm,fmt,o){o=o||{};var gid='skg'+(++GID);
   if(!hist||hist.length<2)return '<p class="muted small" style="margin:12px 0">Sem histórico de preços para esse período.</p>';
   var W=320,H=190,vs=hist.map(function(p){return p.c}),lo=Math.min.apply(null,vs),hi=Math.max.apply(null,vs);if(pm)vs.push(pm);if(o.prev)vs.push(o.prev);
   var mn=Math.min.apply(null,vs),mx=Math.max.apply(null,vs),pd=(mx-mn)*.08||mx*.02;mn-=pd;mx+=pd;
@@ -42,9 +43,9 @@ function lineChart(hist,cur,pm,fmt,o){o=o||{};
   var dl=function(t){var q=new Date(t),b=wd[q.getDay()]+', '+q.getDate()+' de '+mm[q.getMonth()]+(span>300?' de '+q.getFullYear():'');return o.intra?(o.d1?'':b+', ')+('0'+q.getHours()).slice(-2)+':'+('0'+q.getMinutes()).slice(-2):b};
   var tip={n:n,g:1,pts:tp.map(function(i){var p=hist[i];return {i:i,t:dl(p.t),v:F.format(p.c),y:yf(p.c),c:col}})};
   var tk=niceTicks(mn+pd*.4,mx-pd*.4,4),dec=tk.st>=1?0:tk.st>=.1?2:3,lab=function(v){return fmt&&/%/.test(fmt(v))?fmt(v):num(v,dec)},xt=xTicks(hist,o).filter(function(t,k,a){var pc=(t.i+.5)/n*100,pv=k?(a[k-1].pc||0):-99;t.pc=pc;if(pc-(a._l==null?-99:a._l)<34&&k)return false;a._l=pc;return true});
-  return '<div class="gch"><div class="gyc">'+tk.t.map(function(v){return '<span style="top:'+(yf(v)*100).toFixed(2)+'%">'+esc(lab(v))+'</span>'}).join('')+'</div><div class="gcw"><div class="tipc"'+tipAttr(tip)+'><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" width="100%" height="'+H+'" role="img" aria-label="Gráfico de preço"><defs><linearGradient id="skg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity=".38"/><stop offset="1" stop-color="'+col+'" stop-opacity=".04"/></linearGradient></defs>'+
+  return '<div class="gch"><div class="gyc">'+tk.t.map(function(v){return '<span style="top:'+(yf(v)*100).toFixed(2)+'%">'+esc(lab(v))+'</span>'}).join('')+'</div><div class="gcw"><div class="tipc"'+tipAttr(tip)+'><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" width="100%" height="'+H+'" role="img" aria-label="Gráfico de preço"><defs><linearGradient id="'+gid+'" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:'+col+';stop-opacity:.38"/><stop offset="1" style="stop-color:'+col+';stop-opacity:.04"/></linearGradient></defs>'+
     tk.t.map(function(v){return '<line x1="0" x2="'+W+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)" stroke-width="1" vector-effect="non-scaling-stroke"/>'}).join('')+
-    '<polygon points="0,'+H+' '+pts+' '+W+','+H+'" fill="url(#skg)"/><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<polygon points="0,'+H+' '+pts+' '+W+','+H+'" fill="url(#'+gid+')"/><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>'+
     (o.prev?'<line x1="0" x2="'+W+'" y1="'+y(o.prev)+'" y2="'+y(o.prev)+'" stroke="var(--muted)" stroke-dasharray="1 4" stroke-width="1.5" vector-effect="non-scaling-stroke"/>':'')+
     (pm?'<line x1="0" x2="'+W+'" y1="'+y(pm)+'" y2="'+y(pm)+'" stroke="var(--c2)" stroke-dasharray="5 4" stroke-width="1.5" vector-effect="non-scaling-stroke"/>':'')+
     '<line x1="0" x2="'+W+'" y1="'+(H-.5)+'" y2="'+(H-.5)+'" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke"/>'+
@@ -56,7 +57,7 @@ function lineChart(hist,cur,pm,fmt,o){o=o||{};
 var FIN={};
 function ySym(tk){return tk.charAt(0)==='^'||!isBR(tk)?tk:tk+'.SA'}
 function finGet(kind,sym){var k=kind+'/'+sym,ttl=kind==='intra'?240000:6*3600000,c=FIN[k];
-  if(c&&c.p)return c.p;if(c&&(c.err?Date.now()-c.at<60000:c.d!==undefined&&Date.now()-c.at<ttl))return Promise.resolve(c.d);if(!S.keys.gh)return Promise.resolve(null);
+  if(c&&c.p)return c.p;if(c&&(c.err?Date.now()-c.at<60000:c.d!==undefined&&Date.now()-c.at<ttl))return Promise.resolve(c.d);if(!S.keys.gh){FIN[k]={d:null,at:Date.now()};return Promise.resolve(null)}
   var ac=new AbortController(),to=setTimeout(function(){ac.abort()},15000),old=c&&c.d;
   var p=fetch('https://api.github.com/repos/'+ghRepo()+'/contents/dados/'+kind+'/'+sym.replace(/[^A-Za-z0-9._-]/g,'_')+'.json?ref=main',{headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'},signal:ac.signal,cache:'no-store'})
     .then(function(r){clearTimeout(to);if(r.status===404)return null;if(!r.ok)throw 0;return r.json()}).catch(function(){return old===undefined?undefined:old}).then(function(d){FIN[k]={d:d,at:Date.now(),err:d===undefined};return d});
