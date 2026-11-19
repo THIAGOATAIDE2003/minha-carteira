@@ -6,7 +6,7 @@ self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(func
 self.addEventListener('fetch',function(e){
   var r=e.request,u=new URL(r.url);if(r.method!=='GET')return;
   if(u.origin===location.origin){
-    e.respondWith(fetch(r).then(function(res){if(res.ok){var cp=res.clone();caches.open(C).then(function(c){c.put(r,cp)})}return res}).catch(function(){return caches.match(r,{ignoreSearch:true}).then(function(m){return m||caches.match('index.html')})}));
+    e.respondWith(fetch(r,{cache:'no-cache'}).then(function(res){if(res.ok){var cp=res.clone();caches.open(C).then(function(c){c.put(r,cp)})}return res}).catch(function(){return caches.match(r,{ignoreSearch:true}).then(function(m){return m||caches.match('index.html')})}));
   }else if(u.hostname==='fonts.googleapis.com'||u.hostname==='fonts.gstatic.com'){
     e.respondWith(caches.match(r).then(function(m){return m||fetch(r).then(function(res){var cp=res.clone();caches.open(C).then(function(c){c.put(r,cp)});return res})}));
   }
