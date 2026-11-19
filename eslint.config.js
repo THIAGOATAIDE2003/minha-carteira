@@ -1,6 +1,6 @@
 /* Linter do Aporte: só regras que pegam erro de verdade (variável que não existe, chave repetida,
    código que nunca roda...). Estilo não é cobrado: o código é denso de propósito (ES5, sem módulos).
-   Rodar: npx eslint@9 */
+   Rodar: node tests/lint.js (ele junta os arquivos de js/ antes, porque compartilham variáveis) */
 const js = require('@eslint/js');
 
 const navegador = {
@@ -32,6 +32,6 @@ const regras = Object.assign({}, js.configs.recommended.rules, {
 
 module.exports = [
   { ignores: ['node_modules/**', 'tests/**'] },
-  { files: ['app.js', 'sw.js', 'tema.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: navegador }, rules: regras },
+  { files: ['js/**/*.js', 'sw.js', 'tema.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: navegador }, rules: regras },
   { files: ['eslint.config.js', 'tests/**/*.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'commonjs', globals: { require: 'readonly', module: 'writable', __dirname: 'readonly', process: 'readonly', console: 'readonly', window: 'readonly', document: 'readonly' } }, rules: {} }
 ];

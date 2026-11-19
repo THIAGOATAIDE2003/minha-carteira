@@ -79,7 +79,7 @@ function foto() {
 /* ---------- abre o app ---------- */
 async function abrir(b, fx) {
   const pg = await b.newPage({ viewport: { width: 400, height: 900 } }), erros = [];
-  pg.on('pageerror', e => erros.push(e.message));
+  pg.on('pageerror', e => erros.push(e.message + ' ← ' + String(e.stack || '').split('\n').slice(1, 9).map(s => s.trim().replace(/^at /, '')).join(' < ')));
   pg.on('console', m => { if (/Content Security Policy|Refused to (load|connect|execute|apply)/i.test(m.text())) erros.push('CSP bloqueou algo: ' + m.text().slice(0, 160)); });
   await pg.clock.setFixedTime(new Date(fx.now));
   await pg.route('**/*', r => r.request().url().startsWith('file:') ? r.continue() : r.abort());
@@ -184,7 +184,7 @@ function contasAMao(F, P) {
     /* versão única: o app mostra em Ajustes e o sw.js usa no nome do cache; todo arquivo local do index.html precisa estar no cache offline */
     confere('versão do app (formato e texto em Ajustes)', await pg.evaluate(() => /^\d+\.\d+\.\d+$/.test(window.__aporte.VERSAO) && document.getElementById('ver').textContent === window.__aporte.VERSAO), true);
     const raiz = path.resolve(__dirname, '..'), sw = fs.readFileSync(path.join(raiz, 'sw.js'), 'utf8');
-    for (const m of fs.readFileSync(path.join(raiz, 'index.html'), 'utf8').matchAll(/(?:src|href)="([a-z.\-]+\.(?:css|js|svg|webmanifest))"/g)) confere('sw.js guarda ' + m[1] + ' para abrir offline', sw.includes("'" + m[1] + "'"), true);
+    for (const m of fs.readFileSync(path.join(raiz, 'index.html'), 'utf8').matchAll(/(?:src|href)="([a-z0-9./\-]+\.(?:css|js|svg|webmanifest))"/g)) confere('sw.js guarda ' + m[1] + ' para abrir offline', sw.includes("'" + m[1] + "'"), true);
     if (!REAL) {
       console.log('Carteira de exemplo: contas feitas à mão');
       await contasAMao(F, pg);

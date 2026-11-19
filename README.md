@@ -35,7 +35,7 @@ Em **Mais → Ajustes**, cole as chaves (todas grátis):
 
 ## Desenvolvimento
 
-Não tem build nem dependências: o app é `index.html` (tela), `style.css` (visual) e `app.js` (lógica). Para testar localmente:
+Não tem build nem dependências: o app é `index.html` (tela), `style.css` (visual) e a pasta `js/` (lógica, um arquivo por assunto: Proventos, Início, Mercado, Risco, Carteira etc.). Para testar localmente:
 
 ```sh
 python3 -m http.server
@@ -45,7 +45,7 @@ Testes das contas (rodam também no GitHub Actions a cada push):
 
 ```sh
 npm install --no-save playwright eslint@9 && npx playwright install chromium
-npx eslint app.js sw.js tema.js   # erros de código (variável que não existe etc.)
+node tests/lint.js        # erros de código (variável que não existe etc.)
 node tests/teste.js       # contas e abas
 ```
 
@@ -57,7 +57,7 @@ Detalhes da arquitetura estão em [`CLAUDE.md`](CLAUDE.md).
 |---|---|
 | `index.html` | Estrutura da tela |
 | `style.css` | Visual |
-| `app.js` | Toda a lógica (e o número da versão, `VERSAO`) |
+| `js/*.js` | Toda a lógica, dividida por assunto (o número da versão, `VERSAO`, está em `js/nucleo.js`) |
 | `sw.js` | Service worker (funciona offline; o cache leva o número da versão) |
 | `eslint.config.js` | Regras do linter |
 | `manifest.webmanifest`, `icon.svg` | Instalação como app |

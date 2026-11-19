@@ -1,0 +1,197 @@
+/* Aporte · js/metas-aporte-imposto.js — imposto de renda, aporte, metas de patrimônio e relatório de IR.
+   Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
+/* imposto de renda: ações e FIIs no Brasil (swing trade), proventos e bens para a declaração */
+var FIIS={HGLG11:1},IRY=null;
+function isFII(tk){return !!FIIS[tk]}
+function irData(){
+  var ts=S.trades.filter(function(t){return t.market==='BR'&&(t.side==='buy'||t.side==='sell')}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.side==='buy'?-1:1)});
+  var pos={},mo={},dts={},warn=[];
+  ts.forEach(function(t){
+    var p=pos[t.ticker]||(pos[t.ticker]={q:0,c:0});(dts[t.ticker+'|'+t.date]=dts[t.ticker+'|'+t.date]||{})[t.side]=1;
+    if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*ePx(t);return}
+    var q=Math.min(t.qty,p.q);if(q<=0)return;var avg=p.c/p.q,g=q*(ePx(t)-avg),m=t.date.slice(0,7),k=isFII(t.ticker)?'fii':'acao';
+    var r=mo[m]||(mo[m]={m:m,acao:{v:0,g:0,it:[]},fii:{v:0,g:0,it:[]}});r[k].v+=q*t.price;r[k].g+=g;r[k].it.push({tk:t.ticker,d:t.date,q:q,v:q*t.price,g:g});
+    p.c-=avg*q;p.q-=q;if(p.q<1e-9){p.q=0;p.c=0}
+  });
+  Object.keys(dts).forEach(function(k){if(dts[k].buy&&dts[k].sell)warn.push(k.split('|')[0]+' em '+fmtDate(k.split('|')[1]))});
+  var pa=0,pf=0,rows=Object.keys(mo).sort().map(function(m){
+    var r=mo[m],a=r.acao,f=r.fii;
+    r.isento=a.v<=20000;
+    if(r.isento){if(a.g<0)pa+=-a.g;r.baseA=0}else{var b=a.g-pa;if(b>0){r.baseA=b;pa=0}else{r.baseA=0;pa=-b}}
+    var bf=f.g-pf;if(f.v>0||f.g){if(bf>0){r.baseF=bf;pf=0}else{r.baseF=0;pf=-bf}}else r.baseF=0;
+    r.imp=r.baseA*0.15+r.baseF*0.20;r.pa=pa;r.pf=pf;
+    var y=+m.slice(0,4),mm=+m.slice(5,7)+1;if(mm>12){mm=1;y++}var ld=new Date(Date.UTC(y,mm,0));while(ld.getUTCDay()===0||ld.getUTCDay()===6)ld.setUTCDate(ld.getUTCDate()-1);r.venc=ld.toISOString().slice(0,10);
+    return r});
+  return {rows:rows,pa:pa,pf:pf,warn:warn};
+}
+function bensEm(dt){
+  var pos={};S.trades.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0}).forEach(function(t){
+    if(t.date>dt)return;
+    if(t.side==='rf'){pos['rf'+t.id]={tk:t.ticker,rf:1,q:1,c:t.price,mk:'RF'};return}
+    if(t.side==='rfout'){delete pos['rf'+t.ref];return}
+    if(t.side!=='buy'&&t.side!=='sell')return;
+    var p=pos[t.ticker]||(pos[t.ticker]={tk:t.ticker,mk:t.market,q:0,c:0,cu:0});var F=t.market==='US'?t.fx:1;
+    if(t.side==='buy'){p.q+=t.qty;p.c+=t.qty*ePx(t)*F;p.cu+=t.qty*ePx(t)}else{var q=Math.min(t.qty,p.q);if(q<=0)return;p.c-=p.c*q/p.q;p.cu-=p.cu*q/p.q;p.q-=q}
+  });
+  return Object.keys(pos).map(function(k){return pos[k]}).filter(function(p){return p.q>1e-9});
+}
+
+/* alocação alvo e próximo aporte (só compras, sem vender nada) */
+var APV='';try{if(S.perfil&&S.perfil.ap>0)APV=String(S.perfil.ap).replace('.',',')}catch(e){}
+function splitNeed(cur,tgt,amt){
+  var tot=0,ks=Object.keys(tgt);ks.forEach(function(k){tot+=cur[k]||0});
+  var after=tot+amt,need={},sn=0;ks.forEach(function(k){need[k]=Math.max(0,tgt[k]/100*after-(cur[k]||0));sn+=need[k]});
+  var out={};ks.forEach(function(k){out[k]=sn<=amt?need[k]+(amt-sn)*tgt[k]/100:(sn?amt*need[k]/sn:0)});return out;
+}
+function renderApo(){
+  var el=$('apotab');if(!el)return;
+  var R=compute(),T=R.tot,br=R.held.filter(function(x){return x.p.market==='BR'}),us=R.held.filter(function(x){return x.p.market==='US'});
+  var cur={BR:0,US:0,RF:T.rfV||0};br.forEach(function(x){cur.BR+=x.v});us.forEach(function(x){cur.US+=x.v});
+  var tot=cur.BR+cur.US+cur.RF;if(!tot){el.innerHTML='<div class="panel"><p class="muted">Lance suas compras para montar a divisão.</p></div>';return}
+  var A=S.alvos||{};var cl=A.classes||{BR:Math.round(cur.BR/tot*100),US:Math.round(cur.US/tot*100),RF:0};
+  var adj=100-(cl.BR+cl.US+cl.RF);if(adj&&!S.alvos)cl.US+=adj;
+  var inB=A.br||{};br.forEach(function(x){if(inB[x.p.ticker]==null)inB[x.p.ticker]=+(100/br.length).toFixed(1)});
+  var nm={BR:'Brasil (ações)',US:'EUA (VT)',RF:'Renda fixa'},h='';
+  var row=function(k,lab,c,tg,id){return '<span>'+lab+'<br><span class="muted small">hoje '+pf.format(c)+'%</span></span><input id="'+id+'" inputmode="decimal" value="'+String(tg).replace('.',',')+'" aria-label="'+lab+' alvo em %"><div class="alvbar"><i style="width:'+Math.min(100,c)+'%"></i><b style="left:calc('+Math.min(100,tg)+'% - 1px)"></b></div>'};
+  h+='<div class="panel"><h2>Sua divisão ideal</h2><p class="note exp" style="margin:0 0 12px">Quanto de cada parte você quer ter, em %. A barra azul é como está hoje; o traço dourado é o seu alvo.'+(S.alvos?'':' Preenchi com a divisão de hoje, ajuste e salve.')+'</p>'+(function(){var a=pfAlvo();if(!a||(cl.BR===a.BR&&cl.US===a.US&&cl.RF===a.RF))return '';return '<div class="pfsug"><span>Pelo seu perfil: <b>Brasil '+a.BR+'%</b>, <b>exterior '+a.US+'%</b>, <b>renda fixa '+a.RF+'%</b></span><button type="button" class="link" id="al-pf">Usar</button></div>'})()+'<div class="alv">'+
+    ['BR','US','RF'].map(function(k){return row(k,nm[k],cur[k]/tot*100,cl[k],'al-'+k)}).join('')+'</div>'+
+    (br.length>1?'<details><summary>Divisão dentro do Brasil</summary><p class="note" style="margin:8px 0 10px">Quanto cada ação representa dentro da parte do Brasil. Começa igual para todas.</p><div class="alv">'+
+      br.map(function(x){return row('',esc(x.p.ticker),cur.BR?x.v/cur.BR*100:0,inB[x.p.ticker],'ab-'+x.p.ticker)}).join('')+'</div></details>':'')+
+    '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap"><button class="btn small" type="button" id="al-save">Salvar divisão</button><span class="msg" id="al-msg"></span></div></div>';
+  h+='<div class="panel"><h2>Quanto vai aportar?</h2><div style="display:flex;gap:8px;margin-top:4px"><input id="apo-v" inputmode="decimal" placeholder="1.000,00" value="'+esc(APV)+'" aria-label="Valor do aporte em reais"><button class="btn" type="button" id="apo-go">Calcular</button></div><div id="apo-res"></div></div>';
+  h+='<p class="note exp" style="margin:0 4px">O cálculo só sugere compras: coloca o dinheiro primeiro onde está mais abaixo do alvo, sem vender nada. Não é recomendação de investimento, é a conta da divisão que você escolheu.</p>';
+  el.innerHTML=h;if(APV)apoCalc();
+}
+function apoCalc(){
+  var raw=String($('apo-v').value||'').trim(),v=/^\d{1,3}(\.\d{3})+$/.test(raw)?parseFloat(raw.replace(/\./g,'')):parseNum(raw),out=$('apo-res');APV=raw;
+  if(!(v>0)){out.innerHTML='<p class="msg err" style="margin-top:10px">Digite um valor, por exemplo 1.000.</p>';return}
+  var R=compute(),T=R.tot,br=R.held.filter(function(x){return x.p.market==='BR'}),us=R.held.filter(function(x){return x.p.market==='US'});
+  var cur={BR:0,US:0,RF:T.rfV||0};br.forEach(function(x){cur.BR+=x.v});us.forEach(function(x){cur.US+=x.v});
+  var A=S.alvos||{},tot=cur.BR+cur.US+cur.RF,cl=A.classes||{BR:Math.round(cur.BR/tot*100),US:Math.round(cur.US/tot*100),RF:0};
+  var sc=cl.BR+cl.US+cl.RF;cl={BR:cl.BR/sc*100,US:cl.US/sc*100,RF:cl.RF/sc*100};
+  var dist=splitNeed(cur,cl,v),fx=(fxToday()||{}).rate,li=[];
+  if(dist.BR>0.5&&br.length){
+    var inB=(A.br||{}),tg={},cb={},s2=0;br.forEach(function(x){tg[x.p.ticker]=inB[x.p.ticker]!=null?inB[x.p.ticker]:100/br.length;s2+=tg[x.p.ticker];cb[x.p.ticker]=x.v});
+    Object.keys(tg).forEach(function(k){tg[k]=tg[k]/s2*100});
+    var db=splitNeed(cb,tg,dist.BR),left=0;
+    br.forEach(function(x){var a=db[x.p.ticker];if(a<0.5)return;var px=x.P1,q=px?Math.floor(a/px):0;left+=a-q*px;
+      li.push('<li><span><b>'+esc(x.p.ticker)+'</b><br><span class="muted small">'+(q?q+(q>1?' ações':' ação')+' a '+brl.format(px)+' = '+brl.format(q*px):'menos de 1 ação ('+brl.format(px)+' cada)')+'</span></span><span class="num">'+brl.format(a)+'</span></li>')});
+    if(left>0.5)li.push('<li class="muted small"><span>Sobra por arredondar em ações inteiras</span><span class="num">'+brl.format(left)+'</span></li>');
+  }
+  if(dist.US>0.5&&us.length){var x=us[0],u=fx?dist.US/fx:0,q=x.P1?u/x.P1:0;
+    li.push('<li><span><b>'+esc(x.p.ticker)+'</b><br><span class="muted small">'+(fx?usd.format(u)+' a R$ '+num(fx,4)+' ≈ '+num(q,4)+' cotas a '+usd.format(x.P1)+', antes do spread e IOF do câmbio':'')+'</span></span><span class="num">'+brl.format(dist.US)+'</span></li>')}
+  if(dist.RF>0.5)li.push('<li><span><b>Renda fixa</b><br><span class="muted small">CDB, LCI ou LCA</span></span><span class="num">'+brl.format(dist.RF)+'</span></li>');
+  var after={BR:cur.BR+dist.BR,US:cur.US+dist.US,RF:cur.RF+dist.RF},ta=tot+v;
+  out.innerHTML='<ul class="calc" style="margin-top:14px">'+li.join('')+'<li class="tot"><span>Total</span><span class="num">'+brl.format(v)+'</span></li></ul>'+
+    '<p class="note">Depois do aporte: Brasil '+pf.format(after.BR/ta*100)+'%, EUA '+pf.format(after.US/ta*100)+'%, Renda fixa '+pf.format(after.RF/ta*100)+'% (alvo '+pf.format(cl.BR)+'% / '+pf.format(cl.US)+'% / '+pf.format(cl.RF)+'%).</p>';
+}
+function alvSave(){
+  var g=function(id){var v=parseNum(($(id)||{}).value);return isFinite(v)?v:0};
+  var c={BR:g('al-BR'),US:g('al-US'),RF:g('al-RF')},sm=c.BR+c.US+c.RF,m=$('al-msg');
+  if(Math.abs(sm-100)>0.05){m.className='msg err';m.textContent='A soma está em '+pf.format(sm)+'%. Ajuste para dar 100%.';return}
+  var b={};Array.prototype.forEach.call(document.querySelectorAll('[id^="ab-"]'),function(i){var v=parseNum(i.value);b[i.id.slice(3)]=isFinite(v)?v:0});
+  var bs=Object.keys(b).reduce(function(a,k){return a+b[k]},0);
+  if(Object.keys(b).length&&Math.abs(bs-100)>0.5){m.className='msg err';m.textContent='Dentro do Brasil a soma está em '+pf.format(bs)+'%. Ajuste para 100%.';return}
+  S.alvos={classes:c,br:b};S.pend.push({t:'cfg',k:'alvos',v:S.alvos});save();ghSync();m.className='msg gain';m.textContent='Salvo.';
+  if(APV)apoCalc();
+}
+
+/* metas: trilha de etapas de patrimônio (50 mil, 100 mil, depois de 100 em 100 mil até 1 milhão), prazo opcional da etapa atual e renda passiva opcional */
+var MTE=[5e4,1e5,2e5,3e5,4e5,5e5,6e5,7e5,8e5,9e5,1e6],MTS=null,MTC=-1;
+function mesesAte(d){var a=today(),y=+d.slice(0,4)-+a.slice(0,4),m=+d.slice(5,7)-+a.slice(5,7);return y*12+m}
+function mtLbl(v){return v>=1e6?'1 milhão':(v/1000)+' mil'}
+function mtIdx(pat){for(var i=0;i<MTE.length;i++)if(pat<MTE[i])return i;return MTE.length}
+function mtMes(mm,curto){var d=new Date(),t=d.getMonth()+mm,y=d.getFullYear()+Math.floor(t/12);return curto?MESL[t%12].slice(0,3)+'/'+String(y).slice(2):MESL[t%12]+' de '+y}
+function mtR(v){return 'R$ '+Math.round(v).toLocaleString('pt-BR')}
+function mtPrazo(M,V){return M.pat&&M.pat.valor===V&&M.pat.data?M.pat.data:''}
+function mtCenter(){var ml=$('mtl');if(!ml||!ml.clientWidth)return;if(MTS!=null){ml.scrollLeft=MTS;return}var c=ml.querySelector('.cur')||ml.lastChild;if(c)ml.scrollLeft=Math.max(0,c.offsetLeft-ml.clientWidth/2+c.clientWidth/2)}
+document.addEventListener('scroll',function(e){var c=e.target;if(c&&c.id==='mtl'&&c.clientWidth)MTS=c.scrollLeft},true);
+function metasHtml(R){
+  var T=R.tot,M=S.metas||{},pat=T.value+T.cash,ci=mtIdx(pat),NE=MTE.length;if(ci!==MTC){MTC=ci;MTS=null}
+  var h='<div class="panel" id="metasbox"><h2>Metas '+bal('Seu caminho até R$ 1 milhão em etapas: R$ 50 mil, R$ 100 mil e depois de 100 em 100 mil. Quando você bate uma etapa, ela fica riscada e a próxima vira a atual. Toque nos quadros e nas etapas para ver os detalhes.')+'</h2>';
+  var ev=evoData(),k=ev.length,ap=0,nm=0;if(k>1){var i0=Math.max(0,k-7);ap=(ev[k-1].apl-ev[i0].apl);nm=(k-1)-i0}var apm=nm?ap/nm:0;
+  var cdiM=CDI.dates.length?Math.pow(1+CDI.s[CDI.dates[CDI.dates.length-1]]/100,21)-1:0.008;
+  /* em quantos meses cada etapa chega no ritmo atual (aporte médio + CDI) */
+  var eta=[],mm=0,v=pat;MTE.forEach(function(V,i){if(i<ci){eta.push(0);return}if(apm<=0){eta.push(-1);return}while(v<V&&mm<600){v=v*(1+cdiM)+apm;mm++}eta.push(mm>=600?-1:mm)});
+  h+='<div class="mt">';
+  if(ci>=NE)h+='<div class="mth"><div><span class="k">Todas as etapas concluídas</span><div class="v">'+brl.format(pat)+'</div></div><span class="p">100%</span></div><div class="meta-bar"><i style="width:100%"></i></div>';
+  else{var V=MTE[ci],pc=pat/V,fal=V-pat,dl=mtPrazo(M,V),n=dl?mesesAte(dl):0,e=eta[ci],chips='',t2;
+    if(dl){chips+='<span class="pill">até '+MESL[+dl.slice(5,7)-1]+' de '+dl.slice(0,4)+'</span>';
+      if(n<=0)chips+='<span class="pill" style="color:var(--loss)">prazo vencido</span>';
+      else if(e>0)chips+=e<=n?'<span class="pill" style="color:var(--gain)">no prazo</span>':'<span class="pill" style="color:var(--loss)">'+(e-n)+(e-n>1?' meses':' mês')+' de atraso</span>'}
+    else chips+='<span class="pill">sem prazo</span>';
+    h+='<div class="mth"><div><span class="k">Etapa '+(ci+1)+' de '+NE+'</span><div class="v">R$ '+mtLbl(V)+'</div></div><span class="p">'+pf.format(pc*100)+'%</span></div>'+
+      '<div class="meta-bar"><i style="width:'+(pc*100)+'%"></i></div><div class="mtc">'+chips+'</div><div class="mtks">';
+    h+=bal('Você tem '+brl.format(pat)+'. Faltam '+brl.format(fal)+' para chegar a '+brl.format(V)+'.','<small>Faltam</small><b>'+mtR(fal)+'</b>').replace('class="bal"','class="bal mtk"');
+    if(dl&&n>0){var g=Math.pow(1+cdiM,n),pmt=(V-pat*g)*cdiM/(g-1);
+      t2=bal('Para chegar lá até '+MESL[+dl.slice(5,7)-1]+' de '+dl.slice(0,4)+' ('+n+(n>1?' meses':' mês')+'), precisa aportar cerca de '+brl.format(Math.max(0,pmt))+' por mês se a carteira render como o CDI ('+pf.format(cdiM*100)+'% ao mês)'+(pmt<=0?'; só o rendimento já leva você lá':'')+'. Sem rendimento nenhum, seriam '+brl.format(fal/n)+' por mês.','<small>Aporte por mês</small><b>'+mtR(Math.max(0,pmt))+'</b>')}
+    else t2=bal(dl?'O prazo desta etapa já passou. Toque em Ajustar para escolher uma nova data.':'Sem prazo definido para esta etapa. Toque em Ajustar e escolha uma data para ver quanto aportar por mês.','<small>Aporte por mês</small><b>'+(dl?'prazo vencido':'definir prazo')+'</b>');
+    h+=t2.replace('class="bal"','class="bal mtk"');
+    h+=bal(apm>0?(e>0?'Aportando '+brl.format(apm)+' por mês do bolso, como nos últimos meses, e com a carteira rendendo como o CDI, você chega lá em '+e+(e>1?' meses':' mês')+' ('+mtMes(e)+').':'Nesse ritmo levaria mais de 50 anos.'):'Ainda não há aportes recentes para estimar quando você chega lá.','<small>No seu ritmo</small><b>'+(apm>0&&e>0?mtMes(e,1):'—')+'</b>').replace('class="bal"','class="bal mtk"');
+    h+='</div>'}
+  /* trilha: concluídas riscadas, atual em destaque, próximas com a previsão */
+  h+='<div class="mtl" id="mtl">'+MTE.map(function(V,i){var st=i<ci?'ok':i===ci?'cur':'fut',sub,tx;
+    if(i<ci){var r=null;for(var j=0;j<ev.length;j++)if(ev[j].pat>=V){r=ev[j].m;break}var q=r?MESL[+r.slice(5,7)-1]+' de '+r.slice(0,4):'';
+      sub='concluída';tx='Etapa '+(i+1)+' concluída'+(q?' em '+q:'')+': '+brl.format(V)+'.'}
+    else{var e=eta[i];sub=i===ci?'atual':e>0?mtMes(e,1):'';
+      tx='Etapa '+(i+1)+': '+brl.format(V)+'. Faltam '+brl.format(V-pat)+'.'+(e>0?' No seu ritmo, você chega lá em '+mtMes(e)+'.':'')}
+    return '<button type="button" class="bal mts '+st+'" data-bal="'+esc(tx)+'"><i>'+(i<ci?'✓':i+1)+'</i><b>'+mtLbl(V)+'</b><small>'+sub+'</small></button>'}).join('')+'</div></div>';
+  if(M.renda&&M.renda.valor>0){
+    var d0=S.trades.map(function(t){return t.date}).sort()[0],ini=new Date(Date.now()-365*864e5).toISOString().slice(0,10),from=d0>ini?d0:ini;
+    var rec=0;S.trades.forEach(function(t){if(t.side==='div'&&t.date>=from)rec+=t.price*(t.market==='US'?t.fx:1)});
+    var meses=Math.max(1,Math.round(dayDiff(from,today())/30.44)),rm=rec/meses,W=M.renda.valor,pr=Math.min(1,rm/W),yl=pat?rm*12/pat:0;
+    h+='<div class="mt"><div class="mth"><div><span class="k">Renda passiva '+bal('Média dos proventos '+(meses<12?'desde '+fmtDate(from):'dos últimos 12 meses')+': '+brl.format(rm)+' por mês, '+pf.format(pr*100)+'% da meta de '+brl.format(W)+'. '+(yl>0?'Com os proventos rendendo '+pf.format(yl*100)+'% ao ano sobre o patrimônio, a meta pede um patrimônio de cerca de '+brl.format(W*12/yl)+'.':'Ainda não há proventos suficientes para estimar.'))+'</span><div class="v">'+brl.format(rm)+'<span class="det"> de '+mtR(W)+' por mês</span></div></div><span class="p" style="color:var(--c2)">'+pf.format(pr*100)+'%</span></div>'+
+      '<div class="meta-bar r"><i style="width:'+(pr*100)+'%"></i></div></div>'}
+  var Vc=ci<NE?MTE[ci]:0,dc=Vc?mtPrazo(M,Vc):'';
+  h+='<details><summary>Ajustar</summary><div class="stack" style="margin-top:12px">'+
+    (Vc?'<label class="small muted">Prazo da etapa atual (R$ '+mtLbl(Vc)+')<input id="mt-pd" type="month" data-v="'+Vc+'" value="'+(dc?dc.slice(0,7):'')+'"></label>':'')+
+    '<label class="small muted">Renda passiva por mês (R$, opcional)<input id="mt-rv" inputmode="decimal" placeholder="deixe vazio se não quiser" value="'+(M.renda&&M.renda.valor?String(M.renda.valor).replace('.',','):'')+'"></label>'+
+    '<div style="display:flex;gap:10px;align-items:center"><button class="btn small" type="button" id="mt-save">Salvar</button><span class="msg" id="mt-msg"></span></div></div></details></div>';
+  return h;
+}
+function metasSave(){
+  var pn=function(id){var r=String($(id).value||'').trim();return /^\d{1,3}(\.\d{3})+$/.test(r)?parseFloat(r.replace(/\./g,'')):parseNum(r)};
+  var pe=$('mt-pd'),pd=pe?pe.value:'',rv=pn('mt-rv'),M={};
+  if(pe&&pd)M.pat={valor:+pe.getAttribute('data-v'),data:pd+'-01'};if(rv>0)M.renda={valor:rv};
+  S.metas=M;S.pend.push({t:'cfg',k:'metas',v:M});save();try{document.activeElement.blur()}catch(e){}render();ghSync();
+  var mm=$('mt-msg');if(mm){mm.className='msg gain';mm.textContent='Salvo.'}
+}
+function renderIR(){
+  var el=$('irtab');if(!el)return;
+  var D=irData(),cm=today().slice(0,7),cur=D.rows.filter(function(r){return r.m===cm})[0]||{acao:{v:0,g:0},fii:{v:0,g:0},isento:true};
+  var mn=function(m){var x=MESL[+m.slice(5,7)-1];return x.charAt(0).toUpperCase()+x.slice(1)};
+  var h='',va=cur.acao.v,over=va>20000;
+  h+='<div class="panel"><h2>Vendas de ações em '+mn(cm).toLowerCase()+'</h2><div class="grp" style="margin:0"><span class="num gt">'+brl.format(va)+'</span><span class="det">de R$ 20.000,00 isentos</span></div>'+
+    '<div class="irbar'+(over?' over':'')+'"><i style="width:'+Math.min(100,va/200)+'%"></i></div>'+
+    '<p class="note" style="margin-top:6px">'+(over?'Passou de R$ 20 mil: o lucro das vendas deste mês paga 15% de IR (DARF código 6015 até '+fmtDate(cur.venc||today())+').':'Ainda pode vender '+brl.format(20000-va)+' em ações este mês sem pagar IR sobre o lucro.')+(cur.fii.v?' FIIs não têm isenção: o lucro paga 20%.':'')+'</p></div>';
+  var due=D.rows.filter(function(r){return r.imp>0.005});
+  h+='<div class="panel"><h2>DARF a pagar</h2>'+(due.length?'<ul class="calc">'+due.map(function(r){return '<li><span>'+mn(r.m)+' de '+r.m.slice(0,4)+'<br><span class="muted small">código 6015, vence em '+fmtDate(r.venc)+'</span></span><span class="num loss">'+brl.format(r.imp)+'</span></li>'}).join('')+'</ul>':'<p class="muted small">Nenhum. Em todos os meses, suas vendas de ações ficaram abaixo de R$ 20 mil ou não deram lucro.</p>')+
+    (D.pa>0.005||D.pf>0.005?'<ul class="calc" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">'+(D.pa>0.005?'<li><span>Prejuízo em ações para descontar de lucros futuros</span><span class="num">'+brl.format(D.pa)+'</span></li>':'')+(D.pf>0.005?'<li><span>Prejuízo em FIIs para descontar de lucros futuros</span><span class="num">'+brl.format(D.pf)+'</span></li>':'')+'</ul>':'')+
+    (D.warn.length?'<p class="warn" style="margin-top:10px">Compra e venda do mesmo ativo no mesmo dia ('+esc(D.warn.join(', '))+'). Isso pode ser day trade, que paga 20% sem isenção. Confira com a nota da corretora.</p>':'')+'</div>';
+  if(D.rows.length){
+    h+='<div class="panel"><h2>Mês a mês</h2><div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Mês</th><th>Vendas</th><th>Lucro</th><th>Situação</th></tr></thead><tbody>'+
+      D.rows.slice().reverse().map(function(r){var v=r.acao.v+r.fii.v,g=r.acao.g+r.fii.g;
+        var st=r.imp>0.005?'<span class="loss">DARF '+brl.format(r.imp)+'</span>':r.isento&&r.acao.g>0?'<span class="gain">Isento</span>':g<0?'Prejuízo':'Sem imposto';
+        return '<tr><td>'+mn(r.m).slice(0,3)+'/'+r.m.slice(2,4)+'</td><td>'+brl.format(v)+'</td><td class="'+cls(g)+'">'+sgn(g)+'</td><td>'+st+'</td></tr>'}).join('')+'</tbody></table></div>'+
+      '<details><summary>Ver cada venda</summary><ul class="calc small" style="margin-top:12px">'+D.rows.slice().reverse().map(function(r){return r.acao.it.concat(r.fii.it).map(function(x){return '<li><span><b>'+esc(x.tk)+'</b> <span class="muted">'+fmtDate(x.d)+', '+num(x.q)+' un., '+brl.format(x.v)+'</span></span><span class="num '+cls(x.g)+'">'+sgn(x.g)+'</span></li>'}).join('')}).join('')+'</ul></details></div>';
+  }
+  var ys={};S.trades.forEach(function(t){ys[t.date.slice(0,4)]=1});var years=Object.keys(ys).sort();if(!IRY||!ys[IRY])IRY=years[years.length-1]||today().slice(0,4);
+  var Y=+IRY,end=IRY+'-12-31',prev=(Y-1)+'-12-31',b1=bensEm(end),b0=bensEm(prev),b0m={};b0.forEach(function(p){b0m[p.tk]=p});
+  var dv=S.trades.filter(function(t){return t.side==='div'&&t.date.slice(0,4)===IRY}),byT={};
+  dv.forEach(function(t){var k=t.market==='US'?'ext':(t.tipo==='JCP'||/JCP/.test(t.note||''))?'jcp':'div';var o=(byT[k]=byT[k]||{});var r=o[t.ticker]||(o[t.ticker]={v:0,b:0,ir:0});r.v+=t.price*(t.market==='US'?t.fx:1);r.b+=(t.bruto||t.price)*(t.market==='US'?t.fx:1);r.ir+=(t.irExt||0)*(t.market==='US'?t.fx:1)});
+  var lst=function(o,f){return Object.keys(o||{}).sort().map(function(k){return '<li><span><b>'+esc(k)+'</b></span><span class="num">'+f(o[k])+'</span></li>'}).join('')};
+  var tot=function(o,f){return Object.keys(o||{}).reduce(function(a,k){return a+f(o[k])},0)};
+  var cod=function(p){return p.rf?'Grupo 04 (aplicações de renda fixa)':p.mk==='US'?'Grupo 07 ou 04, conforme o tipo (ETF no exterior)':isFII(p.tk)?'Grupo 07, código 03 (FII)':'Grupo 03, código 01 (ações)'};
+  h+='<div class="panel"><div class="grp"><h2>Declaração de IR</h2>'+(years.length>1?'<div class="yrs">'+years.map(function(y){return '<button type="button" data-iry="'+y+'" aria-pressed="'+(y===IRY)+'">'+y+'</button>'}).join('')+'</div>':'<span class="det">ano '+IRY+'</span>')+'</div>'+
+    '<p class="note" style="margin:0 0 10px">O que vai na declaração entregue em '+(Y+1)+', referente a '+IRY+'.'+(IRY===today().slice(0,4)?' O ano ainda não acabou: os valores mudam até 31/12.':'')+'</p>'+
+    '<h3 style="margin:12px 0 6px">Bens e Direitos</h3><p class="note exp" style="margin:0 0 8px">Cada ativo pelo custo (preço médio × quantidade), não pelo valor de mercado. Ativos dos EUA em reais, pelo dólar de cada compra.</p>'+
+    (b1.length||b0.length?'<div style="overflow-x:auto"><table class="dvtab"><thead><tr><th>Ativo</th>'+(b0.length?'<th>31/12/'+(Y-1)+'</th>':'')+'<th>31/12/'+Y+'</th></tr></thead><tbody>'+
+      b1.concat(b0.filter(function(p){return !b1.some(function(x){return x.tk===p.tk&&!!x.rf===!!p.rf})}).map(function(p){return {tk:p.tk,mk:p.mk,rf:p.rf,q:0,c:0,gone:1}})).map(function(p){var o=b0m[p.tk];
+        return '<tr><td><b>'+esc(p.tk)+'</b><br><span class="muted small">'+(p.gone?'vendido no ano':num(p.q)+(p.rf?'':' un.')+(p.mk==='US'?' · '+usd.format(p.cu):''))+'<br>'+cod(p)+'</span></td>'+(b0.length?'<td>'+(o?brl.format(o.c):'R$ 0,00')+'</td>':'')+'<td>'+brl.format(p.c)+'</td></tr>'}).join('')+'</tbody></table></div>':'<p class="muted small">Nenhum bem nesse ano.</p>')+
+    '<h3 style="margin:16px 0 6px">Rendimentos isentos (dividendos)</h3>'+(byT.div?'<ul class="calc">'+lst(byT.div,function(r){return brl.format(r.v)})+'<li class="tot"><span>Total</span><span class="num">'+brl.format(tot(byT.div,function(r){return r.v}))+'</span></li></ul>':'<p class="muted small">Nenhum.</p>')+
+    '<h3 style="margin:16px 0 6px">Tributação exclusiva (JCP)</h3>'+(byT.jcp?'<ul class="calc">'+lst(byT.jcp,function(r){return brl.format(r.v)})+'<li class="tot"><span>Total líquido</span><span class="num">'+brl.format(tot(byT.jcp,function(r){return r.v}))+'</span></li></ul><p class="note">Valor líquido, como caiu na conta. O informe de rendimentos da corretora traz o valor bruto, que é o que vai na declaração.</p>':'<p class="muted small">Nenhum.</p>')+
+    (byT.ext?'<h3 style="margin:16px 0 6px">Dividendos do exterior</h3><ul class="calc">'+lst(byT.ext,function(r){return brl.format(r.b)+' bruto · '+brl.format(r.ir)+' retido nos EUA'})+'</ul><p class="note">Declarados na ficha de aplicações no exterior. O imposto retido nos EUA (30%) é maior que os 15% do Brasil, então normalmente não sobra nada a pagar aqui.</p>':'')+
+    '</div>';
+  h+='<p class="note exp" style="margin:0 4px">Regras usadas: ações à vista com isenção para vendas de até R$ 20 mil no mês e 15% acima disso; FIIs sem isenção, 20%; prejuízo descontado de lucros futuros do mesmo tipo. O custo inclui as taxas da B3 das notas (somadas na compra e descontadas na venda), como pede a Receita. Os informes da Nubank e do Inter valem como fonte oficial. Isto é um apoio, não substitui um contador.</p>';
+  el.innerHTML=h;
+}
