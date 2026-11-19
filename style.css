@@ -1,9 +1,9 @@
-/* Aporte: tema padrão em cinza escuro (como o modo escuro do Google); o azul da nota de 100 do Real fica como cor de destaque. */
+/* Aporte: cores tiradas das cédulas do Real (azul da nota de 100 como cor principal). */
 :root{
   color-scheme:dark;
-  --bg:#202124; --surface:#303134; --fg:#e8eaed; --muted:#9aa0a6; --line:#3c4043;
-  --accent:#63b7e2; --accent-fg:#06121b; --gain:#81c995; --loss:#f28b82; --tint:#3a3b3f;
-  --hero:#2f4458; --hero-fg:#f4f8fb; --hero-muted:#a9bccd; --hero-gain:#74e0b6; --hero-loss:#ffa696; --hero-line:rgba(255,255,255,.12);
+  --bg:#0a1017; --surface:#121b25; --fg:#e7eef6; --muted:#8d9cad; --line:#213041;
+  --accent:#63b7e2; --accent-fg:#06121b; --gain:#4fc79a; --loss:#f3826f; --tint:#182431;
+  --hero:#16293b; --hero-fg:#f4f8fb; --hero-muted:#9db2c5; --hero-gain:#74e0b6; --hero-loss:#ffa696; --hero-line:rgba(255,255,255,.12);
   --c1:#63b7e2; --c2:#e3b657; --c3:#c08e68; --c4:#b08fd6; --c5:#ee8a72; --c6:#6fcdb4;
   --ev1:#2fbf71; --ev2:#9be8c0;
   --sans:'Public Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
@@ -17,9 +17,9 @@
   --c1:#121417; --c2:#c9952f; --c3:#2f7fb0; --c4:#75509a; --c5:#c4553f; --c6:#3f8f7a}
 :root[data-theme="preto"]{
   color-scheme:dark;
-  --bg:#000000; --surface:#101215; --fg:#f2f4f7; --muted:#8b929b; --line:#1f2328;
-  --accent:#5fb8ea; --accent-fg:#00121d; --gain:#3fd08f; --loss:#ff7a66; --tint:#191c21;
-  --hero:#0c2233; --hero-fg:#f4f8fb; --hero-muted:#93a9bc; --hero-gain:#6fe3b0; --hero-loss:#ff9f8f; --hero-line:rgba(255,255,255,.12);
+  --bg:#202124; --surface:#303134; --fg:#e8eaed; --muted:#9aa0a6; --line:#3c4043;
+  --accent:#63b7e2; --accent-fg:#06121b; --gain:#81c995; --loss:#f28b82; --tint:#3a3b3f;
+  --hero:#2f4458; --hero-fg:#f4f8fb; --hero-muted:#93a9bc; --hero-gain:#6fe3b0; --hero-loss:#ff9f8f; --hero-line:rgba(255,255,255,.12);
   --c1:#5fb8ea; --c2:#e3b657; --c3:#c08e68; --c4:#b08fd6; --c5:#ee8a72; --c6:#6fcdb4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 svg:focus,svg *:focus{outline:none}
