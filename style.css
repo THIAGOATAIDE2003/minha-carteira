@@ -429,3 +429,4 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .hcl{cursor:pointer;-webkit-tap-highlight-color:transparent}.hcg{cursor:pointer;-webkit-tap-highlight-color:transparent}
 
 .vtoast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translateX(-50%);z-index:9999;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;box-shadow:0 4px 18px rgba(0,0,0,.35);pointer-events:none;transition:opacity .5s}.vtoast.out{opacity:0}
+.vtoast.vnova{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 76px);pointer-events:auto;background:var(--accent);color:#06121c;border:0;cursor:pointer}

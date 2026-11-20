@@ -14,7 +14,7 @@ const navegador = {
   btoa: 'readonly', alert: 'readonly', confirm: 'readonly', prompt: 'readonly', Event: 'readonly',
   CustomEvent: 'readonly', Element: 'readonly', HTMLElement: 'readonly', Node: 'readonly', Image: 'readonly',
   screen: 'readonly', performance: 'readonly', caches: 'readonly', self: 'readonly', clients: 'readonly',
-  skipWaiting: 'readonly', Notification: 'readonly', DOMParser: 'readonly', XMLSerializer: 'readonly'
+  skipWaiting: 'readonly', Request: 'readonly', Notification: 'readonly', DOMParser: 'readonly', XMLSerializer: 'readonly'
 };
 
 const regras = Object.assign({}, js.configs.recommended.rules, {
