@@ -201,6 +201,15 @@ function contasAMao(F, P) {
     }
     await pg.clock.setFixedTime(new Date(fx.now));
     confere('variação do dia zera antes da abertura e no fim de semana, volta com cotação nova', zer, [true, false, true, false, true, true, false, true]);
+    /* servidor de cotações (Worker): preço e prévio entram em S.quotes; atraso e preço suspeito são sinalizados */
+    const px = await pg.evaluate(async () => {
+      S.keys.proxy = 'https://aporte-teste.workers.dev'; var of = window.fetch, got = null;
+      window.fetch = function (u) { if (/workers\.dev\/q/.test(u)) return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve({ 'TEST3.SA': { p: 12.5, prev: 12, t: Math.floor(Date.now() / 1000) - 60 } }); } }); return of.apply(this, arguments); };
+      try { got = await pxQuotes(['TEST3']); } finally { window.fetch = of; }
+      var q = S.quotes.TEST3, r = { ok: !!got.TEST3 && q.price === 12.5 && q.prev === 12, base: pxBase() };
+      S.keys.proxy = ''; r.sem = pxBase(); S.quotes.TEST3 = { price: 100, prev: 10, at: Date.now(), src: 'auto' };
+      var md0 = MD.d; MD.d = { hist: { TEST3: { last: 10 } }, idx: {} }; r.sus = !!livePx('TEST3').sus; MD.d = md0; delete S.quotes.TEST3; return r; });
+    confere('servidor de cotações: preço entra, desligado sem endereço, preço 10x do fechamento é sinalizado', [px.ok, px.base, px.sem, px.sus], [true, 'https://aporte-teste.workers.dev', '', true]);
     const vistos = await abas(pg);
     console.log('Abas abertas: ' + vistos.length);
     /* gráfico estilo Google: página da ação com histórico de mentira e os três números do Início */

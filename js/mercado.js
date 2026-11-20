@@ -276,7 +276,8 @@ function loadMD(force){
 }
 function fundOf(tk){var f=MD.d&&MD.d.fund;if(!f||!f.d||!f.d[tk])return null;var o={};f.cols.forEach(function(c,i){var v=f.d[tk][i];o[c]=v===0&&c!=='dy'?null:v});
   var b=MD.d.bal&&MD.d.bal[tk];if(o.divpl==null&&b&&b.divb>0&&b.pl>0)o.divpl=b.divb/b.pl;return o}
-function livePx(tk){var q=S.quotes[tk],m=MKT.q[tk],a=q&&q.src==='auto'&&q.price>0?{p:q.price,pct:q.prev?(q.price/q.prev-1)*100:null,at:q.at||0}:null,b=m&&m.price>0?{p:m.price,pct:m.pct,at:m.at||0}:null;var r=a&&b?(b.at>a.at?b:a):a||b;if(r&&r.pct!=null&&tk.charAt(0)!=='^'&&dzero(!isBR(tk),r.at))r={p:r.p,pct:0,pr:r.pct,at:r.at};return r}
+function livePx(tk){var q=S.quotes[tk],m=MKT.q[tk],a=q&&q.src==='auto'&&q.price>0?{p:q.price,pct:q.prev?(q.price/q.prev-1)*100:null,at:q.at||0}:null,b=m&&m.price>0?{p:m.price,pct:m.pct,at:m.at||0}:null;var r=a&&b?(b.at>a.at?b:a):a||b;var hh=MD.d&&MD.d.hist&&MD.d.hist[tk],lc=hh&&hh.last>0?hh.last:0;if(r){r.sus=(a&&b&&Math.abs(a.p/b.p-1)>.05&&Math.abs(a.at-b.at)<30*60000)?'duas fontes de preço diferem '+pf.format(Math.abs(a.p/b.p-1)*100)+'%':(lc&&Math.abs(r.p/lc-1)>.35)?'muito diferente do último fechamento ('+pf.format((r.p/lc-1)*100)+'%)':''}
+  if(r&&r.pct!=null&&tk.charAt(0)!=='^'&&dzero(!isBR(tk),r.at))r={p:r.p,pct:0,pr:r.pct,at:r.at,sus:r.sus};return r}
 /* um preço só em todo o app: o mais recente entre o que o app buscou e o que o robô trouxe na faixa vale para todas as abas */
 var TPTS=0;
 function tapeMerge(){var t=MD.d&&MD.d.tape;if(!t||!t.it||t.ts===TPTS)return;TPTS=t.ts;var at=t.ts*1000,ch=0;

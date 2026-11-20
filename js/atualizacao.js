@@ -98,11 +98,12 @@ function doRefresh(silent){
   if(RF.busy)return;
   if(!R.held.length){if(!silent)st.textContent='Lance uma compra primeiro.';return}
   RF.busy=true;if(!silent){st.className='msg muted';st.textContent='Buscando cotações...'}
-  var jobs=[],fails=[],okc=0;
+  (S.keys.proxy?pxQuotes(R.held.map(function(x){return x.p.ticker})):Promise.resolve({})).then(function(got){
+  var jobs=[],fails=[],okc=0;Object.keys(got).forEach(function(){okc++});
   jobs.push(getJSON('https://economia.awesomeapi.com.br/json/last/USD-BRL').then(function(d){var r=parseFloat(d.USDBRL.bid),pc=parseFloat(d.USDBRL.pctChange);if(r>3&&r<10){S.fx={rate:r,at:Date.now(),src:'auto',prev:isFinite(pc)?r/(1+pc/100):null};okc++}else fails.push('dólar')}).catch(function(){fails.push('dólar')}));
   var br=[];
   R.held.forEach(function(x){
-    var tk=x.p.ticker;
+    var tk=x.p.ticker;if(got[tk])return;
     if(x.p.market==='US'){
       if(!S.keys.finnhub){fails.push(tk+' (falta a chave Finnhub)');return}
       jobs.push(getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(d&&d.c>0){S.quotes[tk]={price:d.c,prev:d.pc>0?d.pc:null,at:Date.now(),src:'auto'};okc++}else fails.push(tk)}).catch(function(){fails.push(tk)}));
@@ -127,6 +128,11 @@ function doRefresh(silent){
     if(okc===0){RF.err='Não consegui buscar os preços agora. Confira a internet e as chaves em Ajustes.';if(!silent){st.className='msg err';st.textContent=RF.err}}
     else{RF.err=fails.length?'Sem atualização para: '+fails.join(', '):'';st.className='msg muted';st.textContent=fails.length?'Atualizado, menos: '+fails.join(', ')+'.':''}
   });
+  });
 }
+/* servidor de cotações próprio (Cloudflare Worker, grátis): preço e prévio do Yahoo na hora, sem cota de chave */
+function pxBase(){var u=(S.keys.proxy||'').replace(/\/+$/,'');return /^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(u)?u:''}
+function pxQuotes(tks){var u=pxBase();if(!u||!tks.length)return Promise.resolve({});
+  return getJSON(u+'/q?s='+encodeURIComponent(tks.map(ySym).join(','))).then(function(j){var got={};tks.forEach(function(tk){var q=j&&j[ySym(tk)];if(q&&q.p>0){S.quotes[tk]={price:q.p,prev:q.prev>0?q.prev:null,at:Math.min(Date.now(),(q.t||0)*1000)||Date.now(),src:'auto'};got[tk]=1}});return got}).catch(function(){return {}})}
 try{var fh=JSON.parse(localStorage.getItem(LS+'-fxh')||'null');if(fh&&fh.ser)ingestFx({series:fh.ser,source:'AwesomeAPI'});if(!fh||Date.now()-fh.at>6*3600000)loadFxHistory().then(function(){render()})}catch(e){loadFxHistory()}
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-RF.last>5*60000)doRefresh(true)});

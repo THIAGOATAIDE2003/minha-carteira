@@ -1,14 +1,14 @@
 /* gráfico estilo Google: cabeçalho com variação, botões de período, linha com eixos e toque com bolinha */
 var RMORE=false,RGL={'1d':'hoje','5d':'últimos 5 dias','1mo':'último mês','3mo':'últimos 3 meses','6mo':'últimos 6 meses','ytd':'acumulados no ano','1y':'último ano','2y':'últimos 2 anos','5y':'últimos 5 anos','max':'máx.','yr':'por ano'};
 function rgCut(hist,rg){if(rg!=='ytd'||!hist||hist.length<2)return hist;var j=new Date(new Date().getFullYear(),0,1).getTime(),i=0;while(i<hist.length-1&&hist[i+1].t<j)i++;return hist.slice(i)}
-function gWhen(at){if(!at)return '';var d=new Date(at),m=Math.round((Date.now()-at)/60000),t=d.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})+', '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' BRT';
-  return t+(m>=0&&m<180?' · atualizado há '+(m<1?'menos de 1':m)+' min':'')}
+function gWhen(at,tk){if(!at)return '';var d=new Date(at),m=Math.round((Date.now()-at)/60000),us=tk&&!isBR(tk),open=tk&&tk.charAt(0)!=='^'&&(us?(function(){var n=nyNow();return !!n&&usBDay(n.d)&&n.min>=570&&n.min<960})():mktOpen()),old=open&&m>20,t=d.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})+', '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' BRT';
+  return t+(old?' · atrasado ('+(m>=120?Math.round(m/60)+' h':m+' min')+')':m>=0&&m<180?' · atualizado há '+(m<1?'menos de 1':m)+' min':'')}
 /* cabeçalho: nome, preço grande, variação (valor e %) em cor, seta e período, data e hora da cotação */
 function gHead(name,sub,priceTxt,abs,pct,rg,absTxt,when){
   var up=pct==null?null:pct>=0,c=up==null?'':pct===0?'':up?'gain':'loss',sg=function(v){return v<0?'-':v>0?'+':''};
   return '<p class="muted small" style="margin:0 0 4px">'+esc(name||'')+(sub?' · '+esc(sub):'')+'</p><div class="gh"><b class="num">'+priceTxt+'</b></div>'+
     (pct!=null?'<div class="gdl '+c+'">'+(abs!=null?sg(abs)+pf.format(Math.abs(abs))+' ':'')+'('+(abs==null?sg(pct):'')+pf.format(Math.abs(pct))+'%) '+(pct===0?'':'<span class="arr">'+(up?'↑':'↓')+'</span> ')+esc(RGL[rg]||'')+'</div>':'')+
-    (when?'<p class="muted small gwh">'+esc(when)+'</p>':'');
+    (when?'<p class="small gwh '+(/atrasado/.test(when)?'stale':'muted')+'">'+esc(when)+'</p>':'');
 }
 /* botões: 1D 5D 1M 6M YTD + Mais */
 function rngBar(cur,skip){
@@ -56,16 +56,16 @@ function lineChart(hist,cur,pm,fmt,o){o=o||{};var gid='skg'+(++GID);
 /* dados finos do robô (repositório privado, pasta dados/): um arquivo por ativo, baixado só quando precisa */
 var FIN={};
 function ySym(tk){return tk.charAt(0)==='^'||!isBR(tk)?tk:tk+'.SA'}
-function finGet(kind,sym){var k=kind+'/'+sym,ttl=kind==='intra'?240000:6*3600000,c=FIN[k];
-  if(c&&c.p)return c.p;if(c&&(c.err?Date.now()-c.at<60000:c.d!==undefined&&Date.now()-c.at<ttl))return Promise.resolve(c.d);if(!S.keys.gh){FIN[k]={d:null,at:Date.now()};return Promise.resolve(null)}
+function finGet(kind,sym){var k=kind+'/'+sym,px=kind==='intra'&&pxBase(),ttl=kind==='intra'?(px?60000:240000):6*3600000,c=FIN[k];
+  if(c&&c.p)return c.p;if(c&&(c.err?Date.now()-c.at<60000:c.d!==undefined&&Date.now()-c.at<ttl))return Promise.resolve(c.d);if(!S.keys.gh&&!px){FIN[k]={d:null,at:Date.now()};return Promise.resolve(null)}
   var ac=new AbortController(),to=setTimeout(function(){ac.abort()},15000),old=c&&c.d;
-  var p=fetch('https://api.github.com/repos/'+ghRepo()+'/contents/dados/'+kind+'/'+sym.replace(/[^A-Za-z0-9._-]/g,'_')+'.json?ref=main',{headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'},signal:ac.signal,cache:'no-store'})
+  var p=(px?fetch(px+'/i?s='+encodeURIComponent(sym),{signal:ac.signal}):fetch('https://api.github.com/repos/'+ghRepo()+'/contents/dados/'+kind+'/'+sym.replace(/[^A-Za-z0-9._-]/g,'_')+'.json?ref=main',{headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'},signal:ac.signal,cache:'no-store'}))
     .then(function(r){clearTimeout(to);if(r.status===404)return null;if(!r.ok)throw 0;return r.json()}).catch(function(){return old===undefined?undefined:old}).then(function(d){FIN[k]={d:d,at:Date.now(),err:d===undefined};return d});
   FIN[k]={p:p,d:old,at:0};return p}
 function finRedo(){if($('stk').hidden)return;if(STK.hero)heroRender();else if(STK.idx)idxRender();else stkRender()}
 /* 1D/5D (pontos de 5 min) e Máx (candles diários): {st:'ok',hist,o} | {st:'load'|'none',msg} ou null quando o período não usa esses dados */
 function finView(sym,rg){var kind=rg==='1d'||rg==='5d'?'intra':rg==='max'?'dia':null;if(!kind||!sym)return null;
-  var k=kind+'/'+sym,c=FIN[k];if(!c||(!c.p&&Date.now()-c.at>(c.err?60000:kind==='intra'?240000:6*3600000)))finGet(kind,sym).then(finRedo);
+  var k=kind+'/'+sym,c=FIN[k];if(!c||(!c.p&&Date.now()-c.at>(c.err?60000:kind==='intra'?(pxBase()?60000:240000):6*3600000)))finGet(kind,sym).then(finRedo);
   c=FIN[k];var d=c&&c.d;if(c&&c.err&&!c.p&&d===undefined)return {st:'none',msg:'Não consegui carregar o histórico agora. Tente de novo em instantes.'};if(!c||c.p&&d===undefined)return {st:'load',msg:'Carregando o histórico...'};
   if(!d||!(d.p||d.d)||(d.p||d.d).length<2)return {st:'none',msg:kind==='intra'?'Ainda não há pontos de 5 minutos desse ativo. O robô os grava durante o pregão (a cada 30 min); volte depois da abertura.':'Ainda não há o histórico completo desse ativo.'};
   if(kind==='dia')return {st:'ok',hist:d.d.map(function(r){return {t:r[0]*864e5,c:r[4]}}),o:{}};
@@ -73,4 +73,4 @@ function finView(sym,rg){var kind=rg==='1d'||rg==='5d'?'intra':rg==='max'?'dia':
   return {st:'ok',hist:pts.map(function(p){return {t:p[0]*1000,c:p[1]}}),o:rg==='1d'&&d.prev?{prev:d.prev,intra:1,d1:1}:{intra:1},at:d.at*1000}}
 
 /* abertura, máxima, mínima e fechamento anterior do último pregão (arquivo de 5 min do robô) */
-function finStat(sym){if(!sym)return null;var k='intra/'+sym,c=FIN[k];if(!c||(!c.p&&Date.now()-c.at>(c.err?60000:240000)))finGet('intra',sym).then(finRedo);c=FIN[k];var d=c&&c.d;return d&&d.o!=null?{o:d.o,h:d.h,l:d.l,prev:d.prev}:null}
+function finStat(sym){if(!sym)return null;var k='intra/'+sym,c=FIN[k];if(!c||(!c.p&&Date.now()-c.at>(c.err?60000:pxBase()?60000:240000)))finGet('intra',sym).then(finRedo);c=FIN[k];var d=c&&c.d;return d&&d.o!=null?{o:d.o,h:d.h,l:d.l,prev:d.prev}:null}
