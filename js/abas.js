@@ -40,3 +40,5 @@ setTimeout(function(){loadHist()},5000);
 setTimeout(function(){loadBench()},3500);
 setInterval(function(){if(!document.hidden){loadDivs();loadDivsUS()}},60*60000);
 setInterval(function(){if(!document.hidden)loadCDI()},60*60000);
+/* número da versão na abertura do app (some sozinho em 3 s) */
+setTimeout(function(){try{var v=document.createElement('div');v.className='vtoast';v.textContent='Aporte · versão '+VERSAO;document.body.appendChild(v);setTimeout(function(){v.classList.add('out')},2600);setTimeout(function(){if(v.parentNode)v.parentNode.removeChild(v)},3200)}catch(e){}},300);
