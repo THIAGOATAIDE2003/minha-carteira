@@ -231,6 +231,14 @@ function contasAMao(F, P) {
       document.querySelector('[data-rng="1d"]').click(); r.cam1d = q('.gch svg'); document.querySelector('[data-hcv="usd"]').click(); r.usd1d = q('.gch svg'); document.querySelector('[data-rng="1y"]').click(); document.querySelector('[data-hcv="luc"]').click(); document.querySelector('[data-hcv="usd"]').click(); r.usdSvg = q('.gch svg'); r.usdTxt = /Dólar \(USD\/BRL\)/.test(document.getElementById('stk-b').textContent); stkClose(); MK.fxMeta = fx0[0]; MK.fxSeries = fx0[1]; MK.fxDates = fx0[2]; MK.fxLatestDate = fx0[3]; MK.fxLatest = fx0[4]; return r; });
     confere('Início: cartão de Câmbio, valor investido e câmbio abrem gráfico com histórico', [hc.cards, hc.inv, hc.cam, hc.invSvg, hc.invNoIntra, hc.camSvg, hc.camTog, hc.camPts, hc.usdSvg, hc.usdTxt, hc.lucSvg, hc.lucTxt, hc.cam1d, hc.usd1d], [4, true, true, 1, 0, 1, 2, true, 1, true, 1, true, 1, 1]);
     console.log('  (lucro do câmbio do histórico bate com Desempenho: ' + hc.camLast + ')');
+    /* sino: notícias dos jornais (sem IA), notificações novas com número no sino, filtros */
+    const nt = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), mk = function (i, c, sc, n, mins, tt) { return { id: 'x' + i, t: tt || 'Notícia ' + i, s: 'Folha', d: now - mins * 60, l: 'https://exemplo.com.br/' + i, i: i % 2 ? 'https://exemplo.com.br/i.jpg' : '', c: c, sc: sc, n: n }; };
+      NT.d = { v: 1, at: now, itens: [mk(1, 'BR', 12, 2, 5), mk(2, 'EX', 5, 1, 20), mk(3, 'BR', 7, 3, 60), mk(4, 'EX', 11, 1, 90), mk(5, 'BR', 4, 1, 120, 'Petrobras sobe com petróleo')] }; NT.seen = Date.now() - 3 * 3600000; ntBadge();
+      var r = { badge: document.getElementById('bellb').textContent, vis: !document.getElementById('bellb').hidden }; ntOpen();
+      r.notif = document.querySelectorAll('#nt-p0 .ntc').length; r.novas = document.querySelectorAll('#nt-p0 .ntc.nw').length; r.cards = document.querySelectorAll('#nt-p1 .ntc').length; r.link = document.querySelector('#nt-p1 .ntc').getAttribute('target');
+      NT.cat = 'all'; ntRender(); r.todas = document.querySelectorAll('#nt-p1 .ntc').length; NT.cat = 'EX'; ntRender(); r.ex = document.querySelectorAll('#nt-p1 .ntc').length;
+      NT.cat = 'imp'; ntClose(); r.zerou = document.getElementById('bellb').hidden; return r; });
+    confere('sino: número nas notificações novas, lista de notícias com filtros e zera ao abrir', [nt.badge, nt.vis, nt.notif, nt.novas, nt.cards, nt.link, nt.todas, nt.ex, nt.zerou], ['3', true, 3, 3, 3, '_blank', 5, 2, true]);
     /* 1D/5D com pontos de 5 minutos de mentira (arquivos do robô) e a carteira ao longo do dia */
     const g2 = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), p5 = []; for (var i = 0; i < 40; i++) p5.push([now - (40 - i) * 300, 20 + i * .05]);
       var mk = function (prev) { return { d: { cur: 'BRL', off: -10800, at: now, prev: prev, p: p5 }, at: Date.now() }; };

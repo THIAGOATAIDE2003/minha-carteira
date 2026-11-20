@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><!-- CSP: API, imagem ou fonte de domínio novo precisa entrar nesta lista (connect-src, img-src...), senão o navegador bloqueia. Ver CLAUDE.md. --><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://icons.brapi.dev https://financialmodelingprep.com; connect-src 'self' https://brapi.dev https://finnhub.io https://economia.awesomeapi.com.br https://api.bcb.gov.br https://www.alphavantage.co https://api.github.com https://api.groq.com https://generativelanguage.googleapis.com https://*.workers.dev https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0a1017"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Aporte"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml">
+<html lang="pt-BR"><head><meta charset="utf-8"><!-- CSP: API, imagem ou fonte de domínio novo precisa entrar nesta lista (connect-src, img-src...), senão o navegador bloqueia. Ver CLAUDE.md. --><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://brapi.dev https://finnhub.io https://economia.awesomeapi.com.br https://api.bcb.gov.br https://www.alphavantage.co https://api.github.com https://api.groq.com https://generativelanguage.googleapis.com https://*.workers.dev https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0a1017"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Aporte"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>Aporte</title>
 <script src="tema.js"></script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -9,7 +9,7 @@
 <div class="wrap">
   <header class="top">
     <div class="brand"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#0f2a3f"/><path d="M120 356l92-104 68 60 112-148" fill="none" stroke="#f4f8fb" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="392" cy="164" r="34" fill="#e3b657"/></svg><h1>Aporte</h1></div>
-    <div class="pills"><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button><div id="mktst" aria-label="Situação das bolsas"></div></div>
+    <div class="pills"><button type="button" class="pill" id="syncbar" data-goto="ajustes"></button><div id="mktst" aria-label="Situação das bolsas"></div><button type="button" class="bell" id="bell" data-nt="open" aria-label="Notificações e notícias"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg><i id="bellb" hidden>0</i></button></div>
   </header>
   <div class="tape" id="tape" hidden aria-label="Cotações de índices e ações"></div>
   <div class="msg muted" id="status" role="status"></div>
@@ -129,6 +129,7 @@
   </div>
 </div>
 
+<div class="sheet" id="nt" hidden><div class="sbox big" role="dialog" aria-label="Notificações e notícias"><div class="shd ntshd"><div class="ntseg"><button type="button" data-ntp="0" aria-pressed="false">Notificações</button><button type="button" data-ntp="1" aria-pressed="true">Notícias</button></div><button type="button" class="shx" data-nt="close" aria-label="Fechar">✕</button></div><div class="ntp" id="ntp"><section class="ntsec" id="nt-p0"></section><section class="ntsec" id="nt-p1"></section></div></div></div>
 <div class="sheet" id="stk" hidden><div class="sbox big" role="dialog" aria-label="Ação"><div class="shd"><b id="stk-h">Ação</b><button type="button" class="shx" data-stk="close" aria-label="Fechar">✕</button></div><div class="sbd" id="stk-b"></div></div></div>
 <nav class="tabs" aria-label="Seções">
 <button type="button" data-go="resumo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>Início</button>
@@ -156,6 +157,7 @@
 <script src="js/atualizacao.js"></script>
 <script src="js/perfil.js"></script>
 <script src="js/assistente.js"></script>
+<script src="js/noticias.js"></script>
 <script src="js/abas.js"></script>
 
 </body></html>
