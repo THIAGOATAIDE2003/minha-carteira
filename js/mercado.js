@@ -217,9 +217,9 @@ function qHtml(tk){var q=cvmQ(tk);if(!q||q.length<2)return '';var l=q[q.length-1
   return '<div class="panel"><h2>Resultados trimestrais '+bal('Receita e lucro de cada trimestre, tirados dos balanços oficiais que a empresa entrega à CVM. Mostra se ela está crescendo ou piorando.')+'</h2><p class="anv" style="margin:4px 0 0">No '+l[1]+'º tri de '+l[0]+': '+(l[2]!=null?'receita de <b>'+qfmt(l[2])+'</b>'+(gr!=null?' ('+sg(gr)+' no ano)':'')+' e ':'')+'lucro de <b>'+qfmt(l[3])+'</b>'+(gl!=null?' ('+sg(gl)+' no ano)':'')+'.'+(t?' Lucro dos últimos 12 meses: <b>'+qfmt(t.a)+'</b>'+(t.g!=null?' ('+sg(t.g)+' contra os 12 meses anteriores)':'')+'.':'')+'</p>'+
     qChart(q,2,'Receita')+qChart(q,3,'Lucro')+'<p class="note">Balanços entregues à CVM (consolidado). O 4º trimestre é o ano inteiro menos os 9 primeiros meses. Toque nas barras para ver cada trimestre.</p></div>'}
 
-var ANV='rel';try{var av0=localStorage.getItem(LS+'-anv');if(av0==='rel'||av0==='opp'||av0==='cls'||av0==='cmp')ANV=av0}catch(e){}
+var ANV='rel';try{var av0=localStorage.getItem(LS+'-anv');if(av0==='rel'||av0==='opp'||av0==='cls'||av0==='set'||av0==='cmp')ANV=av0}catch(e){}
 function anSeg(){var on=0;try{var od=opData();on=od?od.n:0}catch(e){}
-  return '<div class="seg anseg" id="anseg">'+[['rel','Relatório'],['opp','Oportunidades'+(on?' <i class="mkb">'+on+'</i>':'')],['cls','Classificação'],['cmp','Comparar']].map(function(v){return '<button type="button" data-anv="'+v[0]+'" aria-pressed="'+(ANV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>'}
+  return '<div class="seg anseg" id="anseg">'+[['rel','Relatório'],['opp','Oportunidades'+(on?' <i class="mkb">'+on+'</i>':'')],['cls','Classificação'],['set','Setores'],['cmp','Comparar']].map(function(v){return '<button type="button" data-anv="'+v[0]+'" aria-pressed="'+(ANV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>'}
 /* Relatório da carteira (IA): aba própria, sempre aberta, com a data de quando foi escrito logo no topo; o texto de economia (macro) não aparece mais */
 function rsRel(){var c=MD.d&&MD.d.res&&MD.d.res.cart;if(!c||!c.ai)return '<div class="panel"><h2>Relatório da carteira · IA</h2><p class="muted">O relatório chega com o robô, uma vez por dia. Volte em alguns minutos.</p></div>';var a=c.ai;
   var lst=function(t,arr,cl){return arr&&arr.length?'<h3 class="rkh3">'+t+'</h3><ul class="rkl">'+arr.map(function(x){return '<li>'+rkLvl(cl)+'<div><p style="margin:0;color:var(--fg)">'+esc(x)+'</p></div></li>'}).join('')+'</ul>':''};
@@ -227,19 +227,60 @@ function rsRel(){var c=MD.d&&MD.d.res&&MD.d.res.cart;if(!c||!c.ai)return '<div c
     '<p class="small muted" style="margin:2px 0 8px">Escrito pela IA ('+esc(c.mod||'Gemini')+') em '+rsWhen(c.at)+'. Pode errar e não é recomendação.</p>'+
     (a.titulo?'<b class="rstit">'+esc(a.titulo)+'</b>':'')+lst('Destaques',a.destaques,'ok')+lst('Riscos',a.riscos,'al')+lst('Para acompanhar',a.atencao,'at')+'</div>'}
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-anv]');if(!b)return;ANV=b.getAttribute('data-anv');try{localStorage.setItem(LS+'-anv',ANV)}catch(x){}renderMkt()});
+/* nomes e setores nas telas de classificação e setores */
+function nomeEmp(tk){var n=(MD.d&&MD.d.cvm&&MD.d.cvm.nomes&&MD.d.cvm.nomes[tk])||(MD.d&&MD.d.hist&&MD.d.hist[tk]&&MD.d.hist[tk].name)||'';if(!n)return '';
+  n=n.replace(/\s+S\.?\s?\/?\s?A\.?.*$/i,'').replace(/\s+-\s+.*$/,'');var l=n.toLowerCase().replace(/(^|[\s.])(\S)/g,function(m,a,b){return a+b.toUpperCase()});return l.replace(/\b(Do|Da|De|Dos|Das|E)\b/g,function(x){return x.toLowerCase()})}
+function catSetorNome(tk){var c=MD.d&&MD.d.cat,p=c&&c.a&&c.a[tk];return p&&p[1]!=null&&c.n?(c.n[String(p[1])]||''):''}
+var CLSN=20;
+function cMini(l,v){return '<span>'+l+'<b>'+v+'</b></span>'}
+function clsHtml(all,sc,W,mine,list){
+  var pc=function(v){return v!=null?pf.format(v)+'%':'—'},n2=function(v){return v!=null?num(v,2):'—'},n1=function(v){return v!=null?num(v,1):'—'};
+  var big={dy:['dy','DY',pc],qual:['dy','DY',pc],pl:['pl','P/L',n1],roe:['roe','ROE',pc],pvp:['pvp','P/VP',n2]}[sc.k]||['dy','DY',pc];
+  var h='<div class="panel"><div class="grp"><h2>Classificação de ações '+bal('Lista as ações da bolsa pelo critério que você escolher (dividendos, mais baratas, mais rentáveis...). Toque numa para ver a análise.')+'</h2><span class="det">'+all.length+' ações</span></div>'+
+    '<div class="cchips">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
+    '<p class="small muted" style="margin:0 2px 12px">'+sc.d+' Só ações com mais de R$ 1 milhão negociados por dia.</p>';
+  h+=list.map(function(F,i){var nm=nomeEmp(F.tk),st=catSetorNome(F.tk),bg=F[big[0]];
+    return '<div class="ccd"><button type="button" class="ccm" data-stk="'+esc(F.tk)+'"><i class="ccn">'+(i+1)+'</i>'+tkLogo(F.tk,false)+'<span class="cct"><b>'+esc(F.tk)+(mine[F.tk]?' <span class="tag">sua</span>':W.indexOf(F.tk)>=0?' <span class="tag">★</span>':'')+(catNovo(F.tk)?' <span class="tag">novo</span>':'')+'</b><small>'+esc(nm)+'</small>'+(st?'<small class="sx">'+esc(st)+'</small>':'')+'</span></button>'+
+      '<span class="ccv"><b>'+big[2](bg)+'</b><small>'+big[1]+'</small></span><div class="ccg">'+cMini('P/L',n1(F.pl))+cMini('P/VP',n2(F.pvp))+cMini('DY',pc(F.dy))+cMini('ROE',pc(F.roe))+'</div></div>'}).join('');
+  if(!list.length)h+='<p class="muted">Nenhuma ação passou nesse critério agora.</p>';
+  if(list.length>=CLSN)h+='<button type="button" class="btn ghost" data-clsm="1" style="width:100%">Mostrar mais '+CLSN+'</button>';
+  return h+'<p class="note" style="margin-top:10px">Indicadores do Fundamentus, atualizados pelo robô diário. A classificação é ponto de partida para estudar, não recomendação.</p></div>'}
+/* Setores da B3: cada setor com as suas ações (catálogo do robô); pouca liquidez fica escondida, a não ser que você peça */
+var SETID='',CATALL=false;try{CATALL=localStorage.getItem(LS+'-catall')==='1'}catch(e){}
+function medOf(a){a=a.filter(function(v){return v!=null&&isFinite(v)}).sort(function(x,y){return x-y});return a.length?a[Math.floor(a.length/2)]:null}
+function setStats(t){var ds=[],pl=[];t.forEach(function(tk){var F=fundOf(tk);if(!F)return;if(F.dy>0&&F.dy<30)ds.push(F.dy);if(F.pl>0&&F.pl<200)pl.push(F.pl)});return {dy:medOf(ds),pl:medOf(pl)}}
+function setRow(tk,F){var nm=nomeEmp(tk),mine=false;try{compute().held.forEach(function(x){if(x.p.ticker===tk)mine=true})}catch(e){}
+  return '<button type="button" class="str" data-stk="'+esc(tk)+'">'+tkLogo(tk,false)+'<span class="cct"><b>'+esc(tk)+(mine?' <span class="tag">sua</span>':'')+(catNovo(tk)?' <span class="tag">novo</span>':'')+'</b><small>'+esc(nm)+'</small></span><span class="srm"><b>'+(F&&F.dy!=null?pf.format(F.dy)+'%':'—')+'</b><small>DY</small></span><span class="srm"><b>'+(F&&F.pl!=null?num(F.pl,1):'—')+'</b><small>P/L</small></span></button>'}
+function setHtml(){
+  if(!catOk())return '<div class="panel"><h2>Setores da B3</h2><p class="muted">O catálogo de ações e setores chega com o robô, que preenche aos poucos. Volte mais tarde.</p></div>';
+  var S0=catSetores(CATALL),sem=S0.filter(function(x){return x.id==='0'})[0],h='';
+  var sw='<button type="button" class="chk'+(CATALL?' on':'')+'" data-catall="1" aria-pressed="'+CATALL+'"><i></i>Mostrar também as de pouca liquidez</button>';
+  if(SETID){var o=S0.filter(function(x){return x.id===SETID})[0];
+    if(o){var st=setStats(o.t),subs=Object.keys(o.sub).sort(function(a,b){return o.sub[b].length-o.sub[a].length});
+      h+='<div class="panel"><button type="button" class="link sback" data-setid="">‹ Todos os setores</button><div class="grp"><h2>'+esc(o.n)+'</h2><span class="det">'+o.t.length+' ações</span></div>'+
+        '<p class="small muted" style="margin:2px 0 8px">Mediana do setor: dividendos '+(st.dy!=null?pf.format(st.dy)+'%':'—')+' · P/L '+(st.pl!=null?num(st.pl,1):'—')+'</p>'+
+        subs.map(function(k){return '<h3 class="rkh3">'+esc(k)+' <span class="muted">('+o.sub[k].length+')</span></h3>'+o.sub[k].map(function(tk){return setRow(tk,fundOf(tk))}).join('')}).join('')+'<div style="margin-top:12px">'+sw+'</div></div>';return h}
+    SETID=''}
+  h+='<div class="panel"><div class="grp"><h2>Setores da B3 '+bal('Todas as ações da bolsa (ordinárias, preferenciais e units) agrupadas pelo setor do Fundamentus. Ação nova na bolsa (IPO) entra sozinha. Toque num setor para ver as empresas dele.')+'</h2><span class="det">'+catTickers(CATALL).length+' ações</span></div><div style="margin:4px 0 12px">'+sw+'</div>'+
+    S0.filter(function(x){return x.id!=='0'}).map(function(o){var st=setStats(o.t);
+      return '<button type="button" class="stc" data-setid="'+o.id+'"><span class="cct"><b>'+esc(o.n)+'</b><small>'+o.t.length+' '+(o.t.length>1?'ações':'ação')+(st.dy!=null?' · DY mediano '+pf.format(st.dy)+'%':'')+(st.pl!=null?' · P/L '+num(st.pl,1):'')+'</small></span><span class="stch">›</span></button>'}).join('')+
+    (sem?'<p class="note">'+sem.t.length+' '+(sem.t.length>1?'ações ainda sem setor':'ação ainda sem setor')+': o robô preenche aos poucos.</p>':'')+'</div>';
+  return h}
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-setid],[data-catall],[data-clsm]');if(!t)return;
+  if(t.hasAttribute('data-setid')){SETID=t.getAttribute('data-setid');window.scrollTo(0,0)}
+  else if(t.hasAttribute('data-catall')){CATALL=!CATALL;try{localStorage.setItem(LS+'-catall',CATALL?'1':'0')}catch(x){}}
+  else CLSN+=20;
+  renderMkt()});
 function anaHtml(){
   var sg0=anSeg();
   if(ANV==='rel')return sg0+rsRel();
+  if(ANV==='set')return sg0+setHtml();
   if(ANV==='opp')return sg0+(oppHtml()||'<div class="panel"><p class="muted">Os dados chegam com o robô diário. Volte em alguns minutos.</p></div>');
   var f=MD.d&&MD.d.fund;if(!f||!f.d)return sg0+'<div class="panel"><p class="muted">Os indicadores chegam com o robô diário. Volte em alguns minutos.</p></div>';
   var sc=SCRS.filter(function(x){return x.k===SCR})[0]||SCRS[0],W=wlist(),mine={};compute().held.forEach(function(x){mine[x.p.ticker]=1});
   var all=Object.keys(f.d).map(function(tk){var F=fundOf(tk);F.tk=tk;return F}).filter(function(F){return F.liq2m>=1e6&&sc.f(F)});
-  var seen={},list=all.sort(sc.s).filter(function(F){var b=F.tk.slice(0,4);if(seen[b])return false;seen[b]=1;return true}).slice(0,15);
-  var h='<div class="panel"><div class="grp"><h2>Classificação de ações '+bal('Lista as ações da bolsa pelo critério que você escolher (dividendos, mais baratas, mais rentáveis...). Toque numa para ver a análise.')+'</h2><span class="det">'+all.length+' ações</span></div><div class="chips" style="margin:10px 0 4px">'+SCRS.map(function(x){return '<button type="button" data-scr="'+x.k+'" aria-pressed="'+(x.k===sc.k)+'">'+x.n+'</button>'}).join('')+'</div>'+
-    '<p class="note" style="margin:6px 0 4px">'+sc.d+' Só ações com mais de R$ 1 milhão negociados por dia.</p>'+
-    '<div class="scr"><div class="scrr scrh"><span>Ação</span><span>P/L</span><span>P/VP</span><span>DY</span><span>ROE</span></div>'+list.map(function(F,i){
-      return '<div class="scrr"><button type="button" class="scrt" data-stk="'+esc(F.tk)+'"><i>'+(i+1)+'</i>'+esc(F.tk)+(mine[F.tk]?' <span class="tag">sua</span>':W.indexOf(F.tk)>=0?' <span class="tag">★</span>':'')+'</button><span>'+(F.pl!=null?num(F.pl,1):'—')+'</span><span>'+(F.pvp!=null?num(F.pvp,2):'—')+'</span><span>'+(F.dy!=null?pf.format(F.dy)+'%':'—')+'</span><span>'+(F.roe!=null?pf.format(F.roe)+'%':'—')+'</span></div>'}).join('')+'</div>'+
-    '<p class="note" style="margin-top:8px">Indicadores do Fundamentus, atualizados pelo robô diário. A classificação é ponto de partida para estudar, não recomendação.</p></div>';
+  var seen={},list=all.sort(sc.s).filter(function(F){var b=F.tk.slice(0,4);if(seen[b])return false;seen[b]=1;return true}).slice(0,CLSN);
+  var h=clsHtml(all,sc,W,mine,list);
   var R=compute(),dflt=R.held.filter(function(x){return x.p.market!=='US'}).map(function(x){return x.p.ticker});if(!CMP)CMP=[dflt[0]||'ITUB4',dflt[1]||'BBSE3'];
   var A=fundOf(CMP[0]),B=fundOf(CMP[1]),row=function(l,k,fm,better){var a=A&&A[k],b=B&&B[k],wa=a!=null&&b!=null&&(better>0?a>b:a<b),wb=a!=null&&b!=null&&(better>0?b>a:b<a);
     return '<div class="cmpr"><span>'+l+'</span><b class="'+(wa?'gain':'')+'">'+(a!=null?fm(a):'—')+'</b><b class="'+(wb?'gain':'')+'">'+(b!=null?fm(b):'—')+'</b></div>'};
@@ -272,6 +313,7 @@ function renderMkt(){
     (MKT.err?'<p class="warn" style="margin-top:8px">'+esc(MKT.err)+'</p>':'')+'</div>';
   }
   el.innerHTML=h;
+  ['anseg','cchips'].forEach(function(id){var r=id==='anseg'?$(id):el.querySelector('.cchips'),a=r&&r.querySelector('[aria-pressed=true]');if(a)r.scrollLeft=Math.max(0,a.offsetLeft-(r.clientWidth-a.offsetWidth)/2)});
 }
 /* dados prontos do robô diário (mercado.json no repositório de dados): indicadores do Fundamentus e históricos do Yahoo */
 var MD={d:null,etag:'',at:0,busy:false,err:''};
