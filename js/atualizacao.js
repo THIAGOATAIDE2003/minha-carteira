@@ -35,14 +35,49 @@ function hfm(m){var h=Math.floor(m/60),n=m%60;return h+'h'+(n?(n<10?'0':'')+n:''
 function dur(m){return m<60?m+' min':hfm(m)}
 var DSEM=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 function nextOpen(d,ok){var x=new Date(d.getTime()+864e5),k=0;while(!ok(x)&&k<15){x=new Date(x.getTime()+864e5);k++}return x}
-function mktState(){
-  var b=brt(),bo=bDay(b.d)&&b.min>=600&&b.min<1080,out=[];
-  var bt=bo?'Bolsa brasileira aberta, em negociação. Fecha às 18h (Brasília), daqui a '+dur(1080-b.min)+'.':(bDay(b.d)&&b.min<600?'Bolsa brasileira fechada. Abre hoje às 10h (Brasília).':'Bolsa brasileira fechada. Abre '+(function(){var n=nextOpen(b.d,bDay),dd=Math.round((n-b.d)/864e5);return dd===1?'amanhã':DSEM[n.getUTCDay()]+' ('+fmtDate(n.toISOString().slice(0,10)).slice(0,5)+')'})()+' às 10h (Brasília).');
-  out.push({n:'B3',on:bo,t:bt});
-  var ny=nyNow();if(ny){var off=Math.round(((b.min-ny.min)+1440)%1440/60)*60;if(off>720)off-=1440;var uo=usBDay(ny.d)&&ny.min>=570&&ny.min<960,o0=hfm(570+off),c0=hfm(960+off);
-    var ut=uo?'Bolsa americana (onde está o VT) aberta. Fecha às '+c0+' de Brasília, daqui a '+dur(960-ny.min)+'.':(usBDay(ny.d)&&ny.min<570?'Bolsa americana fechada. Abre hoje às '+o0+' de Brasília.':'Bolsa americana fechada. Abre '+(function(){var n=nextOpen(ny.d,usBDay),dd=Math.round((n-ny.d)/864e5);return dd===1?'amanhã':DSEM[n.getUTCDay()]+' ('+fmtDate(n.toISOString().slice(0,10)).slice(0,5)+')'})()+' às '+o0+' de Brasília.')+' Horário normal: '+o0+' às '+c0+'.';
-    out.push({n:'EUA',on:uo,t:ut})}
-  return out}
+/* mercados do mundo: horário local, feriados (com nome) e estado agora; Brasília é a referência de leitura */
+function zNow(tz){try{var p={};new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value});return {d:new Date(Date.UTC(+p.year,+p.month-1,+p.day)),min:(+p.hour%24)*60+ +p.minute}}catch(e){return null}}
+function ymdS(t){return new Date(t).toISOString().slice(0,10)}
+function easterMs(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);return Date.UTC(y,Math.floor((h+l-7*m+114)/31)-1,(h+l-7*m+114)%31+1)}
+function nthD(y,m,wd,n){var t=Date.UTC(y,m-1,1),c=0;while(true){if(new Date(t).getUTCDay()===wd&&++c===n)return ymdS(t);t+=864e5}}
+function lastD(y,m,wd){var t=Date.UTC(y,m,0);while(new Date(t).getUTCDay()!==wd)t-=864e5;return ymdS(t)}
+var HNC={};
+function holNames(mk,y){var k=mk+y;if(HNC[k])return HNC[k];var o={},e=easterMs(y),ad=function(n,nm){o[ymdS(e+n*864e5)]=nm},F=function(md,nm){o[y+'-'+md]=nm},obs=function(m,d,nm,sat){var t=new Date(Date.UTC(y,m-1,d)),w=t.getUTCDay();if(w===6&&sat)t=new Date(t.getTime()-864e5);else if(w===6)t=new Date(t.getTime()+2*864e5);else if(w===0)t=new Date(t.getTime()+864e5);o[ymdS(t)]=nm};
+  if(mk==='br'){F('01-01','Confraternização Universal');ad(-48,'Segunda de Carnaval');ad(-47,'Terça de Carnaval');ad(-2,'Sexta-feira Santa');F('04-21','Tiradentes');F('05-01','Dia do Trabalho');ad(60,'Corpus Christi');F('09-07','Independência');F('10-12','Nossa Senhora Aparecida');F('11-02','Finados');F('11-15','Proclamação da República');F('11-20','Consciência Negra');F('12-24','Véspera de Natal');F('12-25','Natal');F('12-31','Véspera de Ano Novo')}
+  else if(mk==='us'){obs(1,1,'Ano Novo',1);o[nthD(y,1,1,3)]='Dia de Martin Luther King';o[nthD(y,2,1,3)]='Dia dos Presidentes';ad(-2,'Sexta-feira Santa');o[lastD(y,5,1)]='Memorial Day';obs(6,19,'Juneteenth',1);obs(7,4,'Independência dos EUA',1);o[nthD(y,9,1,1)]='Dia do Trabalho';o[nthD(y,11,4,4)]='Ação de Graças';obs(12,25,'Natal',1)}
+  else if(mk==='uk'){obs(1,1,'Ano Novo');ad(-2,'Sexta-feira Santa');ad(1,'Segunda-feira de Páscoa');o[nthD(y,5,1,1)]='Feriado de maio';o[lastD(y,5,1)]='Feriado de primavera';o[lastD(y,8,1)]='Feriado de verão';var w=new Date(Date.UTC(y,11,25)).getUTCDay();if(w===6){F('12-27','Natal (compensado)');F('12-28','Boxing Day (compensado)')}else if(w===0){F('12-27','Natal (compensado)');F('12-26','Boxing Day')}else if(w===5){F('12-25','Natal');F('12-28','Boxing Day (compensado)')}else{F('12-25','Natal');F('12-26','Boxing Day')}}
+  else if(mk==='de'){F('01-01','Ano Novo');ad(-2,'Sexta-feira Santa');ad(1,'Segunda-feira de Páscoa');F('05-01','Dia do Trabalho');F('12-24','Véspera de Natal');F('12-25','Natal');F('12-26','Segundo dia de Natal');F('12-31','Véspera de Ano Novo')}
+  else if(mk==='fr'){F('01-01','Ano Novo');ad(-2,'Sexta-feira Santa');ad(1,'Segunda-feira de Páscoa');F('05-01','Dia do Trabalho');F('12-25','Natal');F('12-26','Segundo dia de Natal')}
+  else if(mk==='jp'){F('01-01','Ano Novo');F('01-02','Ano Novo');F('01-03','Ano Novo');o[nthD(y,1,1,2)]='Dia da Maioridade';F('02-11','Fundação do Estado');F('02-23','Aniversário do Imperador');F('03-'+Math.floor(20.8431+.242194*(y-1980)-Math.floor((y-1980)/4)),'Equinócio de primavera');F('04-29','Dia Showa');F('05-03','Dia da Constituição');F('05-04','Dia do Verde');F('05-05','Dia das Crianças');o[nthD(y,7,1,3)]='Dia do Mar';F('08-11','Dia da Montanha');o[nthD(y,9,1,3)]='Respeito aos Idosos';F('09-'+Math.floor(23.2488+.242194*(y-1980)-Math.floor((y-1980)/4)),'Equinócio de outono');o[nthD(y,10,1,2)]='Dia do Esporte';F('11-03','Dia da Cultura');F('11-23','Agradecimento ao Trabalho');F('12-31','Fim de ano')}
+  else if(mk==='hk'){F('01-01','Ano Novo');ad(-2,'Sexta-feira Santa');ad(-1,'Sábado de Páscoa');ad(1,'Segunda-feira de Páscoa');F('05-01','Dia do Trabalho');F('07-01','Dia da Região Administrativa');F('10-01','Dia Nacional da China');F('12-25','Natal');F('12-26','Dia seguinte ao Natal')}
+  else if(mk==='cn'){F('01-01','Ano Novo');for(var i=1;i<=5;i++)F('05-0'+i,'Feriado do Dia do Trabalho');for(i=1;i<=7;i++)F('10-0'+i,'Semana de Ouro (Dia Nacional)')}
+  return HNC[k]=o}
+function holOf(mk,ymd){var y=+ymd.slice(0,4);if(mk==='br')return b3Hol(ymd)?(holNames('br',y)[ymd]||'Feriado'):'';if(mk==='us')return usHol(ymd)?(holNames('us',y)[ymd]||'Feriado'):'';return holNames(mk,y)[ymd]||''}
+var MKS=[{id:'br',n:'Brasil',s:'B3',tz:'America/Sao_Paulo',ses:[[600,1080]],p:1},{id:'us',n:'Estados Unidos',s:'NYSE e Nasdaq',tz:'America/New_York',ses:[[570,960]],p:1},
+  {id:'uk',n:'Reino Unido',s:'Londres',tz:'Europe/London',ses:[[480,990]]},{id:'de',n:'Alemanha',s:'Frankfurt',tz:'Europe/Berlin',ses:[[540,1050]]},{id:'fr',n:'França',s:'Paris',tz:'Europe/Paris',ses:[[540,1050]]},
+  {id:'jp',n:'Japão',s:'Tóquio',tz:'Asia/Tokyo',ses:[[540,690],[750,930]],ap:1},{id:'hk',n:'Hong Kong',s:'HKEX',tz:'Asia/Hong_Kong',ses:[[570,720],[780,960]],ap:1},{id:'cn',n:'China',s:'Xangai',tz:'Asia/Shanghai',ses:[[570,690],[780,900]],ap:1}];
+function mkWhen(z,nb){var dd=Math.round((nb-z.d)/864e5);return dd===1?'amanhã':DSEM[nb.getUTCDay()]+' ('+fmtDate(ymdS(nb)).slice(0,5)+')'}
+function mkEval(m){var z=zNow(m.tz),b=zNow('America/Sao_Paulo');if(!z||!b)return null;
+  var off=Math.round(((b.min-z.min)+1440)%1440/60)*60;if(off>720)off-=1440;
+  var ymd=ymdS(z.d),hol=holOf(m.id,ymd),wd=z.d.getUTCDay(),bd=wd>=1&&wd<=5&&!hol,ses=m.ses,cur=-1,i,first=ses[0][0],last=ses[ses.length-1][1];
+  var br=function(mn){return hfm((((mn+off)%1440)+1440)%1440)},isBD=function(d){return d.getUTCDay()>=1&&d.getUTCDay()<=5&&!holOf(m.id,ymdS(d))};
+  if(bd)for(i=0;i<ses.length;i++)if(z.min>=ses[i][0]&&z.min<ses[i][1])cur=i;
+  var on=cur>=0,pz=false,sub;
+  if(on){sub=cur<ses.length-1?'Pausa para o almoço às '+br(ses[cur][1])+' (Brasília), volta às '+br(ses[cur+1][0])+'.':'Fecha às '+br(last)+' (Brasília), daqui a '+dur(last-z.min)+'.'}
+  else if(bd&&z.min<first)sub='Abre hoje às '+br(first)+' (Brasília).';
+  else if(bd&&z.min<last){pz=true;for(i=0;i<ses.length;i++)if(z.min<ses[i][0]){sub='Pausa para o almoço. Volta às '+br(ses[i][0])+' (Brasília).';break}}
+  else{var nb=nextOpen(z.d,isBD);sub=(!bd?(hol?'Feriado: '+hol+'. ':'Fim de semana. '):'Pregão encerrado. ')+'Abre '+mkWhen(z,nb)+' às '+br(first)+' (Brasília).'}
+  var hrs=m.p?(br(first)+' às '+br(last)+' (Brasília)'):('Local '+hfm(first)+' às '+hfm(last)+(ses.length>1?' (com pausa)':'')+' · Brasília '+br(first)+' às '+br(last));
+  var nf=null;if(m.p){var x=new Date(z.d.getTime()+864e5),k=0,h;while(k<400){h=x.getUTCDay()>=1&&x.getUTCDay()<=5?holOf(m.id,ymdS(x)):'';if(h){nf=h+' ('+fmtDate(ymdS(x)).slice(0,5)+', '+DSEM[x.getUTCDay()]+')';break}x=new Date(x.getTime()+864e5);k++}}
+  return {m:m,on:on,pz:pz,st:on?'Aberta':pz?'Pausa':'Fechada',sub:sub,hrs:hrs,nf:nf}}
+function mktState(){return MKS.map(mkEval).filter(Boolean)}
+function renderMktSt(){var el=$('mktst');if(!el)return;var st=mktState(),on=st.some(function(x){return x.m.p&&x.on});
+  el.innerHTML='<button type="button" class="mks'+(on?' on':'')+'" data-mk="open" aria-label="Situação dos mercados"><i></i><b>'+(on?'Mercado aberto':'Mercado fechado')+'</b></button>';
+  if($('mk')&&!$('mk').hidden)mkRender(st)}
+function mkCard(x){return '<div class="mkc'+(x.on?' on':x.pz?' pz':'')+'"><i></i><div><div class="mkt"><b>'+x.m.n+'</b><span>'+x.m.s+'</span><em>'+x.st+'</em></div><div class="mkd">'+x.sub+'</div><div class="mkh">'+x.hrs+'</div>'+(x.nf?'<div class="mkf">Próximo feriado: '+esc(x.nf)+'</div>':'')+'</div></div>'}
+function mkRender(st){st=st||mktState();var el=$('mk-b');if(!el)return;
+  el.innerHTML='<div class="mkh2">Principais</div>'+st.filter(function(x){return x.m.p}).map(mkCard).join('')+'<div class="mkh2">Outras bolsas do mundo</div>'+st.filter(function(x){return !x.m.p}).map(mkCard).join('')+'<div class="note muted mkn">Horários e feriados calculados no app, sem consultar a internet. Os horários de verão (EUA e Europa) já entram. Nas bolsas da Ásia só entram os feriados de data certa: feriados lunares (como o Ano Novo Lunar) e dias de ponte podem não estar na lista. Dias de meio período não aparecem.</div>'}
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-mk]');if(!t)return;var o=t.getAttribute('data-mk');if(o==='close'){$('mk').hidden=true;document.body.style.overflow=''}else{$('mk').hidden=false;document.body.style.overflow='hidden';mkRender()}});
 
 /* faixa de cotações no topo: índices e grandes empresas do robô (a cada 30 min no pregão), com os preços ao vivo do app por cima */
 var TPK='';
@@ -68,7 +103,6 @@ function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems();if(it.le
   TPK=key;var one=it.map(function(x){var r=tapeIn(x),at=x.st?' data-stk="'+esc(x.l)+'"':x.ik&&idxDef(x.ik)?' data-idxo="'+esc(x.ik)+'"':'';
     return '<'+(at?'button type="button"'+at:'span')+' class="tpi" data-tp="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(at?'button':'span')+'>'}).join('');
   el.innerHTML='<div class="tptr" style="--tpd:'+Math.max(30,it.length*5)+'s">'+one+one+'</div>'}
-function renderMktSt(){var el=$('mktst');if(!el)return;el.innerHTML=mktState().map(function(m){return bal(m.t,'<span class="mks'+(m.on?' on':'')+'"><i></i><b>'+m.n+'</b><small>'+(m.on?'Aberta':'Fechada')+'</small></span>')}).join('')}
 
 /* variação do dia zerada fora do pregão: antes da abertura (ou fim de semana/feriado) até chegar a primeira cotação do dia */
 function dzero(us,at){var now=Date.now(),open;

@@ -234,7 +234,7 @@ function contasAMao(F, P) {
     /* sino à esquerda (gaveta de notificações) e ícone de notícias à direita (tela só de toque) */
     const nt = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), mk = function (i, c, sc, n, mins, tt) { return { id: 'x' + i, t: tt || 'Notícia ' + i, s: 'Folha', d: now - mins * 60, l: 'https://exemplo.com.br/' + i, i: i % 2 ? 'https://exemplo.com.br/i.jpg' : '', c: c, sc: sc, n: n }; };
       NT.d = { v: 1, at: now, itens: [mk(1, 'BR', 12, 2, 5), mk(2, 'EX', 5, 1, 20), mk(3, 'BR', 7, 3, 60), mk(4, 'EX', 11, 1, 90), mk(5, 'BR', 4, 1, 120, 'Petrobras sobe com petróleo')] }; NT.seen = Date.now() - 3 * 3600000; ntBadge();
-      var r = { badge: document.getElementById('bellb').textContent, bellEsq: !!document.querySelector('.top > .tl > .bell#bell'), jornalDir: !!document.querySelector('.pills #newsbtn') }; ndOpen();
+      var r = { badge: document.getElementById('bellb').textContent, bellEsq: !!document.querySelector('.atl > .bell#bell'), jornalDir: !!document.querySelector('.atl #newsbtn') }; ndOpen();
       r.notif = document.querySelectorAll('#nd-b .ndi').length; r.novas = document.querySelectorAll('#nd-b .ndi.nw').length; ndClose();
       ntOpen(); r.cards = document.querySelectorAll('#nt-b .ntc').length; r.link = document.querySelector('#nt-b .ntc').getAttribute('target'); r.semAbas = !document.querySelector('[data-ntp]');
       NT.cat = 'all'; ntRender(); r.todas = document.querySelectorAll('#nt-b .ntc').length; NT.cat = 'EX'; ntRender(); r.mundo = document.querySelectorAll('#nt-b .ntc').length;
