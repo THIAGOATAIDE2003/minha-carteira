@@ -137,7 +137,7 @@ function foldNotes(){[].forEach.call(document.querySelectorAll('p.note.exp'),fun
   var k=p.textContent.slice(0,40);if(INFO[k])d.open=true;d.setAttribute('data-k',k);
   p.parentNode.insertBefore(d,p);p.style.margin='6px 0 0';d.appendChild(p)})}
 var INFO={};
-try{new MutationObserver(function(){foldNotes()}).observe(document.body,{childList:true,subtree:true})}catch(e){}
+try{new MutationObserver(function(){foldNotes();balAuto()}).observe(document.body,{childList:true,subtree:true})}catch(e){}
 document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.classList&&d.classList.contains('info'))INFO[d.getAttribute('data-k')]=d.open},true);
 function getTema(){try{return localStorage.getItem(LS+'-tema')||'atual'}catch(e){return 'atual'}}
 function setTema(tm){try{localStorage.setItem(LS+'-tema',tm)}catch(e){}

@@ -104,9 +104,9 @@ function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems();if(it.le
     return '<'+(at?'button type="button"'+at:'span')+' class="tpi" data-tp="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(at?'button':'span')+'>'}).join('');
   el.innerHTML='<div class="tptr" style="--tpd:'+Math.max(30,it.length*5)+'s">'+one+one+'</div>'}
 
-/* variação do dia zerada fora do pregão: antes da abertura (ou fim de semana/feriado) até chegar a primeira cotação do dia */
+/* variação do dia zerada fora do pregão (nos EUA também a partir da meia-noite de Brasília, como o usuário pediu): antes da abertura (ou fim de semana/feriado) até chegar a primeira cotação do dia */
 function dzero(us,at){var now=Date.now(),open;
-  if(us){var n=nyNow();if(!n)return false;if(!usBDay(n.d)||n.min<570)return true;open=now-(n.min-570)*60000}
+  if(us){var n=nyNow();if(!n)return false;if(!usBDay(n.d)||n.min<570)return true;if(brt().d.toISOString().slice(0,10)!==n.d.toISOString().slice(0,10))return true;open=now-(n.min-570)*60000}
   else{var b=brt();if(!bDay(b.d)||b.min<600)return true;open=now-(b.min-600)*60000}
   return !!at&&at<open-60000}
 function mktOpen(){var b=brt();return bDay(b.d)&&b.min>=600&&b.min<1095}

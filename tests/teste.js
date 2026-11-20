@@ -185,6 +185,13 @@ function contasAMao(F, P) {
     const F = await pg.evaluate(foto);
     /* versão única: o app mostra em Ajustes e o sw.js usa no nome do cache; todo arquivo local do index.html precisa estar no cache offline */
     confere('versão do app (formato e texto em Ajustes)', await pg.evaluate(() => /^\d+\.\d+\.\d+$/.test(window.__aporte.VERSAO) && document.getElementById('ver').textContent === window.__aporte.VERSAO), true);
+    /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */
+    await pg.clock.setFixedTime(new Date('2026-11-20T03:50:00Z'));
+    confere('00h50 de Brasília: variação dos EUA já zerada (cotação de ontem à noite)', await pg.evaluate(() => window.__aporte.dzero(true, Date.now() - 6 * 3600000)), true);
+    await pg.clock.setFixedTime(new Date('2026-11-19T20:00:00Z'));
+    confere('17h de Brasília (pregão dos EUA aberto): variação dos EUA continua real', await pg.evaluate(() => window.__aporte.dzero(true, Date.now() - 300000)), false);
+    await pg.clock.setFixedTime(new Date(fx.now));
+    confere('variação zero fica cinza (muted)', await pg.evaluate(() => [window.__aporte.cls(0), window.__aporte.cls(1), window.__aporte.cls(-1)]), ['muted', 'gain', 'loss']);
     const raiz = path.resolve(__dirname, '..'), sw = fs.readFileSync(path.join(raiz, 'sw.js'), 'utf8');
     for (const m of fs.readFileSync(path.join(raiz, 'index.html'), 'utf8').matchAll(/(?:src|href)="([a-z0-9./\-]+\.(?:css|js|svg|webmanifest))"/g)) confere('sw.js guarda ' + m[1] + ' para abrir offline', sw.includes("'" + m[1] + "'"), true);
     if (!REAL) {
