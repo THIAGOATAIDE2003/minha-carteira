@@ -1,7 +1,7 @@
 /* Aporte · js/nucleo.js — estado, ajudantes, câmbio, XIRR e compute() (as contas da carteira).
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 /* Versão do app: sobe a cada mudança que o usuário vê (veja CLAUDE.md). O sw.js usa este número no nome do cache offline. */
-var VERSAO='1.14.0';
+var VERSAO='1.14.1';
 /* Enquanto os arquivos de js/ ainda estão carregando, render() não faz nada (senão chamaria funções de arquivos que ainda não chegaram). abas.js liga isto no fim. */
 var BOOT=false;
 window.addEventListener('error',function(e){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent='Erro na página: '+e.message}});
@@ -44,8 +44,10 @@ var brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 var usd=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'USD'});
 var num=function(n,d){return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:d==null?4:d}).format(n)};
 var pf=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-var pct=function(n){return (n>=0?'+':'−')+pf.format(Math.abs(n)*100)+'%'};
-var sgn=function(n){return (n>=0?'+':'−')+brl.format(Math.abs(n))};
+/* sinal que trata zero como zero: sem + nem −, e cls() deixa cinza */
+var sg0=function(n){return Math.abs(n)<0.005?'':n>0?'+':'−'};
+var pct=function(n){return (Math.abs(n)<0.00005?'':n>0?'+':'−')+pf.format(Math.abs(n)*100)+'%'};
+var sgn=function(n){return sg0(n)+brl.format(Math.abs(n))};
 var cls=function(n){return n>0.005?'gain':n<-0.005?'loss':'muted'};
 var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
 function parseNum(s){s=String(s==null?'':s).trim().replace(/\s/g,'');if(!s)return NaN;if(s.indexOf(',')>-1)s=s.replace(/\./g,'').replace(',','.');return parseFloat(s)}

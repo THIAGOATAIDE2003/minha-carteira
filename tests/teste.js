@@ -199,6 +199,7 @@ function contasAMao(F, P) {
     confere('17h de Brasília (pregão dos EUA aberto): variação dos EUA continua real', await pg.evaluate(() => window.__aporte.dzero(true, Date.now() - 300000)), false);
     await pg.clock.setFixedTime(new Date(fx.now));
     confere('variação zero fica cinza (muted)', await pg.evaluate(() => [window.__aporte.cls(0), window.__aporte.cls(1), window.__aporte.cls(-1)]), ['muted', 'gain', 'loss']);
+    confere('pílula e sinais de zero: cinza, sem seta e sem +', await pg.evaluate(() => { var a = window.__aporte, h = a.vpill(0, 'x'), u = a.vpill(0.01, 'x'); return [/vpl n/.test(h), /▲|▼|\+/.test(h), /vpl g/.test(u), a.pct(0), a.sgn(0) === a.sgn(0.001)]; }), [true, false, true, '0,00%', true]);
     const raiz = path.resolve(__dirname, '..'), sw = fs.readFileSync(path.join(raiz, 'sw.js'), 'utf8');
     for (const m of fs.readFileSync(path.join(raiz, 'index.html'), 'utf8').matchAll(/(?:src|href)="([a-z0-9./\-]+\.(?:css|js|svg|webmanifest))"/g)) confere('sw.js guarda ' + m[1] + ' para abrir offline', sw.includes("'" + m[1] + "'"), true);
     if (!REAL) {

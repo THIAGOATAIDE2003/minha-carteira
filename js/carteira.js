@@ -110,7 +110,7 @@ function renderPositions(R){
 /* tabela de ativos (estilo Investidor10): logo, quantidade, variação total e do dia; toque no % mostra o valor, toque na linha abre a análise */
 var ATF='all',ASRT={k:'v',d:-1};
 function tkLogo(tk,us){var ini=esc(tk.slice(0,2));return '<span class="tlg"><span>'+ini+'</span><img alt="" loading="lazy" src="'+(us?'https://financialmodelingprep.com/image-stock/'+encodeURIComponent(tk)+'.png':'https://icons.brapi.dev/icons/'+encodeURIComponent(tk)+'.svg')+'"></span>'}
-function vpill(p,txt){if(p==null||!isFinite(p))return '<span class="vpl n">—</span>';return bal(txt,'<span class="vpl '+(p>=0?'g':'l')+'">'+(p>=0?'+':'−')+pf.format(Math.abs(p*100))+'% <i>'+(p>=0?'▲':'▼')+'</i></span>')}
+function vpill(p,txt){if(p==null||!isFinite(p))return '<span class="vpl n">—</span>';var z=Math.abs(p*100)<0.005;return bal(txt,'<span class="vpl '+(z?'n':p>0?'g':'l')+'">'+(z?'':p>0?'+':'−')+pf.format(Math.abs(p*100))+'%'+(z?'':' <i>'+(p>0?'▲':'▼')+'</i>')+'</span>')}
 function atvTable(R){
   var T=R.tot,fx=T.fxNow||1,dl=dayLbl(),rows=R.held.map(function(x){var us=x.p.market==='US',F=us?fx:1,pm=x.p.cN/x.p.qty,q=S.quotes[x.p.ticker];
     var tg=(x.P1-pm)*x.p.qty*F,dd=q&&q.prev&&q.src==='auto'?(dzero(us,q.at)?0:(q.price-q.prev)*x.p.qty*F):null;
