@@ -111,27 +111,39 @@ function heroIntra(b,k){
     '<p class="note">Soma, ponto a ponto, quantidade × preço de cada ação (pontos de 5 minutos do robô). Renda fixa e caixa ficam parados; o VT entra pelo dólar de hoje.'+(falta||sem?' Ações sem pontos hoje: '+(falta+sem)+'.':'')+'</p>';
 }
 
-/* Câmbio: seu lucro por mês (custo em dólar × dólar do mês − reais que você pagou) e o dólar dia a dia */
-function cambioHist(){
-  var ms=evoMonths(),cur=today().slice(0,7),ts=S.trades.filter(function(t){return t.market==='US'&&(t.side==='buy'||t.side==='sell')}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)}),out=[];
-  ms.forEach(function(m){var e=m===cur?today():monthEnd(m),pos={};
-    ts.forEach(function(t){if(t.date>e)return;var p=pos[t.ticker]||(pos[t.ticker]={q:0,u:0,b:0});
+/* Câmbio: seu lucro (custo em dólar × dólar do dia − reais que você pagou) dia a dia e, no 1D/5D, ponto a ponto com o dólar de 5 minutos */
+function cambioSer(dates){
+  var ts=S.trades.filter(function(t){return t.market==='US'&&(t.side==='buy'||t.side==='sell')}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)}),i=0,pos={},out=[];
+  dates.forEach(function(d){
+    while(i<ts.length&&ts[i].date<=d){var t=ts[i++],p=pos[t.ticker]||(pos[t.ticker]={q:0,u:0,b:0});
       if(t.side==='buy'){p.q+=t.qty;p.u+=t.qty*t.price;p.b+=t.qty*t.price*(t.fx||1)}
-      else{var q=Math.min(t.qty,p.q);if(q<=0)return;var f=q/p.q;p.u-=p.u*f;p.b-=p.b*f;p.q-=q;if(p.q<1e-9){p.q=0;p.u=0;p.b=0}}});
-    var fx=m===cur?(fxToday()||{}).rate:(fxOn(e)||{}).rate,u=0,b=0;Object.keys(pos).forEach(function(k){u+=pos[k].u;b+=pos[k].b});
-    if(u>0&&fx)out.push({t:m===cur?Date.now():Date.parse(e+'T12:00:00'),c:u*fx-b})});
+      else{var q=Math.min(t.qty,p.q);if(q<=0)continue;var f=q/p.q;p.u-=p.u*f;p.b-=p.b*f;p.q-=q;if(p.q<1e-9){p.q=0;p.u=0;p.b=0}}}
+    var u=0,b=0;Object.keys(pos).forEach(function(k){u+=pos[k].u;b+=pos[k].b});out.push({d:d,u:u,b:b})});
   return out}
+function cambioPos(){return cambioSer([today()])[0]}
+function cambioHist(){
+  var R=compute(),T=R.tot,fxp=T.uA+T.rfU+T.uF-valoriz(R).pv,ds=(MK.fxDates||[]).slice(),st=Math.max(1,Math.ceil(ds.length/1200)),sel=[];
+  for(var i=0;i<ds.length;i+=st)sel.push(ds[i]);
+  var out=[];cambioSer(sel).forEach(function(r){if(r.u>0)out.push({t:Date.parse(r.d+'T12:00:00'),c:r.u*MK.fxSeries[r.d]-r.b})});
+  if(out.length)out.push({t:Date.now(),c:fxp});return out}
 function fxDaily(){var ds=MK.fxDates||[],out=[],st=Math.max(1,Math.ceil(ds.length/1200));
   for(var i=0;i<ds.length;i+=st)out.push({t:Date.parse(ds[i]+'T12:00:00'),c:MK.fxSeries[ds[i]]});
   var fr=(fxToday()||{}).rate;if(fr&&(!out.length||Date.now()-out[out.length-1].t>36e5))out.push({t:Date.now(),c:fr});return out}
 function heroCam(b){
-  var rg=STK.rng,cv=STK.cv||'luc',days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],t0=days?Date.now()-days*864e5:0,R=compute(),T=R.tot,VZ=valoriz(R);
-  var all=cv==='usd'?fxDaily():cambioHist();
-  if(cv==='luc'&&all.length){all[all.length-1].c=T.uA+T.rfU+T.uF-VZ.pv}
-  var hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);
-  var last=hist.length?hist[hist.length-1].c:0,ch=hist.length>1?last-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=cv==='usd'&&ch!=null&&base>0?ch/base*100:null;
-  var fmt=cv==='usd'?function(v){return 'R$ '+num(v,4)}:null;
-  var tg='<div class="rng">'+[['luc','Meu lucro'],['usd','Dólar']].map(function(r){return '<button type="button" data-hcv="'+r[0]+'" aria-pressed="'+(cv===r[0])+'">'+r[1]+'</button>'}).join('')+'</div>';
-  b.innerHTML=tg+gHead(cv==='usd'?'Dólar (USD/BRL)':'Lucro do câmbio','',cv==='usd'?'R$ '+num(last,4):brl.format(last),ch,pc!=null?pc:(ch!=null?0:null),rg,'','')+rngBar(rg,['yr','nointra'])+lineChart(hist,'BRL',null,fmt)+
-    (cv==='usd'?'<p class="note">Cotação do dólar dia a dia (o último ponto é agora).</p>':'<p class="note">Quanto o câmbio deu de lucro (ou prejuízo) no que você tem em dólar: o custo em dólar vezes o dólar do mês, menos o que você pagou em reais. Fim de mês; o último ponto é hoje. Não inclui a variação do preço do VT.</p>')
+  var rg=STK.rng,cv=STK.cv||'luc',R=compute(),T=R.tot,fxp=T.uA+T.rfU+T.uF-valoriz(R).pv,P=cambioPos(),fxn=(fxToday()||{}).rate||0,off=fxp-(P.u*fxn-P.b);
+  var tg='<div class="rng">'+[['luc','Meu lucro'],['usd','Dólar']].map(function(r){return '<button type="button" data-hcv="'+r[0]+'" aria-pressed="'+(cv===r[0])+'">'+r[1]+'</button>'}).join('')+'</div>',
+      fmt=cv==='usd'?function(v){return 'R$ '+num(v,4)}:null,nm=cv==='usd'?'Dólar (USD/BRL)':'Lucro do câmbio',tx=function(v){return cv==='usd'?'R$ '+num(v,4):brl.format(v)};
+  var hist=[],ref=null,msg='',o={};
+  if(rg==='1d'||rg==='5d'){
+    var v=finView('BRL=X',rg);
+    if(!v||v.st!=='ok')msg=(v&&v.msg)||'';
+    else{var prev=rg==='1d'&&v.o&&v.o.prev?v.o.prev:v.hist[0].c;
+      hist=cv==='usd'?v.hist.slice():v.hist.map(function(p){return {t:p.t,c:P.u*p.c-P.b+off}});ref=cv==='usd'?prev:P.u*prev-P.b+off;o={intra:1,d1:rg==='1d',prev:rg==='1d'?ref:null}}
+  }else{
+    var days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],t0=days?Date.now()-days*864e5:0,all=cv==='usd'?fxDaily():cambioHist();
+    hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);ref=hist.length?hist[0].c:null}
+  var last=hist.length?hist[hist.length-1].c:0,ch=hist.length>1&&ref!=null?last-ref:null,pc=cv==='usd'&&ch!=null&&ref>0?ch/ref*100:null;
+  b.innerHTML=tg+(hist.length?gHead(nm,'',tx(last),ch,pc!=null?pc:(ch!=null?0:null),rg,'',''):'')+rngBar(rg,['yr'])+
+    (hist.length?lineChart(hist,'BRL',null,fmt,o):'<p class="muted small" style="margin:12px 0">'+esc(msg||'Sem histórico para esse período.')+'</p>')+
+    (cv==='usd'?'<p class="note">Cotação do dólar (1D e 5D com pontos de 5 minutos; os demais períodos, dia a dia). O último ponto é agora.</p>':'<p class="note">Quanto o câmbio deu de lucro (ou prejuízo) no que você tem em dólar: o custo em dólar vezes o dólar do dia, menos o que você pagou em reais. 1D e 5D acompanham o dólar de 5 minutos; os demais, dia a dia. Não inclui a variação do preço do VT.</p>')
 }
