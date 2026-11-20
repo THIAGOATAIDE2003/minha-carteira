@@ -317,12 +317,12 @@ function idxRender(){
   var y1=(D.d||[]).map(function(p){return p[1]}),hi=Math.max.apply(null,y1),lo=Math.min.apply(null,y1);
   var at=function(daysAgo){var t=Date.now()/864e5-daysAgo,a=(daysAgo>370?D.w:D.d)||[];for(var i=a.length-1;i>=0;i--)if(a[i][0]<=t)return a[i][1];return null};
   var v1=at(365),v5=at(1790),chg=function(a){return a==null||!last?'—':((last/a-1)>=0?'+':'−')+pf.format(Math.abs((last/a-1)*100))+'%'};
-  var fv=finView(sym,rg),fo=null,fmsg='';if(fv){if(fv.st==='ok'){hist=fv.hist;fo=fv.o}else fmsg=fv.msg}
+  var fv=finView(sym,rg),fo=null,fmsg='';if(fv){if(fv.st==='ok'){hist=fv.hist;fo=fv.o}else{fmsg=fv.msg;hist=rg==='5d'?hist.slice(-6):[]}}
   hist=rgCut(hist,STK.rng);ch=hist.length>1?(rate?hist[hist.length-1].c-hist[0].c:hist[hist.length-1].c/((fo&&fo.prev)||hist[0].c)-1):null;
   var pAbs=ch==null?null:rate?ch:hist[hist.length-1].c-((fo&&fo.prev)||hist[0].c),pPct=ch==null?null:rate?(hist[0].c?ch/hist[0].c*100:null):ch*100,per=rg==='yr'||ch==null?'1d':rg;
   if(ch==null||rg==='yr'){pPct=dp;pAbs=dp!=null&&last!=null?last-last/(1+dp/100):null}
   var st=finStat(rate?'':sym),h='<div class="gcard">'+gHead(x.t,'',last!=null?fmt(last):'—',pAbs,pPct,per,'',o&&o.at?gWhen(o.at):(MD.d&&MD.d.at?gWhen(MD.d.at):''))+
-    rngBar(rg,rate?['yr','max']:[])+((rg==='yr'&&!rate)?annHtml(annRets(hist,null)):fmsg?'<p class="muted small" style="margin:12px 0">'+esc(fmsg)+'</p>':lineChart(hist,'BRL',null,fmt,fo))+(rate?'':gStats([['Abertura',st&&st.o!=null?pf.format(st.o):null],['Alta',st&&st.h!=null?pf.format(st.h):null],['Baixa',st&&st.l!=null?pf.format(st.l):null],['Fech. ant.',st&&st.prev!=null?pf.format(st.prev):null],['Alt 52 sem',pf.format(hi)],['Bai 52 sem',pf.format(lo)]]))+'</div>';
+    rngBar(rg,rate?['yr','max']:[])+((rg==='yr'&&!rate)?annHtml(annRets(hist,null)):(fmsg?'<p class="muted small" style="margin:12px 0">'+esc(fmsg)+(rg==='5d'?' Por enquanto, os fechamentos dos últimos dias.':'')+'</p>':'')+(fmsg&&rg!=='5d'?'':lineChart(hist,'BRL',null,fmt,fo)))+(rate?'':gStats([['Abertura',st&&st.o!=null?pf.format(st.o):null],['Alta',st&&st.h!=null?pf.format(st.h):null],['Baixa',st&&st.l!=null?pf.format(st.l):null],['Fech. ant.',st&&st.prev!=null?pf.format(st.prev):null],['Alt 52 sem',pf.format(hi)],['Bai 52 sem',pf.format(lo)]]))+'</div>';
   var rows=rate?[['Agora',last!=null?fmt(last):'—'],['Há 1 ano',v1!=null?fmt(v1):'—'],['Há 5 anos',v5!=null?fmt(v5):'—'],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)]]
     .concat(k==='cdi'&&D.acc12!=null?[['Rendeu em 12 meses',pf.format(D.acc12)+'%']]:[]).concat(k==='ipca'&&D.mes!=null?[['Último mês',pf.format(D.mes)+'%']]:[])
     :[['Em 12 meses',chg(v1)],['Em 5 anos',chg(v5)],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)],['Distância da máxima',last&&hi?'−'+pf.format(Math.abs((last/hi-1)*100))+'%':'—']];
