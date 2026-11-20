@@ -9,7 +9,17 @@ function ntTerms(){var out=[],GEN={companhia:1,cia:1,banco:1,grupo:1,holding:1,b
   try{compute().held.forEach(function(x){var tk=x.p.ticker;out.push(ntNorm(tk));var h=MD.d&&MD.d.hist&&MD.d.hist[tk],nm=h&&h.name?ntNorm(h.name).replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(function(w){return w.length>=4&&!GEN[w]&&['s.a.','sa'].indexOf(w)<0}):[];if(nm.length)out.push(nm.slice(0,2).join(' '));if(nm.length>1)out.push(nm[0])})}catch(e){}
   return out.filter(function(t,i){return t.length>=4&&out.indexOf(t)===i})}
 function ntItems(){return (NT.d&&NT.d.itens)||[]}
-function ntUnread(){var n=0;ntItems().forEach(function(x){if(ntImp(x)&&x.d*1000>NT.seen)n++});return n}
+/* Por que subiu/caiu hoje? (robô: manchetes de hoje e de ontem + IA; só entra quando o ativo mexeu forte e as manchetes explicam) */
+function whyOf(key){var w=MD&&MD.d&&MD.d.why,e=w&&w.it&&w.it[key];if(!e)return null;var at=(e.at||0)*1000;if(Date.now()-at>20*36e5)return null;if(e.u!==2&&dzero(e.u===1,at))return null;return e}
+function whyHtml(key,pct,nome){var e=whyOf(key);if(!e||pct==null||Math.abs(pct)<0.005)return '';var up=pct>0;
+  return '<details class="why"><summary><span class="'+(up?'gain':'loss')+'">'+(up?'↗':'↘')+'</span> Por que '+esc(nome)+(up?' sobe':' cai')+' hoje?</summary><div class="whyb"><p>'+esc(e.t)+'</p>'+
+    (e.ok&&e.n&&e.n.length?'<div class="whyn">'+e.n.map(function(x){return '<a href="'+esc(safeUrl(x.l))+'" target="_blank" rel="noopener noreferrer">'+esc(x.t)+'<span class="muted"> · '+esc(x.s||'')+'</span></a>'}).join('')+'</div>':'')+
+    '<p class="muted small">Resumo feito por IA só com as manchetes de hoje e de ontem; pode errar. Não é recomendação de compra ou venda.</p></div></details>'}
+function whyMine(){var w=MD&&MD.d&&MD.d.why,o=[];if(!w||!w.it)return o;var mine={};try{compute().held.forEach(function(x){if(x.p.qty>0)mine[x.p.ticker]=1})}catch(e){}
+  (S.watch||[]).forEach(function(t){mine[t]=1});idxSel().forEach(function(k){mine[k]=1});
+  Object.keys(w.it).forEach(function(k){if(mine[k]){var e=whyOf(k);if(e)o.push({k:k,e:e})}});o.sort(function(a,c){return Math.abs(c.e.p)-Math.abs(a.e.p)});return o}
+function whyNome(k){var d=idxDef(k);return d?d.n:k}
+function ntUnread(){var n=0;ntItems().forEach(function(x){if(ntImp(x)&&x.d*1000>NT.seen)n++});try{whyMine().forEach(function(m){if(m.e.at*1000>NT.seen)n++})}catch(e){}return n}
 function ntBadge(){var b=$('bellb');if(!b)return;var n=ntUnread();b.hidden=!n;b.textContent=n>99?'99+':String(n)}
 function loadNews(force){
   if(!S.keys.gh||NT.busy)return Promise.resolve();if(!force&&Date.now()-NT.at<8*60000&&NT.d)return Promise.resolve();
@@ -36,7 +46,9 @@ function ntClose(){$('nt').hidden=true;document.body.style.overflow='';ntBadge()
 /* gaveta de Notificações (sininho ou puxar a tela para o lado): notícias importantes novas */
 function ndRender(){
   var b=$('nd-b');if(!b)return;var imp=ntItems().filter(function(x){return ntImp(x)&&x.d*1000>Date.now()-36*3600000}).sort(function(a,c){return c.d-a.d});
-  b.innerHTML=imp.length?'<p class="muted small ntn">Notícias importantes das últimas 36 horas. As novas têm a barrinha colorida.</p>'+imp.map(function(x){return '<a class="ndi'+(x.d*1000>NT.seen?' nw':'')+'" href="'+esc(safeUrl(x.l))+'" target="_blank" rel="noopener noreferrer"><b>'+esc(x.t)+'</b><span class="muted">'+esc(x.s)+' · '+ntAgo(x.d)+(x.n>1?' · '+x.n+' jornais':'')+'</span></a>'}).join(''):(NT.d?'<p class="muted ntmsg">Nada importante novo por enquanto.</p>':ntEmpty())}
+  var wm=[];try{wm=whyMine()}catch(e){}
+  var wh=wm.length?'<p class="muted small ntn">Movimentos fortes de hoje nos seus ativos, com o motivo.</p>'+wm.map(function(m){var p=m.e.p;return '<div class="ndi ndw'+(m.e.at*1000>NT.seen?' nw':'')+'" data-ndw="'+esc(m.k)+'"><b><span class="'+(p>0?'gain':'loss')+'">'+(p>0?'▲':'▼')+'</span> '+esc(whyNome(m.k))+' '+(p>0?'+':'−')+pf.format(Math.abs(p))+'%</b><span class="muted">'+esc(m.e.t)+'</span></div>'}).join(''):'';
+  b.innerHTML=wh+(imp.length||wh?'':'')+(imp.length?'<p class="muted small ntn">Notícias importantes das últimas 36 horas. As novas têm a barrinha colorida.</p>'+imp.map(function(x){return '<a class="ndi'+(x.d*1000>NT.seen?' nw':'')+'" href="'+esc(safeUrl(x.l))+'" target="_blank" rel="noopener noreferrer"><b>'+esc(x.t)+'</b><span class="muted">'+esc(x.s)+' · '+ntAgo(x.d)+(x.n>1?' · '+x.n+' jornais':'')+'</span></a>'}).join(''):(wh?'':(NT.d?'<p class="muted ntmsg">Nada importante novo por enquanto.</p>':ntEmpty())))}
 function ndOpen(){var u=ntUnread();ndRender();$('nd').hidden=false;document.body.style.overflow='hidden';requestAnimationFrame(function(){$('nd').classList.add('on')});loadNews(true);
   if(u){setTimeout(function(){NT.seen=Date.now();try{localStorage.setItem(NTS,String(NT.seen))}catch(e){}ntBadge()},2500)}}
 function ndClose(){var d=$('nd');if(!d||d.hidden)return;d.classList.remove('on');document.body.style.overflow='';setTimeout(function(){d.hidden=true},250);if(NT.seen){ntBadge();ndRender()}}
@@ -51,3 +63,5 @@ document.addEventListener('click',function(e){var t=e.target;if(!t||!t.closest)r
     if(d&&!d.hidden){if(dx<-70&&Math.abs(dy)<50)ndClose();return}
     if(!tr||dx<80||Math.abs(dy)>45||Math.abs(dx)<Math.abs(dy)*2)return;var sh=document.querySelector('.sheet:not([hidden])');if(sh)return;ndOpen()},{passive:true});
 })();
+
+document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('[data-ndw]');if(!t)return;var k=t.getAttribute('data-ndw');ndClose();setTimeout(function(){if(idxDef(k))idxOpen(k);else stkOpen(k)},260)});

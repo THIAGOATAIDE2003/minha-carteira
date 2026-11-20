@@ -185,6 +185,13 @@ function contasAMao(F, P) {
     const F = await pg.evaluate(foto);
     /* versão única: o app mostra em Ajustes e o sw.js usa no nome do cache; todo arquivo local do index.html precisa estar no cache offline */
     confere('versão do app (formato e texto em Ajustes)', await pg.evaluate(() => /^\d+\.\d+\.\d+$/.test(window.__aporte.VERSAO) && document.getElementById('ver').textContent === window.__aporte.VERSAO), true);
+    /* por que subiu/caiu hoje: aparece na página do índice e no sino, só com movimento forte e dentro do dia */
+    await pg.clock.setFixedTime(new Date('2026-11-19T18:00:00Z'));
+    const wy = await pg.evaluate(() => { try { var ag = Math.floor(Date.now() / 1000); MD.d = MD.d || {}; MD.d.why = { v: 1, at: ag, it: { brent: { p: -3.7, u: 2, at: ag, ok: 1, t: 'Petróleo cai com expectativa de mais oferta.', n: [{ t: 'Opep avalia elevar produção', s: 'Valor', l: 'https://x.com/a' }] }, ibov: { p: -2, u: 0, at: ag - 40 * 3600, ok: 0, t: 'antigo', n: [] } } };
+      var h = whyHtml('brent', -3.7, 'Petróleo'), old = whyHtml('ibov', -2, 'Ibovespa'), zero = whyHtml('brent', 0, 'Petróleo');
+      IDX.forEach(function (x) { if (x.k === 'brent' && idxSel().indexOf('brent') < 0) S.idxSel = idxSel().concat(['brent']); }); ndRender(); var nd = document.getElementById('nd-b').innerHTML; return [nd.indexOf('Movimentos fortes') > 0 && nd.indexOf('data-ndw="brent"') > 0, h.indexOf('Por que Petróleo cai hoje?') > 0, h.indexOf('Opep avalia') > 0, old, zero, whyOf('brent') ? 1 : 0]; } catch (e) { return String(e); } });
+    confere('por que cai hoje: aparece com movimento forte; some se antigo ou se a variação está zerada', wy, [true, true, true, '', '', 1]);
+    await pg.clock.setFixedTime(new Date(fx.now));
     /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */
     await pg.clock.setFixedTime(new Date('2026-11-20T03:50:00Z'));
     confere('00h50 de Brasília: variação dos EUA já zerada (cotação de ontem à noite)', await pg.evaluate(() => window.__aporte.dzero(true, Date.now() - 6 * 3600000)), true);
