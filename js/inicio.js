@@ -83,18 +83,28 @@ function heroOpen(k){STK={tk:'',hero:k,rng:k==='dia'?'1d':'1y',d:null,cv:'luc'};
 function heroRender(){
   var b=$('stk-b'),k=STK.hero;if(!b)return;
   if(k==='cam'){heroCam(b);return}
-  if((k==='inv'||k==='luc')&&(STK.rng==='1d'||STK.rng==='5d'))STK.rng='1mo';
+  if(k==='luc'&&(STK.rng==='1d'||STK.rng==='5d'))STK.rng='1mo';
+  if(k==='inv'&&(STK.rng==='1d'||STK.rng==='5d')){heroInv(b);return}
   if(k!=='inv'&&k!=='luc'&&(STK.rng==='1d'||STK.rng==='5d'||k==='dia')){if(k==='dia'&&STK.rng!=='1d'&&STK.rng!=='5d')STK.rng='1d';heroIntra(b,k);return}
   var rows=evoData(),T=compute().tot,rg=STK.rng,days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],t0=days?Date.now()-days*864e5:0;
   var all=rows.map(function(r){var g=0;['BR','US','RF'].forEach(function(s){var q=r.seg&&r.seg[s];if(q)g+=q.v-q.c});return {t:Date.parse(monthEnd(r.m)),c:k==='pat'?r.pat:k==='luc'?r.lucro:k==='inv'?r.seg.BR.c+r.seg.US.c+r.seg.RF.c:g}});
   var Rn=compute(),ctn=0;Rn.held.forEach(function(x){ctn+=x.p.market==='US'?x.p.cN*T.fxNow:x.p.cB});ctn+=T.rfC;var now=k==='pat'?T.value+T.cash:k==='inv'?ctn:k==='luc'?T.gain:all.length?all[all.length-1].c:0;if(all.length)all[all.length-1]={t:Date.now(),c:k==='pat'||k==='inv'||k==='luc'?now:all[all.length-1].c};
   var hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);
   var ch=hist.length>1?hist[hist.length-1].c-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=ch!=null&&base>0&&(k==='pat'||k==='inv')?ch/base*100:null,last=hist.length?hist[hist.length-1].c:0;
-  b.innerHTML=gHead(HERON[k],'',brl.format(last),ch,pc!=null?pc:(ch!=null?0:null),rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,k==='inv'||k==='luc'?['yr','nointra']:['yr'])+lineChart(hist,'BRL',null)+
+  b.innerHTML=gHead(HERON[k],'',brl.format(last),ch,pc!=null?pc:(ch!=null?0:null),rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,k==='luc'?['yr','nointra']:['yr'])+lineChart(hist,'BRL',null)+
     (k==='luc'?'<p class="note">Quanto você ganhou ou perdeu no total, em fim de mês (o último é hoje): patrimônio menos tudo que você colocou, juntando preço, dólar, vendas e proventos. Se ele cai, veja o que mudou: toque em Preço ou em Dólar na lista.</p>':k==='inv'?'<p class="note">Quanto você pagou pelo que tem hoje, em fim de mês (o último é hoje). Sobe quando você aporta e também quando o dólar sobe, porque o custo do VT é contado pelo dólar da data. Por isso ele mexe sem você ter comprado nada.</p>':'<p class="note">Pontos de fim de mês (o último é hoje), pela mesma conta da Evolução. Só preço: sem câmbio de vendas e sem proventos.</p>');
 }
 
 /* carteira ao longo do dia/5 dias: soma de quantidade × pontos de 5 minutos (EUA pelo dólar de hoje, como no cartão de hoje) */
+/* Valor investido no 1D/5D: o que você pagou em reais fica parado; só o custo em dólar do VT se mexe com o dólar de 5 minutos */
+function heroInv(b){
+  var rg=STK.rng,R=compute(),T=R.tot,U=0,ctn=T.rfC;R.held.forEach(function(x){if(x.p.market==='US'){U+=x.p.cN;ctn+=x.p.cN*T.fxNow}else ctn+=x.p.cB});
+  var fixo=ctn-U*T.fxNow,v=finView('BRL=X',rg);
+  if(!v||v.st!=='ok'){b.innerHTML=rngBar(rg,['yr'])+'<p class="muted small" style="margin:12px 0">'+esc((v&&v.st==='load')?'Carregando os pontos do dia...':(v&&v.msg)||'Ainda não há pontos de 5 minutos do dólar. O robô os grava durante o pregão; volte depois da abertura.')+'</p>';return}
+  var hist=v.hist.map(function(p){return {t:p.t,c:fixo+U*p.c}}),prev=rg==='1d'&&v.o&&v.o.prev?fixo+U*v.o.prev:hist[0].c,last=hist[hist.length-1].c,ch=last-prev;
+  b.innerHTML=gHead(HERON.inv,'',brl.format(last),ch,prev>0?ch/prev*100:null,rg,(ch>=0?'+':'−')+brl.format(Math.abs(ch)),gWhen(Date.now()))+rngBar(rg,['yr'])+
+    lineChart(hist,'BRL',null,null,{intra:1,d1:rg==='1d',prev:rg==='1d'?prev:null})+
+    '<p class="note">No dia, só o custo do VT se mexe, porque ele é contado pelo dólar. O que você pagou em reais nas ações do Brasil e na renda fixa fica parado. Pontos de 5 minutos do dólar.</p>'}
 function heroIntra(b,k){
   var R=compute(),T=R.tot,rg=STK.rng,hs=R.held.filter(function(x){return x.p.qty>0}),lista=[],falta=0,sem=0;
   hs.forEach(function(x){var c=FIN['intra/'+ySym(x.p.ticker)],v=finView(ySym(x.p.ticker),rg==='5d'?'5d':'1d');if(v&&v.st==='load')falta++;else if(!v||v.st!=='ok')sem++;else lista.push({q:x.p.qty,f:x.p.market==='US'?T.fxNow:1,h:v.hist,prev:(v.o&&v.o.prev)||v.hist[0].c})});
