@@ -101,6 +101,8 @@ async function abas(pg) {
     const subs = await pg.$$eval('[data-cv],[data-mkv],[data-mais]', els => els.filter(e => e.offsetParent).map(e => { for (const a of ['data-cv', 'data-mkv', 'data-mais']) if (e.hasAttribute(a)) return '[' + a + '="' + e.getAttribute(a) + '"]'; }));
     for (const s of subs) { const l = pg.locator(s).filter({ visible: true }).first(); if (await l.count()) { await l.click(); await pg.waitForTimeout(120); vistos.push(t + ' ' + s); } }
   }
+  await pg.click('[data-go=mercado]'); await pg.click('[data-mkv=ana]');
+  for (const v of ['rel', 'opp', 'cls', 'cmp']) { await pg.click('[data-anv=' + v + ']'); await pg.waitForTimeout(120); vistos.push('análise ' + v); }
   await pg.click('[data-go=resumo]'); await pg.waitForTimeout(100);
   await pg.click('[data-as=open]'); await pg.waitForTimeout(100); await pg.click('[data-as=close]');
   await pg.click('[data-go=mais]'); await pg.click('[data-mais=ajustes]'); await pg.click('#perfbox [data-pf=open]'); await pg.click('[data-pf="obj:renda"]'); await pg.click('#pfsheet [data-pf=close]'); vistos.push('perfil');
@@ -243,6 +245,12 @@ function contasAMao(F, P) {
       fire('touchstart', 12, 300); fire('touchend', 170, 312); var a = !document.getElementById('nd').hidden; fire('touchstart', 200, 300); fire('touchend', 60, 305); document.getElementById('nd').hidden = true; document.getElementById('nd').classList.remove('on'); document.body.style.overflow = '';
       fire('touchstart', 150, 400); fire('touchend', 300, 405); var b = !document.getElementById('nd').hidden; return [a, b]; });
     confere('puxar a tela da borda para o lado abre a gaveta; puxar no meio da tela não abre', puxa, [true, false]);
+    /* catálogo da B3: setores, pouca liquidez escondida, IPO novo e ação que saiu */
+    const cat = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, hoje = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+      M.d = { fund: { cols: ['cot', 'liq2m'], d: { AAAA3: [10, 5e6], BBBB3: [10, 1e3], CCCC3: [10, 3e6], NEWC3: [5, 1e6] } }, cat: { v: 1, a: { AAAA3: ['', 5, 'Bancos'], BBBB3: ['', 5, 'Bancos'], CCCC3: ['', 7, 'Energia'], NEWC3: [hoje, null, ''] }, n: { 5: 'Bancos', 7: 'Energia' }, x: { OLDD3: ['', '2026-10-01'] } } };
+      var r = { esc: A.catTickers(false).join(), tod: A.catTickers(true).length, set: A.catSetores(false).map(function (x) { return x.n + ':' + x.t.join('/'); }).join('|'), todSet: A.catSetores(true).map(function (x) { return x.n; }).join('|'), novo: [A.catNovo('NEWC3'), A.catNovo('AAAA3')], saiu: A.catSaiu().join() };
+      M.d = old; return r; });
+    confere('catálogo: pouca liquidez escondida, setores, IPO novo e ação que saiu', [cat.esc, cat.tod, cat.set, cat.todSet, cat.novo, cat.saiu], ['AAAA3,CCCC3,NEWC3', 4, 'Bancos:AAAA3|Energia:CCCC3|Sem setor:NEWC3', 'Bancos|Energia|Sem setor', [true, false], 'OLDD3']);
     confere('sino embaixo da logo com número, gaveta de notificações, ícone de notícias à direita e filtros', [nt.badge, nt.bellEsq, nt.jornalDir, nt.notif, nt.novas, nt.cards, nt.link, nt.semAbas, nt.todas, nt.mundo], ['3', true, true, 3, 3, 3, '_blank', true, 5, 2]);
     /* 1D/5D com pontos de 5 minutos de mentira (arquivos do robô) e a carteira ao longo do dia */
     const g2 = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), p5 = []; for (var i = 0; i < 40; i++) p5.push([now - (40 - i) * 300, 20 + i * .05]);
