@@ -426,4 +426,4 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .tipb.gtip{top:-6px;min-width:0;flex-direction:row;align-items:baseline;gap:8px;background:var(--bg);border:0;border-radius:8px;padding:7px 11px;white-space:nowrap}.gtip b{font:500 16px/1.2 var(--disp);margin:0}.gtip span{color:var(--muted);font-size:14px}
 .gst{display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(3,auto);gap:2px 14px;margin:6px 0 4px;border-top:1px solid var(--line);padding-top:12px}.gst div{display:flex;gap:8px;padding:5px 0;font-size:14px;white-space:nowrap}.gst b{font-weight:500}.gst span{color:var(--muted)}
 .gan{display:block;width:100%;margin:10px 0 2px;padding:13px;border:0;border-radius:999px;background:var(--bg);color:var(--fg);font:600 15px var(--sans);text-align:center}
-.hcg{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hcl{cursor:pointer;-webkit-tap-highlight-color:transparent}.hcg{cursor:pointer;-webkit-tap-highlight-color:transparent}

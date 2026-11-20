@@ -12,7 +12,7 @@ function gHead(name,sub,priceTxt,abs,pct,rg,absTxt,when){
 }
 /* botões: 1D 5D 1M 6M YTD + Mais */
 function rngBar(cur,skip){
-  var main=[['1d','1D'],['5d','5D'],['1mo','1M'],['6mo','6M'],['ytd','YTD']],more=[['3mo','3M'],['1y','1A'],['5y','5A'],['max','Máx'],['yr','Anual']].filter(function(r){return skip.indexOf(r[0])<0}),
+  var main=[['1d','1D'],['5d','5D'],['1mo','1M'],['6mo','6M'],['ytd','YTD']].filter(function(r){return !(skip.indexOf('nointra')>=0&&(r[0]==='1d'||r[0]==='5d'))}),more=[['3mo','3M'],['1y','1A'],['5y','5A'],['max','Máx'],['yr','Anual']].filter(function(r){return skip.indexOf(r[0])<0}),
       inMore=more.some(function(r){return r[0]===cur}),open=RMORE||inMore;
   return '<div class="rng">'+main.map(function(r){
       return '<button type="button" data-rng="'+r[0]+'" aria-pressed="'+(cur===r[0])+'">'+r[1]+'</button>'}).join('')+

@@ -148,6 +148,7 @@ document.addEventListener('click',function(e){
   var t=e.target;
   if(t.closest&&t.closest('[data-retry]')){var rb=t.closest('[data-retry]');rb.textContent='Atualizando...';try{RF.last=0;doRefresh(false);loadMD(true);loadCDI(true);loadBench(true);loadHist(true)}catch(e){}setTimeout(function(){rb.textContent='Tentar de novo agora'},4000);return}
   if(t.closest&&t.closest('[data-gan]')){var tp=$('stv-top');if(tp)tp.scrollIntoView({behavior:'smooth',block:'start'});return}
+  var hv=t.closest&&t.closest('[data-hcv]');if(hv){STK.cv=hv.getAttribute('data-hcv');heroRender();return}
   var hr=t.closest&&t.closest('[data-hero]');if(hr){heroOpen(hr.getAttribute('data-hero'));return}
   var sk=t.closest&&t.closest('[data-stk]');if(sk){var sv=sk.getAttribute('data-stk');if(sv==='close')stkClose();else stkOpen(sv);return}
   var sv=t.closest&&t.closest('[data-stv]');if(sv){STV=sv.getAttribute('data-stv');try{localStorage.setItem(LS+'-stv',STV)}catch(e){}stkRender();return}

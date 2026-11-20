@@ -45,18 +45,25 @@ function renderSummary(R){
   var card=function(ic,tit,info,main,sub,hk){return '<div class="hc"><div class="hct"><span class="hci">'+ic+'</span><span>'+tit+'</span>'+bal(info)+'</div><div class="hcg" data-hero="'+hk+'" role="button" tabindex="0">'+main+'</div><div class="hcs">'+sub+'</div></div>'};
   var IC={pat:'<svg viewBox="0 0 24 24"><path d="M4 11a7 6 0 0 1 13-2h2v4l-2 1-1 3h-3v-2H9v2H6l-1-3a5 5 0 0 1-1-3z"/><circle cx="15" cy="11" r="1"/></svg>',
     val:'<svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>',
+    cam:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M14.5 9.2c-.4-.8-1.4-1.2-2.5-1.2-1.4 0-2.5.7-2.5 1.9 0 2.7 5 1.3 5 4 0 1.2-1.1 2-2.5 2-1.2 0-2.2-.5-2.6-1.4M12 6.5V8m0 8v1.5"/></svg>',
     dia:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
   var cards=[
     card(IC.pat,'Patrimônio total','Quanto vale tudo que você tem hoje. A porcentagem compara com o valor investido (o que você pagou, com o VT pelo dólar de hoje), só pelo preço.',
       '<div class="hcm"><b class="num">'+brl.format(T.value+T.cash)+'</b>'+(ctp?'<span class="num '+cls(pv)+'">'+pct(pv/ctp)+' '+arrow(pv)+'</span>':'')+'</div>',
-      '<div><small>Valor investido</small><span class="num">'+brl.format(ctp)+'</span></div><button type="button" class="evolink" data-goto="evolucao">Ver evolução</button>','pat'),
+      '<div class="hcl" data-hero="inv" role="button" tabindex="0"><small>Valor investido ›</small><span class="num">'+brl.format(ctp)+'</span></div><button type="button" class="evolink" data-goto="evolucao">Ver evolução</button>','pat'),
     card(IC.val,'Valorização','Quanto o preço de tudo que você tem subiu ou caiu desde a compra (ganho de capital), mais os proventos que você já recebeu. Sem câmbio e sem vendas: esses ficam em Carteira → Desempenho.',
       '<div class="hcm"><b class="num '+cls(VZ.g)+'">'+sgn(VZ.g)+'</b><span class="num '+cls(VZ.g)+'">'+pct(VZ.p)+' '+arrow(VZ.g)+'</span></div>',
       '<div><small>Ganho de capital</small><span class="num">'+sgn(VZ.pv)+'</span></div><div><small>Proventos recebidos</small><span class="num">'+brl.format(VZ.div)+'</span></div>','val'),
     card(IC.dia,dl.t==='hoje'?'Variação de hoje':'Último pregão ('+dl.d+')',dl.t==='hoje'?'Quanto suas ações (Brasil e VT) subiram ou caíram hoje, só pelo preço. O VT entra pelo dólar de hoje, sem a variação do dólar.':'A bolsa está fechada. Esse é quanto suas ações (Brasil e VT) subiram ou caíram no último dia de negociação ('+dl.d+'), só pelo preço, sem a variação do dólar.',
       (dok&&dp>0?'<div class="hcm"><b class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+'</b><span class="num '+cls(dn-dp)+'">'+pct((dn-dp)/dp)+' '+arrow(dn-dp)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
       (pB?'<div><small>Brasil</small><span class="num '+cls(dB)+'">'+pct(dB/pB)+'</span></div>':'')+(pU?'<div><small>VT</small><span class="num '+cls(dU)+'">'+pct(dU/pU)+'</span></div>':'')+(times.length&&dl.t==='hoje'?'<div><small>Preços de</small><span'+(mktOpen()&&Date.now()-times[times.length-1]>30*60000?' class="loss" title="atrasados"':'')+'>'+hm(times[times.length-1])+(mktOpen()&&Date.now()-times[times.length-1]>30*60000?' (atrasados)':'')+'</span></div>':''),'dia')];
-  cards=[cards[0],cards[2],cards[1]];
+  var nUSh=R.held.some(function(x){return x.p.market==='US'&&x.p.qty>0});
+  if(nUSh){var fxr=(fxToday()||{}).rate,fp=S.fx&&S.fx.prev>0&&S.fx.src==='auto'?S.fx.prev:0,vUh=0;R.held.forEach(function(x){if(x.p.market==='US')vUh+=x.p.qty*x.P1});
+    var fxp2=T.uA+T.rfU+T.uF-VZ.pv,dc=fp&&fxr?vUh*(fxr-fp):null;
+    cards.push(card(IC.cam,'Câmbio','O dólar contra o real. O número grande é quanto o dólar de hoje mexeu no seu VT (em reais). Abaixo, o dólar agora e quanto o câmbio já deu de lucro (ou prejuízo) no que você tem em dólar desde as compras. Toque para ver o histórico.',
+      (dc!=null?'<div class="hcm"><b class="num '+cls(dc)+'">'+sgn(dc)+'</b><span class="num '+cls(dc)+'">'+pct(fxr/fp-1)+' '+arrow(dc)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
+      (fxr?'<div><small>Dólar agora</small><span class="num">R$ '+num(fxr,4)+'</span></div>':'')+'<div><small>Lucro do câmbio</small><span class="num '+cls(fxp2)+'">'+sgn(fxp2)+'</span></div>','cam'))}
+  cards=[cards[0],cards[2],cards[1]].concat(cards.slice(3));
   var h='<div class="hcw"><div class="hcards" id="hcards">'+cards.join('')+'</div><div class="hdots">'+cards.map(function(c,i){return '<i data-hci="'+i+'"'+(i===HCI?' class="on"':'')+'></i>'}).join('')+'</div></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
@@ -71,18 +78,20 @@ var HCI=0;
 document.addEventListener('scroll',function(e){var hc=e.target;if(!hc||hc.id!=='hcards')return;var i=Math.round(hc.scrollLeft/Math.max(1,hc.clientWidth));if(i!==HCI){HCI=i;[].forEach.call(document.querySelectorAll('.hdots i'),function(d){d.classList.toggle('on',+d.getAttribute('data-hci')===i)})}},true);
 
 /* toque nos números do Início: gráfico com períodos (evolução mensal) */
-var HERON={pat:'Patrimônio total',val:'Valorização (ganho de capital)',dia:'Variação de hoje'};
-function heroOpen(k){STK={tk:'',hero:k,rng:k==='dia'?'1d':'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=HERON[k]||'';heroRender()}
+var HERON={inv:'Valor investido',cam:'Câmbio',pat:'Patrimônio total',val:'Valorização (ganho de capital)',dia:'Variação de hoje'};
+function heroOpen(k){STK={tk:'',hero:k,rng:k==='dia'?'1d':'1y',d:null,cv:'luc'};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=HERON[k]||'';heroRender()}
 function heroRender(){
   var b=$('stk-b'),k=STK.hero;if(!b)return;
-  if(STK.rng==='1d'||STK.rng==='5d'||k==='dia'){if(k==='dia'&&STK.rng!=='1d'&&STK.rng!=='5d')STK.rng='1d';heroIntra(b,k);return}
+  if(k==='cam'){heroCam(b);return}
+  if((k==='inv')&&(STK.rng==='1d'||STK.rng==='5d'))STK.rng='1mo';
+  if(k!=='inv'&&(STK.rng==='1d'||STK.rng==='5d'||k==='dia')){if(k==='dia'&&STK.rng!=='1d'&&STK.rng!=='5d')STK.rng='1d';heroIntra(b,k);return}
   var rows=evoData(),T=compute().tot,rg=STK.rng,days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],t0=days?Date.now()-days*864e5:0;
-  var all=rows.map(function(r){var g=0;['BR','US','RF'].forEach(function(s){var q=r.seg&&r.seg[s];if(q)g+=q.v-q.c});return {t:Date.parse(monthEnd(r.m)),c:k==='pat'?r.pat:g}});
-  var now=k==='pat'?T.value+T.cash:all.length?all[all.length-1].c:0;if(all.length)all[all.length-1]={t:Date.now(),c:k==='pat'?now:all[all.length-1].c};
+  var all=rows.map(function(r){var g=0;['BR','US','RF'].forEach(function(s){var q=r.seg&&r.seg[s];if(q)g+=q.v-q.c});return {t:Date.parse(monthEnd(r.m)),c:k==='pat'?r.pat:k==='inv'?r.seg.BR.c+r.seg.US.c+r.seg.RF.c:g}});
+  var Rn=compute(),ctn=0;Rn.held.forEach(function(x){ctn+=x.p.market==='US'?x.p.cN*T.fxNow:x.p.cB});ctn+=T.rfC;var now=k==='pat'?T.value+T.cash:k==='inv'?ctn:all.length?all[all.length-1].c:0;if(all.length)all[all.length-1]={t:Date.now(),c:k==='pat'||k==='inv'?now:all[all.length-1].c};
   var hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);
-  var ch=hist.length>1?hist[hist.length-1].c-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=ch!=null&&base>0&&k==='pat'?ch/base*100:null,last=hist.length?hist[hist.length-1].c:0;
-  b.innerHTML=gHead(HERON[k],'',brl.format(last),ch,pc!=null?pc:(ch!=null?0:null),rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,['yr'])+lineChart(hist,'BRL',null)+
-    '<p class="note">Pontos de fim de mês (o último é hoje), pela mesma conta da Evolução. Só preço: sem câmbio de vendas e sem proventos.</p>';
+  var ch=hist.length>1?hist[hist.length-1].c-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=ch!=null&&base>0&&(k==='pat'||k==='inv')?ch/base*100:null,last=hist.length?hist[hist.length-1].c:0;
+  b.innerHTML=gHead(HERON[k],'',brl.format(last),ch,pc!=null?pc:(ch!=null?0:null),rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,k==='inv'?['yr','nointra']:['yr'])+lineChart(hist,'BRL',null)+
+    (k==='inv'?'<p class="note">Quanto você pagou pelo que tem hoje, em fim de mês (o último é hoje). Sobe quando você aporta e também quando o dólar sobe, porque o custo do VT é contado pelo dólar da data. Por isso ele mexe sem você ter comprado nada.</p>':'<p class="note">Pontos de fim de mês (o último é hoje), pela mesma conta da Evolução. Só preço: sem câmbio de vendas e sem proventos.</p>');
 }
 
 /* carteira ao longo do dia/5 dias: soma de quantidade × pontos de 5 minutos (EUA pelo dólar de hoje, como no cartão de hoje) */
@@ -100,4 +109,29 @@ function heroIntra(b,k){
   b.innerHTML=gHead(HERON[k],'',brl.format(k==='dia'?d:out[out.length-1].c),d,ref>0?d/ref*100:null,rg,(d>=0?'+':'−')+brl.format(Math.abs(d)),gWhen(Date.now()))+head()+
     lineChart(k==='dia'?out.map(function(p,i){return {t:p.t,c:pts[i].c-ref}}):out,'BRL',null,null,{intra:1,d1:rg==='1d',prev:k==='dia'&&rg==='1d'?0:null})+
     '<p class="note">Soma, ponto a ponto, quantidade × preço de cada ação (pontos de 5 minutos do robô). Renda fixa e caixa ficam parados; o VT entra pelo dólar de hoje.'+(falta||sem?' Ações sem pontos hoje: '+(falta+sem)+'.':'')+'</p>';
+}
+
+/* Câmbio: seu lucro por mês (custo em dólar × dólar do mês − reais que você pagou) e o dólar dia a dia */
+function cambioHist(){
+  var ms=evoMonths(),cur=today().slice(0,7),ts=S.trades.filter(function(t){return t.market==='US'&&(t.side==='buy'||t.side==='sell')}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)}),out=[];
+  ms.forEach(function(m){var e=m===cur?today():monthEnd(m),pos={};
+    ts.forEach(function(t){if(t.date>e)return;var p=pos[t.ticker]||(pos[t.ticker]={q:0,u:0,b:0});
+      if(t.side==='buy'){p.q+=t.qty;p.u+=t.qty*t.price;p.b+=t.qty*t.price*(t.fx||1)}
+      else{var q=Math.min(t.qty,p.q);if(q<=0)return;var f=q/p.q;p.u-=p.u*f;p.b-=p.b*f;p.q-=q;if(p.q<1e-9){p.q=0;p.u=0;p.b=0}}});
+    var fx=m===cur?(fxToday()||{}).rate:(fxOn(e)||{}).rate,u=0,b=0;Object.keys(pos).forEach(function(k){u+=pos[k].u;b+=pos[k].b});
+    if(u>0&&fx)out.push({t:m===cur?Date.now():Date.parse(e+'T12:00:00'),c:u*fx-b})});
+  return out}
+function fxDaily(){var ds=MK.fxDates||[],out=[],st=Math.max(1,Math.ceil(ds.length/1200));
+  for(var i=0;i<ds.length;i+=st)out.push({t:Date.parse(ds[i]+'T12:00:00'),c:MK.fxSeries[ds[i]]});
+  var fr=(fxToday()||{}).rate;if(fr&&(!out.length||Date.now()-out[out.length-1].t>36e5))out.push({t:Date.now(),c:fr});return out}
+function heroCam(b){
+  var rg=STK.rng,cv=STK.cv||'luc',days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],t0=days?Date.now()-days*864e5:0,R=compute(),T=R.tot,VZ=valoriz(R);
+  var all=cv==='usd'?fxDaily():cambioHist();
+  if(cv==='luc'&&all.length){all[all.length-1].c=T.uA+T.rfU+T.uF-VZ.pv}
+  var hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);
+  var last=hist.length?hist[hist.length-1].c:0,ch=hist.length>1?last-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=cv==='usd'&&ch!=null&&base>0?ch/base*100:null;
+  var fmt=cv==='usd'?function(v){return 'R$ '+num(v,4)}:null;
+  var tg='<div class="rng">'+[['luc','Meu lucro'],['usd','Dólar']].map(function(r){return '<button type="button" data-hcv="'+r[0]+'" aria-pressed="'+(cv===r[0])+'">'+r[1]+'</button>'}).join('')+'</div>';
+  b.innerHTML=tg+gHead(cv==='usd'?'Dólar (USD/BRL)':'Lucro do câmbio','',cv==='usd'?'R$ '+num(last,4):brl.format(last),ch,pc!=null?pc:(ch!=null?0:null),rg,'','')+rngBar(rg,['yr','nointra'])+lineChart(hist,'BRL',null,fmt)+
+    (cv==='usd'?'<p class="note">Cotação do dólar dia a dia (o último ponto é agora).</p>':'<p class="note">Quanto o câmbio deu de lucro (ou prejuízo) no que você tem em dólar: o custo em dólar vezes o dólar do mês, menos o que você pagou em reais. Fim de mês; o último ponto é hoje. Não inclui a variação do preço do VT.</p>')
 }

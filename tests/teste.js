@@ -220,6 +220,15 @@ function contasAMao(F, P) {
       stkClose(); heroOpen('pat'); r.hero = q('.gch svg'); stkClose(); return r; });
     confere('página da ação: cabeçalho, gráfico, 1D/5D em breve, números e botão Mais', [g.gh, g.svg, g.dim, g.stats > 0, g.mais > 0, g.ytd], [1, 1, 0, true, true, 1]);
     confere('gráfico do patrimônio ao tocar no número do Início', g.hero, 1);
+    /* Valor investido e Câmbio no Início: quarto cartão, gráficos com histórico e alternância Meu lucro/Dólar */
+    const hc = await pg.evaluate(() => { var r = { cards: document.querySelectorAll('#hcards .hc').length, inv: !!document.querySelector('[data-hero="inv"]'), cam: !!document.querySelector('.hcg[data-hero="cam"]') };
+      var q = function (s) { return document.querySelectorAll('#stk-b ' + s).length; };
+      heroOpen('inv'); r.invSvg = q('.gch svg'); r.invNoIntra = q('[data-rng="1d"]'); stkClose();
+      var fx0 = [MK.fxMeta, MK.fxSeries, MK.fxDates, MK.fxLatestDate, MK.fxLatest], se = {}; for (var dd = Date.parse('2025-01-01'); dd < Date.now(); dd += 864e5 * 3) se[new Date(dd).toISOString().slice(0, 10)] = 5.2 + (dd - Date.parse('2025-01-01')) / 864e5 / 1000; ingestFx({ series: se });
+      heroOpen('cam'); r.camSvg = q('.gch svg'); r.camTog = q('[data-hcv]'); var h1 = cambioHist(); r.camPts = h1.length > 0; r.camLast = Math.abs(h1[h1.length - 1].c - (function () { var R = compute(), T = R.tot; return T.uA + T.rfU + T.uF - valoriz(R).pv })()) < 0.02;
+      document.querySelector('[data-hcv="usd"]').click(); r.usdSvg = q('.gch svg'); r.usdTxt = /Dólar \(USD\/BRL\)/.test(document.getElementById('stk-b').textContent); stkClose(); MK.fxMeta = fx0[0]; MK.fxSeries = fx0[1]; MK.fxDates = fx0[2]; MK.fxLatestDate = fx0[3]; MK.fxLatest = fx0[4]; return r; });
+    confere('Início: cartão de Câmbio, valor investido e câmbio abrem gráfico com histórico', [hc.cards, hc.inv, hc.cam, hc.invSvg, hc.invNoIntra, hc.camSvg, hc.camTog, hc.camPts, hc.usdSvg, hc.usdTxt], [4, true, true, 1, 0, 1, 2, true, 1, true]);
+    console.log('  (lucro do câmbio do histórico bate com Desempenho: ' + hc.camLast + ')');
     /* 1D/5D com pontos de 5 minutos de mentira (arquivos do robô) e a carteira ao longo do dia */
     const g2 = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), p5 = []; for (var i = 0; i < 40; i++) p5.push([now - (40 - i) * 300, 20 + i * .05]);
       var mk = function (prev) { return { d: { cur: 'BRL', off: -10800, at: now, prev: prev, p: p5 }, at: Date.now() }; };
