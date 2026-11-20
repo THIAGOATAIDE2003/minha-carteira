@@ -22,19 +22,32 @@ function loadNews(force){
 function ntCard(x){var fav='https://www.google.com/s2/favicons?sz=32&domain='+encodeURIComponent((x.l.match(/^https?:\/\/([^\/]+)/)||[])[1]||'');
   return '<a class="ntc'+(x.d*1000>NT.seen&&ntImp(x)?' nw':'')+'" href="'+esc(safeUrl(x.l))+'" target="_blank" rel="noopener noreferrer">'+(x.i?'<span class="nti"><img src="'+esc(x.i)+'" alt="" loading="lazy" referrerpolicy="no-referrer"></span>':'')+
     '<b class="ntt">'+esc(x.t)+'</b><span class="ntm"><img class="ntf" src="'+esc(fav)+'" alt="" width="16" height="16" loading="lazy"><span>'+esc(x.s)+'</span><span class="muted">'+ntAgo(x.d)+(x.n>1?' · '+x.n+' jornais':'')+'</span></span></a>'}
+function ntEmpty(){return '<p class="muted ntmsg">'+(NT.d?'':(S.keys.gh?(NT.err||'Carregando...'):'Conecte seus dados da nuvem em Ajustes para ver as notícias.'))}
+/* tela de Notícias (ícone de jornal): só tocar, sem abas */
 function ntRender(){
-  var it=ntItems().slice().sort(function(a,b){return b.d-a.d}),sc=$('nt-p0'),nw=$('nt-p1');if(!sc||!nw)return;
-  var imp=it.filter(function(x){return ntImp(x)&&x.d*1000>Date.now()-36*3600000});
-  sc.innerHTML=(imp.length?'<p class="muted small ntn">Notícias importantes das últimas 36 horas. As novas têm uma barrinha colorida.</p>'+imp.map(ntCard).join(''):'<p class="muted ntmsg">'+(NT.d?'Nada importante novo por enquanto.':(S.keys.gh?(NT.err||'Carregando...'):'Conecte seus dados da nuvem em Ajustes para ver as notícias.'))+'</p>');
-  var cats=[['imp','Importantes'],['all','Todas'],['BR','Brasil'],['EX','Exterior'],['mine','Minhas ações']],ter=NT.cat==='mine'?ntTerms():[],lst=it.filter(function(x){return NT.cat==='all'?1:NT.cat==='imp'?ntImp(x):NT.cat==='mine'?ter.some(function(t){return ntNorm(x.t).indexOf(t)>=0}):x.c===NT.cat});
-  nw.innerHTML='<div class="ntch">'+cats.map(function(c){return '<button type="button" data-ntc="'+c[0]+'" aria-pressed="'+(NT.cat===c[0])+'">'+c[1]+'</button>'}).join('')+'</div>'+
-    (lst.length?lst.slice(0,80).map(ntCard).join(''):'<p class="muted ntmsg">'+(NT.d?(NT.cat==='mine'?'Nenhuma notícia das suas ações agora.':'Nenhuma notícia nessa lista.'):(S.keys.gh?(NT.err||'Carregando...'):'Conecte seus dados da nuvem em Ajustes para ver as notícias.'))+'</p>')+
+  var b=$('nt-b');if(!b)return;
+  var it=ntItems().slice().sort(function(a,c){return c.d-a.d}),cats=[['imp','Importantes'],['all','Todas'],['BR','Brasil'],['EX','Mundo'],['mine','Minhas ações']],ter=NT.cat==='mine'?ntTerms():[],
+      lst=it.filter(function(x){return NT.cat==='all'?1:NT.cat==='imp'?ntImp(x):NT.cat==='mine'?ter.some(function(t){return ntNorm(x.t).indexOf(t)>=0}):x.c===NT.cat});
+  b.innerHTML='<div class="ntch">'+cats.map(function(c){return '<button type="button" data-ntc="'+c[0]+'" aria-pressed="'+(NT.cat===c[0])+'">'+c[1]+'</button>'}).join('')+'</div>'+
+    (lst.length?lst.slice(0,80).map(ntCard).join(''):(NT.d?'<p class="muted ntmsg">'+(NT.cat==='mine'?'Nenhuma notícia das suas ações agora.':'Nenhuma notícia nessa lista.')+'</p>':ntEmpty()))+
     (NT.d?'<p class="muted small ntn">Atualizado '+ntAgo(NT.d.at)+'. Manchetes dos próprios jornais; toque para ler no site.</p>':'')}
-function ntPane(i,smooth){NT.pane=i;var p=$('ntp');if(p)p.scrollTo({left:i*p.clientWidth,behavior:smooth?'smooth':'auto'});[].forEach.call(document.querySelectorAll('[data-ntp]'),function(b){b.setAttribute('aria-pressed',String(+b.getAttribute('data-ntp')===i))})}
-function ntOpen(){var u=ntUnread();$('nt').hidden=false;document.body.style.overflow='hidden';ntRender();ntPane(u?0:1,false);loadNews(true);if(u){NT.seen=Date.now();try{localStorage.setItem(NTS,String(NT.seen))}catch(e){}setTimeout(function(){ntBadge()},1500)}}
-function ntClose(){$('nt').hidden=true;document.body.style.overflow='';ntBadge();ntRender()}
+function ntOpen(){$('nt').hidden=false;document.body.style.overflow='hidden';ntRender();loadNews(true)}
+function ntClose(){$('nt').hidden=true;document.body.style.overflow='';ntBadge()}
+/* gaveta de Notificações (sininho ou puxar a tela para o lado): notícias importantes novas */
+function ndRender(){
+  var b=$('nd-b');if(!b)return;var imp=ntItems().filter(function(x){return ntImp(x)&&x.d*1000>Date.now()-36*3600000}).sort(function(a,c){return c.d-a.d});
+  b.innerHTML=imp.length?'<p class="muted small ntn">Notícias importantes das últimas 36 horas. As novas têm a barrinha colorida.</p>'+imp.map(function(x){return '<a class="ndi'+(x.d*1000>NT.seen?' nw':'')+'" href="'+esc(safeUrl(x.l))+'" target="_blank" rel="noopener noreferrer"><b>'+esc(x.t)+'</b><span class="muted">'+esc(x.s)+' · '+ntAgo(x.d)+(x.n>1?' · '+x.n+' jornais':'')+'</span></a>'}).join(''):(NT.d?'<p class="muted ntmsg">Nada importante novo por enquanto.</p>':ntEmpty())}
+function ndOpen(){var u=ntUnread();ndRender();$('nd').hidden=false;document.body.style.overflow='hidden';requestAnimationFrame(function(){$('nd').classList.add('on')});loadNews(true);
+  if(u){setTimeout(function(){NT.seen=Date.now();try{localStorage.setItem(NTS,String(NT.seen))}catch(e){}ntBadge()},2500)}}
+function ndClose(){var d=$('nd');if(!d||d.hidden)return;d.classList.remove('on');document.body.style.overflow='';setTimeout(function(){d.hidden=true},250);if(NT.seen){ntBadge();ndRender()}}
 document.addEventListener('click',function(e){var t=e.target;if(!t||!t.closest)return;
   var o=t.closest('[data-nt]');if(o){if(o.getAttribute('data-nt')==='close')ntClose();else ntOpen();return}
-  var c=t.closest('[data-ntc]');if(c){NT.cat=c.getAttribute('data-ntc');ntRender();return}
-  var p=t.closest('[data-ntp]');if(p){ntPane(+p.getAttribute('data-ntp'),true)}});
-document.addEventListener('scroll',function(e){var p=e.target;if(!p||p.id!=='ntp')return;var i=Math.round(p.scrollLeft/Math.max(1,p.clientWidth));if(i!==NT.pane){NT.pane=i;[].forEach.call(document.querySelectorAll('[data-ntp]'),function(b){b.setAttribute('aria-pressed',String(+b.getAttribute('data-ntp')===i))})}},true);
+  var n=t.closest('[data-nd]');if(n){if(n.getAttribute('data-nd')==='close')ndClose();else ndOpen();return}
+  var c=t.closest('[data-ntc]');if(c){NT.cat=c.getAttribute('data-ntc');ntRender()}});
+/* puxar a tela para a direita (a partir da borda esquerda ou do topo) abre a gaveta; puxar para a esquerda fecha */
+(function(){var sx=0,sy=0,tr=false;
+  document.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;tr=e.touches.length===1&&(sx<36||sy<64)},{passive:true});
+  document.addEventListener('touchend',function(e){var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy,d=$('nd');
+    if(d&&!d.hidden){if(dx<-70&&Math.abs(dy)<50)ndClose();return}
+    if(!tr||dx<80||Math.abs(dy)>45||Math.abs(dx)<Math.abs(dy)*2)return;var sh=document.querySelector('.sheet:not([hidden])');if(sh)return;ndOpen()},{passive:true});
+})();
