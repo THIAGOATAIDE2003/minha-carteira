@@ -89,7 +89,7 @@ function mkSearch(q){
   var tk=q.toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(MKV!=='idx'&&MD.d&&MD.d.fund&&tk.length>=2){Object.keys(MD.d.fund.d).filter(function(x){return x!==tk&&x.indexOf(tk)===0}).sort().slice(0,6).forEach(function(x){var iw=wlist().indexOf(x)>=0;
     h+='<li><span><b>'+esc(x)+'</b><small>'+fundSub(x)+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(x)+'">Ver</button><button type="button" class="btn small'+(iw?' ghost':'')+'" data-wtog="'+esc(x)+'">'+(iw?'Remover':'Acompanhar')+'</button></span></li>'})}
-  if(MKV!=='idx'&&/^[A-Z0-9]{2,7}$/.test(tk)&&(/\d/.test(tk)||!hits.length)){var inW=wlist().indexOf(tk)>=0,F=fundOf(tk);
+  if(/^[A-Z0-9]{2,7}$/.test(tk)&&(MKV!=='idx'?(/\d/.test(tk)||!hits.length):!hits.length)){var inW=wlist().indexOf(tk)>=0,F=fundOf(tk);
     h+='<li><span><b>'+esc(tk)+'</b><small>'+(F?'Ação do Brasil · P/L '+(F.pl!=null?num(F.pl,1):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):'Ação ou ETF')+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(tk)+'">Ver</button><button type="button" class="btn small'+(inW?' ghost':'')+'" data-wtog="'+esc(tk)+'">'+(inW?'Remover':'Acompanhar')+'</button></span></li>'}
   el.innerHTML=h?'<ul class="mkres">'+h+'</ul>':'<p class="muted small" style="padding:8px 2px">Nada encontrado.</p>';el.hidden=false}
 function idxCard(lbl,o,fmt){return '<div class="idx"><small>'+lbl+'</small><b>'+(o&&isFinite(o.v)?fmt(o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+(o.p>=0?'+':'−')+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">sem dado</span>')+'</div>'}

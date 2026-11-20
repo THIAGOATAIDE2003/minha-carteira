@@ -166,6 +166,13 @@ function doRefresh(silent){
 }
 /* servidor de cotações próprio (Cloudflare Worker, grátis): preço e prévio do Yahoo na hora, sem cota de chave */
 function pxBase(){var u=(S.keys.proxy||'').replace(/\/+$/,'');return /^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(u)?u:''}
+/* pré-mercado / após o fechamento dos EUA (Worker /x), igual ao Google; cache de 60 s */
+var EXT={};
+function extOf(tk){var c=EXT[tk],px=pxBase();if(isBR(tk)||tk.charAt(0)==='^'||!px)return null;
+  if(!c||Date.now()-c.at>60000){if(!c||!c.busy){EXT[tk]={d:c&&c.d,at:c?c.at:0,busy:1};getJSON(px+'/x?s='+encodeURIComponent(tk)).then(function(j){EXT[tk]={d:j&&j[tk]||null,at:Date.now()};try{if(STK.tk===tk)stkRender()}catch(e){}}).catch(function(){EXT[tk]={d:null,at:Date.now()}})}}
+  var d=c&&c.d;return d&&Date.now()/1000-d.t<5*3600?d:null}
+function extHtml(tk){var x=extOf(tk);if(!x||!(x.ref>0))return '';var pc=(x.p/x.ref-1)*100,ab=x.p-x.ref;
+  return '<p class="small gext"><span class="muted">'+(x.fase==='pre'?'Pré-mercado':'Após o fechamento')+'</span> <b class="num">'+usd.format(x.p)+'</b> <span class="num '+cls(pc)+'">'+(ab>=0?'+':'−')+usd.format(Math.abs(ab)).replace('US$','').trim()+' ('+(pc>=0?'+':'−')+pf.format(Math.abs(pc))+'%)</span></p>'}
 function pxQuotes(tks){var u=pxBase();if(!u||!tks.length)return Promise.resolve({});
   return getJSON(u+'/q?s='+encodeURIComponent(tks.map(ySym).join(','))).then(function(j){var got={};tks.forEach(function(tk){var q=j&&j[ySym(tk)];if(q&&q.p>0){S.quotes[tk]={price:q.p,prev:q.prev>0?q.prev:null,at:Math.min(Date.now(),(q.t||0)*1000)||Date.now(),src:'auto'};got[tk]=1}});return got}).catch(function(){return {}})}
 try{var fh=JSON.parse(localStorage.getItem(LS+'-fxh')||'null');if(fh&&fh.ser)ingestFx({series:fh.ser,source:'AwesomeAPI'});if(!fh||Date.now()-fh.at>6*3600000)loadFxHistory().then(function(){render()})}catch(e){loadFxHistory()}
