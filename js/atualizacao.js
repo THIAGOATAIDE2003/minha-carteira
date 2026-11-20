@@ -82,13 +82,15 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
 /* faixa de cotações no topo: índices e grandes empresas do robô (a cada 30 min no pregão), com os preços ao vivo do app por cima */
 var TPK='';
 var TPIX={IBOV:1,'S&P 500':1,NASDAQ:1,DOW:1};
+/* commodities (futuros): variação do dia zera junto com os EUA */
+var CMDK={GLD:1,brent:1,wti:1,iron:1,silver:1,copper:1,soy:1,corn:1,coffee:1,natgas:1};
 function tpStk(x){return x[4]?x[4]==='s':/^[A-Z0-9]{2,6}$/.test(x[0])&&!TPIX[x[0]]}
 function tapeItems(){
   var it=[],seen={},R=null,add=function(l,v,p,c,st,ik){if(!(v>0)||!(p>0)||seen[l])return;seen[l]=1;it.push({l:l,v:v,p:(v/p-1)*100,c:c,st:st,ik:ik||''})};
   var t=MD.d&&MD.d.tape&&MD.d.tape.it||[];
   t.forEach(function(x){var l=x[0],v=x[1],p=x[2],c=x[3];
     if(l==='DÓLAR'&&S.fx&&S.fx.src==='auto'&&S.fx.prev){v=S.fx.rate;p=S.fx.prev}
-    var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if(TPIX[l]&&dzero(l!=='IBOV',tat))p=v
+    var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if((TPIX[l]&&dzero(l!=='IBOV',tat))||(CMDK[x[5]]&&dzero(true,tat)))p=v
     var ik=l==='IBOV'?'ibov':l==='EURO'?'eur':'',mi=ik&&MKT.idx[ik];if(mi&&mi.v>0&&mi.p!=null&&MKT.at>MD.d.tape.ts*1000){v=mi.v;p=mi.v/(1+mi.p/100)}
     add(l,v,p,c,st,x[5])});
   try{R=compute()}catch(e){}
