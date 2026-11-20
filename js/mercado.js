@@ -7,9 +7,13 @@ function isBR(tk){var t=(S.trades||[]).filter(function(x){return x.ticker===tk&&
 function wlist(){return Array.isArray(S.watch)?S.watch:[]}
 function mktSave(){try{localStorage.setItem(LS+'-mkt',JSON.stringify({q:MKT.q,idx:MKT.idx,at:MKT.at}))}catch(e){}}
 function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
-function brQuote(tk){return getJSON('https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?token='+encodeURIComponent(S.keys.brapi||'')).then(function(d){var x=d&&d.results&&d.results[0];if(!x||!(x.regularMarketPrice>0))throw new Error('0');
-  return {price:x.regularMarketPrice,pct:x.regularMarketChangePercent,name:x.longName||x.shortName||'',cur:'BRL',at:Date.now()}})}
-function usQuote(tk){if(!S.keys.finnhub)return Promise.reject(new Error('fh'));return getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(!d||!(d.c>0))throw new Error('0');return {price:d.c,pct:d.dp,cur:'USD',at:Date.now()}})}
+/* cotação pelo servidor próprio (Worker): horário real do Yahoo; null se não houver servidor */
+function pxOne(tk){var u=pxBase();if(!u)return Promise.resolve(null);return getJSON(u+'/q?s='+encodeURIComponent(ySym(tk))).then(function(j){var q=j&&j[ySym(tk)];if(!q||!(q.p>0))return null;return {price:q.p,pct:q.prev>0?(q.p/q.prev-1)*100:0,name:'',cur:q.cur==='USD'?'USD':'BRL',at:Math.min(Date.now(),(q.t||0)*1000)||Date.now()}}).catch(function(){return null})}
+function brQuote(tk){return pxOne(tk).then(function(q){return q||brQuote0(tk)})}
+function brQuote0(tk){return getJSON('https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?token='+encodeURIComponent(S.keys.brapi||'')).then(function(d){var x=d&&d.results&&d.results[0];if(!x||!(x.regularMarketPrice>0))throw new Error('0');
+  return {price:x.regularMarketPrice,pct:x.regularMarketChangePercent,name:x.longName||x.shortName||'',cur:'BRL',at:(Date.parse(x.regularMarketTime)||0)>0&&Date.parse(x.regularMarketTime)<=Date.now()?Date.parse(x.regularMarketTime):Date.now()}})}
+function usQuote(tk){return pxOne(tk).then(function(q){return q||usQuote0(tk)})}
+function usQuote0(tk){if(!S.keys.finnhub)return Promise.reject(new Error('fh'));return getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(!d||!(d.c>0))throw new Error('0');return {price:d.c,pct:d.dp,cur:'USD',at:d.t>0&&d.t*1000<=Date.now()?d.t*1000:Date.now()}})}
 /* catálogo de índices que o usuário escolhe mostrar (S.idxSel, sincronizado como cfg 'idx') */
 var IDX=[
  {k:'ibov',n:'Ibovespa',t:'Bolsa do Brasil',src:'br',s:'^BVSP',f:'pts'},

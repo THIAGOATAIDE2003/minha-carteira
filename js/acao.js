@@ -118,11 +118,11 @@ function stkLoad(){
   if(fast){STK.d=fast;STK.busy=false;STK.err='';stkRender();
     if(fast.cur==='USD'&&S.keys.finnhub&&!STKC['m|'+tk])getJSON('https://finnhub.io/api/v1/stock/metric?symbol='+encodeURIComponent(tk)+'&metric=all&token='+encodeURIComponent(S.keys.finnhub)).then(function(m){var x=m&&m.metric||{};STKC['m|'+tk]={d:x,at:Date.now()};stkUSk(tk,x)}).catch(function(){});
     else if(STKC['m|'+tk])stkUSk(tk,STKC['m|'+tk].d);
-    var lv=livePx(tk);if(!lv||Date.now()-lv.at>15*60000)(isBR(tk)?(S.keys.brapi?brQuote(tk):Promise.reject()):usQuote(tk)).then(function(q){MKT.q[tk]=q;try{renderTape()}catch(e){}if(STK.tk===tk){var f2=mdStk(tk,rgEff());if(f2){if(STK.d&&STK.d.k&&STK.d.cur==='USD')f2.k=STK.d.k;STK.d=f2;stkRender()}}}).catch(function(){});
+    var lv=livePx(tk);if(!lv||Date.now()-lv.at>15*60000)(isBR(tk)?(S.keys.brapi||pxBase()?brQuote(tk):Promise.reject()):usQuote(tk)).then(function(q){MKT.q[tk]=q;try{renderTape()}catch(e){}if(STK.tk===tk){var f2=mdStk(tk,rgEff());if(f2){if(STK.d&&STK.d.k&&STK.d.cur==='USD')f2.k=STK.d.k;STK.d=f2;stkRender()}}}).catch(function(){});
     return}
   if(STKC[key]&&Date.now()-STKC[key].at<30*60000){STK.d=STKC[key].d;stkRender();return}
   STK.busy=true;STK.err='';stkRender();
-  var done=function(d){d.at=Date.now();if(d.price>0&&!/^\^/.test(tk)){var m0=MKT.q[tk];if(!m0||(m0.at||0)<d.at)MKT.q[tk]={price:d.price,pct:d.pct,cur:d.cur,name:d.name||(m0&&m0.name)||'',at:d.at};try{renderTape()}catch(e){}}STKC[key]={d:d,at:Date.now()};if(STK.tk!==tk||STK.rng!==rg)return;STK.d=d;STK.busy=false;stkRender()};
+  var done=function(d){d.at=Date.now();if(d.price>0&&!/^\^/.test(tk)){var m0=MKT.q[tk];if(!m0)MKT.q[tk]={price:d.price,pct:d.pct,cur:d.cur,name:d.name||(m0&&m0.name)||'',at:d.at};try{renderTape()}catch(e){}}STKC[key]={d:d,at:Date.now()};if(STK.tk!==tk||STK.rng!==rg)return;STK.d=d;STK.busy=false;stkRender()};
   var fail=function(msg){if(STK.tk!==tk)return;STK.busy=false;STK.err=msg;stkRender()};
   if(isBR(tk)||tk.charAt(0)==='^'){
     if(!S.keys.brapi)return fail('Falta o token do brapi em Ajustes.');
