@@ -245,6 +245,15 @@ function contasAMao(F, P) {
       fire('touchstart', 12, 300); fire('touchend', 170, 312); var a = !document.getElementById('nd').hidden; fire('touchstart', 200, 300); fire('touchend', 60, 305); document.getElementById('nd').hidden = true; document.getElementById('nd').classList.remove('on'); document.body.style.overflow = '';
       fire('touchstart', 150, 400); fire('touchend', 300, 405); var b = !document.getElementById('nd').hidden; return [a, b]; });
     confere('puxar a tela da borda para o lado abre a gaveta; puxar no meio da tela não abre', puxa, [true, false]);
+    /* nota: queda no último trimestre, notícia negativa e preço em queda baixam a nota e viram aviso (caso tipo BBSE3) */
+    const nota = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, day = Math.floor(Date.now() / 864e5), r = {};
+      var mk = function (ql, neg, queda) { var w = [], d = []; for (var i = 0; i < 60; i++) { d.push([day - 300 + i * 5, queda ? 45 - i * 0.15 : 30 + i * 0.05]); } M.d = { fund: { cols: ['cot', 'pl', 'pvp', 'dy', 'roe', 'ml', 'liq2m', 'cr5'], d: { BBSE3: [30, 8, 6, 10, 70, 60, 9e8, 12] } }, hist: { BBSE3: { d: d, w: d } }, cvm: { q: { BBSE3: ql } }, res: neg ? { acoes: { BBSE3: { ai: { sentimento: 'negativo', resumo: 'Novas contratações de seguro em queda.', eventos: [] }, aiAt: Date.now() / 1000 } } } : {} }; return A.stkAna('BBSE3', { cur: 'BRL', price: 30, k: {} }); };
+      var bom = [[2025, 1, 2000, 800], [2025, 2, 2000, 800], [2025, 3, 2000, 800], [2025, 4, 2000, 800], [2026, 1, 2100, 820], [2026, 2, 2100, 820], [2026, 3, 2100, 820]];
+      var ruim = bom.slice(0, 6).concat([[2026, 3, 1700, 600]]);
+      var a = mk(bom, false, false), b = mk(ruim, true, true);
+      r.base = [a.score, a.alr.length]; r.ruimMenor = b.score < a.score; r.alr = b.alr.map(function (x) { return x[0]; }).join('|'); r.peso = b.neg.filter(function (x) { return x[2] > 1; }).length;
+      M.d = old; return r; });
+    confere('nota: trimestre pior, notícia negativa e preço em queda baixam a nota e viram aviso', [nota.base, nota.ruimMenor, nota.alr, nota.peso], [[10, 0], true, 'Lucro do último trimestre caiu|Receita do último trimestre caiu|Preço em queda|Notícias recentes negativas', 3]);
     /* catálogo da B3: setores, pouca liquidez escondida, IPO novo e ação que saiu */
     const cat = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, hoje = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
       M.d = { fund: { cols: ['cot', 'liq2m'], d: { AAAA3: [10, 5e6], BBBB3: [10, 1e3], CCCC3: [10, 3e6], NEWC3: [5, 1e6] } }, cat: { v: 1, a: { AAAA3: ['', 5, 'Bancos'], BBBB3: ['', 5, 'Bancos'], CCCC3: ['', 7, 'Energia'], NEWC3: [hoje, null, ''] }, n: { 5: 'Bancos', 7: 'Energia' }, x: { OLDD3: ['', '2026-10-01'] } } };

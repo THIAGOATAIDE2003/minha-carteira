@@ -148,7 +148,7 @@ function opData(){var f=MD.d&&MD.d.fund;if(!f||!f.d)return null;var R=compute(),
   var n=W.concat(M).reduce(function(s,o){return s+o.al.filter(function(a){return a[0]!=='at'||!mine[o.tk]}).length},0);
   OPC={k:key,r:{W:W,M:M,D:D,n:n,cand:cand.length}};return OPC.r}
 function opRow(o,add){var F=o.d.cur==='USD'?usd:brl,sc=o.score,cl=sc==null?'':sc>=7?'g':sc>=4.5?'m':'l',inW=wlist().indexOf(o.tk)>=0;
-  return '<div class="opr"><button type="button" class="opt" data-stk="'+esc(o.tk)+'">'+tkLogo(o.tk,o.d.cur==='USD')+'<span><b>'+esc(o.tk)+'</b><small>'+F.format(o.d.price)+(o.V?' · justo '+F.format(o.V.med):'')+'</small></span></button>'+
+  return '<div class="opr"><button type="button" class="opt" data-stk="'+esc(o.tk)+'">'+tkLogo(o.tk,o.d.cur==='USD')+'<span><b>'+esc(o.tk)+'</b><small>'+F.format(o.d.price)+(o.V?' · justo '+F.format(o.V.med):'')+(o.A.alr&&o.A.alr.length?' · ⚠ '+o.A.alr.length+(o.A.alr.length>1?' avisos':' aviso'):'')+'</small></span></button>'+
     '<span class="opn '+cl+'">'+(sc!=null?num(sc,1):'—')+'</span>'+(o.V?'<span class="num opu '+(o.V.up>=0?'gain':'loss')+'">'+(o.V.up>=0?'+':'−')+pf.format(Math.abs(o.V.up*100))+'%</span>':'<span class="opu muted">—</span>')+
     (add?'<button type="button" class="opa" data-wtog="'+esc(o.tk)+'" aria-label="'+(inW?'Parar de acompanhar ':'Acompanhar ')+esc(o.tk)+'">'+(inW?'★':'☆')+'</button>':'')+
     (o.al&&o.al.length?'<ul class="opal">'+o.al.slice(0,3).map(function(a){return '<li>'+rkLvl(a[0])+'<span><b>'+a[1]+'</b> '+a[2]+'</span></li>'}).join('')+'</ul>':'')+'</div>'}

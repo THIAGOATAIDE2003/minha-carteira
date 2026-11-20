@@ -49,10 +49,29 @@ function stkAna(tk,d){
   if(has(N.liq)&&N.liq<1e6)neg.push(['Pouca negociação','Só uns '+brl.format(N.liq)+' por dia: pode ser difícil comprar ou vender sem mexer no preço.']);
   var vol=anVol(tk),rk=[];if(vol!=null){if(vol>0.4){neg.push(['Oscila muito','Uns '+pf.format(vol*100)+'% ao ano.']);rk.push(2)}else if(vol<0.22)rk.push(0);else rk.push(1)}
   if(!fin&&has(N.divpl))rk.push(N.divpl>=1.5?2:N.divpl<=0.5?0:1);
+  /* o que mudou agora (pesa em dobro na nota): último trimestre, notícias e preço em queda; vira aviso em destaque */
+  var alr=[];
+  if(QQ&&QQ.length>=3){var L=QQ[QQ.length-1],Py=null,Pq=QQ[QQ.length-2],tri=L[1]+'º tri de '+L[0],gy=function(a,b){return a!=null&&b!=null&&b>0?a/b-1:null};
+    QQ.forEach(function(x){if(x[0]===L[0]-1&&x[1]===L[1])Py=x});
+    var ly=Py?gy(L[3],Py[3]):null,ry=Py?gy(L[2],Py[2]):null,lq=gy(L[3],Pq[3]),fl=0;
+    if(L[3]!=null&&L[3]<0&&!(TT&&TT.a<0)){neg.push(['Prejuízo no último trimestre','No '+tri+' a empresa perdeu '+qfmt(Math.abs(L[3]))+'.',2]);alr.push(neg[neg.length-1].slice(0,2));fl=1}
+    else if(ly!=null&&ly<=-0.15){neg.push(['Lucro do último trimestre caiu','No '+tri+' o lucro foi de '+qfmt(L[3])+', '+pf.format(Math.abs(ly*100))+'% menor que no mesmo trimestre do ano passado ('+qfmt(Py[3])+').',2]);alr.push(neg[neg.length-1].slice(0,2));fl=1}
+    else if(ly!=null&&ly>=0.15)pos.push(['Lucro do último trimestre cresceu','No '+tri+' o lucro foi de '+qfmt(L[3])+', '+pf.format(ly*100)+'% maior que no mesmo trimestre do ano passado.',2]);
+    if(ry!=null&&ry<=-0.05){neg.push(['Receita do último trimestre caiu','No '+tri+' a receita foi de '+qfmt(L[2])+', '+pf.format(Math.abs(ry*100))+'% menor que no mesmo trimestre do ano passado. Vendeu menos.',2]);alr.push(neg[neg.length-1].slice(0,2))}
+    else if(ry!=null&&ry>=0.10)pos.push(['Receita do último trimestre cresceu','No '+tri+' a receita foi de '+qfmt(L[2])+', '+pf.format(ry*100)+'% maior que no mesmo trimestre do ano passado.',2]);
+    if(!fl&&lq!=null&&lq<=-0.2)inf.push(['Lucro caiu contra o trimestre anterior','No '+tri+' o lucro foi '+pf.format(Math.abs(lq*100))+'% menor que no trimestre anterior. Em algumas empresas isso é sazonal: compare com o mesmo trimestre do ano passado.'])}
+  var MO=anMom(tk,d.price);if(MO){if(MO.m6!=null&&MO.m6<=-0.2){neg.push(['Preço em queda','A ação caiu '+pf.format(Math.abs(MO.m6*100))+'% em 6 meses'+(MO.m3!=null?' ('+sp0(MO.m3)+' nos últimos 3 meses)':'')+'. Entenda o motivo antes de achar que ficou barata.',1]);alr.push(neg[neg.length-1].slice(0,2))}
+    else if(MO.m3!=null&&MO.m3<=-0.15){neg.push(['Preço em queda','A ação caiu '+pf.format(Math.abs(MO.m3*100))+'% nos últimos 3 meses.',1]);alr.push(neg[neg.length-1].slice(0,2))}}
+  var RS=us?null:rsOf(tk);if(RS&&RS.ai){var ai=RS.ai;
+    if(ai.sentimento==='negativo'){neg.push(['Notícias recentes negativas',(ai.resumo?String(ai.resumo).slice(0,170)+(String(ai.resumo).length>170?'…':'')+' ':'')+'(Leitura da IA das manchetes, em '+rsWhen(RS.aiAt)+'. Pode errar: confira na aba Notícias.)',2]);alr.push(neg[neg.length-1].slice(0,2))}
+    (ai.eventos||[]).filter(function(v){return v.direcao==='negativo'&&v.impacto==='alto'}).slice(0,2).forEach(function(v){alr.push(['Pode pesar no preço: '+(v.titulo||''),(v.porque||'')+(v.prazo?' (efeito: '+v.prazo+')':'')])})}
   var avg=function(a){return a.length?a.reduce(function(s,x){return s+x},0)/a.length:null},qa=avg(q),pa=avg(p),ra=avg(rk);
   var chips=[['Qualidade',qa==null?'—':qa>=1.4?'Alta':qa>=0.7?'Média':'Baixa',qa==null?'':qa>=1.4?'g':qa>=0.7?'m':'l'],['Preço',pa==null?'—':pa>=1.4?'Barata':pa>=0.7?'Justa':'Cara',pa==null?'':pa>=1.4?'g':pa>=0.7?'m':'l'],['Dividendos',dyL||'—',dyL==='Altos'?'g':dyL==='Médios'?'m':dyL?'l':''],['Risco',ra==null?'—':ra>=1.4?'Alto':ra>=0.7?'Médio':'Baixo',ra==null?'':ra>=1.4?'l':ra>=0.7?'m':'g']];
-  var nt=pos.length+neg.length,score=nt>=2?Math.round(pos.length/nt*100)/10:null;
-  return {pos:pos,neg:neg,inf:inf,chips:chips,score:score,pe:pe,N:N,fin:fin,sec:sec,us:us}}
+  var ws=function(a){return a.reduce(function(t,x){return t+(x[2]||1)},0)},wp=ws(pos),wn=ws(neg),nt=pos.length+neg.length,score=nt>=2?Math.round(wp/(wp+wn)*100)/10:null;
+  return {pos:pos,neg:neg,inf:inf,chips:chips,score:score,pe:pe,N:N,fin:fin,sec:sec,us:us,alr:alr,wp:wp,wn:wn}}
+function sp0(g){return (g>=0?'+':'−')+pf.format(Math.abs(g*100))+'%'}
+/* variação do preço em 3 e 6 meses, pelo histórico do robô */
+function anMom(tk,P){var h=MD.d&&MD.d.hist&&MD.d.hist[tk];if(!h||!P)return null;var day=Math.floor(Date.now()/864e5),at=function(a,dd){if(!a||!a.length)return null;var best=null;for(var i=0;i<a.length;i++){if(a[i][0]<=day-dd)best=a[i][1];else break}return best},b6=at(h.d,182)||at(h.w,182),b3=at(h.d,91)||at(h.w,91);return {m3:b3?P/b3-1:null,m6:b6?P/b6-1:null}}
 /* a ação dentro da sua carteira */
 function anFit(tk,d,A){var R=compute(),r=null;try{r=riskData(R)}catch(e){}if(!r)return '';
   var a=r.as.filter(function(x){return x.tk===tk})[0],T=r.tot,out=[],sec=A.sec[0];
@@ -73,7 +92,11 @@ function anResumo(tk,d){var A=stkAna(tk,d);
   var h='<div class="panel anp"><div class="anh"><div><span class="lbl">Análise automática '+bal('O app lê sozinho os indicadores da empresa, compara com as concorrentes do mesmo setor e dá uma nota de 0 a 10, com pontos positivos e de atenção. É para estudar, não é recomendação.')+'</span><p class="anv">'+verd.join(', ')+'.</p></div>'+(A.score!=null?'<div class="ans '+(A.score>=7?'g':A.score>=4.5?'m':'l')+'"><b>'+num(A.score,1)+'</b><small>de 10</small></div>':'')+'</div>'+
     '<div class="anc">'+A.chips.map(function(c){return '<div><span>'+c[0]+'</span><b class="'+c[2]+'">'+c[1]+'</b></div>'}).join('')+'</div>'+
     (A.pe&&A.pe.n?'<p class="note" style="margin:10px 0 0">Comparada com '+A.pe.n+' empresas do setor '+esc(String(A.pe.name).toLowerCase())+' com negociação na bolsa.</p>':'')+'</div>';
-  var li=function(a,c){return a.map(function(x){return '<li>'+rkLvl(c)+'<div><b>'+x[0]+'</b><p>'+x[1]+'</p></div></li>'}).join('')};
+  var li=function(a,c){return a.map(function(x){return '<li>'+rkLvl(c)+'<div><b>'+x[0]+(x[2]>1?' <span class="tag">vale em dobro</span>':'')+'</b><p>'+x[1]+'</p></div></li>'}).join('')};
+  if(A.alr&&A.alr.length)h+='<div class="panel alr"><h2>Atenção agora '+bal('O que piorou recentemente nessa empresa: último trimestre, notícias e queda do preço. Isso também reduz a nota, em dobro. Mesmo com nota alta, vale ler antes de comprar.')+'</h2><ul class="rkl">'+li(A.alr.map(function(x){return [x[0],x[1]]}),'al')+'</ul></div>';
+  var VJ=null;try{VJ=anValCalc(tk,d,A)}catch(e){}
+  if(VJ&&VJ.ms&&VJ.ms.length&&A.score!=null&&A.score>=7&&VJ.up<=-0.3)h+='<div class="panel alr"><h2>Nota alta, mas o preço está acima do justo</h2><p class="anv" style="margin:6px 0 0">A nota ('+num(A.score,1)+') mede a qualidade da empresa pelos números. Já o preço justo dos métodos é '+VJ.F.format(VJ.med)+', '+pf.format(Math.abs(VJ.up*100))+'% abaixo do preço de hoje. Esses métodos costumam dar valor baixo para empresas que lucram muito e distribuem quase tudo, então confira a aba Preço justo antes de decidir.</p></div>';
+  if(A.score!=null)h+='<details class="panel info"><summary>Como essa nota foi calculada</summary><p class="anv" style="margin:8px 0 0">Nota = pontos positivos ÷ (positivos + pontos de atenção) × 10. Aqui são <b>'+A.wp+'</b> de peso nos positivos e <b>'+A.wn+'</b> nos de atenção. O que aconteceu no último trimestre, as notícias e o preço em queda valem em dobro (ou peso 1, no caso do preço). A nota não é uma previsão: ela mostra o quanto a empresa se saiu bem nas regras do app.</p></details>';
   if(A.pos.length)h+='<div class="panel"><h2>Pontos positivos</h2><ul class="rkl">'+li(A.pos,'ok')+'</ul></div>';
   if(A.neg.length)h+='<div class="panel"><h2>Pontos de atenção</h2><ul class="rkl">'+li(A.neg,'al')+'</ul></div>';
   if(A.inf.length)h+='<div class="panel"><h2>Vale saber</h2><ul class="rkl">'+li(A.inf,'at')+'</ul></div>';
