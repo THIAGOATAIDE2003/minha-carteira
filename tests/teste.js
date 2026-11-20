@@ -234,7 +234,7 @@ function contasAMao(F, P) {
     /* sino à esquerda (gaveta de notificações) e ícone de notícias à direita (tela só de toque) */
     const nt = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), mk = function (i, c, sc, n, mins, tt) { return { id: 'x' + i, t: tt || 'Notícia ' + i, s: 'Folha', d: now - mins * 60, l: 'https://exemplo.com.br/' + i, i: i % 2 ? 'https://exemplo.com.br/i.jpg' : '', c: c, sc: sc, n: n }; };
       NT.d = { v: 1, at: now, itens: [mk(1, 'BR', 12, 2, 5), mk(2, 'EX', 5, 1, 20), mk(3, 'BR', 7, 3, 60), mk(4, 'EX', 11, 1, 90), mk(5, 'BR', 4, 1, 120, 'Petrobras sobe com petróleo')] }; NT.seen = Date.now() - 3 * 3600000; ntBadge();
-      var r = { badge: document.getElementById('bellb').textContent, bellEsq: !!document.querySelector('.top > .bell#bell'), jornalDir: !!document.querySelector('.pills #newsbtn') }; ndOpen();
+      var r = { badge: document.getElementById('bellb').textContent, bellEsq: !!document.querySelector('.top > .tl > .bell#bell'), jornalDir: !!document.querySelector('.pills #newsbtn') }; ndOpen();
       r.notif = document.querySelectorAll('#nd-b .ndi').length; r.novas = document.querySelectorAll('#nd-b .ndi.nw').length; ndClose();
       ntOpen(); r.cards = document.querySelectorAll('#nt-b .ntc').length; r.link = document.querySelector('#nt-b .ntc').getAttribute('target'); r.semAbas = !document.querySelector('[data-ntp]');
       NT.cat = 'all'; ntRender(); r.todas = document.querySelectorAll('#nt-b .ntc').length; NT.cat = 'EX'; ntRender(); r.mundo = document.querySelectorAll('#nt-b .ntc').length;
@@ -243,7 +243,7 @@ function contasAMao(F, P) {
       fire('touchstart', 12, 300); fire('touchend', 170, 312); var a = !document.getElementById('nd').hidden; fire('touchstart', 200, 300); fire('touchend', 60, 305); document.getElementById('nd').hidden = true; document.getElementById('nd').classList.remove('on'); document.body.style.overflow = '';
       fire('touchstart', 150, 400); fire('touchend', 300, 405); var b = !document.getElementById('nd').hidden; return [a, b]; });
     confere('puxar a tela da borda para o lado abre a gaveta; puxar no meio da tela não abre', puxa, [true, false]);
-    confere('sino à esquerda com número, gaveta de notificações, ícone de notícias à direita e filtros', [nt.badge, nt.bellEsq, nt.jornalDir, nt.notif, nt.novas, nt.cards, nt.link, nt.semAbas, nt.todas, nt.mundo], ['3', true, true, 3, 3, 3, '_blank', true, 5, 2]);
+    confere('sino embaixo da logo com número, gaveta de notificações, ícone de notícias à direita e filtros', [nt.badge, nt.bellEsq, nt.jornalDir, nt.notif, nt.novas, nt.cards, nt.link, nt.semAbas, nt.todas, nt.mundo], ['3', true, true, 3, 3, 3, '_blank', true, 5, 2]);
     /* 1D/5D com pontos de 5 minutos de mentira (arquivos do robô) e a carteira ao longo do dia */
     const g2 = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), p5 = []; for (var i = 0; i < 40; i++) p5.push([now - (40 - i) * 300, 20 + i * .05]);
       var mk = function (prev) { return { d: { cur: 'BRL', off: -10800, at: now, prev: prev, p: p5 }, at: Date.now() }; };

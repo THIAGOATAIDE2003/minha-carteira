@@ -442,7 +442,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .ntt{display:block;font-size:16px;line-height:1.3;font-weight:600;padding:12px 14px 6px}.ntm{display:flex;align-items:center;gap:8px;padding:0 14px 13px;font-size:12.5px;flex-wrap:wrap}.ntm .muted{margin-left:auto}.ntf{border-radius:4px}
 .ntn{margin:4px 0 12px}.ntmsg{padding:28px 6px;text-align:center}
 
-.top .bell:first-child{margin:0 4px 0 -6px}.bell.news{margin-left:4px}
+.tl{display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:none}.tl .bell{margin:0 0 0 -4px;padding:4px 6px}.bell.news{margin-left:4px}
 .ndr{position:fixed;inset:0;z-index:75;display:flex;background:rgba(0,0,0,0);transition:background .25s}.ndr.on{background:rgba(0,0,0,.55)}
 .ndb{width:86%;max-width:380px;height:100%;background:var(--surface);color:var(--fg);display:flex;flex-direction:column;transform:translateX(-102%);transition:transform .25s;padding-top:env(safe-area-inset-top,0px)}.ndr.on .ndb{transform:none}.ndo{flex:1}
 .ndb .sbd{flex:1;overflow-y:auto;padding:8px 14px 24px}
