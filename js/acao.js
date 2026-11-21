@@ -195,6 +195,17 @@ function avHist(tk,rg){var fn=rg==='1mo'||rg==='3mo'?'TIME_SERIES_DAILY':'TIME_S
   return getJSON('https://www.alphavantage.co/query?function='+fn+'&symbol='+encodeURIComponent(tk)+'&apikey='+encodeURIComponent(S.keys.av)).then(function(j){
     var ser=j&&(j['Time Series (Daily)']||j['Weekly Time Series']);if(!ser)throw new Error('0');
     var h=Object.keys(ser).sort().map(function(dt){return {t:Date.parse(dt),c:parseFloat(ser[dt]['4. close'])}});try{localStorage.setItem(ck,JSON.stringify({at:Date.now(),h:h}))}catch(e){}return cut(h)})}
+/* Classes da empresa (ON, PN, Unit): as outras ações da mesma empresa lado a lado, com preço de cada uma */
+var SIBC={},SIBT={3:'ON',4:'PN',5:'PNA',6:'PNB',7:'PNC',8:'PND',11:'Unit'};
+function sibList(tk){var nm=MD.d&&MD.d.cvm&&MD.d.cvm.nomes,f=MD.d&&MD.d.fund&&MD.d.fund.d;if(!nm||!nm[tk]||!f)return [];
+  return Object.keys(nm).filter(function(t){return nm[t]===nm[tk]&&f[t]&&isBR(t)}).sort(function(a,b){return (parseInt(a.slice(4))||0)-(parseInt(b.slice(4))||0)})}
+function sibLoad(l,tk){var u=pxBase(),c=SIBC[tk];if(!u||(c&&(c.busy||Date.now()-c.at<60000)))return;
+  SIBC[tk]={d:c&&c.d,at:Date.now(),busy:1};getJSON(u+'/q?s='+encodeURIComponent(l.map(ySym).join(','))).then(function(j){SIBC[tk]={d:j||{},at:Date.now()};try{if(STK.tk===tk)stkRender()}catch(e){}}).catch(function(){SIBC[tk]={d:c&&c.d,at:Date.now()}})}
+function sibHtml(tk){var l=sibList(tk);if(l.length<2)return '';sibLoad(l,tk);var q=(SIBC[tk]&&SIBC[tk].d)||{};
+  return '<div class="panel sibp"><h2>Classes da empresa</h2><div class="sibs">'+l.map(function(t){var f=fundOf(t)||{},s=q[ySym(t)],lv=livePx(t),p=s&&s.p>0?s.p:lv?lv.p:f.cot,pc=null;
+      if(t===tk&&lv&&lv.pct!=null)pc=lv.pct;else if(s&&s.p>0&&s.prev>0)pc=dzero(false,(s.t||0)*1000)?0:(s.p/s.prev-1)*100;
+      var sx=parseInt(t.slice(4)),ty=SIBT[sx]||('final '+sx);
+      return '<button type="button" class="sib'+(t===tk?' on':'')+'" data-stk="'+esc(t)+'"><b>'+esc(t)+'</b><small>'+ty+'</small><span class="num">'+(p>0?brl.format(p):'—')+'</span>'+(pc!=null?'<em class="num '+cls(pc)+'">'+sg0(pc)+pf.format(Math.abs(pc))+'%</em>':'<em class="muted">&nbsp;</em>')+'<small>'+(f.dy!=null&&f.dy>0?'DY '+pf.format(f.dy)+'%':'sem DY')+'</small></button>'}).join('')+'</div></div>'}
 function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0=livePx(STK.tk);if(lv0&&(!STK.d.at||lv0.at>STK.d.at)){STK.d.price=lv0.p;if(lv0.pct!=null)STK.d.pct=lv0.pr!=null?lv0.pr:lv0.pct}}
   var b=$('stk-b');if(!b||$('stk').hidden)return;var d=STK.d,tk=STK.tk;
   if(!d){b.innerHTML=STK.err?'<p class="warn">'+esc(STK.err)+'</p><button type="button" class="btn ghost" style="margin-top:12px" data-rng="'+STK.rng+'">Tentar de novo</button>':'<p class="muted">Carregando '+esc(tk)+'...</p>';return}
@@ -212,7 +223,7 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
 
   var f0=function(v){return v!=null?pf.format(v):null},op=st?st.o:d.o,hh=st?st.h:d.h,ll=st?st.l:d.l;
   h+=gStats([['Abertura',f0(op)],['Alta',f0(hh)],['Baixa',f0(ll)],['Fech. ant.',f0(st&&st.prev!=null?st.prev:prv)],['Alt 52 sem',f0(K.hi)],['Bai 52 sem',f0(K.lo)]])+(tk.charAt(0)!=='^'?'<button type="button" class="gan" data-gan="1">Analisar '+esc(tk)+' ›</button>':'')+'</div>';
-  h+='<div class="seg stseg" id="stv-top">'+[['res','Resumo'],['val','Preço justo'],['ind','Indicadores'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  h+=(tk.charAt(0)!=='^'&&d.cur!=='USD'?sibHtml(tk):'')+'<div class="seg stseg" id="stv-top">'+[['res','Resumo'],['val','Preço justo'],['ind','Indicadores'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
   var PE=d.cur==='USD'?null:anPeers(tk),sm=function(k,f){return PE&&PE[k]!=null?' <small class="ksec">setor '+f(PE[k])+'</small>':''},sp=function(v){return pf.format(v)+'%'},sn=function(v){return num(v,1)};
   if(STV==='val')h+=anVal(tk,d);
   else if(STV==='news')h+=rsNews(tk);

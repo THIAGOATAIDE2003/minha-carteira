@@ -479,3 +479,4 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 
 .tpg{display:flex;flex-wrap:wrap;gap:8px}.tpg button{padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px;font-weight:600}.tpg button[aria-pressed=true]{background:var(--tint);color:var(--fg);border-color:var(--muted)}
 .atl .bell.tpe{padding:8px 10px}
+.sibs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch}.sib{flex:1 0 108px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--tint);color:var(--fg);text-align:left}.sib.on{border-color:var(--muted)}.sib b{font-size:15px}.sib small{color:var(--muted);font-size:11.5px}.sib span{font-size:15px;font-weight:600;margin-top:2px}.sib em{font-style:normal;font-size:12.5px;font-weight:600}
