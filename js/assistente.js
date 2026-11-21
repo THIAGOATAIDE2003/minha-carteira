@@ -122,6 +122,7 @@ function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
   /* economia */
   var mc=[];['selic','cdi','ipca','ibov','tnx','brent','iron','GLD'].forEach(function(k){var d=idxDef(k);if(!d)return;var v=null;try{v=idxVal(d)}catch(e){}if(!v||v.v==null)return;mc.push(d.n+' '+(d.f==='pct'?num(v.v,2)+'%':num(v.v,2))+(v.p!=null&&d.f!=='pct'?' (dia '+asP(v.p,2)+')':''))});
   if(mc.length)L.push('ECONOMIA: '+mc.join('; ')+'.');
+  try{var bx=bcCtx();if(bx)L.push(bx)}catch(e){}
   var rs=MD.d&&MD.d.res;
   if(rs&&rs.dia&&rs.dia.ai)L.push('RESUMO DO MERCADO (IA do robô): '+asTxt(rs.dia.ai.titulo)+'. '+asTxt(rs.dia.ai.texto).slice(0,500));
   if(rs&&rs.cart&&rs.cart.ai){var ca=rs.cart.ai;L.push('RELATÓRIO DA CARTEIRA (IA do robô): '+asTxt(ca.titulo)+'. Riscos: '+(ca.riscos||[]).slice(0,3).join(' / ')+'. Para acompanhar: '+(ca.atencao||[]).slice(0,3).join(' / '))}

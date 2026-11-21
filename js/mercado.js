@@ -95,7 +95,7 @@ function mkSearch(q){
 function idxCard(lbl,o,fmt){return '<div class="idx"><small>'+lbl+'</small><b>'+(o&&isFinite(o.v)?fmt(o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+sg0(o.p)+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">sem dado</span>')+'</div>'}
 /* Mercado em 3 partes: Minhas ações, Índices e Análise */
 var MKV='min',SCR='dy',CMP=null;
-try{var mv0=localStorage.getItem(LS+'-mkv');if(mv0==='min'||mv0==='idx'||mv0==='ana')MKV=mv0}catch(e){}
+try{var mv0=localStorage.getItem(LS+'-mkv');if(mv0==='min'||mv0==='idx'||mv0==='ana'||mv0==='bc')MKV=mv0}catch(e){}
 function tkRow(tk,us,sub){var lv=livePx(tk),q=MKT.q[tk],p=lv?lv.p:q&&q.price,pc=lv&&lv.pct!=null?lv.pct:q&&q.pct,F=us?usd:brl;
   return '<li><button type="button" class="wtk wtk2" data-stk="'+esc(tk)+'">'+tkLogo(tk,us)+'<span class="an"><b>'+esc(tk)+'</b><small>'+sub+'</small></span></button><span class="wpx">'+(p?'<span>'+F.format(p)+'</span><span class="num small '+cls(pc||0)+'">'+(pc!=null?sg0(pc)+pf.format(Math.abs(pc))+'%':'')+'</span>':'<span class="muted">—</span>')+'</span>'}
 function fundSub(tk){var F=fundOf(tk);return F?'P/L '+(F.pl!=null?num(F.pl,1):'—')+' · P/VP '+(F.pvp!=null?num(F.pvp,2):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):''}
@@ -319,17 +319,18 @@ function renderMkt(){
   var el=$('mkttab');if(!el)return;var I=MKT.idx,f0=fxToday(),fxp=S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null;
   var q0=$('mk-q')?$('mk-q').value:'',sel=idxSel();
   var on=0;try{var od=opData();on=od?od.n:0}catch(e){}
-  var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
-  h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice ou moeda':MKV==='ana'?'Buscar ação para analisar':'Buscar ação para ver ou acompanhar')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
+  var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['bc','BC'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
+  if(MKV!=='bc')h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice ou moeda':MKV==='ana'?'Buscar ação para analisar':'Buscar ação para ver ou acompanhar')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
   try{h+=mktOverview()}catch(e){}
+  try{h+=bcCard()}catch(e){}
   try{h+=futHtml();futLoad()}catch(e){}
   h+='<div class="panel"><div class="grp"><h2>Índices</h2><span style="display:flex;gap:10px;align-items:center"><span class="det">'+(MKT.busy?'atualizando...':MKT.at?'às '+new Date(MKT.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'</span><button type="button" class="link" data-mked="1">'+(MKED?'Pronto':'Editar')+'</button></span></div>'+
     (sel.length?'<div class="idxg'+(MKED?' ed':'')+'">'+sel.map(function(k){var x=idxDef(k),o=idxVal(x);
       return '<div class="idx"'+(MKED?'':' data-idxo="'+k+'" role="button" tabindex="0"')+'>'+(MKED?'<button type="button" class="idxx" data-idxt="'+k+'" aria-label="Remover '+esc(x.n)+'">✕</button>':'')+'<small>'+esc(x.n)+'</small><b>'+(o&&isFinite(o.v)?idxFmt(x,o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+sg0(o.p)+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">'+(o&&o.sub?esc(o.sub):'sem dado')+'</span>')+'</div>'}).join('')+'</div>':'<p class="muted small">Nenhum índice escolhido. Use a busca acima para adicionar.</p>')+
     (MKED?'<p class="note">Toque no ✕ para tirar. Para colocar outro, procure na busca acima.</p>':'')+'</div>';
   h+='<p class="note exp" style="margin:0 4px">Ibovespa e IFIX vêm do brapi, S&P 500 e Nasdaq do Finnhub (pelos ETFs SPY e QQQ), dólar, euro e bitcoin da AwesomeAPI, CDI do Banco Central. Toque numa ação para ver gráfico e indicadores. A lista de acompanhamento fica salva na nuvem.</p>';
-  }else if(MKV==='ana'){h+=anaHtml()}else{h+=mineHtml();
+  }else if(MKV==='bc'){h+=bcHtml()}else if(MKV==='ana'){h+=anaHtml()}else{h+=mineHtml();
   var W=wlist();
   h+='<div class="panel"><div class="grp"><h2>Acompanhando</h2><span class="det">'+W.length+' ações</span></div>'+
     (W.length?'<ul class="wl">'+W.map(function(tk){var q=MKT.q[tk];return '<li><button type="button" class="wtk" data-stk="'+esc(tk)+'"><b>'+esc(tk)+'</b><small>'+(function(){var F=fundOf(tk);return F?'P/L '+(F.pl!=null?num(F.pl,1):'—')+' · P/VP '+(F.pvp!=null?num(F.pvp,2):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):esc(q&&q.name||(isBR(tk)?'Brasil':'EUA'))})()+'</small></button><span class="wpx">'+(q?'<span>'+(q.cur==='USD'?usd:brl).format(q.price)+'</span><span class="num small '+cls(q.pct)+'">'+sg0(q.pct)+pf.format(Math.abs(q.pct||0))+'%</span>':'<span class="muted">—</span>')+'</span><button type="button" class="wx" data-wdel="'+esc(tk)+'" aria-label="Parar de acompanhar '+esc(tk)+'">✕</button></li>'}).join('')+'</ul>':'<p class="muted small">Adicione ações que você quer vigiar, mesmo sem ter. Ex.: PETR4, VALE3, WEGE3, AAPL.</p>')+
