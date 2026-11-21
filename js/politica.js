@@ -10,6 +10,7 @@ function riTemas(tk){var us=!isBR(tk),sc='';try{sc=rkSect(tk,us)[0]||''}catch(e)
   if(us){['fed','trump'].forEach(function(k){if(o.indexOf(k)<0)o.push(k)})}
   if(!o.length)o=['gov','bc'];return o.slice(0,4)}
 function riAc(tk){var r=riD();return r&&r.ac&&r.ac[tk]||[]}
+function riDir(tk){var r=riD();return r&&r.dir&&r.dir[tk]||[]}
 function riFt(tk){var r=riD();return r&&r.fatos&&r.fatos[tk]||[]}
 function riPol(k){var r=riD();return r&&r.pol&&r.pol[k]||null}
 /* itens graves e recentes das ações que o usuário tem */
@@ -33,6 +34,8 @@ function riHtml(tk){var r=riD();if(!r||isBR(tk)===false)return '';
     (ac.length?'<ul class="rsn">'+ac.map(function(x){return riLi(x,0)}).join('')+'</ul>':'<p class="muted small" style="margin:0 0 8px">Nenhuma manchete de risco da empresa nos últimos 30 dias.</p>')+
     tm.map(function(k){var p=riPol(k);if(!p||!p.it||!p.it.length)return '';return '<h3 style="margin:12px 0 4px">'+esc(p.n||RITEMA[k][0])+'</h3><ul class="rsn">'+p.it.slice(0,3).map(function(x){return riLi(x,0)}).join('')+'</ul>'}).join('')+
     '<p class="note">Manchetes do Google Notícias, buscadas pelo robô em '+rsWhen(r.at)+'. Toque para abrir a notícia.</p></div>';
+  var dr=riDir(tk);
+  h+='<div class="panel"><h2>O que a diretoria diz '+bal('Manchetes dos últimos 90 dias em que o presidente, o diretor financeiro ou a diretoria da empresa falam de projeções, metas, investimentos ou dividendos. É o que o jornal publicou: pode estar resumido ou fora de contexto, e promessa de diretoria não garante resultado.')+'</h2>'+(dr.length?'<ul class="rsn">'+dr.map(function(x){return riLi(x,0)}).join('')+'</ul>':'<p class="muted small" style="margin:0">Nenhuma fala de projeção da diretoria nas manchetes dos últimos 90 dias.</p>')+'<p class="note">Só manchetes: a teleconferência de resultados completa não está disponível de graça.</p></div>';
   h+='<div class="panel"><h2>Fatos relevantes (CVM) '+bal('Documentos que a própria empresa entrega à CVM: fatos relevantes, comunicados ao mercado e avisos sobre diretoria ou controle. É a fonte oficial, mas a CVM nem sempre publica no mesmo dia.')+'</h2>'+
     (ft.length?'<ul class="rsn">'+ft.map(function(x){return riLi(x,1)}).join('')+'</ul>':'<p class="muted small" style="margin:0">Nenhum fato relevante nos últimos 45 dias.</p>')+
     '<p class="note">Fonte: dados abertos da CVM. Reuniões fechadas e conversas privadas não aparecem em lugar nenhum.</p></div>';
@@ -41,6 +44,7 @@ function riHtml(tk){var r=riD();if(!r||isBR(tk)===false)return '';
 function riCtx(tks,full){var r=riD();if(!r)return '';var L=['=== RISCOS E POLÍTICA [fonte: manchetes do Google Notícias e documentos da CVM, buscados pelo robô em '+asDt(Date.parse(r.at))+'. Manchete NÃO é confirmação; só cite o que está aqui, com fonte e data]'];
   (tks||[]).forEach(function(tk){var a=riAc(tk).slice(0,full?4:2),f=riFt(tk).slice(0,full?3:1);
     a.forEach(function(x){L.push('- '+tk+' ('+(x.g?'GRAVE, ':'')+'manchete): '+x.t+' ['+x.s+', '+riDt(x.d)+']')});
+    riDir(tk).slice(0,full?3:1).forEach(function(x){L.push('- '+tk+' (fala da diretoria, manchete): '+x.t+' ['+x.s+', '+riDt(x.d)+']')});
     f.forEach(function(x){L.push('- '+tk+' ('+(x.g?'GRAVE, ':'')+'CVM '+x.c+'): '+x.a+' ['+riDt(x.d)+']')})});
   var ts={};(tks||[]).forEach(function(tk){riTemas(tk).forEach(function(k){ts[k]=1})});
   Object.keys(ts).slice(0,full?6:3).forEach(function(k){var p=riPol(k);if(p&&p.it)p.it.slice(0,full?3:2).forEach(function(x){L.push('- Tema '+(p.n||k)+': '+x.t+' ['+x.s+', '+riDt(x.d)+']')})});
