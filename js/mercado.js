@@ -181,6 +181,7 @@ function rsNews(tk){var e=rsOf(tk);
     var lst=function(t,arr,c){return arr&&arr.length?'<div class="panel"><h2>'+t+'</h2><ul class="rkl">'+arr.map(function(x){return '<li>'+rkLvl(c)+'<div><p style="margin:0;color:var(--fg)">'+esc(x)+'</p></div></li>'}).join('')+'</ul></div>':''};
     h+=lst('Riscos',a.riscos,'al')+lst('Oportunidades',a.oportunidades,'ok')}
   else h+='<div class="panel">'+rsNoAI()+'</div>';
+  try{h+=riHtml(tk)}catch(x){}
   var nw=e.news||[];
   h+='<div class="panel"><h2>Manchetes dos últimos 30 dias '+bal('Notícias sobre a empresa buscadas pelo robô no Google Notícias. Toque para abrir a notícia inteira.')+'</h2>'+(nw.length?'<ul class="rsn">'+nw.map(function(n){return '<li><a href="'+esc(safeUrl(n.l))+'" target="_blank" rel="noopener">'+esc(n.t)+'</a><small>'+(n.d?fmtDate(n.d):'')+(n.s?' · '+esc(n.s):'')+'</small></li>'}).join('')+'</ul>':'<p class="muted" style="margin:0">Nenhuma manchete encontrada no último mês.</p>')+
     '<p class="note">Manchetes do Google Notícias, buscadas pelo robô'+(MD.d.res.at?' em '+rsWhen(MD.d.res.at):'')+'. Tocando, abre a notícia no navegador.</p></div>';
