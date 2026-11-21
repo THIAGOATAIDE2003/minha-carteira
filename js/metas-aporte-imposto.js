@@ -59,8 +59,9 @@ function renderApo(){
       br.map(function(x){return row('',esc(x.p.ticker),cur.BR?x.v/cur.BR*100:0,inB[x.p.ticker],'ab-'+x.p.ticker)}).join('')+'</div></details>':'')+
     '<div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap"><button class="btn small" type="button" id="al-save">Salvar divisão</button><span class="msg" id="al-msg"></span></div></div>';
   h+='<div class="panel"><h2>Quanto vai aportar?</h2><div style="display:flex;gap:8px;margin-top:4px"><input id="apo-v" inputmode="decimal" placeholder="1.000,00" value="'+esc(APV)+'" aria-label="Valor do aporte em reais"><button class="btn" type="button" id="apo-go">Calcular</button></div><div id="apo-res"></div></div>';
+  h+=simPanel(R,tot);
   h+='<p class="note exp" style="margin:0 4px">O cálculo só sugere compras: coloca o dinheiro primeiro onde está mais abaixo do alvo, sem vender nada. Não é recomendação de investimento, é a conta da divisão que você escolheu.</p>';
-  el.innerHTML=h;if(APV)apoCalc();
+  el.innerHTML=h;if(APV)apoCalc();if(SIM.al)simCalc();
 }
 function apoCalc(){
   var raw=String($('apo-v').value||'').trim(),v=/^\d{1,3}(\.\d{3})+$/.test(raw)?parseFloat(raw.replace(/\./g,'')):parseNum(raw),out=$('apo-res');APV=raw;
@@ -85,6 +86,63 @@ function apoCalc(){
   out.innerHTML='<ul class="calc" style="margin-top:14px">'+li.join('')+'<li class="tot"><span>Total</span><span class="num">'+brl.format(v)+'</span></li></ul>'+
     '<p class="note">Depois do aporte: Brasil '+pf.format(after.BR/ta*100)+'%, EUA '+pf.format(after.US/ta*100)+'%, Renda fixa '+pf.format(after.RF/ta*100)+'% (alvo '+pf.format(cl.BR)+'% / '+pf.format(cl.US)+'% / '+pf.format(cl.RF)+'%).</p>';
 }
+/* simulador de venda e troca: "quero esse ativo com X% da carteira, quantas ações vendo e onde reinvisto?" (só conta, não lança nada) */
+var SIM={tk:'',al:'',dest:'td',nv:'',px:''};
+function simPanel(R,tot){
+  var hs=R.held.filter(function(x){return x.v>0});if(!hs.length)return '';
+  if(!SIM.tk||!hs.some(function(x){return x.p.ticker===SIM.tk}))SIM.tk=hs.slice().sort(function(a,b){return b.v-a.v})[0].p.ticker;
+  var opt=hs.map(function(x){return '<option value="'+esc(x.p.ticker)+'"'+(x.p.ticker===SIM.tk?' selected':'')+'>'+esc(x.p.ticker)+' — hoje '+pf.format(x.v/tot*100)+'%</option>'}).join('');
+  var dopt='<option value="td"'+(SIM.dest==='td'?' selected':'')+'>Dividir entre as outras ações do Brasil que tenho</option>'+hs.filter(function(x){return x.p.market==='BR'}).map(function(x){return '<option value="'+esc(x.p.ticker)+'"'+(SIM.dest===x.p.ticker?' selected':'')+'>'+esc(x.p.ticker)+'</option>'}).join('')+'<option value="novo"'+(SIM.dest==='novo'?' selected':'')+'>Ação nova (digitar o código)</option>';
+  return '<div class="panel" id="simbox"><h2>Simular venda e troca</h2><p class="note exp" style="margin:0 0 10px">Escolha o ativo, diga quantos % da carteira você quer que ele tenha e para onde iria o dinheiro. É só uma conta: não lança nada na sua carteira.</p>'+
+    '<div class="alv" style="grid-template-columns:1fr">'+
+    '<label class="muted small">Ativo que quer diminuir<select id="sim-tk">'+opt+'</select></label>'+
+    '<label class="muted small">Quanto quer que ele tenha da carteira (%)<input id="sim-al" inputmode="decimal" placeholder="7" value="'+esc(SIM.al)+'"></label>'+
+    '<label class="muted small">Onde reinvestir<select id="sim-dest">'+dopt+'</select></label>'+
+    '<div id="sim-nvw" '+(SIM.dest==='novo'?'':'hidden')+'><label class="muted small">Código da ação nova<input id="sim-nv" placeholder="ex.: ITUB4" autocapitalize="characters" value="'+esc(SIM.nv)+'"></label>'+
+    '<label class="muted small">Preço dela (só se o app não achar)<input id="sim-px" inputmode="decimal" placeholder="opcional" value="'+esc(SIM.px)+'"></label></div></div>'+
+    '<button class="btn" type="button" id="sim-go" style="margin-top:10px">Simular</button><div id="sim-res"></div></div>';
+}
+function simPx(tk){var l=livePx(tk);if(l&&l.p>0)return l.p;var q=S.quotes[tk];return q&&q.price>0?q.price:0}
+function simCalc(){
+  var out=$('sim-res');if(!out)return;
+  var g=function(id){var e=$(id);return e?e.value:''};
+  SIM.tk=g('sim-tk');SIM.al=g('sim-al').trim();SIM.dest=g('sim-dest')||'td';SIM.nv=g('sim-nv').trim().toUpperCase();SIM.px=g('sim-px').trim();
+  var nw=$('sim-nvw');if(nw)nw.hidden=SIM.dest!=='novo';
+  var al=parseNum(SIM.al);if(!SIM.al){out.innerHTML='';return}
+  if(!(al>=0&&al<100)){out.innerHTML='<p class="msg err" style="margin-top:10px">Digite um % entre 0 e 100, por exemplo 7.</p>';return}
+  var R=compute(),T=R.tot,tot=T.value+(T.rfV||0);
+  var x=R.held.filter(function(h){return h.p.ticker===SIM.tk})[0];if(!x||!tot)return;
+  var cur=x.v/tot*100;
+  if(al>=cur){out.innerHTML='<p class="note" style="margin-top:10px">'+esc(SIM.tk)+' já está com '+pf.format(cur)+'%, não precisa vender nada para chegar em '+pf.format(al)+'%.</p>';return}
+  var pu=x.P1*x.F1,us=x.p.market==='US',X=(cur-al)/100*tot,q=us?Math.round(X/pu*1e4)/1e4:Math.max(1,Math.round(X/pu));
+  q=Math.min(q,x.p.qty);var V=q*pu,li=[],imp=0,custo=0,nota='';
+  if(us){var spr=V*VND.spr/100,iof=(V-spr)*VND.iof/100,ir=Math.max(0,V-x.p.cB*q/x.p.qty)*VND.ir/100;custo=spr+iof;imp=ir;
+    nota='Dólar para real: spread '+pf.format(VND.spr)+'% e IOF '+pf.format(VND.iof)+'%; IR de '+pf.format(VND.ir)+'% sobre o lucro em reais (pago na declaração anual).'}
+  else{var gain=q*(x.P1-x.P0),fii=isFII(x.p.ticker),aliq=fii?.20:(V>20000?.15:0);imp=Math.max(0,gain)*aliq;
+    nota=fii?'FII: 20% sobre o lucro, sem isenção.':(V>20000?'Vendas de ações acima de R$ 20 mil no mês: 15% sobre o lucro.':'Vendas de ações até R$ 20 mil no mês são isentas de IR (conta só esta venda, sem outras do mês).')}
+  var net=V-custo-imp;
+  li.push('<li><span><b>Vender '+esc(SIM.tk)+'</b><br><span class="muted small">'+(us?num(q,4)+' cotas':q+(q>1?' ações':' ação'))+' a '+(us?usd.format(x.P1):brl.format(x.P1))+(us?' (≈ '+brl.format(pu)+' cada)':'')+'</span></span><span class="num">'+brl.format(V)+'</span></li>');
+  if(custo>0.005)li.push('<li class="muted small"><span>Custos do câmbio (spread + IOF)</span><span class="num">− '+brl.format(custo)+'</span></li>');
+  li.push('<li class="muted small"><span>Imposto estimado</span><span class="num">'+(imp>0.005?'− '+brl.format(imp):'R$ 0,00')+'</span></li>');
+  li.push('<li class="tot"><span>Dinheiro para reinvestir</span><span class="num">'+brl.format(net)+'</span></li>');
+  var dests=[],erro='';
+  if(SIM.dest==='novo'){
+    if(!/^[A-Z]{4}\d{1,2}$/.test(SIM.nv))erro='Digite o código da ação nova, por exemplo ITUB4.';
+    else{var pn=simPx(SIM.nv)||parseNum(SIM.px);if(!(pn>0))erro='Não achei o preço de '+esc(SIM.nv)+'. Digite o preço no campo acima.';else dests.push({tk:SIM.nv,px:pn,novo:1,v:0})}}
+  else if(SIM.dest==='td'){R.held.filter(function(h){return h.p.market==='BR'&&h.p.ticker!==SIM.tk}).forEach(function(h){dests.push({tk:h.p.ticker,px:h.P1,v:h.v})});if(!dests.length)erro='Você não tem outra ação do Brasil. Escolha "Ação nova".'}
+  else{var h=R.held.filter(function(z){return z.p.ticker===SIM.dest})[0];if(h&&h.p.ticker!==SIM.tk)dests.push({tk:h.p.ticker,px:h.P1,v:h.v});else erro='Escolha um destino diferente do ativo que está vendendo.'}
+  if(erro){out.innerHTML='<ul class="calc" style="margin-top:14px">'+li.join('')+'</ul><p class="msg err">'+erro+'</p>';return}
+  var part=net/dests.length,left=0,bought=0;
+  dests.forEach(function(d){var n=Math.floor(part/d.px);d.n=n;d.c=n*d.px;left+=part-d.c;bought+=d.c;
+    li.push('<li><span><b>Comprar '+esc(d.tk)+(d.novo?' <span class="muted small">(nova)</span>':'')+'</b><br><span class="muted small">'+(n?n+(n>1?' ações':' ação')+' a '+brl.format(d.px):'menos de 1 ação ('+brl.format(d.px)+' cada)')+'</span></span><span class="num">'+brl.format(d.c)+'</span></li>')});
+  if(left>0.5)li.push('<li class="muted small"><span>Sobra por arredondar em ações inteiras</span><span class="num">'+brl.format(left)+'</span></li>');
+  var t2=tot-custo-imp-left,sv=x.v-V,r='<p class="note">Depois da troca (sobre o total de '+brl.format(t2)+'): <b>'+esc(SIM.tk)+' '+pf.format(sv/t2*100)+'%</b>'+(sv/t2*100.0>al+.5||sv/t2*100<al-.5?' (alvo '+pf.format(al)+'%; ficou diferente por vender em ações inteiras)':'');
+  dests.forEach(function(d){r+=', <b>'+esc(d.tk)+' '+pf.format((d.v+d.c)/t2*100)+'%</b> (antes '+pf.format(d.v/tot*100)+'%)'});
+  r+='.</p><p class="note exp">'+nota+' É uma estimativa: não considera prejuízos antigos, outras vendas do mês nem taxas da corretora.</p>';
+  out.innerHTML='<ul class="calc" style="margin-top:14px">'+li.join('')+'</ul>'+r;
+}
+document.addEventListener('change',function(e){var i=e.target&&e.target.id;if(i&&i.indexOf('sim-')===0&&i!=='sim-go')simCalc()});
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target&&e.target.id&&e.target.id.indexOf('sim-')===0){e.preventDefault();simCalc()}});
 function alvSave(){
   var g=function(id){var v=parseNum(($(id)||{}).value);return isFinite(v)?v:0};
   var c={BR:g('al-BR'),US:g('al-US'),RF:g('al-RF')},sm=c.BR+c.US+c.RF,m=$('al-msg');

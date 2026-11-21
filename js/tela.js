@@ -188,6 +188,7 @@ document.addEventListener('click',function(e){
   else if(t.classList&&t.classList.contains('sheet')){t.hidden=true;document.body.style.overflow=''}
   else if(t.dataset&&t.dataset.iry){IRY=t.dataset.iry;renderIR()}
   else if(t.id==='apo-go'){apoCalc()}
+  else if(t.id==='sim-go'){simCalc()}
   else if(t.id==='al-save'){alvSave()}
   else if(t.id==='al-pf'){var a=pfAlvo();if(a){['BR','US','RF'].forEach(function(k){var i=$('al-'+k);if(i)i.value=String(a[k])});var m=$('al-msg');if(m){m.className='msg';m.textContent='Preenchi com o seu perfil. Toque em Salvar divisão.'}}}
   else if(t.id==='mt-save'){metasSave()}
