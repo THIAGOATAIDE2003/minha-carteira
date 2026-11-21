@@ -471,6 +471,53 @@ function contasAMao(F, P) {
         ['VALE3', 'ITUB4', 'BBSE3', 'SBSP3', 'B3SA3'].forEach(function (t) { var e = asEmp(t, true); o[t] = [/LUCRO DISTORCIDO/.test(e), /NÃO CONFIÁVEL|Preço indefinido/.test(e)]; });
       } catch (e) { o.erro = e.message; } MD.d = old; return o; });
     confere('LUCRO DISTORCIDO: só a Vale recebe o aviso; ITUB4, BBSE3, SBSP3 e B3SA3 não (e nenhum comando de "não confiável" fora dela)', [ld.erro || 'ok', ld.VALE3[0], ld.ITUB4, ld.BBSE3, ld.SBSP3, ld.B3SA3], ['ok', true, [false, false], [false, false], [false, false], [false, false]]);
+    /* PR 2 (1.45.0) — cenários determinísticos: conta feita pelo app, conferida por soma independente */
+    const cn = await pg.evaluate(() => {
+      var o = {};
+      try {
+        var C = compute(), us = 0, br = 0, tot = C.tot.value + C.tot.cash;
+        C.held.forEach(function (x) { if (!(x.v > 0)) return; if (x.p.market === 'US') us += x.v; else br += x.v; });
+        var f = function (q) { var t = asCenario(q); return t; };
+        var a = f('E se o dólar cair 15%?'), b = f('E se a bolsa cair 20%?'), c = f('cenário adverso'), d = f('Como está o dólar?');
+        var br0 = Math.round(Math.abs(-0.20 * br)), d0 = Math.round(Math.abs(-0.15 * us));
+        o.dolar = [a.indexOf('dólar -15%') > 0, a.indexOf('−R$ ' + num(d0, 0)) > 0, a.indexOf('Patrimônio R$ ' + num(tot, 0)) > 0];
+        o.bolsa = [b.indexOf('ações do Brasil -20%') > 0, b.indexOf('−R$ ' + num(br0, 0)) > 0];
+        o.adv = [/dólar -15%/.test(c), /ações do Brasil -20%/.test(c), /cenário adverso padrão/.test(c)];
+        o.neutro = d === '' || d == null;
+        o.total = [(/\(−R\$ [\d.]+, /.test(a))];
+      } catch (e) { o.erro = e.message; } return o; });
+    confere('Cenários (PR 2): dólar −15% e bolsa −20% batem com a soma independente; adverso padrão só sem números; pergunta comum não gera cenário', [cn.erro || 'ok', cn.dolar, cn.bolsa, cn.adv, cn.neutro, cn.total], ['ok', [true, true, true], [true, true], [true, true, true], true, [true]]);
+
+    /* PR 2 — contexto setorial, payout e fontes */
+    const st = await pg.evaluate(() => {
+      var old = MD.d, o = {};
+      try {
+        o.tipos = [asTipo(['Financeiro', 'Intermediários Financeiros']), asTipo(['Financeiro', 'Previdência e Seguros']), asTipo(['Financeiro', 'Serviços Financeiros Diversos']), asTipo(['Utilidade pública', 'Água e Saneamento'])];
+        var cols = ['cot', 'pl', 'pvp', 'psr', 'dy', 'pativo', 'pebit', 'evebit', 'evebitda', 'mebit', 'ml', 'lc', 'roic', 'roe', 'liq2m', 'pl_r', 'divpl', 'cr5'];
+        var row = function (cot, pl, pvp, dy, roe) { return [cot, pl, pvp, 0, dy, 0, 0, 0, 0, 0, 0, 0, 0, roe, 1e9, 1e11, 0, 0]; };
+        MD.d = { ts: Date.now() / 1000, cvm: { nomes: {}, q: {} }, hist: {}, idx: {}, fund: { cols: cols, d: { BBSE3: row(36.99, 7.82, 5.33, 12.6, 68), ITUB4: row(40.07, 9.45, 2.02, 7.8, 21) } } };
+        var b = asPayout(MD.d.fund && fundOf('BBSE3'), null, { price: 36.99 }, { pl: 13.5e9 }), i = asPayout({ dy: 2, pl: 10 }, null, { price: 40 }, null);
+        o.pay = [/PAYOUT \(aproximação/.test(b), /≈ 99%|≈ 98%/.test(b), /NÃO tem/.test(b), /NÃO diz se há ou não reservas/.test(b), !/reservas (existem|não existem)/.test(b), i === ''];
+        o.balfin = [/não se leem como em empresas comuns/.test(asBalFin({ pl: 1e9, ll: 1e8 })), !/dívida líquida/.test(asBalFin({ pl: 1e9, ll: 1e8, divl: 5e8 }))];
+        o.falta = [/sinistralidade/.test(asFaltaTipo('seguro')), /Basileia/.test(asFaltaTipo('banco'))];
+        o.txt = [/NÃO os trate como dado faltando|não se aplicam \(não os trate como dado faltando\)/.test(asTipoTxt('banco', ['Financeiro', 'Intermediários Financeiros'], 'ITAU')), /Não aplique a ela inadimplência/.test(asTipoTxt('seguro', ['Financeiro', 'Previdência e Seguros'], 'BB SEGURIDADE'))];
+        o.vento = [/crédito caro aumenta a inadimplência/.test(vtSetor(['Financeiro', 'Previdência e Seguros']).map(function (x) { return x[2] || x[1] || ''; }).join(' '))];
+      } catch (e) { o.erro = e.message; } MD.d = old; return o; });
+    confere('Setor/payout (PR 2): tipos banco/seguro/serviços/comum; payout aproximado sem afirmar reservas; balanço de financeira sem dívida; faltas por tipo', [st.erro || 'ok', st.tipos, st.pay, st.balfin, st.falta, st.txt], ['ok', ['banco', 'seguro', 'fin', ''], [true, true, true, true, true, true], [true, true], [true, true], [true, true]]);
+
+    /* PR 2 — motor de aporte entra no contexto, com a origem do alvo e sem virar recomendação */
+    const ap = await pg.evaluate(() => {
+      var o = {};
+      try {
+        var oa = S.alvos; S.alvos = { classes: { BR: 50, US: 30, RF: 20 } };
+        var t = asAporte('Onde alocar R$ 1.000?');
+        o.t = [/MOTOR DE APORTE DO APP/.test(t), /NÃO é recomendação de investimento/.test(t), /origem: /.test(t), /R\$ 1\.000/.test(t), /Divisão atual/.test(t)];
+        o.vazio = asAporte('Como está o dólar?') === '';
+        o.ctx = /MOTOR DE APORTE DO APP/.test(asCtx('Onde alocar R$ 1.000?', { base: 1, apo: 1 })) && !/MOTOR DE APORTE DO APP/.test(asCtx('Como está o dólar?', { base: 1, apo: 1 }));
+        S.alvos = oa;
+      } catch (e) { o.erro = e.message; } return o; });
+    confere('Motor de aporte (PR 2): só entra em pergunta de aporte, com origem do alvo e aviso de que não é recomendação', [ap.erro || 'ok', ap.t, ap.vazio, ap.ctx], ['ok', [true, true, true, true, true], true, true]);
+
     /* metas pela tela: escrever, salvar, inválido, apagar linha, apagar todas */
     await pg.click('[data-go=resumo]'); await pg.waitForTimeout(200);
     const mu = await (async () => {

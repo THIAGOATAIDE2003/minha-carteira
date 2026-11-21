@@ -24,7 +24,7 @@ function asRota(q){var n=asNorm(q),o={base:1,ativos:1,metas:1};
   if(/carteira/.test(n)&&/analis|diagnost|avali|panorama|geral/.test(n))o.risco=1;
   if(/oportunid|garimp|barat|acompanh|alerta|comprar|aportar/.test(n)){o.op=1;o.lista=1}
   if(/mercado|economia|selic|cdi|ipca|dolar|ibov|juros|inflac|petroleo|noticia/.test(n)){o.eco=1;o.res=1}
-  return {o:o,det:/detalh|cada ativo|cada acao|minhas acoes|nota|preco justo|valuation|indicador/.test(n)}}
+  asXt(q,o);return {o:o,det:/detalh|cada ativo|cada acao|minhas acoes|nota|preco justo|valuation|indicador/.test(n)}}
 function asMsgsT(q){asSysAtual();var rt=asRota(q);ASCMP=!rt.det;var ctx;try{ctx=asCtx(q,rt.o)}finally{ASCMP=false}
   var held={};compute().held.forEach(function(x){held[x.p.ticker]=1});
   var emp=asFind(q).map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean);
@@ -33,11 +33,11 @@ function asMsgsT(q){asSysAtual();var rt=asRota(q);ASCMP=!rt.det;var ctx;try{ctx=
 /* versão mínima para o limite pequeno da Groq grátis: prompt curto + só a empresa citada (ou o resumo da carteira) */
 var ASMINI='Você é a assistente do Aporte, app de investimentos do Thiago. Português do Brasil, simples e direto, frases curtas, sem termos em inglês. Use só os números do CONTEXTO; nunca invente número, data, notícia ou causa. Cite a fonte entre parênteses. Se faltar dado, diga que o app não tem. Faça as contas certas. Diga de qual lucro vem a margem líquida e não explique a queda do lucro (juros, impostos) sem dados. Se a CONCILIAÇÃO DE FONTES ou o DIVERGE aparecer, mostre os dois valores e diga que a causa é desconhecida. Confira sinais e valores antes de comparar variações. Não chame empresa de saudável só por margem EBIT e dívida. Se o contexto disser LUCRO DISTORCIDO ou NÃO CONFIÁVEL, obedeça: não conclua cara ou barata por P/L ou preço justo e não explique a causa. Onde a CONFERÊNCIA disser DIVERGE, mostre os dois valores. Nunca inverta a direção "preço justo X% abaixo do preço". Em empresa cíclica não conclua por um indicador só. Formato: pergunta simples = resposta curta; análise = **Os números**, **Minha leitura**, **O que falta saber**. Não dê ordem de compra ou venda.';
 /* nível "empresa" da Groq: prompt completo + só a empresa citada + resumo enxuto da carteira (sem a lista de ativos nem os outros blocos) */
-function asMsgsE(q){ASCMP=true;var ctx,emp;try{ctx=asCtx(q,{base:1,metas:1});var held={};compute().held.forEach(function(x){held[x.p.ticker]=1});emp=asFind(q).map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean)}finally{ASCMP=false}
+function asMsgsE(q){ASCMP=true;var ctx,emp;try{ctx=asCtx(q,asXt(q,{base:1,metas:1}));var held={};compute().held.forEach(function(x){held[x.p.ticker]=1});emp=asFind(q).map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean)}finally{ASCMP=false}
   var h=AS.m.filter(function(x){return x.t&&!x.e}).slice(-4,-1).map(function(x){return {role:x.r==='u'?'user':'assistant',content:x.t.length>600?x.t.slice(0,600)+' […]':x.t}});
   return [{role:'system',content:ASSYS+'\n\nRESUMO DA CARTEIRA AGORA:\n'+ctx+'\n\n'+emp.join('\n\n')+asmCtxT(q)}].concat(h,[{role:'user',content:q}])}
 function asMsgsMini(q){ASCMP=true;var ctx;try{var tks=asFind(q),held={};compute().held.forEach(function(x){held[x.p.ticker]=1});
-    ctx=tks.length?tks.map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean).join('\n\n'):asCtx(q,{base:1,metas:1})}finally{ASCMP=false}
+    ctx=tks.length?tks.map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean).join('\n\n'):asCtx(q,asXt(q,{base:1,metas:1}))}finally{ASCMP=false}
   var h=AS.m.filter(function(x){return x.t&&!x.e}).slice(-3,-1).map(function(x){return {role:x.r==='u'?'user':'assistant',content:x.t.length>400?x.t.slice(0,400)+' […]':x.t}});
   return [{role:'system',content:ASMINI+'\n\nCONTEXTO DO APP:\n'+ctx.slice(0,9000)}].concat(h,[{role:'user',content:q}])}
 /* pensar pouco no chat: o raciocínio longo do Gemini deixava até "oi" levando dezenas de segundos */
