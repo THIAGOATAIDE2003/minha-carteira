@@ -45,14 +45,14 @@ function resHtml(tk,d){var us=d.cur==='USD',C=csD(tk),h=us?'':trHtml(tk);try{h+=
 
 /* ===== Ideias para estudar (antigo Garimpo): qualidade do dado e histórico do que o app já apontou ===== */
 var GHK=LS+'-gar';
-function garLoad(){try{var g=JSON.parse(localStorage.getItem(GHK)||'{}')||{};if(!g.r)g.r={};return g}catch(e){return {r:{}}}}
+function garLoad(){try{var g=JSON.parse(localStorage.getItem(GHK)||'{}')||{};if(!g.r||typeof g.r!=='object')g.r={};Object.keys(g.r).forEach(function(d){var x=g.r[d];if(!x||!Array.isArray(x.l)||!/^\d{4}-\d{2}-\d{2}$/.test(d))delete g.r[d]});return g}catch(e){return {r:{}}}}
 function garIbov(){try{var x=IDX.filter(function(i){return i.k==='ibov'})[0],r=x&&idxVal0(x);if(r&&r.v>0)return r.v}catch(e){}var D=MD.d&&MD.d.idx&&MD.d.idx.ibov;return D&&D.d&&D.d.length?D.d[D.d.length-1][1]:null}
 /* uma foto por dia das ideias novas: ação, preço, nota e preço justo; o Ibovespa do dia serve de régua */
 function garRec(D){if(!D||!D.length)return;var g=garLoad(),td=today();if(g.r[td])return;g.r[td]={i:garIbov(),l:D.map(function(o){return [o.tk,Math.round(o.d.price*100)/100,o.score,o.V?Math.round(o.V.med*100)/100:null]})};
   var ks=Object.keys(g.r).sort();while(ks.length>420)delete g.r[ks.shift()];try{localStorage.setItem(GHK,JSON.stringify(g))}catch(e){}}
 function garDias(a,b){return Math.round((Date.parse(b)-Date.parse(a))/864e5)}
 /* cada ação conta uma vez, a partir do dia em que apareceu; só entra quem tem ao menos 30 dias de vida */
-function garRes(){var g=garLoad(),td=today(),ib=garIbov(),first={},ks=Object.keys(g.r).sort();ks.forEach(function(d){g.r[d].l.forEach(function(x){if(!first[x[0]])first[x[0]]={d:d,p:x[1],i:g.r[d].i}})});
+function garRes(){var g=garLoad(),td=today(),ib=garIbov(),first={},ks=Object.keys(g.r).sort();ks.forEach(function(d){g.r[d].l.forEach(function(x){if(Array.isArray(x)&&x[0]&&!first[x[0]])first[x[0]]={d:d,p:x[1],i:g.r[d].i}})});
   var L=[];Object.keys(first).forEach(function(tk){var f=first[tk],age=garDias(f.d,td),lv=livePx(tk);if(age<30||!lv||!(lv.p>0)||!(f.p>0)||!(f.i>0)||!(ib>0))return;L.push({tk:tk,age:age,r:lv.p/f.p-1,b:ib/f.i-1})});
   if(!L.length)return {n:0,dias:ks.length,desde:ks[0]||null};var bat=L.filter(function(x){return x.r>x.b}).length,ex=L.map(function(x){return x.r-x.b}).sort(function(a,b){return a-b}),med=ex[Math.floor(ex.length/2)],am=L.reduce(function(s,x){return s+x.age},0)/L.length;
   return {n:L.length,bat:bat,med:med,age:Math.round(am),dias:ks.length,desde:ks[0],L:L}}
