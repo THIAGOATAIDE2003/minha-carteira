@@ -8,7 +8,7 @@ var ASTD=[
   {name:'mercado_e_economia',description:'Selic, CDI, IPCA, Ibovespa, dólar, petróleo etc., resumo do mercado do dia e relatório da carteira feito pelo robô.'}];
 var ASTS={carteira_detalhada:{ativos:1},proventos:{prov:1},risco:{risco:1},oportunidades:{op:1,lista:1},mercado_e_economia:{eco:1,res:1}};
 var ASTL={dados_empresa:'empresa',carteira_detalhada:'carteira',proventos:'proventos',risco:'risco',oportunidades:'oportunidades',mercado_e_economia:'mercado'};
-var ASTH='\n\nFERRAMENTAS: abaixo você recebe só um resumo da carteira. Para responder bem, chame as ferramentas para buscar o que faltar (empresa específica, proventos, risco, oportunidades, mercado e economia). Chame só as necessárias e, se precisar de várias, chame todas de uma vez. Não invente números: se nenhuma ferramenta trouxer o dado, diga que o app não tem.';
+var ASTH='\n\nFERRAMENTAS: abaixo você recebe um resumo da carteira e os blocos que a pergunta provavelmente pede. Se faltar algum dado, chame as ferramentas para buscar (empresa específica, proventos, risco, oportunidades, mercado e economia). Chame só as necessárias e, se precisar de várias, chame todas de uma vez. Não invente números: se nenhuma ferramenta trouxer o dado, diga que o app não tem.';
 /* executa a ferramenta que o Gemini pediu e devolve texto */
 function asToolRun(n,a,q){var t;
   try{if(n==='dados_empresa'){var held={};compute().held.forEach(function(x){held[x.p.ticker]=1});var tks=asFind(String(a&&a.empresa||''));
@@ -17,7 +17,14 @@ function asToolRun(n,a,q){var t;
     else t='Ferramenta desconhecida.'}catch(e){t='Erro ao buscar: '+(e&&e.message||e)}
   ASCMP=false;return String(t).slice(0,30000)}
 /* contexto enxuto + empresas citadas na pergunta já incluídas (poupa uma ida e volta) */
-function asMsgsT(q){ASCMP=true;var ctx;try{ctx=asCtx(q,{base:1,ativos:1,metas:1})}finally{ASCMP=false}
+/* escolhe pelas palavras da pergunta quais blocos já mandar junto (1 chamada só, poupa o limite grátis do Gemini); as ferramentas ficam de reserva */
+function asRota(q){var n=asNorm(q),o={base:1,ativos:1,metas:1};
+  if(/provent|dividend|recebo|renda passiva|yield/.test(n))o.prov=1;
+  if(/risc|concentra|diversific|cair|queda|perd|exposi/.test(n))o.risco=1;
+  if(/oportunid|garimp|barat|acompanh|alerta|comprar|aportar/.test(n)){o.op=1;o.lista=1}
+  if(/mercado|economia|selic|cdi|ipca|dolar|ibov|juros|inflac|petroleo|noticia/.test(n)){o.eco=1;o.res=1}
+  return {o:o,det:/detalh|cada ativo|cada acao|minhas acoes|nota|preco justo|valuation|indicador/.test(n)}}
+function asMsgsT(q){var rt=asRota(q);ASCMP=!rt.det;var ctx;try{ctx=asCtx(q,rt.o)}finally{ASCMP=false}
   var held={};compute().held.forEach(function(x){held[x.p.ticker]=1});
   var emp=asFind(q).map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean);
   var h=AS.m.filter(function(x){return x.t&&!x.e}).slice(-11,-1).map(function(x){var t=x.t.length>1500?x.t.slice(0,1500)+' […]':x.t;return {role:x.r==='u'?'user':'model',parts:[{text:t}]}});
@@ -27,9 +34,9 @@ function asThink(m){return /gemini-3/.test(m)?{thinkingLevel:'low'}:/2\.5/.test(
 /* Gemini com ferramentas: repete (até 5 vezes) enquanto ele pedir dados; no fim, a resposta chega em streaming.
    Cada tentativa tem 25 s para o primeiro sinal; se não vier, tenta o 2º modelo e depois desiste do Gemini (a Groq assume) e AS.st guarda em que etapa parou. */
 function asGemT(key,q,on,sig){AS.st='Gemini: lista de modelos';var P=asMsgsT(q);
-  return asGemModels(key).then(function(ms){ms=ms.slice(0,2);var i=0,last=null;
+  return asGemModels(key).then(function(ms){ms=ms.slice(0,3);var i=0,last=null;
     var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i++],got=0,hops=0,ct=P.ct.slice(),usadas=[],th=asThink(m);
-      var step=function(){var calls=[],body={systemInstruction:{parts:[{text:P.sys}]},contents:ct,generationConfig:{temperature:0.3,maxOutputTokens:6000}};if(th)body.generationConfig.thinkingConfig=th;if(hops<5)body.tools=[{functionDeclarations:ASTD}];
+      var step=function(){var calls=[],body={systemInstruction:{parts:[{text:P.sys}]},contents:ct,generationConfig:{temperature:0.3,maxOutputTokens:6000}};if(th)body.generationConfig.thinkingConfig=th;if(hops<2)body.tools=[{functionDeclarations:ASTD}];
         var ac=window.AbortController?new AbortController():null,fired=0,tmo=null,fin=function(){if(tmo){clearTimeout(tmo);tmo=null}};
         if(ac){if(sig){if(sig.aborted)ac.abort();else sig.addEventListener('abort',function(){ac.abort()})}tmo=setTimeout(function(){fired=1;ac.abort()},25000)}
         AS.st='Gemini '+m+': aguardando resposta'+(hops?' (rodada '+(hops+1)+')':'');
