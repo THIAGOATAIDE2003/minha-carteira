@@ -123,6 +123,7 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 .orbig{text-align:center;margin:2px 0 6px;font-size:15px}.orbig b{font-size:30px}
 .orsk{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--tint);margin:8px 0 10px}.orsk i{display:block;height:100%}
 .orsk .fx,.ord.fx{background:var(--c2)}.orsk .vr,.ord.vr{background:var(--accent)}.orsk .ap,.ord.ap{background:var(--gain)}.orsk .sb,.ord.sb{background:var(--muted)}
+.orsk .rs,.ord.rs{background:var(--accent);opacity:.45}
 .ord{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
 
 /* Orçamento: envelopes */
