@@ -507,3 +507,8 @@ h2{font-size:19px}h3{font-size:16px}.sbd h3{font-size:16.5px}
 
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
 @media(max-width:360px){.atl{gap:4px}.atl .bell{padding:8px 8px;gap:6px;font-size:14px}.atl .bell.tpe{padding:8px 6px}}
+/* Anti-cópia (1.38.0): nada de selecionar texto, menu de segurar/imprimir; campos de digitar continuam normais */
+html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
+img,svg{-webkit-user-drag:none;user-drag:none}
+@media print{body *{display:none!important}body::after{content:"Impressão bloqueada";display:block;padding:40px;font:16px system-ui}}

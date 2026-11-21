@@ -238,3 +238,12 @@ var AJV='perfil';
 try{var aj0=localStorage.getItem(LS+'-ajv');if(/^(perfil|aparencia|dados|precos|assistente)$/.test(aj0))AJV=aj0}catch(e){}
 function ajApply(){var c=$('ajcol');if(!c)return;c.setAttribute('data-ajv',AJV);[].forEach.call(c.querySelectorAll('#ajseg button'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-ajv')===AJV))})}
 ajApply();
+/* Anti-cópia (1.38.0): bloqueia selecionar/copiar/recortar/arrastar/menu de contexto e atalhos Ctrl+C/A/X/S/P/U e F12 fora dos campos de digitar. Dissuade, não é segurança (print de tela e código-fonte continuam possíveis). */
+(function(){
+  function campo(t){return !!(t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"]'))}
+  ['copy','cut','selectstart','dragstart','contextmenu'].forEach(function(ev){document.addEventListener(ev,function(e){if(campo(e.target))return;e.preventDefault()},true)});
+  document.addEventListener('keydown',function(e){
+    if(campo(e.target))return;var k=String(e.key||'').toLowerCase();
+    if(e.key==='F12'||((e.ctrlKey||e.metaKey)&&/^[acxspu]$/.test(k))||((e.ctrlKey||e.metaKey)&&e.shiftKey&&/^[ijc]$/.test(k)))e.preventDefault();
+  },true);
+})();
