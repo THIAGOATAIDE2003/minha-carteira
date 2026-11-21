@@ -343,6 +343,12 @@ function contasAMao(F, P) {
       window.vtSetor = function () { return []; }; var E3 = A.entInfo('BBSE3', dd, an, V, { alta: false });
       window.vtSetor = vs0; M.d = old; return { z: E.z, vt: E.vt.length, z2: E2.z, z3: E3.z }; });
     confere('entrada: setor com mais fatores contra que a favor troca Confortável por vento; empate e sem fator mantêm confortável', [ven.z, ven.vt, ven.z2, ven.z3], ['vento', 1, 'conf', 'conf']);
+    /* sobre a empresa: setor no cabeçalho e painel com o cadastro da CVM */
+    const sob = await pg.evaluate(function () { var A = window.__aporte, M = A.MD, old = M.d, tk = compute().held.filter(function (x) { return x.p.market !== 'US'; })[0].p.ticker, r = {};
+      M.d = Object.assign({}, old, { sobre: { v: 1, e: { 9: { a: 'Banco múltiplo que atua em varejo.', f: '1808', c: 'Estatal', s: 'Bancos', w: 'www.exemplo.com.br' } }, t: {} } }); M.d.sobre.t[tk] = '9';
+      var h = A.sobHtml(tk); r.a = /Sobre a empresa/.test(h) && /Banco múltiplo que atua em varejo/.test(h) && /1808/.test(h) && /Estatal/.test(h) && /https:\/\/www\.exemplo\.com\.br/.test(h);
+      M.d = Object.assign({}, old, { sobre: null }); var h2 = A.sobHtml(tk); r.b = /ainda não chegou/.test(h2) || h2 === ''; r.eua = A.sobHtml('AAPL') === ''; r.set = typeof A.sobSetor(tk) === 'string'; M.d = old; return r; });
+    confere('sobre a empresa: painel com atividade, fundação, controle e site; sem cadastro avisa; EUA não mostra', [sob.a, sob.b, sob.eua, sob.set], [true, true, true, true]);
     /* catálogo da B3: setores, pouca liquidez escondida, IPO novo e ação que saiu */
     const cat = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, hoje = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
       M.d = { fund: { cols: ['cot', 'liq2m'], d: { AAAA3: [10, 5e6], BBBB3: [10, 1e3], CCCC3: [10, 3e6], NEWC3: [5, 1e6] } }, cat: { v: 1, a: { AAAA3: ['', 5, 'Bancos'], BBBB3: ['', 5, 'Bancos'], CCCC3: ['', 7, 'Energia'], NEWC3: [hoje, null, ''] }, n: { 5: 'Bancos', 7: 'Energia' }, x: { OLDD3: ['', '2026-10-01'] } } };

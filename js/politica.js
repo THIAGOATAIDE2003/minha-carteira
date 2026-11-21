@@ -103,3 +103,18 @@ function vtCart(){var R=compute(),tot=R.tot.value+(R.tot.rfV||0),sec={};if(!tot)
       return '<li>'+rkLvl(c>f?'al':f>c?'ok':'at')+'<div><b>'+esc(r.e.sc[1]||r.e.sc[0])+' · '+pf.format(r.e.v/tot*100)+'% da carteira ('+r.e.t.map(esc).join(', ')+')</b>'+r.it.map(function(x){return '<p style="margin:2px 0 0;color:var(--fg)">'+(x[0]==='contra'?'▼ ':x[0]==='favor'?'▲ ':'● ')+esc(x[1])+': '+esc(x[2])+'</p>'}).join('')+'</div></li>'}).join('')+'</ul>':'<p class="muted small" style="margin:0">Nenhum fator forte pesa nos setores que você tem agora.</p>')+'</div>'}
 function vtCtx(tks){var L=[],seen={};(tks||[]).forEach(function(tk){if(!isBR(tk))return;var sc;try{sc=rkSect(tk,false)}catch(e){return}var k=sc[0]+'|'+sc[1];if(seen[k]||sc[0]==='Outros')return;seen[k]=1;var it=vtSetor(sc);if(it.length)L.push('- '+(sc[1]||sc[0])+' ('+tk+'): '+it.map(function(x){return (x[0]==='contra'?'CONTRA':x[0]==='favor'?'A FAVOR':'MISTO')+' — '+x[1]+': '+x[2]}).join(' | '))});
   return L.length?'VENTO DOS SETORES [regras do app com números do app (Selic, Focus, histórico do robô): contexto, não previsão de preço]:\n'+L.join('\n'):''}
+
+/* ===== Sobre a empresa (1.32.0): setor logo abaixo do nome e um resumo do que ela faz (cadastro da CVM, pelo robô: MD.d.sobre) ===== */
+function sobOf(tk){var s=MD.d&&MD.d.sobre;if(!s||!s.t||!s.e)return null;var c=s.t[tk];return c&&s.e[c]||null}
+/* setor curto para o cabeçalho: subsetor da B3 (Fundamentus) ou do catálogo; para o exterior, o do Finnhub */
+function sobSetor(tk){if(!isBR(tk))return '';var o='';try{var sc=rkSect(tk,false);o=sc[1]||(sc[0]!=='Outros'?sc[0]:'')}catch(e){}
+  if(!o)try{o=catSetorNome(tk)}catch(e){}
+  if(!o){var e=sobOf(tk);o=e&&e.s||''}return o}
+function sobHtml(tk,d){if(!isBR(tk)||tk.charAt(0)==='^')return '';var e=sobOf(tk),sc='',gr='',nome='';try{var s=rkSect(tk,false);sc=s[1]||'';gr=s[0]!=='Outros'?s[0]:''}catch(x){}
+  try{nome=nomeEmp(tk)||''}catch(x){}
+  if(!e&&!sc&&!gr)return '';
+  var li=function(k,v){return v?'<div><span>'+k+'</span><b>'+esc(v)+'</b></div>':''};
+  return '<div class="panel"><h2>Sobre a empresa '+bal('Resumo oficial do cadastro da empresa na CVM (formulário cadastral): o que ela faz, quando foi fundada e quem controla. É o texto que a própria empresa entrega, então pode ser mais formal e não traz a história completa nem opinião.')+'</h2>'+
+    (e&&e.a?'<p class="anv" style="margin:0 0 10px">'+esc(e.a)+'</p>':'<p class="muted small" style="margin:0 0 10px">O cadastro da CVM dessa empresa ainda não chegou ao app. Chega com o robô.</p>')+
+    '<div class="anc">'+li('Setor',[gr,sc].filter(function(x,i,a){return x&&a.indexOf(x)===i}).join(' · '))+li('Fundada em',e&&e.f)+li('Controle',e&&e.c)+li('Nome oficial',nome)+'</div>'+
+    (e&&e.w?'<p class="note"><a href="'+esc(safeUrl(/^https?:/i.test(e.w)?e.w:'https://'+e.w))+'" target="_blank" rel="noopener noreferrer">Site da empresa</a> · Fonte: cadastro da CVM.</p>':'<p class="note">Fonte: cadastro da CVM.</p>')+'</div>'}
