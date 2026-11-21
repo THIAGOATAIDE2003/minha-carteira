@@ -49,7 +49,7 @@ node tests/lint.js        # erros de código (variável que não existe etc.)
 node tests/teste.js       # contas e abas
 ```
 
-Detalhes da arquitetura estão em [`CLAUDE.md`](CLAUDE.md).
+Detalhes da arquitetura estão em [`docs/arquitetura.md`](docs/arquitetura.md) (regras de desenvolvimento em [`CLAUDE.md`](CLAUDE.md)).
 
 ## Arquivos
 
