@@ -106,3 +106,14 @@ html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
 img,svg{-webkit-user-drag:none;user-drag:none}
 @media print{body *{display:none!important}body::after{content:"Impressão bloqueada";display:block;padding:40px;font:16px system-ui}}
+
+/* Orçamento (1.47.0) */
+.orcm{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}.orcm b{font-size:16px}#maisseg{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#maisseg::-webkit-scrollbar{display:none}#maisseg button{flex:none;white-space:nowrap}.orcm button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;width:38px;height:38px;font-size:20px;line-height:1}
+.orh{text-align:center}.orh>b{display:block;font-size:30px;margin:2px 0 12px}
+.orn{display:flex;gap:6px;justify-content:space-between;margin-top:10px}.orn>div{flex:1;text-align:center}.orn small{display:block;color:var(--muted);font-size:12px}.orn .num{font-size:15px;font-weight:600}
+.orb{height:10px;border-radius:99px;background:var(--tint);overflow:hidden;margin:6px 0}.orb i{display:block;height:100%;border-radius:99px}.orb i.ok{background:var(--gain)}.orb i.warn{background:var(--c2)}.orb i.bad{background:var(--loss)}
+.orm{margin:4px 0 10px;font-size:14px}.warnc{color:var(--c2)}
+.orlb{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;font-size:14px}.orin{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:15px;min-width:0}.orlb .orin{width:44%;text-align:right}
+.orsub{margin:14px 0 4px;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}.orsub .num{margin-left:auto;font-weight:500}
+.orl{list-style:none;margin:4px 0;padding:0}.orl li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}.orl li span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.orx{border:0;background:none;color:var(--muted);font-size:15px;padding:4px 6px}
+.orr{display:flex;gap:8px;margin-top:8px}.orr .orin:first-child{flex:1}.orr .orv{width:92px;text-align:right}
