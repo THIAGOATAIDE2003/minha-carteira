@@ -205,7 +205,7 @@ function contasAMao(F, P) {
       S.orc.m[Y].fx = { a: 1000 }; var cf = orcCalc(Y, tr); S.orc.m[Y].fx = {}; ORM = Y; orcField('fx:b', '350'); var fb = S.orc.m[Y].fx.b; orcField('fx:b', ''); var fb2 = S.orc.m[Y].fx.b;
       showTab('orcamento'); var h1 = document.getElementById('orctab').innerHTML; S.orc.meta = 1000; renderOrc(); var h2 = document.getElementById('orctab').innerHTML;
       /* gasto lançado pelo botão: 3 gastos no Lazer (50 + 25 + 10) e o envelope mostra o que resta */
-      ['50', '25', '10'].forEach(function (v) { document.getElementById('or-lv-k1').value = v; document.getElementById('or-lf-k1').value = 'c'; document.querySelector('[data-orl="k1"]').click(); });
+      ['50', '25', '10'].forEach(function (v) { document.getElementById('or-qv').value = v; document.getElementById('or-qc').value = 'k1'; document.getElementById('or-qf').value = 'c'; document.querySelector('[data-orq]').click(); });
       var lz = S.orc.m[Y].l.filter(function (x) { return x.c === 'k1' }).reduce(function (s, x) { return s + x.v }, 0), c2 = orcCalc(Y, tr), h3 = document.getElementById('orctab').innerHTML;
       var del = S.orc.m[Y].l.filter(function (x) { return x.c === 'k1' })[0].id; document.querySelector('[data-orld="' + del + '"]').click(); var lz2 = orcCalc(Y, tr).por.k1;
       orcField('lim:k1', '1.200,50'); var lm = S.orc.cats[0].lim; orcField('conta', ''); var cz = S.orc.conta; var op = S.pend.length - pend0 && S.pend[S.pend.length - 1].k;
