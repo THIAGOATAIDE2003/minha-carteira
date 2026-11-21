@@ -1,10 +1,11 @@
 /* Aporte · js/nucleo.js — estado, ajudantes, câmbio, XIRR e compute() (as contas da carteira).
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 /* Versão do app: sobe a cada mudança que o usuário vê (veja CLAUDE.md). O sw.js usa este número no nome do cache offline. */
-var VERSAO='1.41.6';
+var VERSAO='1.41.7';
 /* Enquanto os arquivos de js/ ainda estão carregando, render() não faz nada (senão chamaria funções de arquivos que ainda não chegaram). abas.js liga isto no fim. */
 var BOOT=false;
-window.addEventListener('error',function(e){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent='Erro na página: '+e.message}});
+window.addEventListener('error',function(e){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent='Erro na página: '+e.message}logErro('erro de código',e.message+(e.filename?' ('+String(e.filename).split('/').pop()+':'+e.lineno+')':''))});
+window.addEventListener('unhandledrejection',function(e){logErro('promessa sem tratamento',e.reason)});
 var LS='minha-carteira-v1';
 /* Logo que não carrega some (a CSP não aceita onerror escrito no HTML). O evento error não sobe, por isso a captura. */
 document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&t.closest&&t.closest('.tlg'))t.remove()},true);
@@ -73,6 +74,17 @@ var sg0=function(n){return Math.abs(n)<0.005?'':n>0?'+':'−'};
 var pct=function(n){return (Math.abs(n)<0.00005?'':n>0?'+':'−')+pf.format(Math.abs(n)*100)+'%'};
 var sgn=function(n){return sg0(n)+brl.format(Math.abs(n))};
 var cls=function(n){return n>0.005?'gain':n<-0.005?'loss':'muted'};
+/* Registro de erros (1.41.7): guarda os últimos 30 problemas (rede/API, nuvem, erro de código) numa chave própria do localStorage (não vai para a nuvem)
+   e mostra em Ajustes > Status das fontes (errBox). Sem internet não conta: falhar offline é normal. Repetido em sequência vira "×N". Nunca grava chave/token. */
+var ERRK=LS+'-erros',ERRS=[];
+try{ERRS=JSON.parse(localStorage.getItem(ERRK)||'[]');if(!Array.isArray(ERRS))ERRS=[]}catch(e){ERRS=[]}
+function logErro(onde,e){try{if(navigator.onLine===false)return;var m=String(e&&e.message!=null?e.message:e).slice(0,160),u=ERRS[0];
+  if(u&&u.o===onde&&u.m===m){u.n=(u.n||1)+1;u.t=Date.now()}else{ERRS.unshift({t:Date.now(),o:String(onde).slice(0,60),m:m,n:1});if(ERRS.length>30)ERRS.length=30}
+  try{localStorage.setItem(ERRK,JSON.stringify(ERRS))}catch(x){}}catch(x){}}
+function errMsg(e,seg){return e&&e.name==='AbortError'?'tempo esgotado ('+seg+' s)':/^\d{3}$/.test(String(e&&e.message))?'resposta HTTP '+e.message:e}
+function errBox(){var h='<h3 style="margin:16px 0 6px">Últimos erros</h3>';
+  if(!ERRS.length)return h+'<p class="muted small" style="margin:0">Nenhum erro registrado.</p>';
+  return h+'<ul class="calc stl">'+ERRS.slice(0,8).map(function(x){return '<li><span><b>'+esc(x.o)+(x.n>1?' ×'+x.n:'')+'</b><br><span class="muted small">'+esc(x.m)+'</span></span><span class="muted small">'+new Date(x.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span></li>'}).join('')+'</ul><div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="btn ghost" data-errcopy="1">Copiar</button><button type="button" class="btn ghost" data-errclr="1">Limpar</button></div>'}
 var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
 function parseNum(s){s=String(s==null?'':s).trim().replace(/\s/g,'');if(!s)return NaN;if(s.indexOf(',')>-1)s=s.replace(/\./g,'').replace(',','.');return parseFloat(s)}
 function fmtDate(d){var a=d.split('-');return a[2]+'/'+a[1]+'/'+a[0]}
