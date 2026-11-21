@@ -5,10 +5,17 @@ function riDt(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):''}
 function riAge(d){if(!d)return 999;return Math.floor((Date.parse(today())-Date.parse(d.slice(0,10)))/864e5)}
 var RITEMA={gov:['Governo e impostos',['Bancos','Varejo e consumo','Energia e saneamento','Petróleo e gás','Outros']],cong:['Congresso',['Bancos','Energia e saneamento','Petróleo e gás','Varejo e consumo']],bc:['Banco Central',['Bancos','Varejo e consumo','Imóveis e construção','Outros']],fisc:['Contas públicas',['Bancos','Imóveis e construção','Varejo e consumo']],trump:['Trump e tarifas',['Mineração e siderurgia','Agro','Exterior']],fed:['Fed e juros dos EUA',['Exterior','Tecnologia']],china:['China',['Mineração e siderurgia','Petróleo e gás','Agro']],petro:['Petrobras e governo',['Petróleo e gás']],ener:['Energia elétrica',['Energia e saneamento']]};
 /* temas que valem para uma ação: pelo setor dela (rkSect) + temas gerais */
-function riTemas(tk){var us=!isBR(tk),sc='';try{sc=rkSect(tk,us)[0]||''}catch(e){}var o=[];
-  Object.keys(RITEMA).forEach(function(k){var ss=RITEMA[k][1];if(ss.indexOf(sc)>=0||(ss.indexOf('Outros')>=0&&!sc))o.push(k)});
+function riTemas(tk){var us=!isBR(tk),sc=['',''];try{sc=rkSect(tk,us)}catch(e){}var g=sc[0]||'',s=sc[1]||'',o=[];
+  if(s==='Intermediários Financeiros'||g==='Financeiro')o=['gov','bc','fisc','cong'];
+  else if(g==='Petróleo e gás')o=['petro','gov','fisc'];
+  else if(g==='Utilidade pública')o=['ener','gov','cong'];
+  else if(g==='Materiais básicos')o=['china','trump'];
+  else if(g==='Consumo cíclico'||g==='Consumo não cíclico'||s==='Comércio')o=['bc','fisc','gov'];
+  else if(g==='Fundos imobiliários')o=['bc','fisc'];
+  else if(us)o=['fed','trump'];
+  else o=['gov','bc'];
   if(us){['fed','trump'].forEach(function(k){if(o.indexOf(k)<0)o.push(k)})}
-  if(!o.length)o=['gov','bc'];return o.slice(0,4)}
+  return o.slice(0,4)}
 function riAc(tk){var r=riD();return r&&r.ac&&r.ac[tk]||[]}
 function riDir(tk){var r=riD();return r&&r.dir&&r.dir[tk]||[]}
 function riFt(tk){var r=riD();return r&&r.fatos&&r.fatos[tk]||[]}
@@ -49,7 +56,50 @@ function riCtx(tks,full){var r=riD();if(!r)return '';var L=['=== RISCOS E POLÍT
   var ts={};(tks||[]).forEach(function(tk){riTemas(tk).forEach(function(k){ts[k]=1})});
   Object.keys(ts).slice(0,full?6:3).forEach(function(k){var p=riPol(k);if(p&&p.it)p.it.slice(0,full?3:2).forEach(function(x){L.push('- Tema '+(p.n||k)+': '+x.t+' ['+x.s+', '+riDt(x.d)+']')})});
   return L.length>1?L.join('\n'):''}
-function riCtxCart(){var tks=[];try{tks=riHeld()}catch(e){}return riCtx(tks,!ASCMP)}
+function riCtxCart(){var tks=[],a='',b='';try{tks=riHeld()}catch(e){}try{a=riCtx(tks,!ASCMP)}catch(e){}try{b=vtCtx(tks)}catch(e){}return [a,b].filter(Boolean).join('\n')}
 /* painel curto em Carteira → Risco: graves dos últimos 14 dias nas suas ações */
-function riPanel(){var r=riD();if(!r)return '';var g=riGraves(riHeld(),14);
-  return '<div class="panel"><h2>Riscos nas suas ações '+bal('Notícias e documentos da CVM dos últimos 14 dias, com palavra grave, nas ações que você tem. É um aviso para você ir olhar, não uma conclusão.')+'</h2>'+(g.length?'<ul class="rsn">'+g.slice(0,8).map(function(x){return '<li><a href="'+esc(safeUrl(x.l))+'" target="_blank" rel="noopener noreferrer"><b>'+esc(x.tk)+' · '+esc(x.t)+'</b><span class="muted">'+esc(x.s)+' · '+riDt(x.d)+'</span></a></li>'}).join('')+'</ul>':'<p class="muted small" style="margin:0">Nada grave nas manchetes nem na CVM nos últimos 14 dias.</p>')+'</div>'}
+function riPanel(){var r=riD(),vt='';try{vt=vtCart()}catch(e){}if(!r)return vt;var g=riGraves(riHeld(),14);
+  return vt+'<div class="panel"><h2>Riscos nas suas ações '+bal('Notícias e documentos da CVM dos últimos 14 dias, com palavra grave, nas ações que você tem. É um aviso para você ir olhar, não uma conclusão.')+'</h2>'+(g.length?'<ul class="rsn">'+g.slice(0,8).map(function(x){return '<li><a href="'+esc(safeUrl(x.l))+'" target="_blank" rel="noopener noreferrer"><b>'+esc(x.tk)+' · '+esc(x.t)+'</b><span class="muted">'+esc(x.s)+' · '+riDt(x.d)+'</span></a></li>'}).join('')+'</ul>':'<p class="muted small" style="margin:0">Nada grave nas manchetes nem na CVM nos últimos 14 dias.</p>')+'</div>'}
+
+/* ===== Vento do setor (1.31.0): regras simples ligando juros, dólar, petróleo, minério, PIB e inflação (números do app) ao setor ===== */
+function vtVar(k,n){var D=MD.d&&MD.d.idx&&MD.d.idx[k];if(!D||!D.d||!D.d.length)return null;var l=D.d[D.d.length-1],day=l[0],b=null;(D.w||[]).concat(D.d).forEach(function(p){if(p[0]<=day-n&&(b==null||p[0]>b[0]))b=p});return b&&b[1]?(l[1]/b[1]-1)*100:null}
+function vtFoc(k,off){try{var y=String(new Date().getFullYear()+off),e=BC.d&&BC.d.ind&&BC.d.ind[k]&&BC.d.ind[k].y[y];return e&&e.now?e.now.med:null}catch(x){return null}}
+function vtF(){var se=bcSelicNow(),sf=vtFoc('Selic',1);return {selic:se,selicF:sf,usd:vtVar('usd',365),brent:vtVar('brent',365),iron:vtVar('iron',365),pib:vtFoc('PIB Total',1)!=null?vtFoc('PIB Total',1):vtFoc('PIB Total',0),ipca:vtFoc('IPCA',0)}}
+function vtRegras(g,s){var r=[],has=function(a){return a.indexOf(s)>=0};
+  if(s==='Construção Civil'||s==='Construção e Engenharia'||s==='Exploração de Imóveis'||g==='Fundos imobiliários')r.push('juros','pibf','selicq');
+  else if(s==='Intermediários Financeiros'||g==='Financeiro')r.push('jurosb','pibf');
+  else if(has(['Comércio','Tecidos, Vestuário e Calçados','Utilidades Domésticas','Diversos','Comércio e Distribuição'])||g==='Consumo cíclico')r.push('juros','ipca','pibf');
+  else if(g==='Utilidade pública')r.push('juros','selicq');
+  else if(g==='Petróleo e gás')r.push('brent','usdx');
+  else if(g==='Materiais básicos')r.push('iron','usdx');
+  else if(has(['Agropecuária']))r.push('usdx');
+  else if(has(['Viagens e Lazer']))r.push('usdc','brentc');
+  else if(g==='Tecnologia')r.push('juros');
+  return r}
+/* itens [direção ('contra'|'favor'|'misto'), título, porque] do setor, com o número usado */
+function vtSetor(sc){var g=sc[0]||'',s=sc[1]||'',F=vtF(),o=[],p1=function(n){return pf.format(n)};
+  vtRegras(g,s).forEach(function(k){
+    if(k==='juros'&&F.selic!=null&&F.selic>=12)o.push(['contra','Juros altos','Selic em '+p1(F.selic)+'% ao ano: crédito e financiamento caros, venda mais difícil e a renda fixa concorre com a bolsa.']);
+    if(k==='juros'&&F.selic!=null&&F.selic<=9)o.push(['favor','Juros baixos','Selic em '+p1(F.selic)+'% ao ano: crédito mais barato ajuda o setor.']);
+    if(k==='jurosb'&&F.selic!=null&&F.selic>=12)o.push(['misto','Juros altos','Selic em '+p1(F.selic)+'%: a margem do banco melhora, mas crédito caro aumenta a inadimplência e segura os empréstimos.']);
+    if(k==='selicq'&&F.selic!=null&&F.selicF!=null&&F.selicF<=F.selic-1)o.push(['favor','Juros devem cair','O Focus espera Selic de '+p1(F.selicF)+'% no fim do ano que vem (hoje '+p1(F.selic)+'%). Se acontecer, ajuda o setor.']);
+    if(k==='pibf'&&F.pib!=null&&F.pib<1.5)o.push(['contra','Economia fraca','O Focus espera crescimento de só '+p1(F.pib)+'% do PIB: menos demanda, mais calote.']);
+    if(k==='ipca'&&F.ipca!=null&&F.ipca>4.5)o.push(['contra','Inflação alta','O Focus espera IPCA de '+p1(F.ipca)+'% neste ano: o consumidor compra menos.']);
+    if(k==='brent'&&F.brent!=null&&Math.abs(F.brent)>=10)o.push([F.brent>0?'favor':'contra','Petróleo '+(F.brent>0?'subiu':'caiu'),'O Brent '+(F.brent>0?'subiu ':'caiu ')+p1(Math.abs(F.brent))+'% em 12 meses.']);
+    if(k==='iron'&&F.iron!=null&&Math.abs(F.iron)>=10)o.push([F.iron>0?'favor':'contra','Minério '+(F.iron>0?'subiu':'caiu'),'O minério de ferro '+(F.iron>0?'subiu ':'caiu ')+p1(Math.abs(F.iron))+'% em 12 meses.']);
+    if(k==='usdx'&&F.usd!=null&&Math.abs(F.usd)>=8)o.push([F.usd>0?'favor':'contra','Dólar '+(F.usd>0?'subiu':'caiu'),'O dólar '+(F.usd>0?'subiu ':'caiu ')+p1(Math.abs(F.usd))+'% em 12 meses: a empresa vende lá fora e recebe em dólar.']);
+    if(k==='usdc'&&F.usd!=null&&F.usd>=8)o.push(['contra','Dólar alto','O dólar subiu '+p1(F.usd)+'% em 12 meses: passagens, aluguéis e peças dolarizadas ficam mais caros.']);
+    if(k==='brentc'&&F.brent!=null&&F.brent>=10)o.push(['contra','Petróleo alto','O Brent subiu '+p1(F.brent)+'% em 12 meses: combustível mais caro.'])});
+  return o}
+function vtHtml(tk){var us=!isBR(tk),sc;try{sc=rkSect(tk,us)}catch(e){return ''}if(us||!sc||!sc[0]||sc[0]==='Outros')return '';var it=vtSetor(sc),ic={contra:'al',favor:'ok',misto:'at'};
+  return '<div class="panel"><h2>Vento do setor '+bal('Regras simples que ligam juros, dólar, petróleo, minério, crescimento e inflação esperados ao setor da empresa. Cada linha mostra o número usado. Não prevê o preço: é o contexto. Confiança e crise política não são medidas pelo app, só o que está nas manchetes.')+'</h2>'+
+    (it.length?'<ul class="rkl">'+it.map(function(x){return '<li>'+rkLvl(ic[x[0]])+'<div><b>'+esc(x[1])+'</b><p style="margin:2px 0 0;color:var(--fg)">'+esc(x[2])+'</p></div></li>'}).join('')+'</ul>':'<p class="muted small" style="margin:0">Hoje nenhum fator forte (juros, dólar, petróleo, minério, PIB, inflação) pesa claramente a favor ou contra o setor '+esc(sc[1]||sc[0])+'.</p>')+
+    '<p class="note">Setor: '+esc(sc[1]||sc[0])+'. Fatores: Selic e dólar do app, Focus e histórico do robô.</p></div>'}
+function vtCart(){var R=compute(),tot=R.tot.value+(R.tot.rfV||0),sec={};if(!tot)return '';
+  R.held.forEach(function(x){if(x.p.market==='US')return;var sc=rkSect(x.p.ticker,false),k=sc[0]+'|'+sc[1];(sec[k]=sec[k]||{sc:sc,v:0,t:[]}).v+=x.v;sec[k].t.push(x.p.ticker)});
+  var rows=Object.keys(sec).map(function(k){var e=sec[k];return {e:e,it:vtSetor(e.sc)}}).filter(function(r){return r.it.length&&r.e.sc[0]!=='Outros'}).sort(function(a,b){return b.e.v-a.e.v});
+  return '<div class="panel"><h2>Vento nos seus setores '+bal('Para cada setor que você tem, o que está a favor ou contra hoje (juros, dólar, petróleo, minério, PIB, inflação). Regras simples, com o número usado. Não é previsão.')+'</h2>'+
+    (rows.length?'<ul class="rkl">'+rows.map(function(r){var c=r.it.filter(function(x){return x[0]==='contra'}).length,f=r.it.filter(function(x){return x[0]==='favor'}).length;
+      return '<li>'+rkLvl(c>f?'al':f>c?'ok':'at')+'<div><b>'+esc(r.e.sc[1]||r.e.sc[0])+' · '+pf.format(r.e.v/tot*100)+'% da carteira ('+r.e.t.map(esc).join(', ')+')</b>'+r.it.map(function(x){return '<p style="margin:2px 0 0;color:var(--fg)">'+(x[0]==='contra'?'▼ ':x[0]==='favor'?'▲ ':'● ')+esc(x[1])+': '+esc(x[2])+'</p>'}).join('')+'</div></li>'}).join('')+'</ul>':'<p class="muted small" style="margin:0">Nenhum fator forte pesa nos setores que você tem agora.</p>')+'</div>'}
+function vtCtx(tks){var L=[],seen={};(tks||[]).forEach(function(tk){if(!isBR(tk))return;var sc;try{sc=rkSect(tk,false)}catch(e){return}var k=sc[0]+'|'+sc[1];if(seen[k]||sc[0]==='Outros')return;seen[k]=1;var it=vtSetor(sc);if(it.length)L.push('- '+(sc[1]||sc[0])+' ('+tk+'): '+it.map(function(x){return (x[0]==='contra'?'CONTRA':x[0]==='favor'?'A FAVOR':'MISTO')+' — '+x[1]+': '+x[2]}).join(' | '))});
+  return L.length?'VENTO DOS SETORES [regras do app com números do app (Selic, Focus, histórico do robô): contexto, não previsão de preço]:\n'+L.join('\n'):''}
