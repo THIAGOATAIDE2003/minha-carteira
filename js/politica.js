@@ -68,7 +68,9 @@ function vtFoc(k,off){try{var y=String(new Date().getFullYear()+off),e=BC.d&&BC.
 function vtF(){var se=bcSelicNow(),sf=vtFoc('Selic',1);return {selic:se,selicF:sf,usd:vtVar('usd',365),brent:vtVar('brent',365),iron:vtVar('iron',365),pib:vtFoc('PIB Total',1)!=null?vtFoc('PIB Total',1):vtFoc('PIB Total',0),ipca:vtFoc('IPCA',0)}}
 function vtRegras(g,s){var r=[],has=function(a){return a.indexOf(s)>=0};
   if(s==='Construção Civil'||s==='Construção e Engenharia'||s==='Exploração de Imóveis'||g==='Fundos imobiliários')r.push('juros','pibf','selicq');
-  else if(s==='Intermediários Financeiros'||g==='Financeiro')r.push('jurosb','pibf');
+  else if(s==='Intermediários Financeiros')r.push('jurosb','pibf');
+  else if(g==='Financeiro'&&/seguro|previd/i.test(s))r.push('juross','pibo');
+  else if(g==='Financeiro')r.push('jurosv','pibo');
   else if(has(['Comércio','Tecidos, Vestuário e Calçados','Utilidades Domésticas','Diversos','Comércio e Distribuição'])||g==='Consumo cíclico')r.push('juros','ipca','pibf');
   else if(g==='Utilidade pública')r.push('juros','selicq');
   else if(g==='Petróleo e gás')r.push('brent','usdx');
@@ -83,6 +85,9 @@ function vtSetor(sc){var g=sc[0]||'',s=sc[1]||'',F=vtF(),o=[],p1=function(n){ret
     if(k==='juros'&&F.selic!=null&&F.selic>=12)o.push(['contra','Juros altos','Selic em '+p1(F.selic)+'% ao ano: crédito e financiamento caros, venda mais difícil e a renda fixa concorre com a bolsa.']);
     if(k==='juros'&&F.selic!=null&&F.selic<=9)o.push(['favor','Juros baixos','Selic em '+p1(F.selic)+'% ao ano: crédito mais barato ajuda o setor.']);
     if(k==='jurosb'&&F.selic!=null&&F.selic>=12)o.push(['misto','Juros altos','Selic em '+p1(F.selic)+'%: a margem do banco melhora, mas crédito caro aumenta a inadimplência e segura os empréstimos.']);
+    if(k==='juross'&&F.selic!=null&&F.selic>=12)o.push(['misto','Juros altos','Selic em '+p1(F.selic)+'%: o rendimento das aplicações financeiras da seguradora tende a subir, mas crédito caro pode frear a venda de seguros e previdência. O efeito líquido depende do negócio.']);
+    if(k==='jurosv'&&F.selic!=null&&F.selic>=12)o.push(['misto','Juros altos','Selic em '+p1(F.selic)+'%: a renda fixa concorre com a bolsa e pode reduzir o apetite por ações e produtos financeiros; para quem tem caixa, os juros ajudam o resultado financeiro. O efeito líquido depende do negócio.']);
+    if(k==='pibo'&&F.pib!=null&&F.pib<1.5)o.push(['contra','Economia fraca','O Focus espera crescimento de só '+p1(F.pib)+'% do PIB: menos atividade e menos contratação de produtos financeiros.']);
     if(k==='selicq'&&F.selic!=null&&F.selicF!=null&&F.selicF<=F.selic-1)o.push(['favor','Juros devem cair','O Focus espera Selic de '+p1(F.selicF)+'% no fim do ano que vem (hoje '+p1(F.selic)+'%). Se acontecer, ajuda o setor.']);
     if(k==='pibf'&&F.pib!=null&&F.pib<1.5)o.push(['contra','Economia fraca','O Focus espera crescimento de só '+p1(F.pib)+'% do PIB: menos demanda, mais calote.']);
     if(k==='ipca'&&F.ipca!=null&&F.ipca>4.5)o.push(['contra','Inflação alta','O Focus espera IPCA de '+p1(F.ipca)+'% neste ano: o consumidor compra menos.']);

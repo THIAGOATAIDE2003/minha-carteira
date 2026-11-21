@@ -23,12 +23,12 @@ function asCtx(q,only){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl(),SE
   R.held.slice().sort(function(a,b){return b.v-a.v}).forEach(function(x){var tk=x.p.ticker,us=x.p.market==='US',c=us?'US$ ':'R$ ',lv=livePx(tk),s=[];
     s.push(tk+(us?' (EUA, em dólar)':''),num(x.p.qty,us?4:0)+' un',c+num(x.P0,2),c+num(x.P1,2),asR(x.v),num(x.v/tot*100,1)+'%',asP(x.pct*100),lv&&lv.pct!=null?asP(lv.pct,2):'?');
     try{s.push(rkSect(tk,us).join('/'))}catch(e){}
-    var ex='';
-    if(!us){try{var o=opEval(tk);if(o){ex='nota '+(o.score!=null?num(o.score,1):'?')+'/10; '+o.A.chips.map(function(c){return c[0]+' '+c[1]}).join(', ');if(o.V)ex+='; preço justo R$ '+num(o.V.med,2)+' ('+asP(o.V.up*100,0)+' do preço)'}}catch(e){}
+    var ex='',exc='';
+    if(!us){try{var o=opEval(tk);if(o){exc='nota '+(o.score!=null?num(o.score,1):'?')+'/10'+(o.V?(asDist(fundOf(tk))?'; preço justo NÃO CONFIÁVEL (lucro distorcido)':'; preço justo R$ '+num(o.V.med,2)+' ('+asP(o.V.up*100,0)+' do preço)'):'');ex='nota '+(o.score!=null?num(o.score,1):'?')+'/10; '+o.A.chips.map(function(c){return c[0]+' '+c[1]}).join(', ');if(o.V)ex+='; preço justo R$ '+num(o.V.med,2)+' ('+asP(o.V.up*100,0)+' do preço)'}}catch(e){}
       var F=fundOf(tk);if(F)ex+='; P/L '+(F.pl!=null?num(F.pl,1):'?')+', P/VP '+(F.pvp!=null?num(F.pvp,2):'?')+', DY '+(F.dy!=null?num(F.dy,1)+'%':'?')+', ROE '+(F.roe!=null?num(F.roe,1)+'%':'?')}
     if(!us){var QQ=cvmQ(tk),TT=QQ&&qTtm(QQ),lq=QQ&&QQ[QQ.length-1];if(lq)ex+='; último balanço '+lq[1]+'T'+String(lq[0]).slice(2)+' lucro '+qfmt(lq[3])+(TT&&TT.g!=null?', lucro 12m '+asP(TT.g*100,0)+' vs 12m anteriores':'')+' (CVM)'}
     var e2=rsOf(tk);if(e2&&e2.ai)ex+='; notícias ('+e2.ai.sentimento+'): '+String(e2.ai.resumo||'').slice(0,220);
-    L.push('- '+s.join(' | ')+(ex&&!ASCMP?' | '+ex:''))});
+    L.push('- '+s.join(' | ')+(ex&&!ASCMP?' | '+ex:exc?' | '+exc:''))});
   if(T.rfV)L.push('- Renda fixa: '+asR(T.rfV)+' ('+num(T.rfV/tot*100,1)+'%), rendimento até agora '+asR(T.rfU)+'.');
   if(R.closed.length)L.push('Ações já vendidas: '+R.closed.map(function(p){return p.ticker}).join(', ')+'.');
   seg('prov');/* proventos */
@@ -51,6 +51,8 @@ function asCtx(q,only){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl(),SE
   seg('metas');var M=S.metas||{},mG=mtG(),mi=mtAtual(mG);if(mi>=0){var mV=mG[mi].v;L.push('META DE PATRIMÔNIO DO ANO (o usuário define uma por ano e pode mudar): '+asR(mV)+' até dezembro de '+mG[mi].a+(pat>=mV?' (já batida)':' (falta '+asR(mV-pat)+')')+'.')}
   if(M.renda&&M.renda.valor)L.push('META DE RENDA MENSAL COM PROVENTOS: '+asR(M.renda.valor)+'.');
   if(S.alvos&&S.alvos.classes){var A=S.alvos.classes;L.push('ALVOS DE APORTE: Brasil '+(A.BR||0)+'%, exterior '+(A.US||0)+'%, renda fixa '+(A.RF||0)+'%.')}
+  seg('cen');try{var cn=asCenario(q);if(cn)L.push(cn)}catch(e){}
+  seg('apo');try{var ap=asAporte(q);if(ap)L.push(ap)}catch(e){}
   if(only){var o2=[];SEG.forEach(function(g,i){var e=i+1<SEG.length?SEG[i+1][1]:L.length;if(only[g[0]])o2=o2.concat(L.slice(g[1],e))});return o2.join('\n')}
   /* empresas citadas na pergunta (código ou nome): tudo que o app sabe, com a fonte de cada número */
   var held={};R.held.forEach(function(x){held[x.p.ticker]=1});
