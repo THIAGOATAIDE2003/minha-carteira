@@ -21,7 +21,7 @@ var fixedMsg=sanitize();
 render();
 if(fixedMsg)warnIn(fixedMsg);
 /* só para os testes automáticos (tests/teste.js): expõe as contas, sem mudar nada no app */
-if(window.__APORTE_TESTE__)window.__aporte={VERSAO:VERSAO,heroOpen:heroOpen,heroRender:heroRender,setRng:function(r){STK.rng=r},dzero:dzero,cls:cls,dvAlerts:dvAlerts,DV:DV,vpill:vpill,pct:pct,sgn:sgn,S:S,CDI:CDI,compute:compute,valoriz:valoriz,xirr:xirr,ePx:ePx,irData:irData,bensEm:bensEm,splitNeed:splitNeed,rfCalc:rfCalc,cdiBench:cdiBench,pvItems:pvItems,b3Hol:b3Hol,annRets:annRets,evoData:evoData,dayDiff:dayDiff,irRate:irRate,catSetores:catSetores,stkAna:stkAna,anMom:anMom,catTickers:catTickers,catNovo:catNovo,catSaiu:catSaiu,MD:MD};
+if(window.__APORTE_TESTE__)window.__aporte={VERSAO:VERSAO,heroOpen:heroOpen,heroRender:heroRender,setRng:function(r){STK.rng=r},dzero:dzero,cls:cls,renderTape:renderTape,dvAlerts:dvAlerts,DV:DV,vpill:vpill,pct:pct,sgn:sgn,S:S,CDI:CDI,compute:compute,valoriz:valoriz,xirr:xirr,ePx:ePx,irData:irData,bensEm:bensEm,splitNeed:splitNeed,rfCalc:rfCalc,cdiBench:cdiBench,pvItems:pvItems,b3Hol:b3Hol,annRets:annRets,evoData:evoData,dayDiff:dayDiff,irRate:irRate,catSetores:catSetores,stkAna:stkAna,anMom:anMom,catTickers:catTickers,catNovo:catNovo,catSaiu:catSaiu,MD:MD};
 
 /* Arranque dos temporizadores: ficam aqui, no último arquivo, para nenhum deles disparar antes de todos os js/ terem carregado
    (lá atrás eles estavam dentro de um arquivo só). Mesma ordem de antes. */
@@ -35,7 +35,7 @@ setTimeout(function(){doRefresh(true)},600);
 setTimeout(function(){loadCDI()},900);
 setTimeout(function(){loadDivs()},2500);
 setTimeout(function(){loadDivsUS()},4200);
-setTimeout(function(){loadMD()},700);setTimeout(function(){loadNews()},1500);setInterval(function(){if(!document.hidden)loadNews()},10*60000);setTimeout(ntBadge,1700);setInterval(ntBadge,60000);setInterval(function(){if(!document.hidden)loadMD()},60*60000);setInterval(function(){var b=brt();if(!document.hidden&&bDay(b.d)&&b.min>=540&&b.min<1380)loadMD(true)},5*60000);
+try{tapeStart()}catch(e){}setTimeout(function(){loadMD()},700);setTimeout(function(){loadNews()},1500);setInterval(function(){if(!document.hidden)loadNews()},10*60000);setTimeout(ntBadge,1700);setInterval(ntBadge,60000);setInterval(function(){if(!document.hidden)loadMD()},60*60000);setInterval(function(){var b=brt();if(!document.hidden&&bDay(b.d)&&b.min>=540&&b.min<1380)loadMD(true)},5*60000);
 setTimeout(function(){loadHist()},5000);
 setTimeout(function(){loadBench()},3500);
 setInterval(function(){if(!document.hidden){loadDivs();loadDivsUS()}},60*60000);

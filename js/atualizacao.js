@@ -97,12 +97,43 @@ function tapeItems(){
   return it}
 function tapeVal(x){if(/^JUROS/.test(x.l))return pf.format(x.v)+'%';if(TPIX[x.l])return num(x.v,x.v>=1000?0:2);if(x.l==='DÓLAR'||x.l==='EURO')return 'R$ '+num(x.v,4);if(x.c==='USD')return x.v>=1000?'US$ '+num(x.v,0):usd.format(x.v);return brl.format(x.v)}
 function tapeIn(x){var c=Math.abs(x.p)<0.005?'z':x.p>0?'g':'l';return [tapeVal(x),c,(c==='z'?'':x.p>0?'▲ ':'▼ ')+pf.format(Math.abs(x.p))+'%']}
-function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems();if(it.length<3){el.hidden=true;return}el.hidden=false;
+/* Faixa personalizável: o usuário escolhe o que aparece (guardado no aparelho); por padrão fora as commodities menores (prata, soja, café) */
+var TPOFFK=LS+'-tapeoff',TPOFF=['PRATA','SOJA','CAFÉ'];
+try{var tf0=JSON.parse(localStorage.getItem(TPOFFK)||'null');if(Array.isArray(tf0))TPOFF=tf0}catch(e){}
+function tpSave(){try{localStorage.setItem(TPOFFK,JSON.stringify(TPOFF))}catch(e){}}
+var TPCM=['PETRÓLEO','MINÉRIO','OURO','PRATA','SOJA','CAFÉ'];
+function tpGrupo(x){return TPCM.indexOf(x.l)>=0?'Commodities':x.st?(isBR(x.l)?'Ações do Brasil':'Ações e ETFs dos EUA'):'Índices, moedas e juros'}
+function tpSheet(){var b=$('tp-b');if(!b)return;var it=tapeItems(),gs={},ord=['Índices, moedas e juros','Commodities','Ações do Brasil','Ações e ETFs dos EUA'];
+  it.forEach(function(x){var g=tpGrupo(x);(gs[g]=gs[g]||[]).push(x)});
+  b.innerHTML='<p class="muted small" style="margin:0 0 10px">Toque para tirar ou colocar na faixa preta do topo. Os outros índices e commodities continuam na busca do Mercado.</p>'+
+    ord.filter(function(g){return gs[g]}).map(function(g){return '<p class="muted small" style="margin:12px 0 6px">'+g+'</p><div class="tpg">'+gs[g].map(function(x){return '<button type="button" data-tpt="'+esc(x.l)+'" aria-pressed="'+(TPOFF.indexOf(x.l)<0)+'">'+esc(x.l)+'</button>'}).join('')+'</div>'}).join('')+
+    '<button type="button" class="btn ghost" style="margin-top:16px" data-tpr="1">Voltar ao padrão</button>'}
+document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-tpe],[data-tpt],[data-tpr]');if(!t)return;
+  if(t.hasAttribute('data-tpe')){if(t.getAttribute('data-tpe')==='close'){$('tp').hidden=true;document.body.style.overflow=''}else{tpSheet();$('tp').hidden=false;document.body.style.overflow='hidden'}return}
+  if(t.hasAttribute('data-tpt')){var l=t.getAttribute('data-tpt'),i=TPOFF.indexOf(l);if(i>=0)TPOFF.splice(i,1);else TPOFF.push(l)}else TPOFF=['PRATA','SOJA','CAFÉ'];
+  tpSave();TPK='';renderTape();tpSheet()});
+/* movimento da faixa: roda sozinha como antes; segurar/arrastar para (arrasta mais rápido, com embalo) e ela só volta a correr uns segundos depois de soltar */
+var TPA={x:0,v:22,drag:0,last:0,resume:0,sx:0,x0:0,lx:0,lt:0,fv:0,moved:0};
+function tpLoop(ts){var el=document.querySelector('#tape .tptr');
+  if(el){var half=el.scrollWidth/2,dt=Math.min(100,ts-(TPA.last||ts));
+    if(half>0){TPA.v=half/Math.max(30,el.children.length/2*5);
+      if(!TPA.drag){if(Math.abs(TPA.fv)>8){TPA.x+=TPA.fv*dt/1000;TPA.fv*=Math.pow(0.04,dt/1000);TPA.resume=ts+3500}else{TPA.fv=0;if(ts>=TPA.resume)TPA.x-=TPA.v*dt/1000}}
+      TPA.x=((TPA.x%half)-half)%half;el.style.transform='translate3d('+TPA.x+'px,0,0)'}}
+  TPA.last=ts;requestAnimationFrame(tpLoop)}
+function tapeStart(){var el=$('tape');if(!el||!window.requestAnimationFrame)return;
+  try{if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)return}catch(e){}
+  el.addEventListener('pointerdown',function(e){if(e.target.closest&&e.target.closest('[data-tpe]'))return;TPA.drag=1;TPA.sx=e.clientX;TPA.x0=TPA.x;TPA.lx=e.clientX;TPA.lt=performance.now();TPA.fv=0;TPA.moved=0});
+  el.addEventListener('pointermove',function(e){if(!TPA.drag)return;var dx=e.clientX-TPA.sx;TPA.moved=Math.max(TPA.moved,Math.abs(dx));TPA.x=TPA.x0+dx*1.8;var n=performance.now(),dtt=n-TPA.lt;if(dtt>0){TPA.fv=TPA.fv*0.5+((e.clientX-TPA.lx)*1.8/dtt*1000)*0.5}TPA.lx=e.clientX;TPA.lt=n});
+  var fim=function(){if(!TPA.drag)return;TPA.drag=0;TPA.resume=performance.now()+4000;if(performance.now()-TPA.lt>120)TPA.fv=0};
+  el.addEventListener('pointerup',fim);el.addEventListener('pointercancel',fim);el.addEventListener('pointerleave',fim);
+  el.addEventListener('click',function(e){if(TPA.moved>8){e.stopPropagation();e.preventDefault();TPA.moved=0}},true);
+  requestAnimationFrame(tpLoop)}
+function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems().filter(function(x){return TPOFF.indexOf(x.l)<0});if(it.length<3){el.hidden=true;return}el.hidden=false;
   var key=it.map(function(x){return x.l}).join('|');
   if(key===TPK&&el.firstChild){it.forEach(function(x){var r=tapeIn(x);[].forEach.call(el.querySelectorAll('[data-tp="'+x.l.replace(/"/g,'')+'"]'),function(n){n.querySelector('span').textContent=r[0];var e=n.querySelector('em');e.className=r[1];e.textContent=r[2]})});return}
   TPK=key;var one=it.map(function(x){var r=tapeIn(x),at=x.st?' data-stk="'+esc(x.l)+'"':x.ik&&idxDef(x.ik)?' data-idxo="'+esc(x.ik)+'"':'';
     return '<'+(at?'button type="button"'+at:'span')+' class="tpi" data-tp="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(at?'button':'span')+'>'}).join('');
-  el.innerHTML='<div class="tptr" style="--tpd:'+Math.max(30,it.length*5)+'s">'+one+one+'</div>'}
+  el.innerHTML='<div class="tptr">'+one+one+'</div>'}
 
 /* variação do dia zerada fora do pregão (nos EUA também a partir da meia-noite de Brasília, como o usuário pediu): antes da abertura (ou fim de semana/feriado) até chegar a primeira cotação do dia */
 function dzero(us,at){var now=Date.now(),open;
