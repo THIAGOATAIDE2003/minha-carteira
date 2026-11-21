@@ -89,20 +89,25 @@ function entInfo(tk,d,A,V){
   if(!A||A.etf)return null;if(!V)V=anValCalc(tk,d,A);if(!V||!V.ms||!V.ms.length)return null;
   var P=d.price,qc=A.chips.filter(function(c){return c[0]==='Qualidade'})[0],fraca=(qc&&qc[1]==='Baixa')||(A.score!=null&&A.score<4.5),z;
   if(V.mg>=ENT.mg/100)z=fraca?'cuid':'conf';else if(V.mg>=-0.10)z='just';else z='caro';
-  var lu=null,mo=anMom(tk,P),q=null;try{q=qTtm(cvmQ(tk))}catch(e){}
+  var mo=anMom(tk,P),caiu=!!(mo&&((mo.m6!=null&&mo.m6<=-0.15)||(mo.m3!=null&&mo.m3<=-0.10))),mot=(A.alr||[]).filter(function(x){return x[0]!=='Preço em queda'});
+  if(z==='conf'||z==='just'||z==='cuid'){if(mot.length)z='motivo';else if(caiu&&z!=='cuid')z='semmotivo'}
+  var lu=null,q=null;try{q=qTtm(cvmQ(tk))}catch(e){}
   if(mo&&mo.m6!=null&&q&&q.g!=null){var m=mo.m6,g=q.g;
     if(m>=0.2&&g>=0.1)lu=['ok','O preço subiu '+pf.format(m*100)+'% em 6 meses e o lucro dos últimos 12 meses cresceu '+pf.format(g*100)+'%: a alta tem lucro por trás.'];
     else if(m>=0.2&&g<0.05)lu=['al','O preço subiu '+pf.format(m*100)+'% em 6 meses, mas o lucro dos últimos 12 meses '+(g<0?'caiu '+pf.format(Math.abs(g)*100)+'%':'quase não mudou ('+(g>=0?'+':'')+pf.format(g*100)+'%')+'. Alta sem lucro que justifique: pode ser euforia.'];
     else if(m<=-0.15&&g<=-0.1)lu=['al','O preço caiu '+pf.format(Math.abs(m)*100)+'% em 6 meses e o lucro caiu '+pf.format(Math.abs(g)*100)+'%: a queda tem motivo, não é desconto por si só.'];
     else if(m<=-0.15&&g>=-0.05)lu=['ok','O preço caiu '+pf.format(Math.abs(m)*100)+'% em 6 meses, mas o lucro dos últimos 12 meses '+(g>=0.005?'cresceu '+pf.format(g*100)+'%':'se manteve')+'. Queda sem motivo claro nos números: pode ser oportunidade, confira as notícias.']}
-  return {z:z,V:V,P:P,F:V.F,lu:lu,mg:V.mg}
+  return {z:z,V:V,P:P,F:V.F,lu:lu,mg:V.mg,mot:mot,caiu:caiu}
 }
 function entHtml(tk,d,A){
   var E=null;try{E=entInfo(tk,d,A)}catch(e){}if(!E)return '';
-  var T={conf:['Confortável para entrar','gain'],cuid:['Barato, mas a empresa está fraca','loss'],just:['Perto do justo: dá para esperar um preço melhor','muted'],caro:['Não está num valor confortável para entrar','loss']}[E.z];
+  var T={conf:['Confortável para entrar','gain'],cuid:['Barato, mas a empresa está fraca','loss'],just:['Perto do justo: dá para esperar um preço melhor','muted'],motivo:[E.caiu?'Caiu e tem motivo: espere':'Tem aviso na empresa: espere','loss'],semmotivo:['Caiu sem motivo claro nos números: confira antes de entrar','muted'],caro:['Não está num valor confortável para entrar','loss']}[E.z];
   var h='<div class="panel anp"><h2>Dá para entrar agora? '+bal('Compara o preço de hoje com o preço justo da aba Preço justo. Se o preço está pelo menos '+ENT.mg+'% abaixo do justo (a sua margem de segurança), ele fica confortável. Também confere se a alta ou a queda do preço tem o lucro da empresa por trás. É uma regra de conta, não uma recomendação, e o preço justo é uma estimativa simples.')+'</h2>'+
     '<p class="anv" style="margin:6px 0 0"><b class="'+T[1]+'">'+T[0]+'</b></p>'+
     '<p class="note" style="margin:6px 0 0">Preço '+E.F.format(E.P)+', preço justo '+E.F.format(E.V.med)+(E.mg>=0?' ('+pf.format(E.mg*100)+'% abaixo do justo)':' (o preço está '+pf.format(Math.abs(E.V.up)*100)+'% acima do justo)')+'. Sua margem de segurança: '+ENT.mg+'%.'+(E.z==='cuid'?' A nota da empresa está baixa, então o preço baixo pode ser armadilha.':'')+'</p>';
+  if(E.z==='motivo')h+='<p class="note" style="margin:8px 0 0"><b class="loss">O que está pesando:</b> '+E.mot.map(function(x){return x[0]+' ('+String(x[1]).replace(/<[^>]*>/g,'')+')'}).join('; ')+'. O preço justo usa o lucro que a empresa já teve; se o lucro vem piorando, ele fica alto demais e a ação parece mais barata do que é.</p>';
+  if(E.z==='semmotivo')h+='<p class="note" style="margin:8px 0 0">O preço caiu, mas não achei nos números do último trimestre nem nas notícias do app um motivo claro. Isso pode ser oportunidade ou algo que o app não enxerga: leia as notícias da ação antes de decidir.</p>';
+  if(E.z==='conf')h+='<p class="note" style="margin:8px 0 0">Lembrete: o preço justo usa o lucro passado. Se você souber de algo que vai derrubar o lucro, ele está alto demais.</p>';
   if(E.lu)h+='<p class="note" style="margin:8px 0 0"><b class="'+(E.lu[0]==='ok'?'gain':'loss')+'">Preço e lucro:</b> '+E.lu[1]+'</p>';
   if(E.z==='conf'){var R=compute(),tot=R.tot.value+(R.tot.rfV||0),x=R.held.filter(function(z){return z.p.ticker===tk})[0],fx=E.F===usd?((fxToday()||{}).rate||0):1,pu=E.P*fx,w=x&&tot?x.v/tot*100:0;
     if(pu>0&&tot){if(w>=ENT.al)h+='<p class="note" style="margin:8px 0 0"><b>Entrada:</b> você já tem '+pf.format(w)+'% da carteira nela, acima do alvo de '+ENT.al+'%.</p>';

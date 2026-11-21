@@ -288,8 +288,11 @@ function contasAMao(F, P) {
       var m = mk(0.25), V = function (mg) { return { ms: [1], mg: mg, up: mg / (1 - mg), med: P / (1 - mg), F: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }) }; };
       r.z = [A.entInfo('BBSE3', m[0], m[1], V(0.3)).z, A.entInfo('BBSE3', m[0], m[1], V(0.1)).z, A.entInfo('BBSE3', m[0], m[1], V(-0.2)).z];
       r.lucroOk = A.entInfo('BBSE3', m[0], m[1], V(0.3)).lu[0]; var m2 = mk(0); r.lucroAl = A.entInfo('BBSE3', m2[0], m2[1], V(0.3)).lu[0];
+      var ruim = q(0).slice(0, 7).concat([[2026, 4, 1500, 500]]), dq = d.map(function (x, i) { return [x[0], 60 - i * 0.5]; }), Pq = dq[59][1];
+      M.d = { fund: { cols: ['cot', 'pl', 'pvp', 'dy', 'roe', 'ml', 'liq2m', 'cr5'], d: { BBSE3: [Pq, 8, 6, 10, 70, 60, 9e8, 12] } }, hist: { BBSE3: { d: dq, w: dq } }, cvm: { q: { BBSE3: ruim } }, res: {} }; var dd2 = { cur: 'BRL', price: Pq, k: {} }, A2 = A.stkAna('BBSE3', dd2), E2 = A.entInfo('BBSE3', dd2, A2, V(0.3)); r.motivo = [E2.z, E2.caiu, E2.mot.length > 0];
+      M.d = { fund: { cols: ['cot', 'pl', 'pvp', 'dy', 'roe', 'ml', 'liq2m', 'cr5'], d: { BBSE3: [Pq, 8, 6, 10, 70, 60, 9e8, 12] } }, hist: { BBSE3: { d: dq, w: dq } }, cvm: { q: { BBSE3: q(0.05) } }, res: {} }; var A3 = A.stkAna('BBSE3', dd2), E3 = A.entInfo('BBSE3', dd2, A3, V(0.3)); r.semMotivo = [E3.z, E3.mot.length];
       A.ENT.mg = 35; r.z35 = A.entInfo('BBSE3', m[0], m[1], V(0.3)).z; A.ENT.mg = 25; M.d = old; return r; });
-    confere('entrada: faixa confortável/justa/cara pela margem, preço contra lucro (com e sem lucro) e margem ajustável', [ent.z, ent.lucroOk, ent.lucroAl, ent.z35], [['conf', 'just', 'caro'], 'ok', 'al', 'just']);
+    confere('entrada: faixa confortável/justa/cara pela margem, preço contra lucro (com e sem lucro) e margem ajustável', [ent.z, ent.lucroOk, ent.lucroAl, ent.z35, ent.motivo, ent.semMotivo], [['conf', 'just', 'caro'], 'ok', 'al', 'just', ['motivo', true, true], ['semmotivo', 0]]);
     /* catálogo da B3: setores, pouca liquidez escondida, IPO novo e ação que saiu */
     const cat = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, hoje = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
       M.d = { fund: { cols: ['cot', 'liq2m'], d: { AAAA3: [10, 5e6], BBBB3: [10, 1e3], CCCC3: [10, 3e6], NEWC3: [5, 1e6] } }, cat: { v: 1, a: { AAAA3: ['', 5, 'Bancos'], BBBB3: ['', 5, 'Bancos'], CCCC3: ['', 7, 'Energia'], NEWC3: [hoje, null, ''] }, n: { 5: 'Bancos', 7: 'Energia' }, x: { OLDD3: ['', '2026-10-01'] } } };
