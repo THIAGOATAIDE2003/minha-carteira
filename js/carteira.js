@@ -40,7 +40,8 @@ function vendaCalc(R){
   var held=sum(R.held,function(x){return x.gain})+T.rfU;
   out.bolso=T.gain-held;
   out.custo=sum(out.segs,function(x){return x.custo});
-  out.valor=sum(out.segs,function(x){return x.v})-out.custo;
+  out.pos=sum(out.segs,function(x){return x.v});out.pago=T.cost;out.contrib=T.contrib;out.cash=T.cash||0;out.posLuc=sum(out.segs,function(x){return x.luc});
+  out.valor=out.pos-out.custo+out.cash;
   out.lucro=T.gain-out.custo;
   out.v=sum(out.segs.filter(function(x){return x.k==='us'}),function(x){return x.v});
   var u=out.segs.filter(function(x){return x.k==='us'})[0];if(u){out.c=u.c;out.spr=u.spr;out.iof=u.iof;out.ir=u.ir;out.liq=u.v-u.custo}
@@ -48,15 +49,23 @@ function vendaCalc(R){
 function vendaHtml(R){
   var V=vendaCalc(R);if(!V)return '';
   var fm=function(n){return String(n).replace('.',',')},T=R.tot;
-  var seg=function(x){return '<div class="vsr"><div class="vsh"><span>'+x.n+'</span><b class="num '+cls(x.luc-x.custo)+'">'+sgn(x.luc-x.custo)+'</b></div><small>Lucro hoje '+sgn(x.luc)+(x.custo>0.005?' · custos −'+brl.format(x.custo):' · sem custos')+'</small></div>'};
-  var br=V.segs.filter(function(x){return x.k==='br'})[0],us=V.segs.filter(function(x){return x.k==='us'})[0];
+  var row=function(l,n,o){o=o||{};return '<li'+(o.tot?' class="tot"':'')+'><span>'+l+'</span><span class="num '+(o.cl===undefined?'':o.cl)+'">'+(o.sg?sgn(n):brl.format(n))+'</span></li>'};
+  var br=V.segs.filter(function(x){return x.k==='br'})[0],us=V.segs.filter(function(x){return x.k==='us'})[0],rf=V.segs.filter(function(x){return x.k==='rf'})[0];
+  var liqSeg=function(x){return '<div class="vsr"><div class="vsh"><span>'+x.n+'</span><b class="num">'+brl.format(x.v-x.custo)+'</b></div><small>Vale '+brl.format(x.v)+' hoje'+(x.custo>0.005?' · custos de venda −'+brl.format(x.custo):' · sem custos de venda')+'</small></div>'};
   var h='<div class="panel"><h2>Se vendesse tudo hoje '+bal('Quanto você teria em reais e quanto sobraria de lucro de verdade se vendesse tudo agora e trouxesse o dinheiro para a conta brasileira, já descontando os custos e os impostos. É uma estimativa: o spread muda a cada dia e o IR final é fechado na declaração anual.')+'</h2>'+
     '<p class="note" style="margin:-6px 0 4px">Você ficaria com</p><div class="num" style="font-size:30px;font-weight:700">'+brl.format(V.valor)+'</div>'+
     '<p style="margin:6px 0 0">Lucro de verdade: <b class="num '+cls(V.lucro)+'">'+sgn(V.lucro)+'</b> <span class="muted small">(depois dos custos e impostos)</span></p>'+
-    '<div style="margin-top:14px;padding-top:6px;border-top:1px solid var(--line)">'+V.segs.map(seg).join('')+
-    (Math.abs(V.bolso)>0.005?'<div class="vsr"><div class="vsh"><span>Proventos, vendas já feitas e taxas</span><b class="num '+cls(V.bolso)+'">'+sgn(V.bolso)+'</b></div><small>O que você já recebeu ou realizou antes</small></div>':'')+
-    '<div class="vsr tot"><div class="vsh"><span>Total</span><b class="num '+cls(V.lucro)+'">'+sgn(V.lucro)+'</b></div><small>Lucro de hoje '+sgn(T.gain)+' menos '+brl.format(V.custo)+' de custos</small></div></div>'+
-    '<details><summary>Ver as contas e ajustar</summary><ul class="calc small" style="margin-top:10px">'+
+    '<h3 style="margin:18px 0 0;font-size:15px">1. O que você teria</h3><div style="padding-top:2px">'+V.segs.map(liqSeg).join('')+
+    (V.cash>0.005?'<div class="vsr"><div class="vsh"><span>Saldo parado na carteira</span><b class="num">'+brl.format(V.cash)+'</b></div><small>Dinheiro de proventos e vendas que você ainda não reinvestiu</small></div>':'')+
+    '<div class="vsr tot"><div class="vsh"><span>Total que você teria</span><b class="num">'+brl.format(V.valor)+'</b></div></div></div>'+
+    '<h3 style="margin:14px 0 0;font-size:15px">2. De onde vem o lucro</h3><ul class="calc" style="margin-top:6px">'+
+    (br?row('Ações e FIIs do Brasil (preço)',br.luc,{sg:1,cl:cls(br.luc)}):'')+(us?row('Dólares (VT e câmbio)',us.luc,{sg:1,cl:cls(us.luc)}):'')+(rf?row('Renda fixa',rf.luc,{sg:1,cl:cls(rf.luc)}):'')+
+    (Math.abs(V.bolso)>0.005?row('Proventos, vendas com lucro já feitas e taxas',V.bolso,{sg:1,cl:cls(V.bolso)}):'')+
+    row('Custos para vender (IR, IOF e spread)',-V.custo,{sg:1,cl:cls(-V.custo)})+
+    row('Lucro de verdade',V.lucro,{sg:1,cl:cls(V.lucro),tot:1})+'</ul>'+
+    '<p class="note" style="margin:8px 0 0">Suas posições: você pagou <b>'+brl.format(V.pago)+'</b> e elas valem <b>'+brl.format(V.pos)+'</b> hoje ('+sgn(V.posLuc)+'). O que você já tinha ganho antes com proventos e vendas com lucro (a linha de proventos acima) entra aqui porque esse dinheiro foi reinvestido e faz parte do que você tem.</p>'+
+    '<h3 style="margin:14px 0 0;font-size:15px">3. Conferindo</h3><ul class="calc" style="margin-top:6px">'+row('Você colocou do seu bolso',V.contrib)+row('Você ficaria com',V.valor)+row('Diferença (seu lucro de verdade)',V.valor-V.contrib,{sg:1,cl:cls(V.valor-V.contrib),tot:1})+'</ul>'+
+    '<details><summary>Ver os impostos e ajustar</summary><ul class="calc small" style="margin-top:10px">'+
     (br?'<li><span>IR nas ações do Brasil '+(br.isento?'(vendas até R$ 20 mil no mês: isento)':'(15% sobre o lucro)')+'</span><span class="num">'+brl.format(br.iA)+'</span></li>'+(br.iF>0.005?'<li><span>IR nos FIIs (20% sobre o lucro)</span><span class="num">'+brl.format(br.iF)+'</span></li>':''):'')+
     (us?'<li><span>Spread do Inter ('+fm(VND.spr)+'%)</span><span class="num">'+brl.format(us.spr)+'</span></li><li><span>IOF dólar para real ('+fm(VND.iof)+'%)</span><span class="num">'+brl.format(us.iof)+'</span></li><li><span>IR no exterior ('+fm(VND.ir)+'% do lucro em reais)</span><span class="num">'+brl.format(us.ir)+'</span></li>':'')+
     '</ul>'+(us?'<div class="keys" style="margin-top:10px">'+
