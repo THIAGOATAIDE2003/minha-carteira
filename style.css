@@ -326,7 +326,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .bal{background:none;border:0;padding:0 2px;margin:0;color:inherit;font:inherit;display:inline;vertical-align:baseline;cursor:pointer}
 .bal .bi{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1.5px solid currentColor;font:700 9.5px/1 var(--sans);opacity:.7;vertical-align:1px}
 .bal .u{border-bottom:1.5px dotted currentColor}
-#balpop{position:absolute;z-index:60;max-width:min(270px,calc(100vw - 24px));background:var(--fg);color:var(--bg);font-size:13px;line-height:1.4;border-radius:10px;padding:8px 11px;box-shadow:0 6px 20px rgba(0,0,0,.3);pointer-events:none}
+#balpop{position:absolute;z-index:200;max-width:min(270px,calc(100vw - 24px));background:var(--fg);color:var(--bg);font-size:13px;line-height:1.4;border-radius:10px;padding:8px 11px;box-shadow:0 6px 20px rgba(0,0,0,.3);pointer-events:none}
 .tipc{position:relative;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;cursor:crosshair}
 .tipg{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--muted);pointer-events:none}
 .tipb{position:absolute;top:0;z-index:5;min-width:170px;max-width:min(290px,96%);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:none;font-size:13px;display:flex;flex-direction:column;gap:4px}
