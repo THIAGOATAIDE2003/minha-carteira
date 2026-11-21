@@ -6,8 +6,8 @@ function thLn(s){return String(s||'').split('\n').map(function(x){return x.repla
 function thSave(tk,o){S.teses=S.teses||{};if(o)S.teses[tk]=o;else delete S.teses[tk];S.pend=S.pend||[];S.pend.push({t:'cfg',k:'teses',v:S.teses});save();try{OPC={}}catch(e){}try{ghSync()}catch(e){}}
 /* números de hoje ligados ao que a tese diz acompanhar (só fatos do app, sem veredito) */
 function thChk(tk){var L=[],F=isBR(tk)?fundOf(tk):null,q=isBR(tk)?cvmQ(tk):null,t=q?qTtm(q):null,T=q?trLeit(q):null,C=csD(tk),
-    g=function(v){return (v>=0?'+':'−')+pf.format(Math.abs(v*100))+'%'};
-  if(t&&t.g!=null)L.push(['Lucro dos últimos 12 meses',qfmt(t.a),g(t.g)+' contra os 12 meses anteriores',t.g>=0?'gain':'loss']);
+    g=function(v){return csPc(v*100)};
+  if(t&&t.g!=null)L.push(['Lucro dos últimos 12 meses',qfmt(t.a),g(t.g)+' contra os 12 meses anteriores',cls(t.g*100)]);
   if(T)L.push(['Trimestres (contra o ano anterior)',T.t,T.tx,T.k==='bom'?'gain':T.k==='mau'?'loss':'muted']);
   if(F){if(F.roe!=null)L.push(['ROE',pf.format(F.roe)+'%','retorno sobre o patrimônio','']);if(F.dy!=null)L.push(['Dividendos (DY)',pf.format(F.dy)+'%','últimos 12 meses','']);if(F.divpl!=null)L.push(['Dívida / patrimônio',num(F.divpl,2),'','']);if(F.ml!=null)L.push(['Margem líquida',pf.format(F.ml)+'%','','']);if(F.cr5!=null)L.push(['Crescimento da receita (5 anos)',pf.format(F.cr5)+'%','por ano, média','']);}
   if(C&&C.rk!=null){var rk=C.rk,rot=rk<=1.5?'Compra forte':rk<=2.5?'Compra':rk<=3.5?'Manter':rk<=4.5?'Venda':'Venda forte';L.push(['Analistas',rot,(C.n?C.n+' analistas':''),'']);}
