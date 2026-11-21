@@ -145,6 +145,13 @@ function lastClose(){var b=brt(),d=new Date(b.d.getTime());
   if(!(bDay(b.d)&&b.min>=1095)){do{d.setUTCDate(d.getUTCDate()-1)}while(!bDay(d))}
   d.setUTCHours(18,15,0,0);return d.getTime()+3*3600000}
 function needQuote(tk){if(mktOpen())return true;var q=S.quotes[tk];return !q||q.src!=='auto'||!(q.at>=lastClose())}
+/* Saúde dos dados (1.46.0): avisos de frescor. Usa a hora da última busca (RF.last, S.fx.at), não a hora do negócio, para não alarmar com ação pouco líquida. Só avisa com bolsa BR/EUA aberta e com internet. */
+function saudeProblemas(){var p=[],now=Date.now(),on=false;
+  try{if(navigator.onLine===false)return p;on=mktState().some(function(x){return (x.m.id==='br'||x.m.id==='us')&&x.on})}catch(e){}
+  if(on&&RF.last&&now-RF.last>25*60000)p.push('Preços sem atualizar há '+dur(Math.round((now-RF.last)/60000)));
+  if(on&&S.fx&&S.fx.src==='auto'&&S.fx.at&&now-S.fx.at>25*60000)p.push('Dólar atrasado ('+dur(Math.round((now-S.fx.at)/60000))+')');
+  try{if(S.keys.gh&&MD.d&&MD.d.ts&&bDay(brt().d)&&now-MD.d.ts*1000>30*3600000)p.push('Robô diário parado há mais de 30 h')}catch(e){}
+  return p}
 var USR={at:0};
 /* tudo que é americano a cada 5 min: grandes da faixa, lista de acompanhamento e índices pelos ETFs (Finnhub, bem abaixo de 60 por minuto) */
 function usRefresh(R){if(!S.keys.finnhub)return Promise.resolve();USR.at=Date.now();USR.tape=!!(MD.d&&MD.d.tape);R=R||compute();{var heldUS={};R.held.forEach(function(x){if(x.p.market==='US')heldUS[x.p.ticker]=1});
