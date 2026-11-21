@@ -133,7 +133,7 @@ function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
   try{var O=opData();if(O){if(O.D.length)L.push('GARIMPO (ações de qualidade abaixo do preço justo, fora da carteira): '+O.D.slice(0,6).map(function(o){return o.tk+' nota '+num(o.score,1)+', preço justo '+asP(o.V.up*100,0)}).join('; ')+'.');
     var al=[];O.W.concat(O.M).forEach(function(o){(o.al||[]).forEach(function(a){al.push(o.tk+': '+asTxt(a[1]))})});if(al.length)L.push('ALERTAS: '+al.slice(0,6).join('; ')+'.')}}catch(e){}
   var wl=wlist();if(wl.length)L.push('LISTA DE ACOMPANHAMENTO: '+wl.join(', ')+'.');
-  var M=S.metas||{},mE=mtE(),mi=mtIdx(pat);if(mi<mE.length){var mV=mE[mi],mD=mtPrazo(M,mV);L.push('META DE PATRIMÔNIO (etapa '+(mi+1)+' de '+mE.length+', etapas escolhidas pelo usuário, que ele pode mudar): '+asR(mV)+(mD?' até '+fmtDate(mD):'')+' (falta '+asR(Math.max(0,mV-pat))+').')}
+  var M=S.metas||{},mG=mtG(),mi=mtAtual(mG);if(mi>=0){var mV=mG[mi].v;L.push('META DE PATRIMÔNIO DO ANO (o usuário define uma por ano e pode mudar): '+asR(mV)+' até dezembro de '+mG[mi].a+(pat>=mV?' (já batida)':' (falta '+asR(mV-pat)+')')+'.')}
   if(M.renda&&M.renda.valor)L.push('META DE RENDA MENSAL COM PROVENTOS: '+asR(M.renda.valor)+'.');
   if(S.alvos&&S.alvos.classes){var A=S.alvos.classes;L.push('ALVOS DE APORTE: Brasil '+(A.BR||0)+'%, exterior '+(A.US||0)+'%, renda fixa '+(A.RF||0)+'%.')}
   /* empresas citadas na pergunta (código ou nome): tudo que o app sabe, com a fonte de cada número */

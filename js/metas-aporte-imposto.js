@@ -154,76 +154,73 @@ function alvSave(){
   if(APV)apoCalc();
 }
 
-/* metas: trilha de etapas de patrimônio (50 mil, 100 mil, depois de 100 em 100 mil até 1 milhão), prazo opcional da etapa atual e renda passiva opcional */
-var MTE=[5e4,1e5,2e5,3e5,4e5,5e5,6e5,7e5,8e5,9e5,1e6],MTS=null,MTC=-1;
+/* metas: UMA META POR ANO (S.metas.anos {'2026':valor}), o usuário escreve/ajusta/apaga em Ajustar; sem metas padrão. Prazo = dezembro do ano. Renda passiva opcional. */
+var MTS=null,MTC=-1;
 function mesesAte(d){var a=today(),y=+d.slice(0,4)-+a.slice(0,4),m=+d.slice(5,7)-+a.slice(5,7);return y*12+m}
-/* etapas: as da lista padrão MTE, ou as que o usuário escolheu em Ajustar (S.metas.etapas) */
-function mtE(){var M=S.metas||{},a=M.etapas;if(Array.isArray(a)){var o=[];a.forEach(function(x){x=+x;if(isFinite(x)&&x>0&&o.indexOf(x)<0)o.push(x)});o.sort(function(x,y){return x-y});if(o.length)return o.slice(0,40)}return MTE}
-function mtLbl(v){if(v>=1e6){var m=v/1e6,t=String(+m.toFixed(2)).replace('.',',');return t+(m>=2?' milhões':' milhão')}if(v>=1000&&v%1000===0)return (v/1000)+' mil';return Math.round(v).toLocaleString('pt-BR')}
-function mtIdx(pat){var E=mtE();for(var i=0;i<E.length;i++)if(pat<E[i])return i;return E.length}
 function mtMes(mm,curto){var d=new Date(),t=d.getMonth()+mm,y=d.getFullYear()+Math.floor(t/12);return curto?MESL[t%12].slice(0,3)+'/'+String(y).slice(2):MESL[t%12]+' de '+y}
 function mtR(v){return 'R$ '+Math.round(v).toLocaleString('pt-BR')}
-function mtPrazo(M,V){if(M.prazos&&typeof M.prazos==='object'&&typeof M.prazos[V]==='string'&&/^\d{4}-\d{2}/.test(M.prazos[V]))return M.prazos[V];return M.pat&&M.pat.valor===V&&M.pat.data?M.pat.data:''}
+/* lista [{a:ano,v:valor}] em ordem de ano; ignora lixo */
+function mtG(){var M=S.metas||{},o=M.anos,r=[];if(o&&typeof o==='object'&&!Array.isArray(o))Object.keys(o).forEach(function(k){var a=+k,v=+o[k];if(a>=2000&&a<=2100&&isFinite(v)&&v>0)r.push({a:a,v:v})});r.sort(function(x,y){return x.a-y.a});return r}
+/* meta em foco: a do ano atual; sem ela, a do próximo ano que existir; sem nenhuma, -1 */
+function mtAtual(G){var ya=+today().slice(0,4),i=-1;G.forEach(function(g,k){if(g.a===ya)i=k});if(i<0)G.forEach(function(g,k){if(i<0&&g.a>ya)i=k});return i}
 function mtCenter(){var ml=$('mtl');if(!ml||!ml.clientWidth)return;if(MTS!=null){ml.scrollLeft=MTS;return}var c=ml.querySelector('.cur')||ml.lastChild;if(c)ml.scrollLeft=Math.max(0,c.offsetLeft-ml.clientWidth/2+c.clientWidth/2)}
 document.addEventListener('scroll',function(e){var c=e.target;if(c&&c.id==='mtl'&&c.clientWidth)MTS=c.scrollLeft},true);
 function metasHtml(R){
-  var T=R.tot,M=S.metas||{},E=mtE(),pat=T.value+T.cash,ci=mtIdx(pat),NE=E.length;if(ci!==MTC){MTC=ci;MTS=null}
-  var h='<div class="panel" id="metasbox"><h2>Metas '+bal('Seu caminho em etapas de patrimônio (por padrão R$ 50 mil, R$ 100 mil e depois de 100 em 100 mil até 1 milhão; você pode trocar os valores e os prazos em Ajustar). Quando você bate uma etapa, ela fica riscada e a próxima vira a atual. Toque nos quadros e nas etapas para ver os detalhes.')+'</h2>';
+  var T=R.tot,M=S.metas||{},G=mtG(),pat=T.value+T.cash,ci=mtAtual(G),ya=+today().slice(0,4);if(ci!==MTC){MTC=ci;MTS=null}
+  var h='<div class="panel" id="metasbox"><h2>Metas '+bal('Uma meta de patrimônio por ano, escolhida por você. Todo ano você define quanto quer juntar até dezembro, vê se está no caminho e ajusta com calma se precisar. Metas de anos passados ficam guardadas com o resultado. Toque nos quadros e nos anos para ver os detalhes.')+'</h2>';
   var ev=evoData(),k=ev.length,ap=0,nm=0;if(k>1){var i0=Math.max(0,k-7);ap=(ev[k-1].apl-ev[i0].apl);nm=(k-1)-i0}var apm=nm?ap/nm:0;
   var cdiM=CDI.dates.length?Math.pow(1+CDI.s[CDI.dates[CDI.dates.length-1]]/100,21)-1:0.008;
-  /* em quantos meses cada etapa chega no ritmo atual (aporte médio + CDI) */
-  var eta=[],mm=0,v=pat;E.forEach(function(V,i){if(i<ci){eta.push(0);return}if(apm<=0){eta.push(-1);return}while(v<V&&mm<600){v=v*(1+cdiM)+apm;mm++}eta.push(mm>=600?-1:mm)});
+  /* em quantos meses o patrimônio chega a cada valor no ritmo atual (aporte médio + CDI) */
+  var etaDe=function(V){if(pat>=V)return 0;if(apm<=0)return -1;var v=pat,mm=0;while(v<V&&mm<600){v=v*(1+cdiM)+apm;mm++}return mm>=600?-1:mm};
   h+='<div class="mt">';
-  if(ci>=NE)h+='<div class="mth"><div><span class="k">Todas as etapas concluídas</span><div class="v">'+brl.format(pat)+'</div></div><span class="p">100%</span></div><div class="meta-bar"><i style="width:100%"></i></div>';
-  else{var V=E[ci],pc=pat/V,fal=V-pat,dl=mtPrazo(M,V),n=dl?mesesAte(dl):0,e=eta[ci],chips='',t2;
-    if(dl){chips+='<span class="pill">até '+MESL[+dl.slice(5,7)-1]+' de '+dl.slice(0,4)+'</span>';
-      if(n<=0)chips+='<span class="pill" style="color:var(--loss)">prazo vencido</span>';
-      else if(e>0)chips+=e<=n?'<span class="pill" style="color:var(--gain)">no prazo</span>':'<span class="pill" style="color:var(--loss)">'+(e-n)+(e-n>1?' meses':' mês')+' de atraso</span>'}
-    else chips+='<span class="pill">sem prazo</span>';
-    h+='<div class="mth"><div><span class="k">Etapa '+(ci+1)+' de '+NE+'</span><div class="v">R$ '+mtLbl(V)+'</div></div><span class="p">'+pf.format(pc*100)+'%</span></div>'+
+  if(ci<0){h+='<div class="mth"><div><span class="k">'+(G.length?'Sem meta para este ano':'Nenhuma meta definida')+'</span><div class="v">Defina a de '+ya+'</div></div></div><p class="small muted" style="margin:8px 0 0">Toque em Ajustar, escreva quanto quer juntar até dezembro de '+ya+' e salve. Você muda ou apaga quando quiser.</p>'}
+  else{var g=G[ci],V=g.v,done=pat>=V,pc=Math.min(1,pat/V),fal=Math.max(0,V-pat),n=mesesAte(g.a+'-12'),e=etaDe(V),chips='',t2;
+    chips+='<span class="pill">até dezembro de '+g.a+'</span>';
+    if(done)chips+='<span class="pill" style="color:var(--gain)">meta batida ✓</span>';
+    else if(g.a<ya)chips+='<span class="pill" style="color:var(--loss)">ano encerrado</span>';
+    else if(e>0)chips+=e<=n?'<span class="pill" style="color:var(--gain)">no prazo</span>':'<span class="pill" style="color:var(--loss)">'+(e-n)+(e-n>1?' meses':' mês')+' de atraso</span>';
+    else if(e<0)chips+='<span class="pill" style="color:var(--loss)">sem aportes para estimar</span>';
+    h+='<div class="mth"><div><span class="k">Meta de '+g.a+'</span><div class="v">'+mtR(V)+'</div></div><span class="p">'+pf.format(pc*100)+'%</span></div>'+
       '<div class="meta-bar"><i style="width:'+(pc*100)+'%"></i></div><div class="mtc">'+chips+'</div><div class="mtks">';
-    h+=bal('Você tem '+brl.format(pat)+'. Faltam '+brl.format(fal)+' para chegar a '+brl.format(V)+'.','<small>Faltam</small><b>'+mtR(fal)+'</b>').replace('class="bal"','class="bal mtk"');
-    if(dl&&n>0){var g=Math.pow(1+cdiM,n),pmt=(V-pat*g)*cdiM/(g-1);
-      t2=bal('Para chegar lá até '+MESL[+dl.slice(5,7)-1]+' de '+dl.slice(0,4)+' ('+n+(n>1?' meses':' mês')+'), precisa aportar cerca de '+brl.format(Math.max(0,pmt))+' por mês se a carteira render como o CDI ('+pf.format(cdiM*100)+'% ao mês)'+(pmt<=0?'; só o rendimento já leva você lá':'')+'. Sem rendimento nenhum, seriam '+brl.format(fal/n)+' por mês.','<small>Aporte por mês</small><b>'+mtR(Math.max(0,pmt))+'</b>')}
-    else t2=bal(dl?'O prazo desta etapa já passou. Toque em Ajustar para escolher uma nova data.':'Sem prazo definido para esta etapa. Toque em Ajustar e escolha uma data para ver quanto aportar por mês.','<small>Aporte por mês</small><b>'+(dl?'prazo vencido':'definir prazo')+'</b>');
+    h+=bal(done?'Você tem '+brl.format(pat)+', acima da meta de '+brl.format(V)+'. Se quiser, defina uma meta maior ou a do próximo ano em Ajustar.':'Você tem '+brl.format(pat)+'. Faltam '+brl.format(fal)+' para chegar a '+brl.format(V)+'.','<small>Faltam</small><b>'+(done?'—':mtR(fal))+'</b>').replace('class="bal"','class="bal mtk"');
+    if(!done&&n>0){var gg=Math.pow(1+cdiM,n),pmt=(V-pat*gg)*cdiM/(gg-1);
+      t2=bal('Para chegar lá até dezembro de '+g.a+' ('+n+(n>1?' meses':' mês')+'), precisa aportar cerca de '+brl.format(Math.max(0,pmt))+' por mês se a carteira render como o CDI ('+pf.format(cdiM*100)+'% ao mês)'+(pmt<=0?'; só o rendimento já leva você lá':'')+'. Sem rendimento nenhum, seriam '+brl.format(fal/n)+' por mês.','<small>Aporte por mês</small><b>'+mtR(Math.max(0,pmt))+'</b>')}
+    else t2=bal(done?'Meta já batida.':g.a<ya?'Esse ano já acabou. Defina a meta do ano atual em Ajustar.':'Estamos no último mês do ano: o que falta é '+brl.format(fal)+'.','<small>Aporte por mês</small><b>'+(done?'—':g.a<ya?'ano encerrado':mtR(fal))+'</b>');
     h+=t2.replace('class="bal"','class="bal mtk"');
-    h+=bal(apm>0?(e>0?'Aportando '+brl.format(apm)+' por mês do bolso, como nos últimos meses, e com a carteira rendendo como o CDI, você chega lá em '+e+(e>1?' meses':' mês')+' ('+mtMes(e)+').':'Nesse ritmo levaria mais de 50 anos.'):'Ainda não há aportes recentes para estimar quando você chega lá.','<small>No seu ritmo</small><b>'+(apm>0&&e>0?mtMes(e,1):'—')+'</b>').replace('class="bal"','class="bal mtk"');
+    h+=bal(done?'Meta batida.':apm>0?(e>0?'Aportando '+brl.format(apm)+' por mês do bolso, como nos últimos meses, e com a carteira rendendo como o CDI, você chega lá em '+e+(e>1?' meses':' mês')+' ('+mtMes(e)+').':'Nesse ritmo levaria mais de 50 anos.'):'Ainda não há aportes recentes para estimar quando você chega lá.','<small>No seu ritmo</small><b>'+(done?'✓':apm>0&&e>0?mtMes(e,1):'—')+'</b>').replace('class="bal"','class="bal mtk"');
     h+='</div>'}
-  /* trilha: concluídas riscadas, atual em destaque, próximas com a previsão */
-  h+='<div class="mtl" id="mtl">'+E.map(function(V,i){var st=i<ci?'ok':i===ci?'cur':'fut',sub,tx;
-    if(i<ci){var r=null;for(var j=0;j<ev.length;j++)if(ev[j].pat>=V){r=ev[j].m;break}var q=r?MESL[+r.slice(5,7)-1]+' de '+r.slice(0,4):'';
-      sub='concluída';tx='Etapa '+(i+1)+' concluída'+(q?' em '+q:'')+': '+brl.format(V)+'.'}
-    else{var e=eta[i];sub=i===ci?'atual':e>0?mtMes(e,1):'';
-      tx='Etapa '+(i+1)+': '+brl.format(V)+'. Faltam '+brl.format(V-pat)+'.'+(e>0?' No seu ritmo, você chega lá em '+mtMes(e)+'.':'')}
-    return '<button type="button" class="bal mts '+st+'" data-bal="'+esc(tx)+'"><i>'+(i<ci?'✓':i+1)+'</i><b>'+mtLbl(V)+'</b><small>'+sub+'</small></button>'}).join('')+'</div></div>';
+  /* trilha por ano: passados com o resultado, atual em destaque, próximos com a previsão */
+  if(G.length)h+='<div class="mtl" id="mtl">'+G.map(function(g,i){var st=g.a<ya&&i!==ci?'ok':i===ci?'cur':'fut',sub,tx,ic,res=null;
+    if(g.a<ya){for(var j=0;j<ev.length;j++)if(ev[j].m.slice(0,4)<=String(g.a))res=ev[j].pat;var bat=res!=null&&res>=g.v;
+      st=bat?'ok':'fut';ic=bat?'✓':'✗';sub=res==null?'sem dados':bat?'batida':pf.format(res/g.v*100)+'%';
+      tx='Meta de '+g.a+': '+brl.format(g.v)+'. '+(res==null?'Sem dados do patrimônio no fim do ano.':'Patrimônio no fim do ano: '+brl.format(res)+' ('+pf.format(res/g.v*100)+'% da meta).')}
+    else{var e2=etaDe(g.v);ic=String(g.a).slice(2);sub=i===ci?(pat>=g.v?'batida':'atual'):e2>0?mtMes(e2,1):'';
+      tx='Meta de '+g.a+': '+brl.format(g.v)+'. '+(pat>=g.v?'Já batida.':'Faltam '+brl.format(g.v-pat)+'.'+(e2>0?' No seu ritmo, você chega lá em '+mtMes(e2)+'.':''))}
+    return '<button type="button" class="bal mts '+st+'" data-bal="'+esc(tx)+'"><i>'+ic+'</i><b>'+g.a+'</b><small>'+sub+'</small></button>'}).join('')+'</div>';
+  h+='</div>';
   if(M.renda&&M.renda.valor>0){
     var d0=S.trades.map(function(t){return t.date}).sort()[0],ini=new Date(Date.now()-365*864e5).toISOString().slice(0,10),from=d0>ini?d0:ini;
     var rec=0;S.trades.forEach(function(t){if(t.side==='div'&&t.date>=from)rec+=t.price*(t.market==='US'?t.fx:1)});
     var meses=Math.max(1,Math.round(dayDiff(from,today())/30.44)),rm=rec/meses,W=M.renda.valor,pr=Math.min(1,rm/W),yl=pat?rm*12/pat:0;
     h+='<div class="mt"><div class="mth"><div><span class="k">Renda passiva '+bal('Média dos proventos '+(meses<12?'desde '+fmtDate(from):'dos últimos 12 meses')+': '+brl.format(rm)+' por mês, '+pf.format(pr*100)+'% da meta de '+brl.format(W)+'. '+(yl>0?'Com os proventos rendendo '+pf.format(yl*100)+'% ao ano sobre o patrimônio, a meta pede um patrimônio de cerca de '+brl.format(W*12/yl)+'.':'Ainda não há proventos suficientes para estimar.'))+'</span><div class="v">'+brl.format(rm)+'<span class="det"> de '+mtR(W)+' por mês</span></div></div><span class="p" style="color:var(--c2)">'+pf.format(pr*100)+'%</span></div>'+
       '<div class="meta-bar r"><i style="width:'+(pr*100)+'%"></i></div></div>'}
-  var Vc=ci<NE?E[ci]:0,dc=Vc?mtPrazo(M,Vc):'';
-  h+='<details><summary>Ajustar</summary><div class="stack" style="margin-top:12px">'+
-    '<label class="small muted">Etapas de patrimônio (R$, em ordem, separadas por ponto e vírgula)<input id="mt-et" inputmode="decimal" placeholder="ex.: 50000; 80000; 150000" value="'+esc(E.map(function(x){return String(Math.round(x))}).join('; '))+'"></label>'+
-    (Vc?'<label class="small muted">Prazo da etapa atual (R$ '+Math.round(Vc).toLocaleString('pt-BR')+')<input id="mt-pd" type="month" data-v="'+Vc+'" value="'+(dc?dc.slice(0,7):'')+'"></label>':'')+
+  h+='<details'+(ci<0?' open':'')+'><summary>Ajustar</summary><div class="stack" style="margin-top:12px">'+
+    '<label class="small muted">Metas por ano (uma por linha: ano e valor em R$). Apague a linha para excluir.<textarea id="mt-an" rows="'+Math.max(3,G.length+1)+'" placeholder="'+ya+': 80000">'+esc(G.map(function(g){return g.a+': '+Math.round(g.v)}).join('\n'))+'</textarea></label>'+
     '<label class="small muted">Renda passiva por mês (R$, opcional)<input id="mt-rv" inputmode="decimal" placeholder="deixe vazio se não quiser" value="'+(M.renda&&M.renda.valor?String(M.renda.valor).replace('.',','):'')+'"></label>'+
-    '<div style="display:flex;gap:10px;align-items:center"><button class="btn small" type="button" id="mt-save">Salvar</button><button class="btn small ghost" type="button" id="mt-reset">Voltar ao padrão</button><span class="msg" id="mt-msg"></span></div></div></details></div>';
+    '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn small" type="button" id="mt-save">Salvar</button><button class="btn small ghost" type="button" id="mt-reset">Apagar todas as metas</button><span class="msg" id="mt-msg"></span></div></div></details></div>';
   return h;
 }
+function mtParse(t){t=String(t||'').replace(/^R\$\s*/i,'').replace(/\s/g,'');return /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)?parseFloat(t.replace(/\./g,'').replace(',','.')):parseNum(t)}
 function metasSave(reset){
-  var pn=function(id){var r=String($(id).value||'').trim();return /^\d{1,3}(\.\d{3})+$/.test(r)?parseFloat(r.replace(/\./g,'')):parseNum(r)};
   var old=S.metas||{},M={},mm=$('mt-msg'),erro=function(t){if(mm){mm.className='msg loss';mm.textContent=t}};
-  /* etapas: lista nova (ou padrão se vazio/reset); prazos ficam presos ao valor da etapa */
-  var et=[];if(!reset){var raw=String($('mt-et')?$('mt-et').value:'').trim();if(raw){var bad=false;raw.split(/[;\n]+/).forEach(function(t){t=t.trim();if(!t)return;var v=pn2(t);if(!(v>0)||v>1e10)bad=true;else if(et.indexOf(v)<0)et.push(v)});if(bad||!et.length){erro('Use só números, separados por ponto e vírgula. Ex.: 50000; 80000; 150000');return}et.sort(function(a,b){return a-b})}}
-  function pn2(t){t=t.replace(/^R\$\s*/i,'').replace(/\s/g,'');return /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)?parseFloat(t.replace(/\./g,'').replace(',','.')):parseNum(t)}
-  if(et.length&&JSON.stringify(et)!==JSON.stringify(MTE))M.etapas=et;
-  var pr={};if(!reset){var op=old.prazos&&typeof old.prazos==='object'?old.prazos:{};Object.keys(op).forEach(function(k){pr[k]=op[k]});if(old.pat&&old.pat.valor&&old.pat.data&&!pr[old.pat.valor])pr[old.pat.valor]=old.pat.data}
-  var pe=$('mt-pd');if(!reset&&pe){var v=+pe.getAttribute('data-v');if(M.etapas){var R0=compute(),p0=R0.tot.value+R0.tot.cash,nv=0;for(var q=0;q<M.etapas.length;q++)if(p0<M.etapas[q]){nv=M.etapas[q];break}if(nv)v=nv}if(pe.value)pr[v]=pe.value+'-01';else delete pr[v]}
-  var ok=M.etapas||MTE;Object.keys(pr).forEach(function(k){if(ok.indexOf(+k)<0)delete pr[k]});
-  if(Object.keys(pr).length)M.prazos=pr;
-  var rv=reset&&old.renda?old.renda.valor:pn('mt-rv');if(rv>0)M.renda={valor:rv};
+  var an={};
+  if(!reset){var raw=String($('mt-an')?$('mt-an').value:'').split(/\n+/),bad=false;
+    raw.forEach(function(l){l=l.trim();if(!l)return;var m=l.match(/^(\d{4})\s*[:;=\-–]?\s*(.+)$/);if(!m){bad=true;return}var a=+m[1],v=mtParse(m[2]);if(a<2000||a>2100||!(v>0)||v>1e10){bad=true;return}an[a]=v});
+    if(bad){erro('Escreva uma meta por linha: ano e valor. Ex.: '+today().slice(0,4)+': 80000');return}}
+  if(Object.keys(an).length)M.anos=an;
+  var rv=reset?(old.renda&&old.renda.valor):mtParse($('mt-rv').value);if(rv>0)M.renda={valor:rv};
   S.metas=M;S.pend.push({t:'cfg',k:'metas',v:M});save();try{document.activeElement.blur()}catch(e){}MTC=-1;render();ghSync();
-  mm=$('mt-msg');if(mm){mm.className='msg gain';mm.textContent=reset?'Etapas padrão restauradas.':'Salvo.'}
+  mm=$('mt-msg');if(mm){mm.className='msg gain';mm.textContent=reset?'Metas apagadas.':'Salvo.'}
 }
 function renderIR(){
   var el=$('irtab');if(!el)return;
