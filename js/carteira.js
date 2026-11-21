@@ -25,25 +25,46 @@ function investHtml(R){var T=R.tot,h='',ct=T.rfC;R.held.forEach(function(x){ct+=
 var VND={spr:0.99,iof:0.38,ir:15};
 try{var vn0=JSON.parse(localStorage.getItem(LS+'-vnd')||'null');if(vn0){['spr','iof','ir'].forEach(function(k){if(typeof vn0[k]==='number'&&vn0[k]>=0&&vn0[k]<=100)VND[k]=vn0[k]})}}catch(e){}
 function vendaCalc(R){
-  var us=R.held.filter(function(x){return x.p.market==='US'});if(!us.length)return null;
-  var v=0,c=0;us.forEach(function(x){v+=x.v;c+=x.p.cB});
-  var spr=v*VND.spr/100,liq0=v-spr,iof=liq0*VND.iof/100,gan=v-c,ir=gan>0?gan*VND.ir/100:0,liq=liq0-iof-ir;
-  return {v:v,c:c,spr:spr,iof:iof,ir:ir,gan:gan,liq:liq,custo:spr+iof+ir,ganLiq:liq-c}}
+  var T=R.tot,out={segs:[]},br=R.held.filter(function(x){return x.p.market==='BR'}),us=R.held.filter(function(x){return x.p.market==='US'});
+  var sum=function(a,f){return a.reduce(function(s,x){return s+f(x)},0)};
+  if(br.length){
+    var ac=br.filter(function(x){return !isFII(x.p.ticker)}),fi=br.filter(function(x){return isFII(x.p.ticker)});
+    var va=sum(ac,function(x){return x.v}),ga=sum(ac,function(x){return x.gain}),gf=sum(fi,function(x){return x.gain});
+    var iA=va>20000&&ga>0?ga*0.15:0,iF=gf>0?gf*0.20:0,luc=ga+gf;
+    out.segs.push({k:'br',n:'Ações e FIIs do Brasil',v:va+sum(fi,function(x){return x.v}),luc:luc,custo:iA+iF,ir:iA+iF,iA:iA,iF:iF,va:va,isento:va<=20000})}
+  if(us.length){
+    var v=sum(us,function(x){return x.v}),c=sum(us,function(x){return x.p.cB});
+    var spr=v*VND.spr/100,liq0=v-spr,iof=liq0*VND.iof/100,gan=v-c,ir=gan>0?gan*VND.ir/100:0;
+    out.segs.push({k:'us',n:'Dólares (VT)',v:v,luc:gan,custo:spr+iof+ir,spr:spr,iof:iof,ir:ir,c:c})}
+  if(T.rfV)out.segs.push({k:'rf',n:'Renda fixa',v:T.rfV,luc:T.rfU,custo:0});
+  var held=sum(R.held,function(x){return x.gain})+T.rfU;
+  out.bolso=T.gain-held;
+  out.custo=sum(out.segs,function(x){return x.custo});
+  out.valor=sum(out.segs,function(x){return x.v})-out.custo;
+  out.lucro=T.gain-out.custo;
+  out.v=sum(out.segs.filter(function(x){return x.k==='us'}),function(x){return x.v});
+  var u=out.segs.filter(function(x){return x.k==='us'})[0];if(u){out.c=u.c;out.spr=u.spr;out.iof=u.iof;out.ir=u.ir;out.liq=u.v-u.custo}
+  return out.segs.length?out:null}
 function vendaHtml(R){
   var V=vendaCalc(R);if(!V)return '';
-  var T=R.tot,fm=function(n){return String(n).replace('.',',')};
-  var row=function(l,n,neg){return '<li><span>'+l+'</span><span class="num '+(neg?cls(-1):'')+'">'+(neg?'−':'')+brl.format(Math.abs(n))+'</span></li>'};
-  return '<div class="panel"><h2>Se vendesse seus dólares hoje '+bal('Quanto sobraria em reais se você vendesse todo o seu VT agora e trouxesse o dinheiro de volta para a conta brasileira, já descontando o que o Inter e a Receita cobram. É uma estimativa: o spread muda a cada dia e o IR final é fechado na declaração anual.')+'</h2>'+
-    '<ul class="calc">'+row('Seus dólares hoje (cotação do momento)',V.v)+row('Spread do Inter ('+fm(VND.spr)+'%)',V.spr,1)+row('IOF na volta para real ('+fm(VND.iof)+'%)',V.iof,1)+row('IR sobre o lucro ('+fm(VND.ir)+'%)',V.ir,1)+
-    '<li class="tot"><span>Sobraria em reais</span><span class="num">'+brl.format(V.liq)+'</span></li></ul>'+
-    '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Lucro nos dólares antes dos custos</span><span class="num '+cls(V.gan)+'">'+sgn(V.gan)+'</span></div>'+
-    '<div><span class="lbl">Lucro de verdade depois dos custos</span><span class="num '+cls(V.ganLiq)+'">'+sgn(V.ganLiq)+'</span></div></div>'+
-    '<p class="note" style="margin:12px 0 0">Seu lucro total de '+sgn(T.gain)+' cai para <b>'+sgn(T.gain-V.custo)+'</b> se você vender tudo isso hoje ('+brl.format(V.custo)+' em custos).</p>'+
-    '<details><summary>Ajustar spread, IOF e IR</summary><div class="keys" style="margin-top:10px">'+
+  var fm=function(n){return String(n).replace('.',',')},T=R.tot;
+  var seg=function(x){return '<div class="vsr"><div class="vsh"><span>'+x.n+'</span><b class="num '+cls(x.luc-x.custo)+'">'+sgn(x.luc-x.custo)+'</b></div><small>Lucro hoje '+sgn(x.luc)+(x.custo>0.005?' · custos −'+brl.format(x.custo):' · sem custos')+'</small></div>'};
+  var br=V.segs.filter(function(x){return x.k==='br'})[0],us=V.segs.filter(function(x){return x.k==='us'})[0];
+  var h='<div class="panel"><h2>Se vendesse tudo hoje '+bal('Quanto você teria em reais e quanto sobraria de lucro de verdade se vendesse tudo agora e trouxesse o dinheiro para a conta brasileira, já descontando os custos e os impostos. É uma estimativa: o spread muda a cada dia e o IR final é fechado na declaração anual.')+'</h2>'+
+    '<p class="note" style="margin:-6px 0 4px">Você ficaria com</p><div class="num" style="font-size:30px;font-weight:700">'+brl.format(V.valor)+'</div>'+
+    '<p style="margin:6px 0 0">Lucro de verdade: <b class="num '+cls(V.lucro)+'">'+sgn(V.lucro)+'</b> <span class="muted small">(depois dos custos e impostos)</span></p>'+
+    '<div style="margin-top:14px;padding-top:6px;border-top:1px solid var(--line)">'+V.segs.map(seg).join('')+
+    (Math.abs(V.bolso)>0.005?'<div class="vsr"><div class="vsh"><span>Proventos, vendas já feitas e taxas</span><b class="num '+cls(V.bolso)+'">'+sgn(V.bolso)+'</b></div><small>O que você já recebeu ou realizou antes</small></div>':'')+
+    '<div class="vsr tot"><div class="vsh"><span>Total</span><b class="num '+cls(V.lucro)+'">'+sgn(V.lucro)+'</b></div><small>Lucro de hoje '+sgn(T.gain)+' menos '+brl.format(V.custo)+' de custos</small></div></div>'+
+    '<details><summary>Ver as contas e ajustar</summary><ul class="calc small" style="margin-top:10px">'+
+    (br?'<li><span>IR nas ações do Brasil '+(br.isento?'(vendas até R$ 20 mil no mês: isento)':'(15% sobre o lucro)')+'</span><span class="num">'+brl.format(br.iA)+'</span></li>'+(br.iF>0.005?'<li><span>IR nos FIIs (20% sobre o lucro)</span><span class="num">'+brl.format(br.iF)+'</span></li>':''):'')+
+    (us?'<li><span>Spread do Inter ('+fm(VND.spr)+'%)</span><span class="num">'+brl.format(us.spr)+'</span></li><li><span>IOF dólar para real ('+fm(VND.iof)+'%)</span><span class="num">'+brl.format(us.iof)+'</span></li><li><span>IR no exterior ('+fm(VND.ir)+'% do lucro em reais)</span><span class="num">'+brl.format(us.ir)+'</span></li>':'')+
+    '</ul>'+(us?'<div class="keys" style="margin-top:10px">'+
     '<label class="small muted" for="vn-spr">Spread do Inter (%), confira na tela de conversão</label><input id="vn-spr" data-vnd="spr" inputmode="decimal" value="'+fm(VND.spr)+'" autocomplete="off">'+
     '<label class="small muted" for="vn-iof">IOF dólar para real (%)</label><input id="vn-iof" data-vnd="iof" inputmode="decimal" value="'+fm(VND.iof)+'" autocomplete="off">'+
-    '<label class="small muted" for="vn-ir">IR sobre o lucro no exterior (%)</label><input id="vn-ir" data-vnd="ir" inputmode="decimal" value="'+fm(VND.ir)+'" autocomplete="off"></div>'+
-    '<p class="note" style="margin:10px 0 0">Padrões: spread de 0,99% (valor que o Inter já divulgou; ele mostra o seu na hora da conversão), IOF de 0,38% na entrada de dólar para real e IR de 15% sobre o lucro de investimentos no exterior (Lei 14.754/2023), calculado em reais: valor da venda menos o custo de cada compra no dólar do dia. O IR da declaração pode ser menor se você tiver prejuízo em outros ativos no exterior no mesmo ano. Não inclui dividendos nem conta do seu contador.</p></details></div>'}
+    '<label class="small muted" for="vn-ir">IR sobre o lucro no exterior (%)</label><input id="vn-ir" data-vnd="ir" inputmode="decimal" value="'+fm(VND.ir)+'" autocomplete="off"></div>':'')+
+    '<p class="note" style="margin:10px 0 0">Brasil: ações têm isenção se você vender até R$ 20 mil no mês (senão 15% do lucro) e FIIs pagam 20% do lucro, sem contar prejuízos de meses anteriores nem outras vendas do mês. Dólares: spread de 0,99% (o Inter mostra o seu na hora da conversão), IOF de 0,38% na volta e IR de 15% sobre o lucro em reais (Lei 14.754/2023). Renda fixa já está líquida de IR e IOF. Estimativa para estudo: confirme com seu contador.</p></details></div>'
+  return h}
 document.addEventListener('change',function(e){var t=e.target,k=t&&t.getAttribute&&t.getAttribute('data-vnd');if(!k)return;
   var n=parseFloat(String(t.value).replace(',','.'));if(isNaN(n)||n<0||n>100)n=VND[k];VND[k]=n;try{localStorage.setItem(LS+'-vnd',JSON.stringify(VND))}catch(er){}render()});
 function perfHtml(R){

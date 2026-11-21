@@ -483,3 +483,5 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 
 #ajcol[data-ajv=perfil] [data-aj]:not([data-aj=perfil]),#ajcol[data-ajv=aparencia] [data-aj]:not([data-aj=aparencia]),#ajcol[data-ajv=dados] [data-aj]:not([data-aj=dados]),#ajcol[data-ajv=precos] [data-aj]:not([data-aj=precos]),#ajcol[data-ajv=assistente] [data-aj]:not([data-aj=assistente]){display:none}
 #ajseg{margin:0}
+
+.vsr{padding:10px 0;border-bottom:1px solid var(--line)}.vsr:last-child{border-bottom:0}.vsr .vsh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:16px}.vsr .vsh b{font-size:17px;font-variant-numeric:tabular-nums}.vsr small{display:block;margin-top:2px;color:var(--muted);font-size:12.5px}.vsr.tot .vsh{font-weight:700}
