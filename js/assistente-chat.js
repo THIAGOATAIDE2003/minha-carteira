@@ -66,7 +66,12 @@ function asSSE(res,pick,on){if(!res.body||!res.body.getReader)return res.text().
   return new Promise(function(ok,ko){(function pump(){rd.read().then(function(r){if(r.done){ok();return}buf+=dec.decode(r.value,{stream:true});var ls=buf.split('\n');buf=ls.pop();
     ls.forEach(function(l){l=l.trim();if(l.indexOf('data:')!==0)return;var d=l.slice(5).trim();if(!d||d==='[DONE]')return;try{var x=pick(JSON.parse(d));if(x)on(x)}catch(e){}});pump()},ko)})()})}
 /* ASQ1 = pergunta do chat em andamento (a Groq começa direto no contexto da empresa); ASCD = provedor em pausa depois de 429, para não repetir chamada que vai falhar */
-var ASQ1='',ASCD={};
+var ASQ1='',ASCD={},ASP=null;
+/* desempenho de cada pergunta (só neste aparelho, últimas 30): tempo até o 1º texto, tempo total, chamadas, caracteres e tokens estimados, modelo, trocas de modelo/IA */
+function aspNew(){ASP={t0:performance.now(),nc:0,ch:0,fb:0,ft:null}}
+function aspB(s){if(ASP){ASP.nc++;ASP.ch+=s.length}return s}
+function aspFb(){if(ASP)ASP.fb++}
+function aspSave(a){var o=ASP;ASP=null;if(!o)return;try{var l=JSON.parse(localStorage.getItem(LS+'-asperf')||'[]');l.push({d:Date.now(),ft:o.ft==null?null:Math.round(o.ft),tt:Math.round(performance.now()-o.t0),nc:o.nc,ch:o.ch,fb:o.fb,mod:a.mod||'',e:a.e?1:0});localStorage.setItem(LS+'-asperf',JSON.stringify(l.slice(-30)))}catch(e){}}
 function asHttp(r){if(r.ok)return r;return r.text().then(function(t){var m='';try{var j=JSON.parse(t);m=(j.error&&(j.error.message||j.error.status))||''}catch(e){}var e=new Error('HTTP '+r.status+(m?': '+String(m).slice(0,120):''));e.st=r.status;e.tx=t.slice(0,1500);throw e})}
 function asCache(k){try{var o=JSON.parse(localStorage.getItem(LS+'-asm'+k)||'null');return o&&Date.now()-o.at<864e5?o.l:null}catch(e){return null}}
 function asCacheSet(k,l){try{localStorage.setItem(LS+'-asm'+k,JSON.stringify({at:Date.now(),l:l}))}catch(e){}}
@@ -79,27 +84,27 @@ function asGemModels(key){var c=asCache('m2');if(c)return Promise.resolve(c);
     var vr=function(n){var m=n.match(/(\d+(?:\.\d+)?)/);return m?+m[1]:0};l.sort(function(a,b){return (/lite/.test(a)-/lite/.test(b))||(/2\.5/.test(b)-/2\.5/.test(a))||vr(b)-vr(a)});l=l.slice(0,4);if(!l.length)l=['gemini-2.5-flash','gemini-flash-latest'];asCacheSet('m2',l);/* 2.5-flash primeiro: os modelos 3.x mais novos podem travar sem resposta */return l}).catch(function(e){if(e.st===400||e.st===403)throw e;return ['gemini-2.5-flash','gemini-flash-latest']})}
 function asGroq(key,mk,on,sig){var full=mk(false),small=null,mini=null;return asGroqModels(key).then(function(ms){var i=0,last=null,lv=(ASQ1&&asFind(ASQ1).length)?1:0;
   var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i],got=0,msgs=lv===2?(mini||(mini=mk(2))):lv===1?(small||(small=mk(true))):full;
-    return fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',signal:sig,headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify(Object.assign({model:m,messages:msgs,temperature:0.3,max_tokens:1600,stream:true},/gpt-oss/.test(m)?{reasoning_effort:'low'}:{}))})
+    return fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',signal:sig,headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:aspB(JSON.stringify(Object.assign({model:m,messages:msgs,temperature:0.3,max_tokens:1600,stream:true},/gpt-oss/.test(m)?{reasoning_effort:'low'}:{})))})
       .then(asHttp).then(function(r){AS.mod='Groq · '+m.replace(/^.*\//,'');return asSSE(r,function(j){var c=j.choices&&j.choices[0];return c&&c.delta&&c.delta.content},function(t){got=1;on(t)})})
-      .catch(function(e){if(e.name==='AbortError'||got||e.st===401)throw e;last=e;if(e.st===413&&lv<2){lv++;return go()}i++;lv=0;return go()})};return go()})}
+      .catch(function(e){if(e.name==='AbortError'||got||e.st===401)throw e;last=e;aspFb();if(e.st===413&&lv<2){lv++;return go()}i++;lv=0;return go()})};return go()})}
 function asGem(key,msgs,on,sig){return asGemModels(key).then(function(ms){var i=0,last=null,sys=msgs[0].content,ct=msgs.slice(1).map(function(x){return {role:x.role==='assistant'?'model':'user',parts:[{text:x.content}]}});
   var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i++],got=0;
-    return fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':streamGenerateContent?alt=sse',{method:'POST',signal:sig,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:ct,generationConfig:{temperature:0.3,maxOutputTokens:6000}})})
+    return fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':streamGenerateContent?alt=sse',{method:'POST',signal:sig,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:aspB(JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:ct,generationConfig:{temperature:0.3,maxOutputTokens:6000}}))})
       .then(asHttp).then(function(r){AS.mod='Gemini · '+m;return asSSE(r,function(j){var c=j.candidates&&j.candidates[0];return c&&c.content&&c.content.parts&&c.content.parts.map(function(p){return p.text||''}).join('')},function(t){got=1;on(t)})})
       .catch(function(e){if(e.name==='AbortError'||got)throw e;last=e;return go()})};return go()})}
 function asErrTxt(e,who){var s=e&&e.st;if(s===401||s===403||s===400&&who==='Gemini')return 'a chave '+(who==='Groq'?'da Groq':'do Gemini')+' não foi aceita. Confira em Mais → Ajustes.';if(s===413)return 'o pedido ficou grande demais para o limite grátis da '+who+', mesmo na versão reduzida. Pergunte sobre uma empresa por vez ou toque em + para um chat novo.';if(s===429){var dt=String(e.message||'').replace(/^HTTP 429:?\s*/,'').replace(/\s+/g,' ').slice(0,110);return 'limite de uso '+(who==='Groq'?'da Groq':'do Gemini')+' atingido'+(dt?' ('+dt+')':'')+'. Tente de novo em 1 minuto.'}if(s>=500)return who+' está fora do ar agora.';return who+': '+(e&&e.message==='Failed to fetch'?'sem internet ou bloqueado':e&&e.message||'erro')}
 function asAsk(q){q=String(q||'').trim();if(!q||AS.busy)return;var gq=S.keys.gq,gm=S.keys.gem;
-  ASQ1=q;try{asmNota(q);asSysAtual()}catch(e){}AS.m.push({r:'u',t:q});var a={r:'a',t:'',mod:''};AS.m.push(a);AS.busy=true;asRender();
+  ASQ1=q;aspNew();try{asmNota(q);asSysAtual()}catch(e){}AS.m.push({r:'u',t:q});var a={r:'a',t:'',mod:''};AS.m.push(a);AS.busy=true;asRender();
   if(!gq&&!gm){a.e=1;a.t='Para eu responder, cole a chave da Groq em **Mais → Ajustes → Assistente**. É grátis em console.groq.com (a mesma que você criou para o robô serve).';AS.busy=false;asSave();asRender();return}
   var mk=function(c){try{return asMsgs(q,c)}catch(e){return [{role:'system',content:ASSYS},{role:'user',content:q}]}},msgs=null,gmk=function(){return msgs||(msgs=mk(false))};
   var ab=window.AbortController?new AbortController():null;AS.ab=ab;var sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab&&!a.t)ab.abort()},100000),errs=[];
-  var on=function(t){a.t+=t;asTick()};
+  var on=function(t){if(ASP&&ASP.ft==null)ASP.ft=performance.now()-ASP.t0;a.t+=t;asTick()};
   /* ordem das IAs: Groq primeiro (rápida) ou Gemini primeiro (mais caprichada), conforme Ajustes; a outra fica de reserva */
   var provs=[];if(gq)provs.push(['Groq',function(){return asGroq(gq,mk,on,sig)}]);if(gm)provs.push(['Gemini',function(){return asGemT(gm,q,on,sig).catch(function(e){if(e&&e.st===400&&!a.t)return asGem(gm,gmk(),on,sig);throw e})}]);if(S.asia==='gem'&&gm)provs.reverse();
   var okp=provs.filter(function(p){return !(ASCD[p[0]]>Date.now())});if(okp.length&&okp.length<provs.length)provs=okp;
-  var run=function(k){AS.st=provs[k][0]+': aguardando resposta';return provs[k][1]().catch(function(e){if((e&&e.name==='AbortError')||a.t)throw e;if(e&&e.st===429)ASCD[provs[k][0]]=Date.now()+60000;errs.push(asErrTxt(e,provs[k][0]));if(k+1<provs.length)return run(k+1);throw e})};
+  var run=function(k){AS.st=provs[k][0]+': aguardando resposta';return provs[k][1]().catch(function(e){if((e&&e.name==='AbortError')||a.t)throw e;if(e&&e.st===429)ASCD[provs[k][0]]=Date.now()+60000;errs.push(asErrTxt(e,provs[k][0]));aspFb();if(k+1<provs.length)return run(k+1);throw e})};
   run(0).then(function(){a.mod=AS.mod;if(!a.t){a.e=1;a.t='A IA não mandou resposta. Tente de novo.'}}).catch(function(e){if(e&&e.name==='AbortError'){if(a.t){a.mod=AS.mod;a.t+=' …';a.cut=1;return}a.e=1;a.t='Demorou demais para responder. Tente de novo. (parou em: '+(AS.st||'?')+')';return}
     if(a.t){a.mod=AS.mod;a.cut=1;return}a.e=1;a.t='Não consegui responder: '+errs.join(' E ')})
-   .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;ASQ1='';asSave();asRender();try{asvFim(a)}catch(e){}})}
+   .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;ASQ1='';aspSave(a);asSave();asRender();try{asvFim(a)}catch(e){}})}
 var ASRF=0;function asTick(){if(ASRF)return;ASRF=requestAnimationFrame(function(){ASRF=0;var el=document.querySelector('#as-b .asm.a:last-child .ast'),a=AS.m[AS.m.length-1];if(el&&a){setHtml(el,asMd(a.t));asScroll()}})}
 /* markdown simples: **negrito**, listas com "- ", parágrafos */
