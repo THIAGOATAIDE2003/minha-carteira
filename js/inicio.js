@@ -87,15 +87,14 @@ function heroOpen(k){STK={tk:'',hero:k,rng:k==='dia'?'1d':'1y',d:null,cv:'luc'};
 function heroRender(){
   var b=$('stk-b'),k=STK.hero;if(!b)return;
   if(k==='cam'){heroCam(b);return}
-  if(k==='luc'&&(STK.rng==='1d'||STK.rng==='5d'))STK.rng='1mo';
   if(k==='inv'&&(STK.rng==='1d'||STK.rng==='5d')){heroInv(b);return}
-  if(k!=='inv'&&k!=='luc'&&(STK.rng==='1d'||STK.rng==='5d'||k==='dia')){if(k==='dia'&&STK.rng!=='1d'&&STK.rng!=='5d')STK.rng='1d';heroIntra(b,k);return}
+  if(k!=='inv'&&(STK.rng==='1d'||STK.rng==='5d'||k==='dia')){if(k==='dia'&&STK.rng!=='1d'&&STK.rng!=='5d')STK.rng='1d';heroIntra(b,k);return}
   var rows=evoData(),T=compute().tot,rg=STK.rng,days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],t0=days?Date.now()-days*864e5:0;
   var all=rows.map(function(r){var g=0;['BR','US','RF'].forEach(function(s){var q=r.seg&&r.seg[s];if(q)g+=q.v-q.c});return {t:Date.parse(monthEnd(r.m)),c:k==='pat'?r.pat:k==='luc'?r.lucro:k==='inv'?r.seg.BR.c+r.seg.US.c+r.seg.RF.c:g}});
   var Rn=compute(),ctn=0;Rn.held.forEach(function(x){ctn+=x.p.market==='US'?x.p.cN*T.fxNow:x.p.cB});ctn+=T.rfC;var now=k==='pat'?T.value+T.cash:k==='inv'?ctn:k==='luc'?T.gain:all.length?all[all.length-1].c:0;if(all.length)all[all.length-1]={t:Date.now(),c:k==='pat'||k==='inv'||k==='luc'?now:all[all.length-1].c};
   var hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);
   var ch=hist.length>1?hist[hist.length-1].c-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=ch!=null&&base>0&&(k==='pat'||k==='inv')?ch/base*100:null,last=hist.length?hist[hist.length-1].c:0;
-  setHtml(b,gHead(HERON[k],'',brl.format(last),ch,pc!=null?pc:(ch!=null?0:null),rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,k==='luc'?['yr','nointra']:['yr'])+lineChart(hist,'BRL',null)+
+  setHtml(b,gHead(HERON[k],'',brl.format(last),ch,pc,rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,['yr'])+lineChart(hist,'BRL',null)+
     (k==='luc'?'<p class="note">Quanto você ganhou ou perdeu no total, em fim de mês (o último é hoje): patrimônio menos tudo que você colocou, juntando preço, dólar, vendas e proventos. Se ele cai, veja o que mudou: toque em Preço ou em Dólar na lista.</p>':k==='inv'?'<p class="note">Quanto você pagou pelo que tem hoje, em fim de mês (o último é hoje). Sobe quando você aporta e também quando o dólar sobe, porque o custo do VT é contado pelo dólar da data. Por isso ele mexe sem você ter comprado nada.</p>':'<p class="note">Pontos de fim de mês (o último é hoje), pela mesma conta da Evolução. Só preço: sem câmbio de vendas e sem proventos.</p>'));
 }
 
@@ -118,7 +117,7 @@ function heroIntra(b,k){
   var ts={};lista.forEach(function(a){a.h.forEach(function(p){ts[p.t]=1})});var tt=Object.keys(ts).map(Number).sort(function(a,c){return a-c}),idx=lista.map(function(){return 0}),px=lista.map(function(a){return a.prev}),pts=[],base=0;
   lista.forEach(function(a){base+=a.q*a.f*a.prev});
   tt.forEach(function(t){var v=0;lista.forEach(function(a,i){while(idx[i]<a.h.length&&a.h[idx[i]].t<=t){px[i]=a.h[idx[i]].c;idx[i]++}v+=a.q*a.f*px[i]});pts.push({t:t,c:v})});
-  var ref=rg==='1d'?base:pts[0].c,vl=pts[pts.length-1].c,d=vl-ref,lv=k==='pat'?T.value+T.cash:k==='val'?valoriz(R).g:null,out=pts;
+  var ref=rg==='1d'?base:pts[0].c,vl=pts[pts.length-1].c,d=vl-ref,lv=k==='pat'?T.value+T.cash:k==='val'?valoriz(R).g:k==='luc'?T.gain:null,out=pts;
   if(lv!=null)out=pts.map(function(p){return {t:p.t,c:lv+(p.c-vl)}});
   setHtml(b,gHead(HERON[k],'',brl.format(k==='dia'?d:out[out.length-1].c),d,ref>0?d/ref*100:null,rg,(d>=0?'+':'−')+brl.format(Math.abs(d)),gWhen(Date.now()))+head()+
     lineChart(k==='dia'?out.map(function(p,i){return {t:p.t,c:pts[i].c-ref}}):out,'BRL',null,null,{intra:1,d1:rg==='1d',prev:k==='dia'&&rg==='1d'?0:null})+

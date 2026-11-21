@@ -95,3 +95,5 @@ Keep user data and API keys out of the repo; the app must keep working offline f
 
 
 - **Saúde dos dados** (1.46.0): `saudeProblemas()` (`js/atualizacao.js`) lista atrasos reais com bolsa BR/EUA aberta: preços sem busca há >25 min (`RF.last`), dólar (`S.fx.at`) e robô diário parado >30 h em dia útil. `renderSync` (`nuvem.js`) mostra o primeiro como aviso no pill do cabeçalho (toque abre Ajustes) quando a nuvem está ok; `abas.js` chama `renderSync` a cada 60 s; o painel Status das fontes (`tela.js`) lista todos no topo. Usa a hora da busca, não a do negócio, para não alarmar com ação pouco líquida.
+
+- **Lucro total com 1D/5D (1.46.1)**: `heroRender` manda `luc` para `heroIntra` nos períodos 1D/5D (lucro = `T.gain` + variação do valor das ações ponto a ponto, como `pat` e `val`); o botão de período não esconde mais 1D/5D. `gHead` mostra só o valor (sem '(0,00%)') quando não há porcentagem, e a área do `lineChart` agora fecha no primeiro e no último ponto (antes ficava uma borda inclinada até 0).
