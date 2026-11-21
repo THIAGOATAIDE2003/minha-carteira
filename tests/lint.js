@@ -20,6 +20,14 @@ const raiz = path.resolve(__dirname, '..');
   }
   const eslint = new ESLint({ cwd: raiz });
   const problemas = [];
+  /* Nomes globais repetidos em arquivos diferentes: como todos dividem o mesmo escopo, o de baixo apaga o de cima sem aviso. */
+  const donos = {};
+  for (const f of arquivos)
+    for (const l of fs.readFileSync(path.join(raiz, f), 'utf8').split('\n')) {
+      const m = l.match(/^(?:function\s+([A-Za-z_$][\w$]*)|var\s+([A-Za-z_$][\w$]*))/);
+      if (m) { const n = m[1] || m[2]; (donos[n] = donos[n] || new Set()).add(f); }
+    }
+  for (const n in donos) if (donos[n].size > 1) problemas.push('global "' + n + '" definido em mais de um arquivo: ' + [...donos[n]].join(', '));
   const dono = n => { let o = inicios[0]; for (const i of inicios) if (i.linha <= n) o = i; return { f: o.f, linha: n - o.linha + 1 }; };
   for (const r of await eslint.lintText(junto, { filePath: path.join(raiz, 'js', '_todos.js') }))
     for (const m of r.messages) { const d = dono(m.line); problemas.push(d.f + ':' + d.linha + '  ' + m.message + (m.ruleId ? '  (' + m.ruleId + ')' : '')); }
