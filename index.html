@@ -77,14 +77,15 @@
     <section id="fxtab" aria-label="Câmbio"></section>
   </div>
 
-  <div class="col" data-tab="mais" data-sub="ajustes" hidden>
-    <section class="panel" id="perfbox"></section>
-    <section class="panel"><h2>Aparência</h2><div class="seg" id="temas" role="group" aria-label="Tema do app">
+  <div class="col" data-tab="mais" data-sub="ajustes" id="ajcol" hidden>
+    <div class="cchips" id="ajseg" role="group" aria-label="Seções dos ajustes"><button type="button" data-ajv="perfil">Perfil</button><button type="button" data-ajv="aparencia">Aparência</button><button type="button" data-ajv="dados">Dados</button><button type="button" data-ajv="precos">Preços</button><button type="button" data-ajv="assistente">Assistente</button></div>
+    <section class="panel" id="perfbox" data-aj="perfil"></section>
+    <section class="panel" data-aj="aparencia"><h2>Aparência</h2><div class="seg" id="temas" role="group" aria-label="Tema do app">
       <button type="button" data-tema="atual"><i style="background:#16293b;border:1px solid #63b7e2"></i>Azul</button>
       <button type="button" data-tema="branco"><i style="background:#e8e9eb;border:1px solid #ccd"></i>Branco</button>
       <button type="button" data-tema="preto"><i style="background:#202124"></i>Preto</button></div></section>
-    <section class="panel"><h2>Status das fontes de dados</h2><div id="srcinfo"></div></section>
-    <section class="panel" id="syncbox">
+    <section class="panel" data-aj="dados"><h2>Status das fontes de dados</h2><div id="srcinfo"></div></section>
+    <section class="panel" id="syncbox" data-aj="dados">
       <h2>Seus dados na nuvem</h2>
       <div class="stack">
         <p class="note" id="syncinfo" style="margin:0"></p>
@@ -97,7 +98,7 @@
         <div><button class="btn small" id="sync-now" type="button">Sincronizar agora</button></div>
       </div>
     </section>
-    <section class="panel">
+    <section class="panel" data-aj="precos">
       <h2>Preços automáticos</h2>
       <div class="stack">
         <div class="keys">
@@ -112,7 +113,7 @@
         </div>
       </div>
     </section>
-    <section class="panel">
+    <section class="panel" data-aj="assistente">
       <h2>Assistente</h2>
       <div class="stack">
         <div class="keys">
