@@ -191,7 +191,7 @@ document.addEventListener('click',function(e){
   else if(t.id==='sim-go'){simCalc()}
   else if(t.id==='al-save'){alvSave()}
   else if(t.id==='al-pf'){var a=pfAlvo();if(a){['BR','US','RF'].forEach(function(k){var i=$('al-'+k);if(i)i.value=String(a[k])});var m=$('al-msg');if(m){m.className='msg';m.textContent='Preenchi com o seu perfil. Toque em Salvar divisão.'}}}
-  else if(t.id==='mt-save'){metasSave()}
+  else if(t.id==='mt-save'){metasSave()}else if(t.id==='mt-reset'){metasSave(true)}
   else if(t.dataset&&t.dataset.mais){try{location.hash=t.dataset.mais}catch(e){}showTab(t.dataset.mais)}
   else if(t.dataset&&t.dataset.goto){try{location.hash=t.dataset.goto}catch(e){}showTab(t.dataset.goto)}
   else if(t.dataset&&t.dataset.rfok){

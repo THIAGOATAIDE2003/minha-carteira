@@ -425,6 +425,37 @@ function contasAMao(F, P) {
       FIN['intra/TEST3.SA'] = { d: null, at: Date.now() }; stkOpen('TEST3'); document.querySelector('[data-rng="1d"]').click(); r.sem = /Ainda não há pontos/.test(document.getElementById('stk-b').textContent); stkClose(); return r; });
     confere('gráfico de 1 dia e 5 dias, linha do fechamento anterior, carteira no dia e aviso sem dados', [g2.um, g2.prev, g2.cinco, g2.dia, g2.sem], [1, true, 1, 1, true]);
     if (erros.length) { falhas += erros.length; erros.forEach(e => console.log('  ✗ erro na página: ' + e)); }
+    /* metas editáveis (1.39.0): etapas próprias, prazo por etapa, valores quebrados, entrada inválida, voltar ao padrão */
+    var mt = await pg.evaluate(function () {
+      var o = {}, bak = S.metas; try {
+        S.metas = {}; o.padrao = mtE().length; var i0 = mtIdx(1);
+        S.metas = { etapas: [150000, 80000, 80000, 'x', -5, 1500000] }; o.custom = mtE().join(','); o.idxCustom = mtIdx(90000);
+        o.lbl = [mtLbl(80000), mtLbl(1500000), mtLbl(80500), mtLbl(2e6)].join('|');
+        S.metas = { etapas: ['a'] }; o.invalidoCaiPadrao = mtE().length;
+        S.metas = { etapas: [80000, 150000], prazos: { 80000: '2027-06-01' } }; o.prazo = mtPrazo(S.metas, 80000) + '/' + mtPrazo(S.metas, 150000);
+        S.metas = { pat: { valor: 100000, data: '2027-01-01' } }; o.legado = mtPrazo(S.metas, 100000);
+        S.metas = { etapas: [80000, 150000] }; var h = metasHtml(compute()); o.html = /R\$ 80\.000/.test(h) && /mt-et/.test(h) && /mt-reset/.test(h);
+        S.metas = { etapas: [1] }; o.todas = /Todas as etapas conclu/.test(metasHtml(compute()));
+        S.metas = { etapas: 'lixo', prazos: 5 }; o.lixo = mtE().length + '/' + mtPrazo(S.metas, 1e5) + '|' + (metasHtml(compute()).length > 100);
+        S.metas = {}; var ctx = String(asCtx('oi')).indexOf('META DE PATRIM') >= 0; o.ctx = ctx;
+      } catch (e) { o.erro = e.message } S.metas = bak; return o; });
+    confere('metas: etapas próprias ordenadas sem repetir/inválidas, rótulos, prazo por etapa, legado, lixo e assistente', [mt.erro || 'ok', mt.padrao, mt.custom, mt.idxCustom, mt.lbl, mt.invalidoCaiPadrao, mt.prazo, mt.legado, mt.html, mt.todas, mt.lixo, mt.ctx], ['ok', 11, '80000,150000,1500000', 1, '80 mil|1,5 milhão|80.500|2 milhões', 11, '2027-06-01/', '2027-01-01', true, true, '11/|true', true]);
+    /* metas pela tela: digitar etapas, salvar, valor inválido, prazo da etapa atual, voltar ao padrão */
+    await pg.click('[data-go=resumo]'); await pg.waitForTimeout(200);
+    const mu = await (async () => {
+      const o = {}; const pat = await pg.evaluate(() => { var R = compute(); document.querySelector('#metasbox details').open = true; return Math.round(R.tot.value + R.tot.cash); });
+      const salva = async (v, prazo) => { await pg.fill('#mt-et', v); if (prazo !== undefined) await pg.fill('#mt-pd', prazo); await pg.click('#mt-save'); await pg.waitForTimeout(150); await pg.evaluate(() => { var d = document.querySelector('#metasbox details'); if (d) d.open = true; }); };
+      const antes = await pg.evaluate(() => JSON.stringify(S.metas) || null); await salva('abc'); o.inv = await pg.textContent('#mt-msg'); o.invS = (await pg.evaluate(() => JSON.stringify(S.metas) || null)) === antes;
+      const alvo = Math.ceil(pat / 10000) * 10000 + 20000;
+      await salva(alvo + '; ' + (alvo * 2) + '; ' + (alvo + 5000), '2030-12');
+      o.etapas = await pg.evaluate(() => (S.metas.etapas || []).join(',')); o.esp = [alvo, alvo + 5000, alvo * 2].join(',');
+      o.prazo = String(await pg.evaluate(() => JSON.stringify(S.metas))); o.trilha = await pg.evaluate(() => document.querySelectorAll('#mtl .mts').length);
+      o.cab = await pg.evaluate(() => document.querySelector('#metasbox .mth .v').innerText); o.nuvem = await pg.evaluate(() => S.pend.filter(x => x.t === 'cfg' && x.k === 'metas').length > 0);
+      o.chip = await pg.evaluate(() => /dez|dezembro/i.test(document.querySelector('#metasbox .mtc').innerText));
+      await pg.click('#mt-reset'); await pg.waitForTimeout(150);
+      o.reset = await pg.evaluate(() => JSON.stringify(S.metas.etapas || null)); o.trilha2 = await pg.evaluate(() => document.querySelectorAll('#mtl .mts').length);
+      return o; })();
+    confere('metas pela tela: valor inválido avisa e não salva, etapas novas e prazo salvos e vão para a nuvem, voltar ao padrão', [/Use só números/.test(mu.inv), mu.invS, mu.etapas, mu.prazo.indexOf('2030-12-01') > 0, mu.trilha, /R\$/.test(mu.cab), mu.nuvem, mu.chip, mu.reset, mu.trilha2], [true, true, mu.esp, true, 3, true, true, true, 'null', 11]);
     console.log(falhas ? '\n✗ ' + falhas + ' problema(s), ' + ok + ' conferência(s) certas' : '\n✓ Tudo certo: ' + ok + ' conferências');
   } finally { await b.close(); }
   process.exit(falhas ? 1 : 0);
