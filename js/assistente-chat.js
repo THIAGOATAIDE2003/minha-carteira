@@ -12,7 +12,10 @@ function asCtx(q,only){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl(),SE
   L.push('Hoje: '+fmtDate(today())+'. Bolsa: '+(mktOpen&&mktOpen()?'aberta agora':'fechada agora')+'. Dólar: R$ '+(fx?num(fx,2):'?')+'.');
   L.push(pfCtx());try{var tp=thPapeis();if(tp)L.push(tp)}catch(e){}
   var pat=T.value+T.cash,V=valoriz(R);
-  L.push('PATRIMÔNIO: '+asR(pat)+' (investido ao custo: '+asR(T.cost)+'). Valorização dos ativos que tem hoje (preço + proventos, dólar de hoje): '+asR(V.g)+' ('+asP(V.p*100)+'). Lucro total desde o início (inclui câmbio, vendas, proventos, menos taxas): '+asR(T.gain)+'. Rentabilidade anual (XIRR): '+(T.xirr!=null?asP(T.xirr*100):'?')+'. Proventos recebidos no total: '+asR(T.div)+'.');
+  var D=T.value-T.cost,RZ=T.rA+T.rF+T.rfR;
+  L.push('PATRIMÔNIO TOTAL: '+asR(pat)+' = ativos '+asR(T.value)+' + caixa '+asR(T.cash)+'. Custo das posições abertas (dólar da compra): '+asR(T.cost)+'. Ativos − custo = '+asR(D)+' (preço '+asR(V.pv)+' e câmbio '+asR(D-V.pv)+').');
+  L.push('VALORIZAÇÃO (só preço + proventos, sem câmbio e sem vendas; NÃO é o lucro nem o prejuízo total): '+asR(V.g)+' ('+asP(V.p*100)+'), sobre base de '+asR(V.base)+' (custo com o dólar de hoje).');
+  L.push('LUCRO TOTAL desde o início: '+asR(T.gain)+' = ativos − custo '+asR(D)+' + vendas realizadas '+asR(RZ)+' + proventos '+asR(T.div)+' − taxas '+asR(T.fees)+'. XIRR (rentabilidade anual de todos os fluxos, com câmbio, vendas e proventos): '+(T.xirr!=null?asP(T.xirr*100):'?')+'.');
   var dv=0,dp=0;R.held.forEach(function(x){var lv=livePx(x.p.ticker);if(!lv||lv.pct==null)return;var F=x.p.market==='US'?(fx||1):1,a=x.p.qty*lv.p*F,b=a/(1+lv.pct/100);dv+=a-b;dp+=b});
   if(dp)L.push('Variação da carteira '+(dl.t==='hoje'?'hoje':'no último pregão')+': '+(dv>=0?'+':'')+asR(dv)+' ('+asP(dv/dp*100,2)+').');
   var tot=pat||1;seg('ativos');

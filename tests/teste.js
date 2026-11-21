@@ -438,6 +438,28 @@ function contasAMao(F, P) {
         S.metas = { anos: { [ya]: 80000 } }; o.ctx = /META DE PATRIM.NIO DO ANO/.test(String(asCtx('oi')));
       } catch (e) { o.erro = e.message } S.metas = bak; return o; });
     confere('metas por ano: sem padrão, lista ordenada sem lixo, ano atual/próximo/passado, batida, lixo e assistente', [mt.erro || 'ok', mt.vazio, mt.lista, mt.atual, mt.html, mt.proximo, mt.passado, mt.lixo, mt.batida, mt.ctx], ['ok', '0/-1/true', '', true, true, true, '-1/true', '0/true', true, true].map(function (x, i) { return i === 2 ? mt.lista : x }));
+    /* contexto da GA: valorização (preço + proventos, sem câmbio) NÃO pode ser confundida com lucro total; cada métrica vem rotulada e conciliada */
+    const rot = await pg.evaluate(() => {
+      var o = {}, L = function () { return asCtx('oi', { base: 1 }).split('\n'); }, pick = function (re) { return L().filter(function (l) { return re.test(l); })[0] || ''; };
+      var cap = function () { var R = compute(), T = R.tot, V = valoriz(R), D = T.value - T.cost, RZ = T.rA + T.rF + T.rfR;
+        return { ident1: Math.abs(D - (V.pv + (D - V.pv))) < 1e-6, ident2: Math.abs(V.g - (V.pv + T.div)) < 1e-6, ident3: Math.abs(T.gain - (D + RZ + T.div - T.fees)) < 0.01, ident4: Math.abs(T.value + T.cash - (T.value + T.cash)) < 1e-6, pat: pick(/^PATRIMÔNIO TOTAL/), val: pick(/^VALORIZAÇÃO/), luc: pick(/^LUCRO TOTAL/), T: T, V: V, D: D, RZ: RZ }; };
+      var g = cap(); o.geral = [g.ident2, g.ident3, /ativos .* \+ caixa .*Custo das posições abertas.*Ativos − custo = .*preço .* e câmbio /.test(g.pat), /NÃO é o lucro nem o prejuízo total/.test(g.val), !/LUCRO TOTAL/.test(g.val), /vendas realizadas .*proventos .*taxas .*XIRR/.test(g.luc), !/PATRIMÔNIO:/.test(L().join('\n'))];
+      /* cenário com a mesma estrutura do caso real: ação BR em queda, ETF em dólar (dólar 5,00 → 5,80), venda lucrativa e provento; contas à mão */
+      var bt = S.trades, bq = S.quotes, bf = S.fx, bc = S.cambio;
+      try {
+        S.trades = [{ id: 'z1', date: '2025-01-10', ticker: 'PETR4', market: 'BR', side: 'buy', qty: 600, price: 40, fx: 1 }, { id: 'z2', date: '2025-01-12', ticker: 'VT', market: 'US', side: 'buy', qty: 20, price: 100, fx: 5 },
+          { id: 'z3', date: '2025-02-01', ticker: 'VALE3', market: 'BR', side: 'buy', qty: 100, price: 50, fx: 1 }, { id: 'z4', date: '2025-06-01', ticker: 'VALE3', market: 'BR', side: 'sell', qty: 100, price: 70, fx: 1 },
+          { id: 'z5', date: '2025-07-01', ticker: 'PETR4', market: 'BR', side: 'div', qty: 0, price: 700, fx: 1 }];
+        S.quotes = { PETR4: { price: 33, src: 'manual' }, VT: { price: 108, src: 'manual' } }; S.fx = { rate: 5.8, src: 'manual' }; S.cambio = [];
+        var s = cap(), m = function (x) { return Math.round(x * 100) / 100; };
+        o.num = [m(s.T.value), m(s.T.cash), m(s.T.cost), m(s.D), m(s.V.pv), m(s.D - s.V.pv), m(s.V.g), m(s.RZ), m(s.T.div), m(s.T.gain)];
+        o.txt = [s.pat.indexOf('ativos ' + asR(32328) + ' + caixa ' + asR(7700)) > 0, s.pat.indexOf('Custo das posições abertas (dólar da compra): ' + asR(34000)) > 0, s.pat.indexOf('preço ' + asR(-3272) + ' e câmbio ' + asR(1600)) > 0,
+          s.val.indexOf(asR(-2572)) > 0 && s.val.indexOf('NÃO é o lucro') > 0, s.luc.indexOf('LUCRO TOTAL desde o início: ' + asR(1028)) === 0 && s.luc.indexOf('vendas realizadas ' + asR(2000)) > 0 && s.luc.indexOf('proventos ' + asR(700)) > 0];
+        o.sinais = [s.V.g < 0, s.T.gain > 0, s.luc.indexOf(asR(-2572)) < 0];
+      } catch (e) { o.erro = e.message; } S.trades = bt; S.quotes = bq; S.fx = bf; S.cambio = bc; return o; });
+    confere('contexto da GA: métricas rotuladas e conciliadas (ativos, caixa, custo, preço, câmbio, vendas, proventos, taxas)', [rot.erro || 'ok', rot.geral], ['ok', [true, true, true, true, true, true, true]]);
+    confere('contexto da GA, cenário à mão: valores idênticos às contas (ativos, caixa, custo, ativos−custo, preço, câmbio, valorização, vendas, proventos, lucro total)', rot.num, [32328, 7700, 34000, -1672, -3272, 1600, -2572, 2000, 700, 1028]);
+    confere('contexto da GA: valorização negativa não vira prejuízo total (lucro total positivo e separado)', [rot.txt, rot.sinais], [[true, true, true, true, true], [true, true, true]]);
     /* metas pela tela: escrever, salvar, inválido, apagar linha, apagar todas */
     await pg.click('[data-go=resumo]'); await pg.waitForTimeout(200);
     const mu = await (async () => {
