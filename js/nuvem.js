@@ -70,7 +70,7 @@ function renderSync(){
   else if(GH.err){txt=esc(GH.err)+(n?' ('+n+(n>1?' alterações esperando':' alteração esperando')+')':'');bar=!n&&!GH.hard?'':'⚠ '+(n?n+(n>1?' alterações não salvas na nuvem':' alteração não salva na nuvem'):'Nuvem desconectada')}
   else if(GH.last){txt='Tudo salvo na nuvem ('+esc(ghRepo())+'). Última sincronização às '+hm(GH.last)+'. Lançou ou excluiu, salva sozinho.';bar=''}
   else{txt='Conectando...';bar=''}
-  if($('syncinfo'))$('syncinfo').innerHTML=txt;
+  if($('syncinfo'))setHtml($('syncinfo'),txt);
   if($('syncbar')){$('syncbar').textContent=bar;$('syncbar').className='pill'+(bar?' perr':'')}
 }
 try{if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js?v='+VERSAO)}catch(e){}

@@ -27,7 +27,13 @@ const regras = Object.assign({}, js.configs.recommended.rules, {
   'no-constant-condition': 'off',
   'no-prototype-builtins': 'off',
   'no-control-regex': 'off',
-  'no-fallthrough': 'off'
+  'no-fallthrough': 'off',
+  /* HTML em texto só entra na tela por setHtml() (js/nucleo.js), que limpa antes. Escrever direto quebra o lint. */
+  'no-restricted-syntax': ['error',
+    { selector: "AssignmentExpression[left.property.name=/^(innerHTML|outerHTML)$/]", message: 'Use setHtml(el, html) em vez de atribuir innerHTML/outerHTML (veja js/nucleo.js).' },
+    { selector: "CallExpression[callee.property.name='insertAdjacentHTML']", message: 'Use setHtml(el, html, "add") em vez de insertAdjacentHTML (veja js/nucleo.js).' },
+    { selector: "CallExpression[callee.property.name='write'][callee.object.name='document']", message: 'document.write não é permitido.' }
+  ]
 });
 
 module.exports = [

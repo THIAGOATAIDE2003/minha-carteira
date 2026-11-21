@@ -72,11 +72,11 @@ function mkEval(m){var z=zNow(m.tz),b=zNow('America/Sao_Paulo');if(!z||!b)return
   return {m:m,on:on,pz:pz,st:on?'Aberta':pz?'Pausa':'Fechada',sub:sub,hrs:hrs,nf:nf}}
 function mktState(){return MKS.map(mkEval).filter(Boolean)}
 function renderMktSt(){var el=$('mktst');if(!el)return;var st=mktState(),on=st.some(function(x){return x.m.p&&x.on});
-  el.innerHTML='<button type="button" class="mks'+(on?' on':'')+'" data-mk="open" aria-label="Situação dos mercados"><i></i><b>'+(on?'Mercado aberto':'Mercado fechado')+'</b></button>';
+  setHtml(el,'<button type="button" class="mks'+(on?' on':'')+'" data-mk="open" aria-label="Situação dos mercados"><i></i><b>'+(on?'Mercado aberto':'Mercado fechado')+'</b></button>');
   if($('mk')&&!$('mk').hidden)mkRender(st)}
 function mkCard(x){return '<div class="mkc'+(x.on?' on':x.pz?' pz':'')+'"><i></i><div><div class="mkt"><b>'+x.m.n+'</b><span>'+x.m.s+'</span><em>'+x.st+'</em></div><div class="mkd">'+x.sub+'</div><div class="mkh">'+x.hrs+'</div>'+(x.nf?'<div class="mkf">Próximo feriado: '+esc(x.nf)+'</div>':'')+'</div></div>'}
 function mkRender(st){st=st||mktState();var el=$('mk-b');if(!el)return;
-  el.innerHTML='<div class="mkh2">Principais</div>'+st.filter(function(x){return x.m.p}).map(mkCard).join('')+'<div class="mkh2">Outras bolsas do mundo</div>'+st.filter(function(x){return !x.m.p}).map(mkCard).join('')+'<div class="note muted mkn">Horários e feriados calculados no app, sem consultar a internet. Os horários de verão (EUA e Europa) já entram. Nas bolsas da Ásia só entram os feriados de data certa: feriados lunares (como o Ano Novo Lunar) e dias de ponte podem não estar na lista. Dias de meio período não aparecem.</div>'}
+  setHtml(el,'<div class="mkh2">Principais</div>'+st.filter(function(x){return x.m.p}).map(mkCard).join('')+'<div class="mkh2">Outras bolsas do mundo</div>'+st.filter(function(x){return !x.m.p}).map(mkCard).join('')+'<div class="note muted mkn">Horários e feriados calculados no app, sem consultar a internet. Os horários de verão (EUA e Europa) já entram. Nas bolsas da Ásia só entram os feriados de data certa: feriados lunares (como o Ano Novo Lunar) e dias de ponte podem não estar na lista. Dias de meio período não aparecem.</div>')}
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-mk]');if(!t)return;var o=t.getAttribute('data-mk');if(o==='close'){$('mk').hidden=true;document.body.style.overflow=''}else{$('mk').hidden=false;document.body.style.overflow='hidden';mkRender()}});
 
 /* faixa de cotações no topo: índices e grandes empresas do robô (a cada 30 min no pregão), com os preços ao vivo do app por cima */
@@ -105,9 +105,9 @@ var TPCM=['PETRÓLEO','MINÉRIO','OURO','PRATA','SOJA','CAFÉ'];
 function tpGrupo(x){return TPCM.indexOf(x.l)>=0?'Commodities':x.st?(isBR(x.l)?'Ações do Brasil':'Ações e ETFs dos EUA'):'Índices, moedas e juros'}
 function tpSheet(){var b=$('tp-b');if(!b)return;var it=tapeItems(),gs={},ord=['Índices, moedas e juros','Commodities','Ações do Brasil','Ações e ETFs dos EUA'];
   it.forEach(function(x){var g=tpGrupo(x);(gs[g]=gs[g]||[]).push(x)});
-  b.innerHTML='<p class="muted small" style="margin:0 0 10px">Toque para tirar ou colocar na faixa preta do topo. Os outros índices e commodities continuam na busca do Mercado.</p>'+
+  setHtml(b,'<p class="muted small" style="margin:0 0 10px">Toque para tirar ou colocar na faixa preta do topo. Os outros índices e commodities continuam na busca do Mercado.</p>'+
     ord.filter(function(g){return gs[g]}).map(function(g){return '<p class="muted small" style="margin:12px 0 6px">'+g+'</p><div class="tpg">'+gs[g].map(function(x){return '<button type="button" data-tpt="'+esc(x.l)+'" aria-pressed="'+(TPOFF.indexOf(x.l)<0)+'">'+esc(x.l)+'</button>'}).join('')+'</div>'}).join('')+
-    '<button type="button" class="btn ghost" style="margin-top:16px" data-tpr="1">Voltar ao padrão</button>'}
+    '<button type="button" class="btn ghost" style="margin-top:16px" data-tpr="1">Voltar ao padrão</button>')}
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-tpe],[data-tpt],[data-tpr]');if(!t)return;
   if(t.hasAttribute('data-tpe')){if(t.getAttribute('data-tpe')==='close'){$('tp').hidden=true;document.body.style.overflow=''}else{tpSheet();$('tp').hidden=false;document.body.style.overflow='hidden'}return}
   if(t.hasAttribute('data-tpt')){var l=t.getAttribute('data-tpt'),i=TPOFF.indexOf(l);if(i>=0)TPOFF.splice(i,1);else TPOFF.push(l)}else TPOFF=['PRATA','SOJA','CAFÉ'];
@@ -133,7 +133,7 @@ function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems().filter(f
   if(key===TPK&&el.firstChild){it.forEach(function(x){var r=tapeIn(x);[].forEach.call(el.querySelectorAll('[data-tp="'+x.l.replace(/"/g,'')+'"]'),function(n){n.querySelector('span').textContent=r[0];var e=n.querySelector('em');e.className=r[1];e.textContent=r[2]})});return}
   TPK=key;var one=it.map(function(x){var r=tapeIn(x),at=x.st?' data-stk="'+esc(x.l)+'"':x.ik&&idxDef(x.ik)?' data-idxo="'+esc(x.ik)+'"':'';
     return '<'+(at?'button type="button"'+at:'span')+' class="tpi" data-tp="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(at?'button':'span')+'>'}).join('');
-  el.innerHTML='<div class="tptr">'+one+one+'</div>'}
+  setHtml(el,'<div class="tptr">'+one+one+'</div>')}
 
 /* variação do dia zerada fora do pregão (nos EUA também a partir da meia-noite de Brasília, como o usuário pediu): antes da abertura (ou fim de semana/feriado) até chegar a primeira cotação do dia */
 function dzero(us,at){var now=Date.now(),open;

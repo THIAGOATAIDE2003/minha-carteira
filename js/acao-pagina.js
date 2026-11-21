@@ -21,7 +21,7 @@ function sibHtml(tk){var l=sibList(tk);if(l.length<2)return '';sibLoad(l,tk);var
       return '<button type="button" class="sib'+(t===tk?' on':'')+'" data-stk="'+esc(t)+'"><b>'+esc(t)+'</b><small>'+ty+'</small><span class="num">'+(p>0?brl.format(p):'—')+'</span>'+(pc!=null?'<em class="num '+cls(pc)+'">'+sg0(pc)+pf.format(Math.abs(pc))+'%</em>':'<em class="muted">&nbsp;</em>')+'<small>'+(f.dy!=null&&f.dy>0?'DY '+pf.format(f.dy)+'%':'sem DY')+'</small></button>'}).join('')+'</div></div>'}
 function stkRender(){if(typeof THE!=='undefined'&&THE&&STK.tk===THE&&STV==='tese'){var ae=document.activeElement;if(ae&&ae.id&&ae.id.indexOf('th-')===0)return}if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0=livePx(STK.tk);if(lv0&&(!STK.d.at||lv0.at>STK.d.at)){STK.d.price=lv0.p;if(lv0.pct!=null)STK.d.pct=lv0.pr!=null?lv0.pr:lv0.pct}}
   var b=$('stk-b');if(!b||$('stk').hidden)return;var d=STK.d,tk=STK.tk;
-  if(!d){b.innerHTML=STK.err?'<p class="warn">'+esc(STK.err)+'</p><button type="button" class="btn ghost" style="margin-top:12px" data-rng="'+STK.rng+'">Tentar de novo</button>':'<p class="muted">Carregando '+esc(tk)+'...</p>';return}
+  if(!d){setHtml(b,STK.err?'<p class="warn">'+esc(STK.err)+'</p><button type="button" class="btn ghost" style="margin-top:12px" data-rng="'+STK.rng+'">Tentar de novo</button>':'<p class="muted">Carregando '+esc(tk)+'...</p>');return}
   var F=d.cur==='USD'?usd:brl,K=d.k||{},R=compute(),mine=R.held.filter(function(x){return x.p.ticker===tk})[0],pm=mine?mine.p.cN/mine.p.qty:null;
   var W=wlist(),inW=W.indexOf(tk)>=0;
   var pc=function(v){return v==null?'—':pf.format(v*100)+'%'},nm=function(v,dd){return v==null?'—':num(v,dd==null?2:dd)};
@@ -58,7 +58,7 @@ function stkRender(){if(typeof THE!=='undefined'&&THE&&STK.tk===THE&&STV==='tese
   }
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 6px"><button type="button" class="btn ghost" data-wtog="'+esc(tk)+'">'+(inW?'Parar de acompanhar':'Acompanhar')+'</button>'+'</div>'+
     '<p class="note">'+(d.fast?'Gráfico e proventos do Yahoo'+(d.cur==='USD'?', indicadores do Finnhub':', indicadores do Fundamentus')+', atualizados pelo robô diário'+(MD.d&&MD.d.at?' ('+new Date(MD.d.at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')':'')+'; preço de agora do '+(d.cur==='USD'?'Finnhub':'brapi'):'Dados do '+(d.cur==='USD'?'Finnhub e Alpha Vantage':'brapi'+(d.histSrc?', gráfico da Alpha Vantage':'')))+'. Indicadores servem para estudar, não são recomendação de compra ou venda.</p>';
-  b.innerHTML=h;
+  setHtml(b,h);
   try{var sg=b.querySelector('.stseg'),ab=sg&&sg.querySelector('[aria-pressed="true"]');if(sg&&ab){var r1=ab.getBoundingClientRect(),r2=sg.getBoundingClientRect();if(r1.left<r2.left||r1.right>r2.right)sg.scrollLeft+=r1.left-r2.left-(r2.width-r1.width)/2}}catch(e){}
 }
 function watchSet(W){S.watch=W;S.pend.push({t:'cfg',k:'watch',v:W});save();ghSync();clearTimeout(watchSet.t);watchSet.t=setTimeout(function(){loadMD(true)},150000)}
