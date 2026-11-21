@@ -21,6 +21,31 @@ function investHtml(R){var T=R.tot,h='',ct=T.rfC;R.held.forEach(function(x){ct+=
       '<li class="tot"><span>Diferença</span><span class="num">'+brl.format(Math.abs(dA))+'</span></li></ul>'+
       '<p class="note exp">'+(dA>=0?'O valor investido é maior porque parte das compras foi paga com lucro de vendas e com proventos, e não com dinheiro novo do seu bolso.':'O valor investido é menor porque parte do dinheiro aplicado ainda está parada, ou foi perdida em vendas com prejuízo.')+' O lucro total é calculado sobre o aplicado do seu bolso.</p></div>'
   return h}
+/* Se vendesse os dólares hoje (1.21.0): spread do Inter + IOF da volta (dólar→real) + IR de 15% sobre o lucro em reais (Lei 14.754/2023) */
+var VND={spr:0.99,iof:0.38,ir:15};
+try{var vn0=JSON.parse(localStorage.getItem(LS+'-vnd')||'null');if(vn0){['spr','iof','ir'].forEach(function(k){if(typeof vn0[k]==='number'&&vn0[k]>=0&&vn0[k]<=100)VND[k]=vn0[k]})}}catch(e){}
+function vendaCalc(R){
+  var us=R.held.filter(function(x){return x.p.market==='US'});if(!us.length)return null;
+  var v=0,c=0;us.forEach(function(x){v+=x.v;c+=x.p.cB});
+  var spr=v*VND.spr/100,liq0=v-spr,iof=liq0*VND.iof/100,gan=v-c,ir=gan>0?gan*VND.ir/100:0,liq=liq0-iof-ir;
+  return {v:v,c:c,spr:spr,iof:iof,ir:ir,gan:gan,liq:liq,custo:spr+iof+ir,ganLiq:liq-c}}
+function vendaHtml(R){
+  var V=vendaCalc(R);if(!V)return '';
+  var T=R.tot,fm=function(n){return String(n).replace('.',',')};
+  var row=function(l,n,neg){return '<li><span>'+l+'</span><span class="num '+(neg?cls(-1):'')+'">'+(neg?'−':'')+brl.format(Math.abs(n))+'</span></li>'};
+  return '<div class="panel"><h2>Se vendesse seus dólares hoje '+bal('Quanto sobraria em reais se você vendesse todo o seu VT agora e trouxesse o dinheiro de volta para a conta brasileira, já descontando o que o Inter e a Receita cobram. É uma estimativa: o spread muda a cada dia e o IR final é fechado na declaração anual.')+'</h2>'+
+    '<ul class="calc">'+row('Seus dólares hoje (cotação do momento)',V.v)+row('Spread do Inter ('+fm(VND.spr)+'%)',V.spr,1)+row('IOF na volta para real ('+fm(VND.iof)+'%)',V.iof,1)+row('IR sobre o lucro ('+fm(VND.ir)+'%)',V.ir,1)+
+    '<li class="tot"><span>Sobraria em reais</span><span class="num">'+brl.format(V.liq)+'</span></li></ul>'+
+    '<div class="split" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><div><span class="lbl">Lucro nos dólares antes dos custos</span><span class="num '+cls(V.gan)+'">'+sgn(V.gan)+'</span></div>'+
+    '<div><span class="lbl">Lucro de verdade depois dos custos</span><span class="num '+cls(V.ganLiq)+'">'+sgn(V.ganLiq)+'</span></div></div>'+
+    '<p class="note" style="margin:12px 0 0">Seu lucro total de '+sgn(T.gain)+' cai para <b>'+sgn(T.gain-V.custo)+'</b> se você vender tudo isso hoje ('+brl.format(V.custo)+' em custos).</p>'+
+    '<details><summary>Ajustar spread, IOF e IR</summary><div class="keys" style="margin-top:10px">'+
+    '<label class="small muted" for="vn-spr">Spread do Inter (%), confira na tela de conversão</label><input id="vn-spr" data-vnd="spr" inputmode="decimal" value="'+fm(VND.spr)+'" autocomplete="off">'+
+    '<label class="small muted" for="vn-iof">IOF dólar para real (%)</label><input id="vn-iof" data-vnd="iof" inputmode="decimal" value="'+fm(VND.iof)+'" autocomplete="off">'+
+    '<label class="small muted" for="vn-ir">IR sobre o lucro no exterior (%)</label><input id="vn-ir" data-vnd="ir" inputmode="decimal" value="'+fm(VND.ir)+'" autocomplete="off"></div>'+
+    '<p class="note" style="margin:10px 0 0">Padrões: spread de 0,99% (valor que o Inter já divulgou; ele mostra o seu na hora da conversão), IOF de 0,38% na entrada de dólar para real e IR de 15% sobre o lucro de investimentos no exterior (Lei 14.754/2023), calculado em reais: valor da venda menos o custo de cada compra no dólar do dia. O IR da declaração pode ser menor se você tiver prejuízo em outros ativos no exterior no mesmo ano. Não inclui dividendos nem conta do seu contador.</p></details></div>'}
+document.addEventListener('change',function(e){var t=e.target,k=t&&t.getAttribute&&t.getAttribute('data-vnd');if(!k)return;
+  var n=parseFloat(String(t.value).replace(',','.'));if(isNaN(n)||n<0||n>100)n=VND[k];VND[k]=n;try{localStorage.setItem(LS+'-vnd',JSON.stringify(VND))}catch(er){}render()});
 function perfHtml(R){
   var T=R.tot,h='',bm=cdiBench(R),nBR=R.held.some(function(x){return x.p.market==='BR'}),nUS=R.held.some(function(x){return x.p.market==='US'});
   var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR;
@@ -40,6 +65,7 @@ function perfHtml(R){
     (Math.abs(T.check-T.gain)>0.01?'<p class="warn">A conta não fecha em '+brl.format(Math.abs(T.check-T.gain))+'. Revise os lançamentos.</p>':'')+
     '</details></div>';
 
+  h+=vendaHtml(R);
   var sb=nBR?benchSeg('BR','BOVA11'):null,su=nUS?benchSeg('US','IVVB11'):null;
   if(sb||su){var ln=function(lab,a,bl,b){var d=a.gP-a.gB;return '<li class="vsli"><span><b>'+lab+'</b></span><span class="num '+cls(d)+'">'+sgn(d)+'</span>'+vsBars(a.pP,'Você',a.pB,bl)+'</li>'};
     h+='<div class="panel"><h2>Sua carteira contra o mercado</h2><ul class="calc">'+(sb?ln('Ações do Brasil',sb,'Ibovespa'):'')+(su?ln('VT (em reais)',su,'S&P 500'):'')+'</ul>'+
