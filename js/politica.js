@@ -31,6 +31,7 @@ function riAlerts(){var o=[],st=null,tks;try{tks=riHeld()}catch(e){return o}if(!
   try{st=JSON.parse(localStorage.getItem(RISKSK)||'null')}catch(e){}var seed=!st,now=Date.now(),ch=seed;st=st||{};
   riGraves(tks,3).forEach(function(x){var k=x.tk+'|'+x.k+'|'+x.d+'|'+x.t.slice(0,40);if(st[k]==null){st[k]=seed?0:now;ch=1}
     if(st[k]>0&&now-st[k]<4*864e5)o.push({tk:x.tk,ts:st[k],tx:(x.k==='f'?'Fato relevante':'Notícia de risco'),sub:x.t+' · '+x.s+' · '+riDt(x.d)})});
+  Object.keys(st).forEach(function(k){if(st[k]>0&&now-st[k]>200*864e5){delete st[k];ch=1}});
   if(ch)try{localStorage.setItem(RISKSK,JSON.stringify(st))}catch(e){}
   o.sort(function(a,c){return c.ts-a.ts});return o}
 /* seções da aba Notícias da ação */

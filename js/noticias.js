@@ -29,6 +29,7 @@ function dvAlerts(){var o=[],it;try{it=pvItems().filter(function(x){return x.st!
     if(st[k]>0&&now-st[k]<7*864e5)o.push({tk:x.tk,ts:st[k],tx:'Novo provento anunciado',sub:base+(x.r?' · '+brl.format(x.r)+' por ação':'')+(x.dc?' · data-com '+dd(x.dc):'')+(x.pay?' · pagamento '+dd(x.pay):' · pagamento ainda a definir')+val});
     if(x.dc&&x.dc>=td){var n=dayDiff(td,x.dc);if(n<=3)o.push({tk:x.tk,ts:day0,tx:n===0?'Data-com é hoje':n===1?'Data-com é amanhã':'Data-com em '+n+' dias',sub:base+' · quem tem a ação até '+dd(x.dc)+' recebe'+val})}
     if(x.pay&&x.pay>=td){var m=dayDiff(td,x.pay);if(m<=3)o.push({tk:x.tk,ts:day0,tx:m===0?'Pagamento hoje':m===1?'Pagamento amanhã':'Pagamento em '+m+' dias',sub:base+(x.liq>0?' · '+brl.format(x.liq)+' líquidos':'')})}});
+  Object.keys(st).forEach(function(k){if(st[k]>0&&now-st[k]>400*864e5){delete st[k];ch=1}});/* proventos antigos saem do registro: ele não cresce para sempre */
   if(ch)try{localStorage.setItem(DVSK,JSON.stringify(st))}catch(e){}
   o.sort(function(a,c){return c.ts-a.ts});return o}
 /* avisos de entrada: ativos da carteira (Brasil) e da lista que entraram na faixa confortável (preço bem abaixo do justo) */
