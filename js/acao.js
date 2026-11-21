@@ -60,6 +60,9 @@ function stkAna(tk,d){
     if(ry!=null&&ry<=-0.05){neg.push(['Receita do último trimestre caiu','No '+tri+' a receita foi de '+qfmt(L[2])+', '+pf.format(Math.abs(ry*100))+'% menor que no mesmo trimestre do ano passado. Vendeu menos.',2]);alr.push(neg[neg.length-1].slice(0,2))}
     else if(ry!=null&&ry>=0.10)pos.push(['Receita do último trimestre cresceu','No '+tri+' a receita foi de '+qfmt(L[2])+', '+pf.format(ry*100)+'% maior que no mesmo trimestre do ano passado.',2]);
     if(!fl&&lq!=null&&lq<=-0.2)inf.push(['Lucro caiu contra o trimestre anterior','No '+tri+' o lucro foi '+pf.format(Math.abs(lq*100))+'% menor que no trimestre anterior. Em algumas empresas isso é sazonal: compare com o mesmo trimestre do ano passado.'])}
+  var DP=DEPS[tk];if(DP){var hp=MD.d&&MD.d.hist&&MD.d.hist[DP],lp=livePx(DP),Pp=lp&&lp.p>0?lp.p:(hp&&hp.last)||0,mp=Pp?anMom(DP,Pp):null,qp=null;try{qp=qTtm(cvmQ(DP))}catch(e){}
+    var dq=mp&&((mp.m6!=null&&mp.m6<=-0.15)||(mp.m3!=null&&mp.m3<=-0.10)),dl=qp&&qp.g!=null&&qp.g<=-0.1;
+    if(dq||dl){neg.push(['Depende de '+DP,'Essa empresa está ligada à '+DP+', que '+(dq?'caiu '+pf.format(Math.abs((mp.m6!=null&&mp.m6<=-0.15?mp.m6:mp.m3)*100))+'% na bolsa'+(mp.m6!=null&&mp.m6<=-0.15?' em 6 meses':' em 3 meses'):'')+(dq&&dl?' e ':'')+(dl?'teve o lucro dos últimos 12 meses '+pf.format(Math.abs(qp.g*100))+'% menor':'')+'. O que afeta '+DP+' tende a afetar essa também.',1]);alr.push(neg[neg.length-1].slice(0,2))}}
   var MO=anMom(tk,d.price);if(MO){if(MO.m6!=null&&MO.m6<=-0.2){neg.push(['Preço em queda','A ação caiu '+pf.format(Math.abs(MO.m6*100))+'% em 6 meses'+(MO.m3!=null?' ('+sp0(MO.m3)+' nos últimos 3 meses)':'')+'. Entenda o motivo antes de achar que ficou barata.',1]);alr.push(neg[neg.length-1].slice(0,2))}
     else if(MO.m3!=null&&MO.m3<=-0.15){neg.push(['Preço em queda','A ação caiu '+pf.format(Math.abs(MO.m3*100))+'% nos últimos 3 meses.',1]);alr.push(neg[neg.length-1].slice(0,2))}}
   var RS=us?null:rsOf(tk);if(RS&&RS.ai){var ai=RS.ai;
@@ -73,38 +76,52 @@ function sp0(g){return (g>=0?'+':'−')+pf.format(Math.abs(g*100))+'%'}
 /* variação do preço em 3 e 6 meses, pelo histórico do robô */
 function anMom(tk,P){var h=MD.d&&MD.d.hist&&MD.d.hist[tk];if(!h||!P)return null;var day=Math.floor(Date.now()/864e5),at=function(a,dd){if(!a||!a.length)return null;var best=null;for(var i=0;i<a.length;i++){if(a[i][0]<=day-dd)best=a[i][1];else break}return best},b6=at(h.d,182)||at(h.w,182),b3=at(h.d,91)||at(h.w,91);return {m3:b3?P/b3-1:null,m6:b6?P/b6-1:null}}
 /* a ação dentro da sua carteira */
+/* concentração: quanto da carteira já está no mesmo setor ou no mesmo grupo de empresas (BB e BB Seguridade andam juntas) */
+var GRPS={'Grupo Banco do Brasil':['BBAS3','BBSE3'],'Grupo Itaú':['ITUB3','ITUB4','ITSA3','ITSA4'],'Grupo Bradesco':['BBDC3','BBDC4'],'Grupo Santander':['SANB3','SANB4','SANB11'],'Petrobras':['PETR3','PETR4']};
+var DEPS={BBSE3:'BBAS3',ITSA3:'ITUB3',ITSA4:'ITUB4'},CONC={sec:40,grp:25};
+function grpOf(tk){for(var g in GRPS)if(GRPS[g].indexOf(tk)>=0)return g;return ''}
+function concFor(tk,R){R=R||compute();var T=R.tot,tot=T.value+(T.rfV||0);if(!tot)return null;
+  var sec={},grp={};R.held.forEach(function(x){var t=x.p.ticker,s=rkSect(t,x.p.market==='US')[0];(sec[s]=sec[s]||{v:0,t:[]}).v+=x.v;sec[s].t.push(t);var g=grpOf(t);if(g){(grp[g]=grp[g]||{v:0,t:[]}).v+=x.v;grp[g].t.push(t)}});
+  var s0=rkSect(tk,false)[0],a=sec[s0],g0=grpOf(tk),b=g0&&grp[g0],sp=a?a.v/tot*100:0,gp=b?b.v/tot*100:0,hs=sp>=CONC.sec,hg=gp>=CONC.grp;
+  var msg='';if(a&&sp>=1)msg='Você já tem <b>'+pf.format(sp)+'%</b> da carteira em '+esc(s0.toLowerCase())+' ('+a.t.map(esc).join(', ')+')';
+  if(b&&gp>=1)msg+=(msg?' e ':'Você já tem ')+'<b>'+pf.format(gp)+'%</b> no '+esc(g0.replace('Grupo ','grupo '))+' ('+b.t.map(esc).join(', ')+')';
+  return {sec:s0,sp:sp,gp:gp,grp:g0,alta:hs||hg,msg:msg}}
 function anFit(tk,d,A){var R=compute(),r=null;try{r=riskData(R)}catch(e){}if(!r)return '';
   var a=r.as.filter(function(x){return x.tk===tk})[0],T=r.tot,out=[],sec=A.sec[0];
   var bsv=0,bt=0;r.as.forEach(function(x){if(x.us)return;var s=(x.sect||rkSect(x.tk,x.us))[0];bt+=x.v;if(s===sec)bsv+=x.v});
   if(a){out.push('Pesa <b>'+pf.format(a.w*100)+'%</b> do seu patrimônio ('+brl.format(a.v)+').');
     if(!A.us&&bt)out.push('Seu setor '+esc(sec.toLowerCase())+' soma <b>'+pf.format(bsv/bt*100)+'%</b> das suas ações do Brasil.');}
   else if(!A.us&&bt){var nv=1000;out.push('Se você comprar R$ 1.000, o setor '+esc(sec.toLowerCase())+' passa de <b>'+pf.format(bsv/bt*100)+'%</b> para <b>'+pf.format((bsv+nv)/(bt+nv)*100)+'%</b> das suas ações do Brasil.')}
+  if(!A.us){var CC=null;try{CC=concFor(tk,R)}catch(e){}if(CC&&CC.msg)out.push(CC.msg+'.'+(CC.alta?' <b>Isso já é concentração alta</b>: um problema nesse setor pesa muito no seu patrimônio.':''))}
   var h=MD.d&&MD.d.hist&&MD.d.hist[tk];if(h&&h.w&&r.P&&r.P.r){var ra=rkRet(rkSer(h.w));if(A.us){var u=rkSer(MD.d.idx.usd&&MD.d.idx.usd.w),m=rkSer(h.w),mb={};for(var k in m)if(u[k])mb[k]=m[k]*u[k];ra=rkRet(mb)}
     var pr=r.P.r;if(a){pr={};var aw=a.w;for(var k2 in r.P.r)if(k2 in ra)pr[k2]=(r.P.r[k2]-aw*ra[k2])/Math.max(0.01,1-aw)}
     var c=rkPair(ra,pr);if(c)out.push('Correlação com '+(a?'o resto da ':'a sua ')+'carteira: <b>'+num(c.c,2)+'</b>. '+(c.c<0.3?'Anda bem diferente do resto, então ajuda a diversificar.':c.c<0.6?'Anda parecido com o resto em parte.':'Anda muito junto com o resto: diversifica pouco.'))}
   return out.length?'<div class="panel anp"><h2>Na sua carteira '+bal('Mostra se essa ação combina com o que você já tem: quanto ela pesa, quanto o setor dela soma e se ela anda junto ou diferente do resto (ajuda ou não a diversificar).')+'</h2><ul class="anl">'+out.map(function(t){return '<li>'+t+'</li>'}).join('')+'</ul></div>':''}
 /* veredito de entrada: preço contra o preço justo (margem de segurança), preço contra lucro e entrada em partes */
 var ENT={mg:25,al:5,n:3};try{var _e=JSON.parse(localStorage.getItem(LS+'-ent')||'null');if(_e&&_e.mg>0&&_e.al>0&&_e.n>=1)ENT=_e}catch(e){}
-function entInfo(tk,d,A,V){
+function entInfo(tk,d,A,V,Cx){
   if(!A||A.etf)return null;if(!V)V=anValCalc(tk,d,A);if(!V||!V.ms||!V.ms.length)return null;
   var P=d.price,qc=A.chips.filter(function(c){return c[0]==='Qualidade'})[0],fraca=(qc&&qc[1]==='Baixa')||(A.score!=null&&A.score<4.5),z;
   if(V.mg>=ENT.mg/100)z=fraca?'cuid':'conf';else if(V.mg>=-0.10)z='just';else z='caro';
   var mo=anMom(tk,P),caiu=!!(mo&&((mo.m6!=null&&mo.m6<=-0.15)||(mo.m3!=null&&mo.m3<=-0.10))),mot=(A.alr||[]).filter(function(x){return x[0]!=='Preço em queda'});
   if(z==='conf'||z==='just'||z==='cuid'){if(mot.length)z='motivo';else if(caiu&&z!=='cuid')z='semmotivo'}
+  var C=Cx||null,rara=false;if(!C&&d.cur!=='USD')try{C=concFor(tk)}catch(e){}
+  if(z==='conf'&&C&&C.alta){if(V.mg>=0.4&&A.score!=null&&A.score>=8)rara=true;else z='conc'}
   var lu=null,q=null;try{q=qTtm(cvmQ(tk))}catch(e){}
   if(mo&&mo.m6!=null&&q&&q.g!=null){var m=mo.m6,g=q.g;
     if(m>=0.2&&g>=0.1)lu=['ok','O preço subiu '+pf.format(m*100)+'% em 6 meses e o lucro dos últimos 12 meses cresceu '+pf.format(g*100)+'%: a alta tem lucro por trás.'];
     else if(m>=0.2&&g<0.05)lu=['al','O preço subiu '+pf.format(m*100)+'% em 6 meses, mas o lucro dos últimos 12 meses '+(g<0?'caiu '+pf.format(Math.abs(g)*100)+'%':'quase não mudou ('+(g>=0?'+':'')+pf.format(g*100)+'%')+'. Alta sem lucro que justifique: pode ser euforia.'];
     else if(m<=-0.15&&g<=-0.1)lu=['al','O preço caiu '+pf.format(Math.abs(m)*100)+'% em 6 meses e o lucro caiu '+pf.format(Math.abs(g)*100)+'%: a queda tem motivo, não é desconto por si só.'];
     else if(m<=-0.15&&g>=-0.05)lu=['ok','O preço caiu '+pf.format(Math.abs(m)*100)+'% em 6 meses, mas o lucro dos últimos 12 meses '+(g>=0.005?'cresceu '+pf.format(g*100)+'%':'se manteve')+'. Queda sem motivo claro nos números: pode ser oportunidade, confira as notícias.']}
-  return {z:z,V:V,P:P,F:V.F,lu:lu,mg:V.mg,mot:mot,caiu:caiu}
+  return {z:z,V:V,P:P,F:V.F,lu:lu,mg:V.mg,mot:mot,caiu:caiu,C:C,rara:rara}
 }
 function entHtml(tk,d,A){
   var E=null;try{E=entInfo(tk,d,A)}catch(e){}if(!E)return '';
-  var T={conf:['Confortável para entrar','gain'],cuid:['Barato, mas a empresa está fraca','loss'],just:['Perto do justo: dá para esperar um preço melhor','muted'],motivo:[E.caiu?'Caiu e tem motivo: espere':'Tem aviso na empresa: espere','loss'],semmotivo:['Caiu sem motivo claro nos números: confira antes de entrar','muted'],caro:['Não está num valor confortável para entrar','loss']}[E.z];
+  var T={conf:['Confortável para entrar','gain'],cuid:['Barato, mas a empresa está fraca','loss'],just:['Perto do justo: dá para esperar um preço melhor','muted'],conc:['Barato, mas você já tem muito nesse setor','loss'],motivo:[E.caiu?'Caiu e tem motivo: espere':'Tem aviso na empresa: espere','loss'],semmotivo:['Caiu sem motivo claro nos números: confira antes de entrar','muted'],caro:['Não está num valor confortável para entrar','loss']}[E.z];
   var h='<div class="panel anp"><h2>Dá para entrar agora? '+bal('Compara o preço de hoje com o preço justo da aba Preço justo. Se o preço está pelo menos '+ENT.mg+'% abaixo do justo (a sua margem de segurança), ele fica confortável. Também confere se a alta ou a queda do preço tem o lucro da empresa por trás. É uma regra de conta, não uma recomendação, e o preço justo é uma estimativa simples.')+'</h2>'+
     '<p class="anv" style="margin:6px 0 0"><b class="'+T[1]+'">'+T[0]+'</b></p>'+
     '<p class="note" style="margin:6px 0 0">Preço '+E.F.format(E.P)+', preço justo '+E.F.format(E.V.med)+(E.mg>=0?' ('+pf.format(E.mg*100)+'% abaixo do justo)':' (o preço está '+pf.format(Math.abs(E.V.up)*100)+'% acima do justo)')+'. Sua margem de segurança: '+ENT.mg+'%.'+(E.z==='cuid'?' A nota da empresa está baixa, então o preço baixo pode ser armadilha.':'')+'</p>';
+  if(E.z==='conc'||E.rara)h+='<p class="note" style="margin:8px 0 0"><b class="loss">Concentração:</b> '+E.C.msg+'. '+(E.rara?'Mesmo assim é uma oportunidade rara (preço bem abaixo do justo e nota alta), então a regra pode ser quebrada, sabendo que o risco do setor continua.':'Um problema nesse setor pesaria muito no seu patrimônio. Só vale entrar aqui se for uma oportunidade muito rara; o normal é olhar outro setor.')+'</p>';
   if(E.z==='motivo')h+='<p class="note" style="margin:8px 0 0"><b class="loss">O que está pesando:</b> '+E.mot.map(function(x){return x[0]+' ('+String(x[1]).replace(/<[^>]*>/g,'')+')'}).join('; ')+'. O preço justo usa o lucro que a empresa já teve; se o lucro vem piorando, ele fica alto demais e a ação parece mais barata do que é.</p>';
   if(E.z==='semmotivo')h+='<p class="note" style="margin:8px 0 0">O preço caiu, mas não achei nos números do último trimestre nem nas notícias do app um motivo claro. Isso pode ser oportunidade ou algo que o app não enxerga: leia as notícias da ação antes de decidir.</p>';
   if(E.z==='conf')h+='<p class="note" style="margin:8px 0 0">Lembrete: o preço justo usa o lucro passado. Se você souber de algo que vai derrubar o lucro, ele está alto demais.</p>';
