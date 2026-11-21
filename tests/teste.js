@@ -332,6 +332,17 @@ function contasAMao(F, P) {
       window.bcSelicNow = bc0; A.BC.d = bd; M.d = old;
       return { c: c.join('|'), b: b.join('|'), m: m.join('|'), p: p.length, t: t.length, ctx: /VENTO DOS SETORES/.test(ctx) && /MISTO — Juros altos/.test(ctx), tm: tm.indexOf('bc') >= 0 && tm.indexOf('fisc') >= 0, html: /Vento do setor/.test(html) }; });
     confere('vento do setor: construção sofre com juros e PIB fraco e ganha com queda esperada, banco fica misto, mineração pesa pelo minério, sem fator fica vazio, contexto da IA e temas de política do banco', [vt.c, vt.b, vt.m, vt.p, vt.t, vt.ctx, vt.tm, vt.html], ['contra:Juros altos|contra:Economia fraca|favor:Juros devem cair', 'misto:Juros altos|contra:Economia fraca', 'contra:Minério caiu|favor:Dólar subiu', 1, 0, true, true, true]);
+    /* vento do setor segura o "Confortável": preço bem abaixo do justo + setor com mais fatores contra vira 'vento'; empate mantém */
+    const ven = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, vs0 = window.vtSetor, day = Math.floor(Date.now() / 864e5), r = {};
+      var d = []; for (var i = 0; i < 60; i++) { d.push([day - 300 + i * 5, 30 + i * 0.5]); } var P = d[59][1];
+      var q = []; for (var i2 = 0; i2 < 4; i2++) q.push([2025, i2 + 1, 2000, 800]); for (var j = 0; j < 4; j++) q.push([2026, j + 1, 2000, 1000]);
+      M.d = { fund: { cols: ['cot', 'pl', 'pvp', 'dy', 'roe', 'ml', 'liq2m', 'cr5'], d: { BBSE3: [P, 8, 6, 10, 70, 60, 9e8, 12] } }, hist: { BBSE3: { d: d, w: d } }, cvm: { q: { BBSE3: q } }, res: {} };
+      var dd = { cur: 'BRL', price: P, k: {} }, an = A.stkAna('BBSE3', dd), V = { ms: [1], mg: 0.3, up: 0.43, med: P / 0.7, F: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }) };
+      window.vtSetor = function () { return [['contra', 'Juros altos', 'Selic em 14,8%']]; }; var E = A.entInfo('BBSE3', dd, an, V, { alta: false });
+      window.vtSetor = function () { return [['contra', 'Juros altos', 'x'], ['favor', 'Juros devem cair', 'y']]; }; var E2 = A.entInfo('BBSE3', dd, an, V, { alta: false });
+      window.vtSetor = function () { return []; }; var E3 = A.entInfo('BBSE3', dd, an, V, { alta: false });
+      window.vtSetor = vs0; M.d = old; return { z: E.z, vt: E.vt.length, z2: E2.z, z3: E3.z }; });
+    confere('entrada: setor com mais fatores contra que a favor troca Confortável por vento; empate e sem fator mantêm confortável', [ven.z, ven.vt, ven.z2, ven.z3], ['vento', 1, 'conf', 'conf']);
     /* catálogo da B3: setores, pouca liquidez escondida, IPO novo e ação que saiu */
     const cat = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, hoje = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
       M.d = { fund: { cols: ['cot', 'liq2m'], d: { AAAA3: [10, 5e6], BBBB3: [10, 1e3], CCCC3: [10, 3e6], NEWC3: [5, 1e6] } }, cat: { v: 1, a: { AAAA3: ['', 5, 'Bancos'], BBBB3: ['', 5, 'Bancos'], CCCC3: ['', 7, 'Energia'], NEWC3: [hoje, null, ''] }, n: { 5: 'Bancos', 7: 'Energia' }, x: { OLDD3: ['', '2026-10-01'] } } };

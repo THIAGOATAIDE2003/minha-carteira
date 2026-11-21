@@ -107,21 +107,24 @@ function entInfo(tk,d,A,V,Cx){
   if(z==='conf'||z==='just'||z==='cuid'){if(mot.length)z='motivo';else if(caiu&&z!=='cuid')z='semmotivo'}
   var C=Cx||null,rara=false;if(!C&&d.cur!=='USD')try{C=concFor(tk)}catch(e){}
   if(z==='conf'&&C&&C.alta){if(V.mg>=0.4&&A.score!=null&&A.score>=8)rara=true;else z='conc'}
+  var vt=[],vf=0;if(d.cur!=='USD'&&isBR(tk))try{var vs=vtSetor(rkSect(tk,false));vt=vs.filter(function(x){return x[0]==='contra'});vf=vs.filter(function(x){return x[0]==='favor'}).length}catch(e){}
+  var vcontra=vt.length>vf;if(z==='conf'&&vcontra&&!rara)z='vento';
   var lu=null,q=null;try{q=qTtm(cvmQ(tk))}catch(e){}
   if(mo&&mo.m6!=null&&q&&q.g!=null){var m=mo.m6,g=q.g;
     if(m>=0.2&&g>=0.1)lu=['ok','O preço subiu '+pf.format(m*100)+'% em 6 meses e o lucro dos últimos 12 meses cresceu '+pf.format(g*100)+'%: a alta tem lucro por trás.'];
     else if(m>=0.2&&g<0.05)lu=['al','O preço subiu '+pf.format(m*100)+'% em 6 meses, mas o lucro dos últimos 12 meses '+(g<0?'caiu '+pf.format(Math.abs(g)*100)+'%':'quase não mudou ('+(g>=0?'+':'')+pf.format(g*100)+'%')+'. Alta sem lucro que justifique: pode ser euforia.'];
     else if(m<=-0.15&&g<=-0.1)lu=['al','O preço caiu '+pf.format(Math.abs(m)*100)+'% em 6 meses e o lucro caiu '+pf.format(Math.abs(g)*100)+'%: a queda tem motivo, não é desconto por si só.'];
     else if(m<=-0.15&&g>=-0.05)lu=['ok','O preço caiu '+pf.format(Math.abs(m)*100)+'% em 6 meses, mas o lucro dos últimos 12 meses '+(g>=0.005?'cresceu '+pf.format(g*100)+'%':'se manteve')+'. Queda sem motivo claro nos números: pode ser oportunidade, confira as notícias.']}
-  return {z:z,V:V,P:P,F:V.F,lu:lu,mg:V.mg,mot:mot,caiu:caiu,C:C,rara:rara}
+  return {z:z,V:V,P:P,F:V.F,lu:lu,mg:V.mg,mot:mot,caiu:caiu,C:C,rara:rara,vt:vcontra?vt:[]}
 }
 function entHtml(tk,d,A){
   var E=null;try{E=entInfo(tk,d,A)}catch(e){}if(!E)return '';
-  var T={conf:['Confortável para entrar','gain'],cuid:['Barato, mas a empresa está fraca','loss'],just:['Perto do justo: dá para esperar um preço melhor','muted'],conc:['Barato, mas você já tem muito nesse setor','loss'],motivo:[E.caiu?'Caiu e tem motivo: espere':'Tem aviso na empresa: espere','loss'],semmotivo:['Caiu sem motivo claro nos números: confira antes de entrar','muted'],caro:['Não está num valor confortável para entrar','loss']}[E.z];
+  var T={conf:['Confortável para entrar','gain'],cuid:['Barato, mas a empresa está fraca','loss'],just:['Perto do justo: dá para esperar um preço melhor','muted'],conc:['Barato, mas você já tem muito nesse setor','loss'],vento:['Barato, mas o setor está com vento contra','loss'],motivo:[E.caiu?'Caiu e tem motivo: espere':'Tem aviso na empresa: espere','loss'],semmotivo:['Caiu sem motivo claro nos números: confira antes de entrar','muted'],caro:['Não está num valor confortável para entrar','loss']}[E.z];
   var h='<div class="panel anp"><h2>Dá para entrar agora? '+bal('Compara o preço de hoje com o preço justo da aba Preço justo. Se o preço está pelo menos '+ENT.mg+'% abaixo do justo (a sua margem de segurança), ele fica confortável. Também confere se a alta ou a queda do preço tem o lucro da empresa por trás. É uma regra de conta, não uma recomendação, e o preço justo é uma estimativa simples.')+'</h2>'+
     '<p class="anv" style="margin:6px 0 0"><b class="'+T[1]+'">'+T[0]+'</b></p>'+
     '<p class="note" style="margin:6px 0 0">Preço '+E.F.format(E.P)+', preço justo '+E.F.format(E.V.med)+(E.mg>=0?' ('+pf.format(E.mg*100)+'% abaixo do justo)':' (o preço está '+pf.format(Math.abs(E.V.up)*100)+'% acima do justo)')+'. Sua margem de segurança: '+ENT.mg+'%.'+(E.z==='cuid'?' A nota da empresa está baixa, então o preço baixo pode ser armadilha.':'')+'</p>';
   if(E.z==='conc'||E.rara)h+='<p class="note" style="margin:8px 0 0"><b class="loss">Concentração:</b> '+E.C.msg+'. '+(E.rara?'Mesmo assim é uma oportunidade rara (preço bem abaixo do justo e nota alta), então a regra pode ser quebrada, sabendo que o risco do setor continua.':'Um problema nesse setor pesaria muito no seu patrimônio. Só vale entrar aqui se for uma oportunidade muito rara; o normal é olhar outro setor.')+'</p>';
+  if(E.vt&&E.vt.length)h+='<p class="note" style="margin:8px 0 0"><b class="loss">Vento do setor:</b> '+E.vt.map(function(x){return x[1]+' ('+x[2]+')'}).map(esc).join('; ')+'. '+(E.z==='vento'?'Mesmo com o preço abaixo do justo, o cenário pesa contra o setor agora: o preço justo usa o lucro passado e pode estar alto demais. Pode valer esperar.':'Fica o aviso: o cenário pesa contra o setor.')+'</p>';
   if(E.z==='motivo')h+='<p class="note" style="margin:8px 0 0"><b class="loss">O que está pesando:</b> '+E.mot.map(function(x){return x[0]+' ('+String(x[1]).replace(/<[^>]*>/g,'')+')'}).join('; ')+'. O preço justo usa o lucro que a empresa já teve; se o lucro vem piorando, ele fica alto demais e a ação parece mais barata do que é.</p>';
   if(E.z==='semmotivo')h+='<p class="note" style="margin:8px 0 0">O preço caiu, mas não achei nos números do último trimestre nem nas notícias do app um motivo claro. Isso pode ser oportunidade ou algo que o app não enxerga: leia as notícias da ação antes de decidir.</p>';
   if(E.z==='conf')h+='<p class="note" style="margin:8px 0 0">Lembrete: o preço justo usa o lucro passado. Se você souber de algo que vai derrubar o lucro, ele está alto demais.</p>';
