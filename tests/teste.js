@@ -280,6 +280,16 @@ function contasAMao(F, P) {
       r.base = [a.score, a.alr.length]; r.ruimMenor = b.score < a.score; r.alr = b.alr.map(function (x) { return x[0]; }).join('|'); r.peso = b.neg.filter(function (x) { return x[2] > 1; }).length;
       M.d = old; return r; });
     confere('nota: trimestre pior, notícia negativa e preço em queda baixam a nota e viram aviso', [nota.base, nota.ruimMenor, nota.alr, nota.peso], [[10, 0], true, 'Lucro do último trimestre caiu|Receita do último trimestre caiu|Preço em queda|Notícias recentes negativas', 3]);
+    /* veredito de entrada: faixa pela margem de segurança, preço contra lucro, entrada em partes */
+    const ent = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, day = Math.floor(Date.now() / 864e5), r = {};
+      var d = []; for (var i = 0; i < 60; i++) { d.push([day - 300 + i * 5, 30 + i * 0.5]); } var P = d[59][1];
+      var q = function (g) { var o = []; for (var i = 0; i < 4; i++) o.push([2025, i + 1, 2000, 800]); for (var j = 0; j < 4; j++) o.push([2026, j + 1, 2000, 800 * (1 + g)]); return o; };
+      var mk = function (g) { M.d = { fund: { cols: ['cot', 'pl', 'pvp', 'dy', 'roe', 'ml', 'liq2m', 'cr5'], d: { BBSE3: [P, 8, 6, 10, 70, 60, 9e8, 12] } }, hist: { BBSE3: { d: d, w: d } }, cvm: { q: { BBSE3: q(g) } }, res: {} }; var dd = { cur: 'BRL', price: P, k: {} }; return [dd, A.stkAna('BBSE3', dd)]; };
+      var m = mk(0.25), V = function (mg) { return { ms: [1], mg: mg, up: mg / (1 - mg), med: P / (1 - mg), F: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }) }; };
+      r.z = [A.entInfo('BBSE3', m[0], m[1], V(0.3)).z, A.entInfo('BBSE3', m[0], m[1], V(0.1)).z, A.entInfo('BBSE3', m[0], m[1], V(-0.2)).z];
+      r.lucroOk = A.entInfo('BBSE3', m[0], m[1], V(0.3)).lu[0]; var m2 = mk(0); r.lucroAl = A.entInfo('BBSE3', m2[0], m2[1], V(0.3)).lu[0];
+      A.ENT.mg = 35; r.z35 = A.entInfo('BBSE3', m[0], m[1], V(0.3)).z; A.ENT.mg = 25; M.d = old; return r; });
+    confere('entrada: faixa confortável/justa/cara pela margem, preço contra lucro (com e sem lucro) e margem ajustável', [ent.z, ent.lucroOk, ent.lucroAl, ent.z35], [['conf', 'just', 'caro'], 'ok', 'al', 'just']);
     /* catálogo da B3: setores, pouca liquidez escondida, IPO novo e ação que saiu */
     const cat = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, hoje = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
       M.d = { fund: { cols: ['cot', 'liq2m'], d: { AAAA3: [10, 5e6], BBBB3: [10, 1e3], CCCC3: [10, 3e6], NEWC3: [5, 1e6] } }, cat: { v: 1, a: { AAAA3: ['', 5, 'Bancos'], BBBB3: ['', 5, 'Bancos'], CCCC3: ['', 7, 'Energia'], NEWC3: [hoje, null, ''] }, n: { 5: 'Bancos', 7: 'Energia' }, x: { OLDD3: ['', '2026-10-01'] } } };

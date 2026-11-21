@@ -31,7 +31,19 @@ function dvAlerts(){var o=[],it;try{it=pvItems().filter(function(x){return x.st!
     if(x.pay&&x.pay>=td){var m=dayDiff(td,x.pay);if(m<=3)o.push({tk:x.tk,ts:day0,tx:m===0?'Pagamento hoje':m===1?'Pagamento amanhã':'Pagamento em '+m+' dias',sub:base+(x.liq>0?' · '+brl.format(x.liq)+' líquidos':'')})}});
   if(ch)try{localStorage.setItem(DVSK,JSON.stringify(st))}catch(e){}
   o.sort(function(a,c){return c.ts-a.ts});return o}
-function ntUnread(){var n=0;ntItems().forEach(function(x){if(ntImp(x)&&x.d*1000>NT.seen)n++});try{whyMine().forEach(function(m){if(m.e.at*1000>NT.seen)n++})}catch(e){}try{dvAlerts().forEach(function(a){if(a.ts>NT.seen)n++})}catch(e){}return n}
+/* avisos de entrada: ativos da carteira (Brasil) e da lista que entraram na faixa confortável (preço bem abaixo do justo) */
+var ENTSK=LS+'-entz',ENC={k:'',r:[]};
+function entAlerts(){
+  if(!(MD.d&&MD.d.fund&&MD.d.fund.d))return [];
+  var R=compute(),tks=wlist().slice();R.held.forEach(function(x){if(x.p.market!=='US'&&tks.indexOf(x.p.ticker)<0)tks.push(x.p.ticker)});
+  var key=MD.d.ts+'|'+tks.join(',')+'|'+ENT.mg+'|'+Math.floor(Date.now()/9e5);if(ENC.k===key)return ENC.r;
+  var st={};try{st=JSON.parse(localStorage.getItem(ENTSK)||'{}')||{}}catch(e){}var now=Date.now(),ch=0,o=[];
+  tks.forEach(function(tk){var ev=null,E=null;try{ev=opEval(tk);E=ev&&ev.V?entInfo(tk,ev.d,ev.A,ev.V):null}catch(e){}if(!E)return;
+    var s0=st[tk];if(!s0||(s0.z==='conf')!==(E.z==='conf')){s0=st[tk]={z:E.z,ts:E.z==='conf'?now:0};ch=1}else if(s0.z!==E.z){s0.z=E.z;ch=1}
+    if(E.z==='conf'&&now-s0.ts<7*864e5)o.push({tk:tk,ts:s0.ts,tx:'Entrou na faixa confortável',sub:tk+' · preço '+E.F.format(E.P)+', '+pf.format(E.mg*100)+'% abaixo do preço justo ('+E.F.format(E.V.med)+')'+(E.lu&&E.lu[0]==='al'?' · atenção: '+E.lu[1]:'')})});
+  if(ch)try{localStorage.setItem(ENTSK,JSON.stringify(st))}catch(e){}
+  o.sort(function(a,c){return c.ts-a.ts});ENC={k:key,r:o};return o}
+function ntUnread(){var n=0;ntItems().forEach(function(x){if(ntImp(x)&&x.d*1000>NT.seen)n++});try{whyMine().forEach(function(m){if(m.e.at*1000>NT.seen)n++})}catch(e){}try{dvAlerts().forEach(function(a){if(a.ts>NT.seen)n++})}catch(e){}try{entAlerts().forEach(function(a){if(a.ts>NT.seen)n++})}catch(e){}return n}
 function ntBadge(){var b=$('bellb');if(!b)return;var n=ntUnread();b.hidden=!n;b.textContent=n>99?'99+':String(n)}
 function loadNews(force){
   if(!S.keys.gh||NT.busy)return Promise.resolve();if(!force&&Date.now()-NT.at<8*60000&&NT.d)return Promise.resolve();
@@ -58,9 +70,9 @@ function ntClose(){$('nt').hidden=true;document.body.style.overflow='';ntBadge()
 /* gaveta de Notificações (sininho ou puxar a tela para o lado): notícias importantes novas */
 function ndRender(){
   var b=$('nd-b');if(!b)return;var imp=ntItems().filter(function(x){return ntImp(x)&&x.d*1000>Date.now()-36*3600000}).sort(function(a,c){return c.d-a.d});
-  var wm=[],dv=[];try{wm=whyMine()}catch(e){}try{dv=dvAlerts()}catch(e){}
+  var wm=[],dv=[],en=[];try{wm=whyMine()}catch(e){}try{dv=dvAlerts()}catch(e){}try{en=entAlerts()}catch(e){}
   var wh=wm.length?'<p class="muted small ntn">Movimentos fortes de hoje nos seus ativos, com o motivo.</p>'+wm.map(function(m){var p=m.e.p;return '<div class="ndi ndw'+(m.e.at*1000>NT.seen?' nw':'')+'" data-ndw="'+esc(m.k)+'"><b><span class="'+(p>0?'gain':'loss')+'">'+(p>0?'▲':'▼')+'</span> '+esc(whyNome(m.k))+' '+(p>0?'+':'−')+pf.format(Math.abs(p))+'%</b><span class="muted">'+esc(m.e.t)+'</span></div>'}).join(''):'';
-  var dh=dv.length?'<p class="muted small ntn">Proventos das suas ações: anúncios, data-com e pagamento.</p>'+dv.map(function(a){return '<div class="ndi ndw'+(a.ts>NT.seen?' nw':'')+'" data-ndw="'+esc(a.tk)+'"><b>'+esc(a.tx)+' · '+esc(a.tk)+'</b><span class="muted">'+esc(a.sub)+'</span></div>'}).join(''):'';wh=dh+wh;
+  var dh=dv.length?'<p class="muted small ntn">Proventos das suas ações: anúncios, data-com e pagamento.</p>'+dv.map(function(a){return '<div class="ndi ndw'+(a.ts>NT.seen?' nw':'')+'" data-ndw="'+esc(a.tk)+'"><b>'+esc(a.tx)+' · '+esc(a.tk)+'</b><span class="muted">'+esc(a.sub)+'</span></div>'}).join(''):'';var eh=en.length?'<p class="muted small ntn">Preço confortável para entrar: abaixo do preço justo, com a sua margem de segurança.</p>'+en.map(function(a){return '<div class="ndi ndw'+(a.ts>NT.seen?' nw':'')+'" data-ndw="'+esc(a.tk)+'"><b>'+esc(a.tx)+' · '+esc(a.tk)+'</b><span class="muted">'+esc(a.sub)+'</span></div>'}).join(''):'';wh=eh+dh+wh;
   b.innerHTML=wh+(imp.length||wh?'':'')+(imp.length?'<p class="muted small ntn">Notícias importantes das últimas 36 horas. As novas têm a barrinha colorida.</p>'+imp.map(function(x){return '<a class="ndi'+(x.d*1000>NT.seen?' nw':'')+'" href="'+esc(safeUrl(x.l))+'" target="_blank" rel="noopener noreferrer"><b>'+esc(x.t)+'</b><span class="muted">'+esc(x.s)+' · '+ntAgo(x.d)+(x.n>1?' · '+x.n+' jornais':'')+'</span></a>'}).join(''):(wh?'':(NT.d?'<p class="muted ntmsg">Nada importante novo por enquanto.</p>':ntEmpty())))}
 function ndOpen(){var u=ntUnread();ndRender();$('nd').hidden=false;document.body.style.overflow='hidden';requestAnimationFrame(function(){$('nd').classList.add('on')});loadNews(true);
   if(u){setTimeout(function(){NT.seen=Date.now();try{localStorage.setItem(NTS,String(NT.seen))}catch(e){}ntBadge()},2500)}}
