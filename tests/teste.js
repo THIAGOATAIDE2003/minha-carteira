@@ -359,6 +359,16 @@ function contasAMao(F, P) {
       r.rec = /Receita e lucro/.test(hr) && /Em 2024: receita de/.test(hr) && /5 anos/.test(hr) && /Receita por país e por negócio/.test(hr) && /data-tip=/.test(hr);
       M.d = Object.assign({}, old, { anual: null }); r.recVazio = /ainda não chegaram/.test(A.emRec(tk, d)); r.usa = /só estão disponíveis para ações do Brasil/.test(A.emRec('AAPL', d)); r.sob = /Sobre a empresa/.test(A.emSobre(tk, d)); M.d = old; return r; });
     confere('abas da ação: dividendos com yield e gráfico anual, receita e lucro por ano com tooltip, avisos sem dados, sobre', [emp.div, emp.rec, emp.recVazio, emp.usa, emp.sob], [true, true, true, true, true]);
+    /* ideias para estudar: histórico guardado por dia e comparado com o Ibovespa; qualidade do dado */
+    const gh = await pg.evaluate(function () { var A = window.__aporte, ls = localStorage, K = 'minha-carteira-v1-gar', old = ls.getItem(K), M = A.MD, od = M.d, oq = A.S.quotes;
+      var out = {}; ls.setItem(K, JSON.stringify({ r: {} })); out.h0 = A.garHist().indexOf('sem histórico') >= 0 && A.garRes().n === 0;
+      var d60 = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10), d5 = new Date(Date.now() - 5 * 864e5).toISOString().slice(0, 10), r = {}; r[d60] = { i: 100000, l: [['AAAA3', 10, 8, 15], ['BBBB3', 10, 8, 15]] }; r[d5] = { i: 100000, l: [['CCCC3', 10, 8, 15]] };
+      ls.setItem(K, JSON.stringify({ r: r })); M.d = Object.assign({}, od, { idx: Object.assign({}, od && od.idx, { ibov: { d: [[0, 110000]] } }) });
+      A.S.quotes = Object.assign({}, oq, { AAAA3: { price: 13, src: 'auto', at: Date.now() }, BBBB3: { price: 9, src: 'auto', at: Date.now() }, CCCC3: { price: 50, src: 'auto', at: Date.now() } });
+      var R = A.garRes(); out.n = R.n; out.bat = R.bat; out.age = R.age; out.html = A.garHist().indexOf('poucos casos') >= 0;
+      var q = A.opQual({ tk: 'ZZZZ3', A: { N: { pl: 1 } } }); out.fraca = q.fraca; out.w = q.w.join('|');
+      M.d = od; A.S.quotes = oq; if (old == null) ls.removeItem(K); else ls.setItem(K, old); return out; });
+    confere('ideias: sem histórico não inventa; com histórico conta só quem tem 30+ dias e compara com o Ibovespa; dado frágil avisa', [gh.h0, gh.n, gh.bat, gh.age, gh.html, gh.fraca, gh.w.indexOf('sem balanço') >= 0 && gh.w.indexOf('faltam 6 indicadores') >= 0], [true, 2, 1, 60, true, true, true]);
     /* aba Resultados: leitura dos trimestres por regras, consenso e superou/abaixo do esperado */
     const rs = await pg.evaluate(function () { var A = window.__aporte, M = A.MD, old = M.d;
       var q = [[2024, 1, 100, 10], [2024, 2, 100, 10], [2024, 3, 100, 10], [2024, 4, 100, 10], [2025, 1, 110, 12], [2025, 2, 110, 13]];

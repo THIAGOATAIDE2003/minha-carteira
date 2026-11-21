@@ -271,7 +271,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .vpl i{font-style:normal;font-size:9px}.vpl.g{color:var(--gain)}.vpl.l{color:var(--loss)}.vpl.n{color:var(--muted)}
 .srch{position:relative}.srch svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;pointer-events:none}
 .srch input{padding:12px 14px 12px 40px;border-radius:12px;background:var(--surface);font-size:15px}
-.mkrp{padding:4px 14px;margin-top:-6px}.mkres{list-style:none;margin:0;padding:0}.mkres li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.mkres li:first-child{border-top:0}
+.mkrp{padding:4px 14px;margin-top:-6px}.opq{grid-column:1/-1;font-size:12px;color:var(--muted);margin-top:2px}.opq.fr{color:var(--warn,#e0a030)}.mkres{list-style:none;margin:0;padding:0}.mkres li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.mkres li:first-child{border-top:0}
 .mkres li>span:first-child{display:flex;flex-direction:column;min-width:0}.mkres small{color:var(--muted);font-size:12.5px}
 .idx{position:relative}[data-idxo]{cursor:pointer}.idxx{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:0;background:var(--loss);color:#fff;font-size:12px;line-height:24px;padding:0}
 .idxg.ed .idx{outline:1.5px dashed var(--line)}.wadd input{text-transform:uppercase}
