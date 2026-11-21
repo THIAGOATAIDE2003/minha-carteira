@@ -1,0 +1,17 @@
+/* Aporte · js/assistente-teste.js — botão "Testar a IA" em Ajustes: faz uma pergunta mínima à Groq e aos modelos do Gemini com a SUA chave, mostra o tempo ou o erro de cada um e deixa o app usando o que funciona. Mesmo escopo global; a ordem de carga importa. */
+function asTF(url,opt,ms){var ac=window.AbortController?new AbortController():null,t=ac?setTimeout(function(){ac.abort()},ms):0,t0=Date.now();opt=opt||{};if(ac)opt.signal=ac.signal;
+  return fetch(url,opt).then(function(r){return r.text().then(function(x){clearTimeout(t);return {st:r.status,ms:Date.now()-t0,tx:x}})})
+    .catch(function(e){clearTimeout(t);return {st:0,ms:Date.now()-t0,err:e&&e.name==='AbortError'?'sem resposta em '+Math.round(ms/1000)+' s':(e&&e.message==='Failed to fetch'?'sem conexão ou bloqueado':(e&&e.message||'erro'))}})}
+function asTR(r){if(r.err)return r.err;if(r.st>=200&&r.st<300)return 'ok em '+num(r.ms/1000,1)+' s';var m='';try{var j=JSON.parse(r.tx);m=(j.error&&(j.error.message||j.error.status))||''}catch(e){}return 'erro HTTP '+r.st+(m?' — '+String(m).slice(0,110):'')}
+function asTeste(){var o=$('as-teste');if(!o||AS.tst)return;var gq=S.keys.gq,gm=S.keys.gem,L=[],pr=function(t){L.push(t);setHtml(o,'<p class="note" style="margin:0">'+L.map(esc).join('<br>')+'</p>')};
+  if(!gq&&!gm){pr('Cole pelo menos uma chave (Groq ou Gemini) e toque de novo.');return}
+  AS.tst=1;pr('Testando… pode levar até 1 minuto.');var okG=false,okM=false;
+  var gro=function(){if(!gq)return Promise.resolve();return asGroqModels(gq).then(function(ms){var m=ms[0];return asTF('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+gq},body:JSON.stringify({model:m,messages:[{role:'user',content:'Responda só: ok'}],max_tokens:8})},20000).then(function(r){okG=r.st>=200&&r.st<300;pr('Groq ('+m.replace(/^.*\//,'')+'): '+asTR(r))})}).catch(function(e){pr('Groq: '+asErrTxt(e,'Groq'))})};
+  var gem=function(){if(!gm)return Promise.resolve();try{localStorage.removeItem(LS+'-asmm2')}catch(e){}
+    return asGemModels(gm).then(function(ms){var res=[],i=0;pr('Gemini: modelos encontrados: '+ms.join(', '));
+      var next=function(){if(i>=Math.min(ms.length,3))return Promise.resolve(res);var m=ms[i++];
+        return asTF('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gm},body:JSON.stringify({contents:[{role:'user',parts:[{text:'Responda só: ok'}]}],generationConfig:{maxOutputTokens:20}})},20000).then(function(r){var ok=r.st>=200&&r.st<300;if(ok)okM=true;res.push({m:m,ok:ok,ms:r.ms});pr('Gemini '+m+': '+asTR(r));return next()})};
+      return next().then(function(rs){var good=rs.filter(function(x){return x.ok}).sort(function(a,b){return a.ms-b.ms}).map(function(x){return x.m}),rest=ms.filter(function(m){return good.indexOf(m)<0});if(good.length){asCacheSet('m2',good.concat(rest));pr('O app vai usar o Gemini '+good[0]+' primeiro.')}})})
+      .catch(function(e){pr('Gemini: '+asErrTxt(e,'Gemini'))})};
+  gro().then(gem).then(function(){if(okG&&!okM&&S.asia==='gem'){S.asia='groq';save();pr('O Gemini não respondeu, então deixei a Groq como primeira.')}else if(okM&&!okG&&S.asia==='groq'){S.asia='gem';save();pr('A Groq não respondeu, então deixei o Gemini como primeiro.')}
+    if(!okG&&!okM)pr('Nenhuma IA respondeu. Confira as chaves e a internet.');try{$('k-asia').value=S.asia==='gem'?'gem':'groq'}catch(e){}AS.tst=0})}
