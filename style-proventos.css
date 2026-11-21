@@ -174,3 +174,10 @@
 .empty{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .empty p{color:var(--muted)}
 
+.asic{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--muted);padding:0}.asic[hidden]{display:none}.asic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.asic.on{color:var(--accent);border-color:var(--accent)}
+.asft .asmic{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;padding:0;flex:none;background:var(--tint);color:var(--fg);border:1px solid var(--line)}.asft .asmic[hidden]{display:none}.asft .asmic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.asft .asmic.on{background:var(--loss);color:#fff;border-color:var(--loss);animation:asmic 1.2s infinite}
+@keyframes asmic{50%{opacity:.65}}@media (prefers-reduced-motion:reduce){.asft .asmic.on{animation:none}}
+.asac{display:inline-flex;align-items:center;gap:4px}.ascp svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ashl{display:flex;flex-direction:column;gap:8px}.ashi{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:14px;overflow:hidden}.ashi.on{border-color:var(--accent)}
+.asho{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:none;border:0;color:var(--fg);text-align:left;padding:11px 13px}.asho b{font-size:14.5px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.asho small{color:var(--muted);font-size:12px}
+.asdel{background:none;border:0;border-left:1px solid var(--line);color:var(--muted);padding:0 14px;font-size:14px}

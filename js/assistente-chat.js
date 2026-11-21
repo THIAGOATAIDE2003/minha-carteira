@@ -1,12 +1,13 @@
 /* Aporte · js/assistente-chat.js — continuação do antigo assistente.js (parte 2 de 3). Mesmo escopo global; a ordem de carga importa. */
-function asSave(){try{localStorage.setItem(LS+'-assist',JSON.stringify(AS.m.slice(-40)))}catch(e){}}
+function asSave(){if(!AS.m.length)return;var c=asCur();if(!c){c={id:AS.id,t:'',at:0,m:[]};ASC.unshift(c)}c.m=AS.m.slice(-40);c.at=Date.now();c.t=asTitulo(c.m);ASC.sort(function(a,b){return b.at-a.at});ASC=ASC.slice(0,30);asPersist()}
 var ASQ=['Como está minha carteira hoje?','Onde estou correndo mais risco?','Qual ação da carteira está mais barata?','Quanto recebo de proventos por mês?','Quais oportunidades o garimpo achou?','Como estou indo perto das minhas metas?'];
 var ASGQ=['llama-3.3-70b-versatile','meta-llama/llama-4-scout-17b-16e-instruct','openai/gpt-oss-120b','meta-llama/llama-4-maverick-17b-128e-instruct','qwen/qwen3-32b','openai/gpt-oss-20b','llama-3.1-8b-instant'];
 function asTxt(h){return String(h==null?'':h).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim()}
 function asR(v){return v==null||!isFinite(v)?'?':(v<0?'−':'')+'R$ '+num(Math.abs(v),0)}
 function asP(v,d){return v==null||!isFinite(v)?'?':(v>=0?'+':'')+num(v,d==null?1:d)+'%'}
 /* o que a IA fica sabendo: um resumo curto do app (sem chaves, sem dados pessoais) */
-function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
+/* only (opcional): quais blocos devolver — base, ativos, prov, risco, eco, res, op, lista, metas; usado pelas ferramentas do Gemini */
+function asCtx(q,only){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl(),SEG=[['base',0]],seg=function(k){SEG.push([k,L.length])};
   L.push('FONTES DO CONTEXTO: cotações ao vivo (brapi para o Brasil, Finnhub para os EUA, robô a cada 15 min); indicadores do Fundamentus, histórico do Yahoo e setores baixados pelo robô em '+(MD.d&&MD.d.ts?asDt(MD.d.ts*1000):'?')+'; balanços da CVM; notícias do Google Notícias; nota, preço justo e diagnóstico de risco são cálculos fixos do próprio app (não IA); resumos de notícias e relatórios são de outra IA (o robô).');
   L.push('Hoje: '+fmtDate(today())+'. Bolsa: '+(mktOpen&&mktOpen()?'aberta agora':'fechada agora')+'. Dólar: R$ '+(fx?num(fx,2):'?')+'.');
   L.push(pfCtx());try{var tp=thPapeis();if(tp)L.push(tp)}catch(e){}
@@ -14,7 +15,7 @@ function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
   L.push('PATRIMÔNIO: '+asR(pat)+' (investido ao custo: '+asR(T.cost)+'). Valorização dos ativos que tem hoje (preço + proventos, dólar de hoje): '+asR(V.g)+' ('+asP(V.p*100)+'). Lucro total desde o início (inclui câmbio, vendas, proventos, menos taxas): '+asR(T.gain)+'. Rentabilidade anual (XIRR): '+(T.xirr!=null?asP(T.xirr*100):'?')+'. Proventos recebidos no total: '+asR(T.div)+'.');
   var dv=0,dp=0;R.held.forEach(function(x){var lv=livePx(x.p.ticker);if(!lv||lv.pct==null)return;var F=x.p.market==='US'?(fx||1):1,a=x.p.qty*lv.p*F,b=a/(1+lv.pct/100);dv+=a-b;dp+=b});
   if(dp)L.push('Variação da carteira '+(dl.t==='hoje'?'hoje':'no último pregão')+': '+(dv>=0?'+':'')+asR(dv)+' ('+asP(dv/dp*100,2)+').');
-  var tot=pat||1;
+  var tot=pat||1;seg('ativos');
   L.push('ATIVOS (ticker | qtd | preço médio | preço atual | valor R$ | peso | ganho | dia | setor | análise do app):');
   R.held.slice().sort(function(a,b){return b.v-a.v}).forEach(function(x){var tk=x.p.ticker,us=x.p.market==='US',c=us?'US$ ':'R$ ',lv=livePx(tk),s=[];
     s.push(tk+(us?' (EUA, em dólar)':''),num(x.p.qty,us?4:0)+' un',c+num(x.P0,2),c+num(x.P1,2),asR(x.v),num(x.v/tot*100,1)+'%',asP(x.pct*100),lv&&lv.pct!=null?asP(lv.pct,2):'?');
@@ -27,26 +28,27 @@ function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
     L.push('- '+s.join(' | ')+(ex&&!ASCMP?' | '+ex:''))});
   if(T.rfV)L.push('- Renda fixa: '+asR(T.rfV)+' ('+num(T.rfV/tot*100,1)+'%), rendimento até agora '+asR(T.rfU)+'.');
   if(R.closed.length)L.push('Ações já vendidas: '+R.closed.map(function(p){return p.ticker}).join(', ')+'.');
-  /* proventos */
+  seg('prov');/* proventos */
   try{var it=pvItems(),y1=today().slice(0,7),y0=mAdd(y1,-11),r12=0,up=[];it.forEach(function(i){var m=(i.pay||'').slice(0,7);if(i.st==='rec'&&m>=y0&&m<=y1)r12+=i.liq;if(i.st!=='rec')up.push(i)});
     L.push('PROVENTOS: últimos 12 meses '+asR(r12)+' (média de '+asR(r12/12)+' por mês).'+(up.length?' A receber: '+up.slice(0,10).map(function(i){return i.tk+' '+asR(i.liq)+' ('+i.tipo+(i.pay?', paga '+fmtDate(i.pay):', data a definir')+')'}).join('; ')+'.':' Nada anunciado a receber.'))}catch(e){}
-  /* risco */
+  seg('risco');/* risco */
   if(!ASCMP||/risc|cair|queda|perd/i.test(q))try{var rh=document.createElement('div');setHtml(rh,riskHtml(R));var li=rh.querySelectorAll('.rkl')[0],rg=rh.querySelector('.rkgr');
     if(li){L.push('RISCO (diagnóstico do app'+(rg?', risco geral '+rg.textContent:'')+'):');[].forEach.call(li.querySelectorAll('li'),function(x){var b=x.querySelector('b'),p=x.querySelector('p'),k=x.querySelector('.rkdot,.rklv,[class*=rk]');L.push('- '+asTxt(b&&b.textContent)+': '+asTxt(p&&p.innerHTML))})}}catch(e){}
-  /* economia */
+  seg('eco');/* economia */
   var mc=[];['selic','cdi','ipca','ibov','tnx','brent','iron','GLD'].forEach(function(k){var d=idxDef(k);if(!d)return;var v=null;try{v=idxVal(d)}catch(e){}if(!v||v.v==null)return;mc.push(d.n+' '+(d.f==='pct'?num(v.v,2)+'%':num(v.v,2))+(v.p!=null&&d.f!=='pct'?' (dia '+asP(v.p,2)+')':''))});
   if(mc.length)L.push('ECONOMIA: '+mc.join('; ')+'.');
   try{var bx=bcCtx();if(bx)L.push(bx)}catch(e){}try{var rx=riCtxCart();if(rx)L.push(rx)}catch(e){}
-  var rs=MD.d&&MD.d.res;
+  seg('res');var rs=MD.d&&MD.d.res;
   if(rs&&rs.dia&&rs.dia.ai)L.push('RESUMO DO MERCADO (IA do robô): '+asTxt(rs.dia.ai.titulo)+'. '+asTxt(rs.dia.ai.texto).slice(0,500));
   if(rs&&rs.cart&&rs.cart.ai){var ca=rs.cart.ai;L.push('RELATÓRIO DA CARTEIRA (IA do robô): '+asTxt(ca.titulo)+'. Riscos: '+(ca.riscos||[]).slice(0,3).join(' / ')+'. Para acompanhar: '+(ca.atencao||[]).slice(0,3).join(' / '))}
-  /* oportunidades */
+  seg('op');/* oportunidades */
   try{var O=opData();if(O){if(O.D.length)L.push('GARIMPO (ações de qualidade abaixo do preço justo, fora da carteira): '+O.D.slice(0,6).map(function(o){return o.tk+' nota '+num(o.score,1)+', preço justo '+asP(o.V.up*100,0)}).join('; ')+'.');
     var al=[];O.W.concat(O.M).forEach(function(o){(o.al||[]).forEach(function(a){al.push(o.tk+': '+asTxt(a[1]))})});if(al.length)L.push('ALERTAS: '+al.slice(0,6).join('; ')+'.')}}catch(e){}
-  var wl=wlist();if(wl.length)L.push('LISTA DE ACOMPANHAMENTO: '+wl.join(', ')+'.');
-  var M=S.metas||{},mG=mtG(),mi=mtAtual(mG);if(mi>=0){var mV=mG[mi].v;L.push('META DE PATRIMÔNIO DO ANO (o usuário define uma por ano e pode mudar): '+asR(mV)+' até dezembro de '+mG[mi].a+(pat>=mV?' (já batida)':' (falta '+asR(mV-pat)+')')+'.')}
+  seg('lista');var wl=wlist();if(wl.length)L.push('LISTA DE ACOMPANHAMENTO: '+wl.join(', ')+'.');
+  seg('metas');var M=S.metas||{},mG=mtG(),mi=mtAtual(mG);if(mi>=0){var mV=mG[mi].v;L.push('META DE PATRIMÔNIO DO ANO (o usuário define uma por ano e pode mudar): '+asR(mV)+' até dezembro de '+mG[mi].a+(pat>=mV?' (já batida)':' (falta '+asR(mV-pat)+')')+'.')}
   if(M.renda&&M.renda.valor)L.push('META DE RENDA MENSAL COM PROVENTOS: '+asR(M.renda.valor)+'.');
   if(S.alvos&&S.alvos.classes){var A=S.alvos.classes;L.push('ALVOS DE APORTE: Brasil '+(A.BR||0)+'%, exterior '+(A.US||0)+'%, renda fixa '+(A.RF||0)+'%.')}
+  if(only){var o2=[];SEG.forEach(function(g,i){var e=i+1<SEG.length?SEG[i+1][1]:L.length;if(only[g[0]])o2=o2.concat(L.slice(g[1],e))});return o2.join('\n')}
   /* empresas citadas na pergunta (código ou nome): tudo que o app sabe, com a fonte de cada número */
   var held={};R.held.forEach(function(x){held[x.p.ticker]=1});
   var tks=asFind(q);
@@ -88,13 +90,13 @@ function asAsk(q){q=String(q||'').trim();if(!q||AS.busy)return;var gq=S.keys.gq,
   AS.m.push({r:'u',t:q});var a={r:'a',t:'',mod:''};AS.m.push(a);AS.busy=true;asRender();
   if(!gq&&!gm){a.e=1;a.t='Para eu responder, cole a chave da Groq em **Mais → Ajustes → Assistente**. É grátis em console.groq.com (a mesma que você criou para o robô serve).';AS.busy=false;asSave();asRender();return}
   var mk=function(c){try{return asMsgs(q,c)}catch(e){return [{role:'system',content:ASSYS},{role:'user',content:q}]}},msgs=null,gmk=function(){return msgs||(msgs=mk(false))};
-  var ab=window.AbortController?new AbortController():null;AS.ab=ab;var sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab&&!a.t)ab.abort()},S.asia==='gem'?60000:30000),errs=[];
+  var ab=window.AbortController?new AbortController():null;AS.ab=ab;var sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab&&!a.t)ab.abort()},S.asia==='gem'?90000:30000),errs=[];
   var on=function(t){a.t+=t;asTick()};
   /* ordem das IAs: Groq primeiro (rápida) ou Gemini primeiro (mais caprichada), conforme Ajustes; a outra fica de reserva */
-  var provs=[];if(gq)provs.push(['Groq',function(){return asGroq(gq,mk,on,sig)}]);if(gm)provs.push(['Gemini',function(){return asGem(gm,gmk(),on,sig)}]);if(S.asia==='gem'&&gm)provs.reverse();
+  var provs=[];if(gq)provs.push(['Groq',function(){return asGroq(gq,mk,on,sig)}]);if(gm)provs.push(['Gemini',function(){return asGemT(gm,q,on,sig).catch(function(e){if(e&&e.st===400&&!a.t)return asGem(gm,gmk(),on,sig);throw e})}]);if(S.asia==='gem'&&gm)provs.reverse();
   var run=function(k){return provs[k][1]().catch(function(e){if((e&&e.name==='AbortError')||a.t)throw e;errs.push(asErrTxt(e,provs[k][0]));if(k+1<provs.length)return run(k+1);throw e})};
   run(0).then(function(){a.mod=AS.mod;if(!a.t){a.e=1;a.t='A IA não mandou resposta. Tente de novo.'}}).catch(function(e){if(e&&e.name==='AbortError'){if(a.t){a.mod=AS.mod;a.t+=' …';return}a.e=1;a.t='Demorou demais para responder. Tente de novo.';return}
     if(a.t){a.mod=AS.mod;return}a.e=1;a.t='Não consegui responder: '+errs.join(' E ')})
-   .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;asSave();asRender()})}
+   .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;asSave();asRender();try{asvFim(a)}catch(e){}})}
 var ASRF=0;function asTick(){if(ASRF)return;ASRF=requestAnimationFrame(function(){ASRF=0;var el=document.querySelector('#as-b .asm.a:last-child .ast'),a=AS.m[AS.m.length-1];if(el&&a){setHtml(el,asMd(a.t));asScroll()}})}
 /* markdown simples: **negrito**, listas com "- ", parágrafos */
