@@ -195,15 +195,26 @@ function contasAMao(F, P) {
     /* Lucro total: tem 1D e 5D como os outros; no ano mostra só o valor (sem '(0,00%)') e a área fecha nos pontos */
     const lt = await pg.evaluate(() => { heroOpen('luc'); var a = document.getElementById('stk-b').innerHTML; STK.rng = '1d'; heroRender(); var b = document.getElementById('stk-b').innerHTML; STK.rng = '5d'; heroRender(); var c = document.getElementById('stk-b').innerHTML; document.getElementById('stk').hidden = true; document.body.style.overflow = ''; return [/data-rng="1d"/.test(a) && /data-rng="5d"/.test(a), /\(0,00%\)/.test(a), /data-rng="1d"/.test(b) && /data-rng="1d"/.test(c), /<polygon points="0,/.test(a)]; });
     confere('Lucro total tem 1D/5D, sem (0,00%) e com a área fechada nos pontos', lt, [true, false, true, false]);
-    /* Orçamento: entrou, gastou, aportou e sobra à mão; meta de gasto muda de cor; salva como cfg 'orc'; telas abrem sem erro */
-    const orc = await pg.evaluate(() => { var pend0 = S.pend.length; S.orc = { sal: 3900, meta: 2000, apo: 1000, conta: 500, fixos: [{ id: 'a', n: 'Aluguel', v: 800 }, { id: 'b', n: 'Luz', v: 300 }], m: { '2026-11': { sal: null, ex: [{ id: 'c', n: 'Bônus', v: 200 }], g: { Mercado: 500 } } } };
+    /* Orçamento: entrou, gastou, aportou, sobra, %, fixo por mês, envelopes e gastos lançados; meta muda de cor; salva como cfg 'orc'; telas abrem sem erro */
+    const orc = await pg.evaluate(() => { var pend0 = S.pend.length; var Y = '2026-11';
+      S.orc = { v: 2, sal: 3900, meta: 2000, apo: 1000, conta: 500, fixos: [{ id: 'a', n: 'Aluguel', v: 800 }, { id: 'b', n: 'Luz', v: 300 }], cats: [{ id: 'k1', n: 'Lazer', lim: 1000 }, { id: 'k2', n: 'Mercado', lim: 600 }],
+        m: { [Y]: { sal: null, ex: [{ id: 'c', n: 'Bônus', v: 200 }], fx: {}, l: [{ id: 'x1', c: 'k2', v: 500, n: '', d: '2026-11-03', f: 'd' }] } } };
       var tr = [{ side: 'buy', date: '2026-11-05', market: 'BR', qty: 10, price: 20, taxa: 0 }, { side: 'rf', date: '2026-11-07', price: 300 }, { side: 'buy', date: '2026-11-09', market: 'US', qty: 1, price: 100, fx: 5, taxa: 0 }, { side: 'buy', date: '2026-10-09', market: 'BR', qty: 1, price: 999, taxa: 0 }];
-      var a = orcCalc('2026-11', tr); S.orc.m['2026-11'].sal = 3600; var b = orcCalc('2026-11', tr); S.orc.m['2026-11'].sal = null; var pa = [Math.round(a.pFx * 1000), Math.round(a.pVr * 1000), Math.round(a.pApo * 1000), Math.round(a.pGas * 1000), Math.round(a.pSobra * 1000)]; S.orc.m['2026-11'].fx = { a: 1000 }; var cf = orcCalc('2026-11', tr); S.orc.m['2026-11'].fx = {}; ORM = '2026-11'; orcField('fx:b', '350'); var fb = S.orc.m['2026-11'].fx.b; orcField('fx:b', ''); var fb2 = S.orc.m['2026-11'].fx.b;
-      ORM = '2026-11'; showTab('orcamento'); var h1 = document.getElementById('orctab').innerHTML; S.orc.meta = 1000; renderOrc(); var h2 = document.getElementById('orctab').innerHTML;
-      orcField('g:Lazer', '150,50'); var lz = S.orc.m['2026-11'].g.Lazer; orcField('conta', ''); var cz = S.orc.conta; var op = S.pend.length - pend0 && S.pend[S.pend.length - 1].k;
+      var a = orcCalc(Y, tr); S.orc.m[Y].sal = 3600; var b = orcCalc(Y, tr); S.orc.m[Y].sal = null;
+      var pa = [Math.round(a.pFx * 1000), Math.round(a.pVr * 1000), Math.round(a.pApo * 1000), Math.round(a.pGas * 1000), Math.round(a.pSobra * 1000)];
+      S.orc.m[Y].fx = { a: 1000 }; var cf = orcCalc(Y, tr); S.orc.m[Y].fx = {}; ORM = Y; orcField('fx:b', '350'); var fb = S.orc.m[Y].fx.b; orcField('fx:b', ''); var fb2 = S.orc.m[Y].fx.b;
+      showTab('orcamento'); var h1 = document.getElementById('orctab').innerHTML; S.orc.meta = 1000; renderOrc(); var h2 = document.getElementById('orctab').innerHTML;
+      /* gasto lançado pelo botão: 3 gastos no Lazer (50 + 25 + 10) e o envelope mostra o que resta */
+      ['50', '25', '10'].forEach(function (v) { document.getElementById('or-lv-k1').value = v; document.getElementById('or-lf-k1').value = 'c'; document.querySelector('[data-orl="k1"]').click(); });
+      var lz = S.orc.m[Y].l.filter(function (x) { return x.c === 'k1' }).reduce(function (s, x) { return s + x.v }, 0), c2 = orcCalc(Y, tr), h3 = document.getElementById('orctab').innerHTML;
+      var del = S.orc.m[Y].l.filter(function (x) { return x.c === 'k1' })[0].id; document.querySelector('[data-orld="' + del + '"]').click(); var lz2 = orcCalc(Y, tr).por.k1;
+      orcField('lim:k1', '1.200,50'); var lm = S.orc.cats[0].lim; orcField('conta', ''); var cz = S.orc.conta; var op = S.pend.length - pend0 && S.pend[S.pend.length - 1].k;
+      /* migração: versão 1 guardava o total por categoria em m.g */
+      S.orc = { sal: 1000, fixos: [], m: { [Y]: { g: { Lazer: 120 } } } }; var mg = orcCalc(Y, tr).por;
       S.orc = undefined; S.pend.length = pend0; ORM = ''; showTab('resumo');
-      return [a.ent, a.gas, a.apo, a.sobra, a.livre, b.ent, /Sobra do m/.test(h1), /class="orb"><i class="ok"/.test(h1), /class="orb"><i class="bad"/.test(h2), lz, cz, op, pa, cf.gas, fb, fb2, /class="orsk"/.test(h1) && /Para onde vai o sal/.test(h1)]; });
-    confere('Orçamento: contas do mês, meta, salvar e abrir a tela', orc, [4100, 1600, 1000, 1500, 2500, 3800, true, true, true, 150.5, 0, 'orc', [282, 128, 256, 410, 333], 1800, 350, undefined, true]);
+      return [a.ent, a.gas, a.apo, a.sobra, a.livre, b.ent, /Sobra do m/.test(h1), /class="orb"><i class="ok"/.test(h1), /class="orb"><i class="bad"/.test(h2), cz, op, pa, cf.gas, fb, fb2, /class="orsk"/.test(h1) && /Para onde vai o sal/.test(h1),
+        lz, c2.vr, /resta R\$(&nbsp;|\s)?915,00/.test(h3), lz2, lm, mg.c2]; });
+    confere('Orçamento: contas, %, fixo do mês, envelopes e gastos lançados', orc, [4100, 1600, 1000, 1500, 2500, 3800, true, true, true, 0, 'orc', [282, 128, 256, 410, 333], 1800, 350, undefined, true, 85, 585, true, 35, 1200.5, 120]);
     /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */
     await pg.clock.setFixedTime(new Date('2026-11-20T03:50:00Z'));
     confere('00h50 de Brasília: variação dos EUA já zerada (cotação de ontem à noite)', await pg.evaluate(() => window.__aporte.dzero(true, Date.now() - 6 * 3600000)), true);
