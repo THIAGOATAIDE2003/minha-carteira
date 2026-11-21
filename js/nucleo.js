@@ -1,7 +1,7 @@
 /* Aporte · js/nucleo.js — estado, ajudantes, câmbio, XIRR e compute() (as contas da carteira).
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 /* Versão do app: sobe a cada mudança que o usuário vê (veja CLAUDE.md). O sw.js usa este número no nome do cache offline. */
-var VERSAO='1.42.0';
+var VERSAO='1.42.1';
 /* Enquanto os arquivos de js/ ainda estão carregando, render() não faz nada (senão chamaria funções de arquivos que ainda não chegaram). abas.js liga isto no fim. */
 var BOOT=false;
 window.addEventListener('error',function(e){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent='Erro na página: '+e.message}logErro('erro de código',e.message+(e.filename?' ('+String(e.filename).split('/').pop()+':'+e.lineno+')':''))});
@@ -39,6 +39,7 @@ var $=function(id){return document.getElementById(id)};
 var today=function(){return new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)};
 var S={trades:[],quotes:{},fx:null,keys:{finnhub:'',brapi:'',gh:'',repo:''},example:false,pend:[]};
 try{var raw=localStorage.getItem(LS);if(raw){var p=JSON.parse(raw);S=Object.assign(S,p);S.keys=Object.assign({finnhub:'',brapi:'',gh:'',repo:''},S.keys||{});if(!Array.isArray(S.pend))S.pend=[]}}catch(e){}
+if(S.asia!=='groq'&&S.asia!=='gem')S.asia='gem';/* Gemini responde primeiro (aguenta o contexto inteiro); Groq fica de reserva, a menos que o Ajustes diga o contrário */
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 function warnIn(m){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent=m}try{window.scrollTo(0,0)}catch(e){}}
 function sanitize(){
