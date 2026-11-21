@@ -4,14 +4,15 @@
    Cada mês é o mês de REFERÊNCIA (as contas de dezembro entram em dezembro, mesmo que o salário caia em janeiro).
    S.orc = {v:2, inicio:'AAAA-MM' (primeiro mês do orçamento; meses antes ficam de fora), sal, meta, apo, conta, fixos:[{id,n,v}], cats:[{id,n,lim}],
             m:{'AAAA-MM':{sal (recebido, null = usa o previsto), ex:[{id,n,v}], fx:{idDoFixo:valor deste mês}, l:[{id,c:idDaCategoria,v,n,d:'AAAA-MM-DD',f:'d|c|p|m'|''}]}}} */
-var ORM='',ORV='mes',ORE='mes',ORINI='2026-12',ORCATS=['Mercado','Transporte','Lazer','Saúde','Outros'],ORO={},ORF={d:'débito',c:'crédito',p:'Pix',m:'dinheiro'};
+var ORM='',ORV='mes',ORE='mes',ORINI='2026-11',ORCATS=['Mercado','Transporte','Lazer','Saúde','Outros'],ORO={},ORF={d:'débito',c:'crédito',p:'Pix',m:'dinheiro'};
 function orcId(){return 'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function orcO(){if(!S.orc||typeof S.orc!=='object')S.orc={sal:0,meta:0,apo:0,conta:0,fixos:[],m:{},inicio:ORINI};var o=S.orc,chg=0;if(!Array.isArray(o.fixos))o.fixos=[];if(!o.m||typeof o.m!=='object')o.m={};
   if(!Array.isArray(o.cats))o.cats=ORCATS.map(function(n,i){return {id:'c'+i,n:n,lim:0}});
   if(o.v!==2){/* versão 1 guardava um total por categoria no mês (m.g): vira um gasto lançado, sem perder nada */
     Object.keys(o.m).forEach(function(ym){var m=o.m[ym];if(m&&m.g){Object.keys(m.g).forEach(function(k){var c=o.cats.filter(function(x){return x.n===k})[0];if(c&&+m.g[k]>0){m.l=m.l||[];m.l.push({id:orcId(),c:c.id,v:+m.g[k],n:'Total lançado antes',d:ym+'-01',f:''})}});delete m.g}});o.v=2}
-  /* o orçamento começa em dezembro/2026: o que estava lançado antes disso (testes) é apagado, uma vez só */
+  /* o orçamento começa em novembro/2026: o que estava lançado antes disso (testes) é apagado, uma vez só */
   if(o.inicio===undefined){o.inicio=ORINI;Object.keys(o.m).forEach(function(ym){if(ym<o.inicio)delete o.m[ym]});chg=1}
+  if(o.inicio==='2026-12'){o.inicio=ORINI;chg=1}/* 1.49.0 começava em dezembro: agora novembro */
   if(chg){try{orcSave()}catch(e){}}
   return o}
 function orcDef(){var t=today().slice(0,7),i=orcO().inicio;return t<i?i:t}

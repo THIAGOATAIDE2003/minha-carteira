@@ -219,7 +219,7 @@ function contasAMao(F, P) {
       S.orc = undefined; S.pend.length = pend0; ORM = ''; showTab('resumo');
       return [a.ent, a.gas, a.apo, a.sobra, a.livre, b.ent, /Sobra do m/.test(h1), /class="orb"><i class="ok"/.test(h1), /class="orb"><i class="bad"/.test(h2), cz, op, pa, cf.gas, fb, fb2, /class="orsk"/.test(h1) && /Para onde vai o sal/.test(h1),
         lz, c2.vr, /resta R\$(&nbsp;|\s)?915,00/.test(h3), lz2, lm, mg.c2, rk, gd, /Onde mais gasto/.test(ha) && /Aluguel/.test(ha) && /Cr.dito/.test(ha), ini]; });
-    confere('Orçamento: contas, %, fixo do mês, envelopes e gastos lançados', orc, [4100, 1600, 1000, 1500, 2500, 3800, true, true, true, 0, 'orc', [282, 128, 256, 410, 333], 1800, 350, undefined, true, 85, 585, true, 35, 1200.5, 120, 'Aluguel:800,Mercado:600,Luz:300', 2400, true, ['2026-12', '2026-12']]);
+    confere('Orçamento: contas, %, fixo do mês, envelopes e gastos lançados', orc, [4100, 1600, 1000, 1500, 2500, 3800, true, true, true, 0, 'orc', [282, 128, 256, 410, 333], 1800, 350, undefined, true, 85, 585, true, 35, 1200.5, 120, 'Aluguel:800,Mercado:600,Luz:300', 2400, true, ['2026-11', '2026-11,2026-12']]);
     /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */
     await pg.clock.setFixedTime(new Date('2026-11-20T03:50:00Z'));
     confere('00h50 de Brasília: variação dos EUA já zerada (cotação de ontem à noite)', await pg.evaluate(() => window.__aporte.dzero(true, Date.now() - 6 * 3600000)), true);
