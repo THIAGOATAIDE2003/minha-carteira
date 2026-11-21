@@ -170,6 +170,7 @@ document.addEventListener('click',function(e){
   var tb=t.closest&&t.closest('[data-tema]');
   if(tb){setTema(tb.getAttribute('data-tema'));return}
   var gb=t.closest&&t.closest('.spkbtn');if(gb)t=gb;
+  var gg=t.closest&&t.closest('.hcg[data-goto]');if(gg)t=gg;
   if(false){}
   else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');$('k-gh').scrollIntoView();$('k-gh').focus()}
   else if(t.id==='sync-now'){ghSync(true)}

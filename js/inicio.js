@@ -46,6 +46,7 @@ function renderSummary(R){
   var IC={pat:'<svg viewBox="0 0 24 24"><path d="M4 11a7 6 0 0 1 13-2h2v4l-2 1-1 3h-3v-2H9v2H6l-1-3a5 5 0 0 1-1-3z"/><circle cx="15" cy="11" r="1"/></svg>',
     val:'<svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>',
     cam:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M14.5 9.2c-.4-.8-1.4-1.2-2.5-1.2-1.4 0-2.5.7-2.5 1.9 0 2.7 5 1.3 5 4 0 1.2-1.1 2-2.5 2-1.2 0-2.2-.5-2.6-1.4M12 6.5V8m0 8v1.5"/></svg>',
+    luc:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 12h6"/></svg>',
     dia:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
   var cards=[
     card(IC.pat,'Patrimônio total','Quanto vale tudo que você tem hoje. A porcentagem compara com o valor investido (o que você pagou, com o VT pelo dólar de hoje), só pelo preço.',
@@ -63,7 +64,10 @@ function renderSummary(R){
     cards.push(card(IC.cam,'Câmbio','O dólar contra o real. O número grande é quanto o dólar de hoje mexeu no seu VT (em reais). Abaixo, o dólar agora e quanto o câmbio já deu de lucro (ou prejuízo) no que você tem em dólar desde as compras. Toque para ver o histórico.',
       (dc!=null?'<div class="hcm"><b class="num '+cls(dc)+'">'+sgn(dc)+'</b><span class="num '+cls(dc)+'">'+pct(fxr/fp-1)+' '+arrow(dc)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
       (fxr?'<div class="hcl" data-hero="cam" role="button" tabindex="0"><small>Dólar agora ›</small><span class="num">R$ '+num(fxr,4)+'</span></div>':'')+'<div class="hcl" data-hero="cam" role="button" tabindex="0"><small>Lucro do câmbio ›</small><span class="num '+cls(fxp2)+'">'+sgn(fxp2)+'</span></div>','cam'))}
-  cards=[cards[0],cards[2],cards[1]].concat(cards.slice(3));
+  var lucC=card(IC.luc,T.gain>=0?'Lucro total':'Prejuízo total','Quanto você ganhou (ou perdeu) de verdade se vendesse tudo hoje: preço das ações, dólar, vendas já feitas e proventos, menos as taxas. A porcentagem é sobre o que saiu do seu bolso. Toque para ver de onde vem.',
+    '<div class="hcm"><b class="num '+cls(T.gain)+'">'+sgn(T.gain)+'</b><span class="num '+cls(T.gain)+'">'+pct(T.simple)+' '+arrow(T.gain)+'</span></div>',
+    '<div><small>Anualizada</small><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div><button type="button" class="evolink" data-goto="desempenho">Ver detalhes</button>','luc').replace('data-hero="luc"','data-goto="desempenho"');
+  cards=[cards[0],cards[2],cards[1],lucC].concat(cards.slice(3));
   var h='<div class="hcw"><div class="hcards" id="hcards">'+cards.join('')+'</div><div class="hdots">'+cards.map(function(c,i){return '<i data-hci="'+i+'"'+(i===HCI?' class="on"':'')+'></i>'}).join('')+'</div></div>';
   if(R.warns.length)h+=R.warns.map(function(w){return '<p class="warn">'+esc(w)+'</p>'}).join('');
   if(T.missing.length)h+='<p class="warn">Sem preço atual para '+esc(T.missing.join(', '))+'. Usei o preço médio até a cotação chegar.</p>';
