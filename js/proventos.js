@@ -148,7 +148,7 @@ function renderDivPanel(){
   return h;
 }
 document.addEventListener('scroll',function(e){var c=e.target;if(!c||c.id!=='pcards')return;var i=Math.round(c.scrollLeft/Math.max(1,c.clientWidth));if(i!==PCI){PCI=i;[].forEach.call(c.parentNode.querySelectorAll('.hdots i'),function(d){d.classList.toggle('on',+d.getAttribute('data-pci')===i)})}},true);
-function pvRedraw(){var el=$('divtab');if(!el)return;el.innerHTML=renderDivPanel()||'<div class="panel"><p class="muted">Nenhum provento ainda. Quando cair o primeiro, ele aparece aqui.</p></div>';var pc=$('pcards');if(pc&&PCI)pc.scrollLeft=PCI*pc.clientWidth;if(PVS)document.body.style.overflow='hidden'}
+function pvRedraw(){var el=$('divtab');if(!el)return;setHtml(el,renderDivPanel()||'<div class="panel"><p class="muted">Nenhum provento ainda. Quando cair o primeiro, ele aparece aqui.</p></div>');var pc=$('pcards');if(pc&&PCI)pc.scrollLeft=PCI*pc.clientWidth;if(PVS)document.body.style.overflow='hidden'}
 function pvClose(){PVS=null;[].forEach.call(document.querySelectorAll('#divtab .sheet'),function(s){s.hidden=true});document.body.style.overflow=''}
 document.addEventListener('click',function(e){var t=e.target;if(!t.closest||!$('divtab').contains(t))return;var x;
   if((x=t.closest('[data-pci]'))){var pc=$('pcards');if(pc)pc.scrollTo({left:+x.getAttribute('data-pci')*pc.clientWidth,behavior:'smooth'});return}

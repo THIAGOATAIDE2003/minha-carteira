@@ -1,7 +1,7 @@
 /* Aporte · js/nucleo.js — estado, ajudantes, câmbio, XIRR e compute() (as contas da carteira).
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 /* Versão do app: sobe a cada mudança que o usuário vê (veja CLAUDE.md). O sw.js usa este número no nome do cache offline. */
-var VERSAO='1.41.5';
+var VERSAO='1.41.6';
 /* Enquanto os arquivos de js/ ainda estão carregando, render() não faz nada (senão chamaria funções de arquivos que ainda não chegaram). abas.js liga isto no fim. */
 var BOOT=false;
 window.addEventListener('error',function(e){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent='Erro na página: '+e.message}});
@@ -10,6 +10,30 @@ var LS='minha-carteira-v1';
 document.addEventListener('error',function(e){var t=e.target;if(t&&t.tagName==='IMG'&&t.closest&&t.closest('.tlg'))t.remove()},true);
 /* Só abre link http(s): o endereço da notícia vem do robô e nunca pode virar javascript: */
 function safeUrl(u){u=String(u||'');return /^https?:\/\//i.test(u)?u:'#'}try{var vE=document.getElementById('ver');if(vE)vE.textContent=VERSAO}catch(e){}
+/* setHtml(el,html[,modo]) é a ÚNICA porta de entrada de HTML montado em texto (nada de .innerHTML=, .outerHTML= ou insertAdjacentHTML fora daqui; o lint avisa).
+   O texto é lido num <template> (inerte: nada executa nem carrega enquanto está lá), limpo e só então vai para a tela.
+   Sai: script, iframe, object, embed, link, meta, base, style, svg foreignObject/animate/set, atributos on*, srcdoc/srcset, style com expression/javascript:
+   e endereço (href, src, action...) que não seja http(s), mailto, tel, relativo ou #. O resto (svg dos gráficos, data-*, style="" curto, inputs) passa igual.
+   modo: vazio = troca o conteúdo de el; 'add' = acrescenta no fim de el; 'troca' = troca o próprio el. Devolve el (ou o novo nó no 'troca'). */
+var SH_BAD={SCRIPT:1,IFRAME:1,FRAME:1,FRAMESET:1,OBJECT:1,EMBED:1,APPLET:1,LINK:1,META:1,BASE:1,STYLE:1,NOSCRIPT:1,TEMPLATE:1,PORTAL:1,FOREIGNOBJECT:1,SET:1,ANIMATE:1,ANIMATETRANSFORM:1,ANIMATEMOTION:1};
+var SH_URL={href:1,src:1,'xlink:href':1,action:1,formaction:1,poster:1,background:1,data:1,cite:1,ping:1};
+var SH_CSS=/expression\s*\(|javascript:|vbscript:|@import|behavior\s*:|-moz-binding/i;
+function shUrlOk(v,n,nm){v=String(v).replace(/[\u0000- \u007f-\u009f]/g,'');if(!/^[a-z][a-z0-9+.-]*:/i.test(v))return true;
+  return /^(https?|mailto|tel):/i.test(v)||(nm==='src'&&n.nodeName==='IMG'&&/^data:image\/(png|jpe?g|gif|webp);/i.test(v))}
+function shLimpa(root){[].slice.call(root.childNodes).forEach(function(n){
+  if(n.nodeType===8){root.removeChild(n);return}
+  if(n.nodeType!==1)return;
+  if(SH_BAD[n.nodeName.toUpperCase()]){root.removeChild(n);return}
+  [].slice.call(n.attributes).forEach(function(a){var nm=a.name.toLowerCase();
+    if(nm.slice(0,2)==='on'||nm==='srcdoc'||nm==='srcset'||(nm==='style'&&SH_CSS.test(a.value))||(SH_URL[nm]&&!shUrlOk(a.value,n,nm)))n.removeAttribute(a.name)});
+  if(n.nodeName==='A'&&n.getAttribute('target')==='_blank')n.setAttribute('rel','noopener noreferrer');
+  shLimpa(n)})}
+function setHtml(el,h,modo){if(!el)return el;var t=document.createElement('template');
+  /* eslint-disable-next-line no-restricted-syntax */
+  t.innerHTML=h==null?'':String(h);shLimpa(t.content);
+  if(modo==='troca'){var f=t.content.firstChild;if(el.parentNode)el.parentNode.replaceChild(t.content,el);return f}
+  if(modo!=='add')el.textContent='';
+  el.appendChild(t.content);return el}
 var $=function(id){return document.getElementById(id)};
 var today=function(){return new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)};
 var S={trades:[],quotes:{},fx:null,keys:{finnhub:'',brapi:'',gh:'',repo:''},example:false,pend:[]};

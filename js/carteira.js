@@ -112,7 +112,7 @@ function perfHtml(R){
   h+=hojeHtml(R)+investHtml(R);
   return h;
 }
-function renderPerf(R){var el=$('perftab');if(!el)return;var h=S.trades.length?perfHtml(R):'';el.innerHTML=h||'<div class="panel"><p class="muted">Lance suas compras para comparar a carteira com o mercado e com o CDI.</p></div>'}
+function renderPerf(R){var el=$('perftab');if(!el)return;var h=S.trades.length?perfHtml(R):'';setHtml(el,h||'<div class="panel"><p class="muted">Lance suas compras para comparar a carteira com o mercado e com o CDI.</p></div>')}
 function posCard(x){
   var p=x.p,us=p.market==='US',cur=us?usd:brl;
   return '<div class="pos"><div class="row"><span class="tk">'+esc(p.ticker)+'</span><span class="val num">'+brl.format(x.v)+'</span></div>'+
@@ -141,7 +141,7 @@ function rfCard(c){
 }
 function renderPositions(R){
   var el=$('positions'),rfs=R.rfs||[],rfo=rfs.filter(function(c){return !c.rs}),rfc=rfs.filter(function(c){return c.rs}),T=R.tot;
-  if(!R.held.length&&!R.closed.length&&!rfs.length){el.innerHTML='<div class="panel"><p class="muted">Nenhum ativo ainda. Lance uma compra no Extrato.</p></div>';return}
+  if(!R.held.length&&!R.closed.length&&!rfs.length){setHtml(el,'<div class="panel"><p class="muted">Nenhum ativo ainda. Lance uma compra no Extrato.</p></div>');return}
   var grp=function(title,sub,total,body,res,key){return '<details class="panel gbox" data-g="'+key+'"'+(GOPEN[key]?' open':'')+'><summary><div class="grp"><div><h2>'+title+'</h2>'+(sub?'<span class="det">'+sub+'</span>':'')+'</div><div class="gr">'+(total!=null?'<span class="num gt">'+brl.format(total)+'</span>':'')+(res?'<span class="num small '+cls(res[0])+'">'+sgn(res[0])+(res[1]!=null?' ('+pct(res[1])+')':'')+'</span>':'')+'</div></div></summary><div class="gbody">'+body+'</div></details>'};
   var gsum=function(a){var g=sum(a,function(x){return x.gain}),c=sum(a,function(x){return x.p.cB});return [g,c?g/c:null]};
   var sum=function(a,f){return a.reduce(function(s,x){return s+f(x)},0)};
@@ -160,7 +160,7 @@ function renderPositions(R){
     h+=grp('Encerradas',rows.length+' posições já vendidas: lucro das vendas + proventos',null,'<ul class="calc" style="margin-top:10px">'+rows.map(function(r){
       return '<li><span><b>'+esc(r.n)+'</b>'+(r.rf?' <span class="tag">Renda fixa</span>':'')+(r.rf?'':'<br><span class="muted small">Vendas '+sgn(r.v)+(r.d?' · proventos '+brl.format(r.d):'')+'</span>')+'</span><span class="num '+cls(r.g)+'">'+sgn(r.g)+'</span></li>'}).join('')+'</ul>',[sum(rows,function(r){return r.g}),null],'enc');
   }
-  el.innerHTML=h;
+  setHtml(el,h);
 }
 
 /* tabela de ativos (estilo Investidor10): logo, quantidade, variação total e do dia; toque no % mostra o valor, toque na linha abre a análise */
@@ -194,7 +194,7 @@ document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.dataset&&d
 function trKind(t){return t.side==='div'?'div':(t.side==='rf'||t.side==='rfout')?'rf':t.side==='buy'?'buy':t.side==='sell'?'sell':'out'}
 function renderTrades(){
   var el=$('trades');
-  if(!S.trades.length){el.innerHTML='<p class="muted">Nada lançado ainda.</p>';return}
+  if(!S.trades.length){setHtml(el,'<p class="muted">Nada lançado ainda.</p>');return}
   var fs=[['all','Tudo'],['buy','Compras'],['sell','Vendas'],['div','Proventos'],['rf','Renda fixa']];
   var h='<div class="yrs">'+fs.map(function(f){return '<button type="button" data-trf="'+f[0]+'" aria-pressed="'+(TRF===f[0])+'">'+f[1]+'</button>'}).join('')+'</div>';
   var q=($('tr-q').value||'').trim().toUpperCase();
@@ -215,10 +215,10 @@ function renderTrades(){
       '<div class="x"><span class="num">'+det+'</span><span style="display:flex;gap:14px">'+(k==='rfout'||k==='out'?'':'<button class="link" type="button" data-edit="'+esc(t.id)+'">Editar</button>')+'<button class="link" type="button" data-del="'+esc(t.id)+'">Excluir</button></span></div></div>';
   });
   if(cm)h+='</details>';
-  el.innerHTML=h;
+  setHtml(el,h);
 }
 
-function renderBanner(){$('banner').innerHTML=''}
+function renderBanner(){setHtml($('banner'),'')}
 
 function renderFx(){
   var el=$('fxtab');if(!el)return;
@@ -241,7 +241,7 @@ function renderFx(){
     '<div><span class="lbl">Dólar médio pago (com tudo)</span><span class="num">'+brl.format(avgPaid)+'</span></div>'+
     '<div><span class="lbl">Dólar médio de referência</span><span class="num">'+(avgRef?brl.format(avgRef):'—')+'</span></div>'+
     '<div><span class="lbl">Dólar de hoje</span><span class="num">'+(ft?'R$ '+num(ft.rate,4):'—')+'</span></div></div></div>';
-  if(!(S.cambio||[]).length){el.innerHTML='<div class="panel"><p class="muted" style="margin:0">Nenhuma compra de dólar registrada. Elas vêm junto com o backup.</p></div>';return}
+  if(!(S.cambio||[]).length){setHtml(el,'<div class="panel"><p class="muted" style="margin:0">Nenhuma compra de dólar registrada. Elas vêm junto com o backup.</p></div>');return}
   var buys=0,dvu=0;S.trades.forEach(function(t){if(t.market==='US'){if(t.side==='div'){dvu+=t.price;return}var c=t.qty*t.price;buys+=t.side==='buy'?c:-c}});
   if(T.estTot)h+='<div class="msg muted" style="margin-top:12px">Duas compras de dólar de 05/06 ('+usd.format(461)+') estão no extrato do Inter Global, mas sem comprovante. Usei a taxa do comprovante de US$ 1 do mesmo dia, então esses '+brl.format(T.estTot)+' são estimados. Se mandar o comprovante, eu troco pelo valor exato.</div>';
   if(buys-T.usd-dvu>5)h+='<div class="msg muted" style="margin-top:12px">Suas compras nos EUA somam '+usd.format(buys)+', mas os comprovantes somam '+usd.format(T.usd)+'. Faltam cerca de '+usd.format(buys-T.usd)+' sem comprovante (esses dólares usam o dólar de mercado do dia).</div>';
@@ -256,5 +256,5 @@ function renderFx(){
     '<p><b>IOF</b> é exato, vem direto do comprovante.</p>'+
     '<p><b>Spread</b> = (taxa cobrada pelo Inter − dólar de referência do dia) × dólares comprados. O dólar de referência é o fechamento diário do mercado. Como o Inter cota durante o dia, o spread é uma estimativa, pode variar um pouco para mais ou para menos.</p>'+
     '<p><b>Total</b> = dólar de referência + spread + IOF, e bate com o valor debitado na sua conta.</p></div></details>';
-  el.innerHTML=h;
+  setHtml(el,h);
 }

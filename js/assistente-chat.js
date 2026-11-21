@@ -31,7 +31,7 @@ function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
   try{var it=pvItems(),y1=today().slice(0,7),y0=mAdd(y1,-11),r12=0,up=[];it.forEach(function(i){var m=(i.pay||'').slice(0,7);if(i.st==='rec'&&m>=y0&&m<=y1)r12+=i.liq;if(i.st!=='rec')up.push(i)});
     L.push('PROVENTOS: últimos 12 meses '+asR(r12)+' (média de '+asR(r12/12)+' por mês).'+(up.length?' A receber: '+up.slice(0,10).map(function(i){return i.tk+' '+asR(i.liq)+' ('+i.tipo+(i.pay?', paga '+fmtDate(i.pay):', data a definir')+')'}).join('; ')+'.':' Nada anunciado a receber.'))}catch(e){}
   /* risco */
-  if(!ASCMP||/risc|cair|queda|perd/i.test(q))try{var rh=document.createElement('div');rh.innerHTML=riskHtml(R);var li=rh.querySelectorAll('.rkl')[0],rg=rh.querySelector('.rkgr');
+  if(!ASCMP||/risc|cair|queda|perd/i.test(q))try{var rh=document.createElement('div');setHtml(rh,riskHtml(R));var li=rh.querySelectorAll('.rkl')[0],rg=rh.querySelector('.rkgr');
     if(li){L.push('RISCO (diagnóstico do app'+(rg?', risco geral '+rg.textContent:'')+'):');[].forEach.call(li.querySelectorAll('li'),function(x){var b=x.querySelector('b'),p=x.querySelector('p'),k=x.querySelector('.rkdot,.rklv,[class*=rk]');L.push('- '+asTxt(b&&b.textContent)+': '+asTxt(p&&p.innerHTML))})}}catch(e){}
   /* economia */
   var mc=[];['selic','cdi','ipca','ibov','tnx','brent','iron','GLD'].forEach(function(k){var d=idxDef(k);if(!d)return;var v=null;try{v=idxVal(d)}catch(e){}if(!v||v.v==null)return;mc.push(d.n+' '+(d.f==='pct'?num(v.v,2)+'%':num(v.v,2))+(v.p!=null&&d.f!=='pct'?' (dia '+asP(v.p,2)+')':''))});
@@ -96,5 +96,5 @@ function asAsk(q){q=String(q||'').trim();if(!q||AS.busy)return;var gq=S.keys.gq,
   run(0).then(function(){a.mod=AS.mod;if(!a.t){a.e=1;a.t='A IA não mandou resposta. Tente de novo.'}}).catch(function(e){if(e&&e.name==='AbortError'){if(a.t){a.mod=AS.mod;a.t+=' …';return}a.e=1;a.t='Demorou demais para responder. Tente de novo.';return}
     if(a.t){a.mod=AS.mod;return}a.e=1;a.t='Não consegui responder: '+errs.join(' E ')})
    .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;asSave();asRender()})}
-var ASRF=0;function asTick(){if(ASRF)return;ASRF=requestAnimationFrame(function(){ASRF=0;var el=document.querySelector('#as-b .asm.a:last-child .ast'),a=AS.m[AS.m.length-1];if(el&&a){el.innerHTML=asMd(a.t);asScroll()}})}
+var ASRF=0;function asTick(){if(ASRF)return;ASRF=requestAnimationFrame(function(){ASRF=0;var el=document.querySelector('#as-b .asm.a:last-child .ast'),a=AS.m[AS.m.length-1];if(el&&a){setHtml(el,asMd(a.t));asScroll()}})}
 /* markdown simples: **negrito**, listas com "- ", parágrafos */

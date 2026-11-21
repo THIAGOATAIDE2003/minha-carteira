@@ -37,7 +37,7 @@ function renderBody(){
     rows.push(row('Ibovespa e S&P 500 (brapi)',!S.keys.brapi?'off':BX.err?'err':BX.at?'ok':'wait',!S.keys.brapi?'Falta o token brapi.':BX.err?esc(BX.err):BX.at?'BOVA11 e IVVB11, atualizados 2 vezes por dia.':'Busca ao abrir o app.'));
     rows.push(row('CDI (Banco Central)',CDI.err&&!CDI.dates.length?'err':CDI.dates.length?(CDI.err?'warn':'ok'):'wait',CDI.dates.length?CDI.dates.length+' dias úteis, até '+fmtDate(CDI.dates[CDI.dates.length-1])+'.'+(CDI.err?' '+esc(CDI.err):''):(CDI.err?esc(CDI.err):'Busca ao abrir o app.')));
     rows.push(row('Nuvem (GitHub)',!S.keys.gh?'off':GH.err?'err':GH.last?'ok':'wait',!S.keys.gh?'Falta a chave do GitHub acima.':GH.err?esc(GH.err):GH.last?'Sincronizado às '+hhm(GH.last)+'.':'Conectando...'));
-    si.innerHTML='<ul class="calc stl">'+rows.join('')+'</ul><button type="button" class="btn ghost" data-retry="1" style="margin-top:10px">Tentar de novo agora</button><p class="note exp">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>'}
+    setHtml(si,'<ul class="calc stl">'+rows.join('')+'</ul><button type="button" class="btn ghost" data-retry="1" style="margin-top:10px">Tentar de novo agora</button><p class="note exp">Preços e dólar se atualizam sozinhos ao abrir o app e a cada 15 minutos. Ações do Brasil só são consultadas com a bolsa aberta (10h às 18h15, dias úteis), para não gastar a cota grátis do brapi; proventos são conferidos 2 vezes por dia e o histórico 1 vez por dia. O app abre mesmo sem internet, com os últimos dados salvos.</p>')}
   pfBox();$('k-asia').value=S.asia==='gem'?'gem':'groq';if(document.activeElement!==$('k-gq'))$('k-gq').value=S.keys.gq||'';if(document.activeElement!==$('k-gem'))$('k-gem').value=S.keys.gem||'';$('k-fh').value=S.keys.finnhub||'';$('k-br').value=S.keys.brapi||'';$('k-av').value=S.keys.av||'';if(document.activeElement!==$('k-px'))$('k-px').value=S.keys.proxy||'';if(document.activeElement!==$('k-gh'))$('k-gh').value=S.keys.gh||'';if(document.activeElement!==$('k-repo'))$('k-repo').value=S.keys.repo||'';renderSync();
   markTema();foldNotes();
   syncForm();
@@ -74,7 +74,7 @@ function syncForm(){
   if(rf){$('l-price').textContent='Valor aplicado (R$)';return}
   if(rs){
     var R0=compute(),op=(R0.rfs||[]).filter(function(c){return !c.rs}),cur=$('f-rfsel').value;
-    $('f-rfsel').innerHTML=op.length?op.map(function(c){return '<option value="'+esc(c.t.id)+'">'+esc(c.t.ticker)+' · '+brl.format(c.t.price)+' em '+fmtDate(c.t.date)+'</option>'}).join(''):'<option value="">Nenhuma aplicação em aberto</option>';
+    setHtml($('f-rfsel'),op.length?op.map(function(c){return '<option value="'+esc(c.t.id)+'">'+esc(c.t.ticker)+' · '+brl.format(c.t.price)+' em '+fmtDate(c.t.date)+'</option>'}).join(''):'<option value="">Nenhuma aplicação em aberto</option>');
     if(cur&&op.some(function(c){return c.t.id===cur}))$('f-rfsel').value=cur;
     var sel=op.filter(function(c){return c.t.id===$('f-rfsel').value})[0];
     $('l-price').textContent='Valor que caiu na conta (R$)';

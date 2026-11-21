@@ -18,9 +18,9 @@ function pfTipo(p){p=p||pfOk();if(!p)return null;var s=0;s+=p.prazo==='5'?0:p.pr
 function pfAlvo(p){p=p||pfOk();if(!p)return null;var us=+p.ext||0,rf=+p.rf||0;if(us+rf>100)us=100-rf;return {BR:100-us-rf,US:us,RF:rf}}
 function pfResumo(p){var t=pfTipo(p),a=pfAlvo(p);return [['Perfil',t?t[0]:'—'],['Objetivo',pfOpt('obj',p.obj)],['Prazo',pfOpt('prazo',p.prazo)],['Se cair 20%',pfOpt('reac',p.reac)],['Aceita cair',pfOpt('queda',p.queda)],['Aporte por mês',p.ap>0?brl.format(p.ap):'—'],['Divisão ideal',a?'Brasil '+a.BR+'% · exterior '+a.US+'% · renda fixa '+a.RF+'%':'—'],['Reserva',pfOpt('res',p.res)]]}
 function pfBox(){var el=$('perfbox');if(!el)return;var p=pfOk(),t=pfTipo(p);
-  el.innerHTML='<h2>Seu perfil de investidor '+bal('Suas respostas sobre objetivo, prazo e quanto aceita perder. O app usa isso para dizer se o risco da carteira combina com você, para o assistente responder pensando no seu objetivo, para ordenar o garimpo e para sugerir a divisão do aporte.')+'</h2>'+
+  setHtml(el,'<h2>Seu perfil de investidor '+bal('Suas respostas sobre objetivo, prazo e quanto aceita perder. O app usa isso para dizer se o risco da carteira combina com você, para o assistente responder pensando no seu objetivo, para ordenar o garimpo e para sugerir a divisão do aporte.')+'</h2>'+
     (p?'<div class="pfhd"><b>'+t[0]+'</b><span>'+t[1]+'</span></div><dl class="pfdl">'+pfResumo(p).slice(1).map(function(r){return '<div><dt>'+r[0]+'</dt><dd>'+esc(r[1]||'—')+'</dd></div>'}).join('')+'</dl><button type="button" class="btn small" data-pf="open">Refazer perfil</button>'
-      :'<p class="muted" style="margin:0 0 12px">Responda 8 perguntas rápidas (uns 2 minutos). Assim o app compara o risco da carteira com o que você aguenta e o assistente responde pensando no seu objetivo.</p><button type="button" class="btn" data-pf="open">Responder perfil</button>')}
+      :'<p class="muted" style="margin:0 0 12px">Responda 8 perguntas rápidas (uns 2 minutos). Assim o app compara o risco da carteira com o que você aguenta e o assistente responde pensando no seu objetivo.</p><button type="button" class="btn" data-pf="open">Responder perfil</button>'))}
 function pfSheet(){var d=PFD,n=PFQ.filter(function(q){return d[q[0]]!=null}).length+(d.ap>0?1:0),tot=PFQ.length+1;
   var h='<div class="sheet" id="pfsheet"><div class="sbox big" role="dialog" aria-label="Perfil do investidor"><div class="shd"><b>Perfil do investidor</b><button type="button" class="shx" data-pf="close" aria-label="Fechar">✕</button></div><div class="sbd">'+
     '<div class="pfpr"><i style="width:'+Math.round(n/tot*100)+'%"></i></div>'+
@@ -28,7 +28,7 @@ function pfSheet(){var d=PFD,n=PFQ.filter(function(q){return d[q[0]]!=null}).len
       if(q[0]==='queda')x+='<h3>'+(++c)+'. Quanto pretende investir por mês?</h3><input id="pf-ap" inputmode="decimal" placeholder="1.000,00" value="'+(d.ap>0?String(d.ap).replace('.',','):'')+'" aria-label="Aporte por mês em reais">';return x}).join('')})()+
     (d.ext!=null&&d.rf!=null?'<p class="note" style="margin-top:14px">Divisão ideal pelas suas respostas: <b>Brasil '+pfAlvo(d).BR+'%</b>, <b>exterior '+pfAlvo(d).US+'%</b> e <b>renda fixa '+pfAlvo(d).RF+'%</b>. Dá para ajustar depois em Carteira → Aporte.</p>':'')+
     '<p class="msg" id="pf-msg"></p></div><div class="sft"><button type="button" class="link" data-pf="close">Cancelar</button><button type="button" class="btn" data-pf="save">Salvar perfil</button></div></div></div>';
-  var o=$('pfsheet');if(o)o.outerHTML=h;else document.body.insertAdjacentHTML('beforeend',h)}
+  var o=$('pfsheet');if(o)setHtml(o,h,'troca');else setHtml(document.body,h,'add')}
 function pfOpen(){PFD=Object.assign({},S.perfil||{});pfSheet();document.body.style.overflow='hidden'}
 function pfClose(){var o=$('pfsheet');if(o)o.remove();PFD=null;document.body.style.overflow=''}
 function pfReadAp(){var i=$('pf-ap');if(!i||!PFD)return;var r=String(i.value||'').trim(),v=/^\d{1,3}(\.\d{3})+$/.test(r)?parseFloat(r.replace(/\./g,'')):parseNum(r);PFD.ap=v>0?v:0}

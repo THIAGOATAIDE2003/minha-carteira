@@ -68,7 +68,7 @@ function niceStep(r){var e=Math.pow(10,Math.floor(Math.log(r)/Math.LN10)),f=r/e;
 function kfmt(v){var a=Math.abs(v);return (v<0?'R$ -':'R$ ')+(a>=1000?num(a/1000,a%1000?1:0)+'K':num(a,2))}
 function renderEvo(){
   var el=$('evotab');if(!el)return;
-  var all=evoData();if(!all.length){el.innerHTML='<div class="panel"><p class="muted">Lance sua primeira compra para começar a acompanhar a evolução.</p></div>';return}
+  var all=evoData();if(!all.length){setHtml(el,'<div class="panel"><p class="muted">Lance sua primeira compra para começar a acompanhar a evolução.</p></div>');return}
   var rows=EVF.p==='all'?all:all.slice(-(+EVF.p));
   var has={BR:0,US:0,RF:0};all.forEach(function(r){['BR','US','RF'].forEach(function(k){if(r.seg[k].c>0)has[k]=1})});
   if(EVF.t!=='all'&&!has[EVF.t])EVF.t='all';
@@ -102,5 +102,5 @@ function renderEvo(){
     '<div class="sbd"><h3>Período</h3>'+['all','12','24','60','120'].map(function(k){return '<label class="rad"><input type="radio" name="evp" value="'+k+'"'+(EVF.p===k?' checked':'')+'><span>'+EVPN[k]+'</span></label>'}).join('')+
     '<h3>Tipos de ativo</h3><div class="chips">'+['all','BR','US','RF'].filter(function(k){return k==='all'||has[k]}).map(function(k){return '<button type="button" data-evt="'+k+'" aria-pressed="'+(EVF.t===k)+'">'+EVTN[k]+'</button>'}).join('')+'</div></div>'+
     '<div class="sft"><button type="button" class="link" data-evf="reset">Restaurar padrão</button><button type="button" class="btn" data-evf="save">Salvar</button></div></div></div>';
-  el.innerHTML=h;
+  setHtml(el,h);
 }

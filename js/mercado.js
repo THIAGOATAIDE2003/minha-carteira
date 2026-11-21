@@ -96,7 +96,7 @@ function mkSug(q,max){var f=MD.d&&MD.d.fund&&MD.d.fund.d;if(!f)return [];var nq=
 function mkSugRow(x){var iw=wlist().indexOf(x)>=0,nm=nomeEmp(x),sub=fundSub(x);
   return '<li><span><b>'+esc(x)+(nm?' <span style="font-weight:400;color:var(--muted)">· '+esc(nm)+'</span>':'')+'</b><small>'+(sub||'Ação ou ETF')+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(x)+'">Ver</button><button type="button" class="btn small'+(iw?' ghost':'')+'" data-wtog="'+esc(x)+'">'+(iw?'Remover':'Acompanhar')+'</button></span></li>'}
 function mkSearch(q){
-  var el=$('mk-res');if(!el)return;q=String(q||'').trim();if(!q){el.innerHTML='';el.hidden=true;return}
+  var el=$('mk-res');if(!el)return;q=String(q||'').trim();if(!q){setHtml(el,'');el.hidden=true;return}
   var nq=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),sel=idxSel();
   var hits=MKV!=='idx'?[]:IDX.filter(function(x){return (x.n+' '+x.t+' '+(x.s||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').indexOf(nq)>=0});
   var h=hits.map(function(x){var on=sel.indexOf(x.k)>=0;return '<li><span><b>'+esc(x.n)+'</b><small>'+esc(x.t)+'</small></span><button type="button" class="btn small'+(on?' ghost':'')+'" data-idxt="'+x.k+'">'+(on?'Remover':'Adicionar')+'</button></li>'}).join('');
@@ -104,7 +104,7 @@ function mkSearch(q){
   sg.forEach(function(x){h+=mkSugRow(x)});
   if(/^[A-Z0-9]{2,7}$/.test(tk)&&sg.indexOf(tk)<0&&(MKV!=='idx'?(/\d/.test(tk)||!sg.length):!hits.length&&!sg.length)){var inW=wlist().indexOf(tk)>=0,F=fundOf(tk);
     h+='<li><span><b>'+esc(tk)+'</b><small>'+(F?'Ação do Brasil · P/L '+(F.pl!=null?num(F.pl,1):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):'Ação ou ETF')+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(tk)+'">Ver</button><button type="button" class="btn small'+(inW?' ghost':'')+'" data-wtog="'+esc(tk)+'">'+(inW?'Remover':'Acompanhar')+'</button></span></li>'}
-  el.innerHTML=h?'<ul class="mkres">'+h+'</ul>':'<p class="muted small" style="padding:8px 2px">Nada encontrado.</p>';el.hidden=false}
+  setHtml(el,h?'<ul class="mkres">'+h+'</ul>':'<p class="muted small" style="padding:8px 2px">Nada encontrado.</p>');el.hidden=false}
 function idxCard(lbl,o,fmt){return '<div class="idx"><small>'+lbl+'</small><b>'+(o&&isFinite(o.v)?fmt(o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+sg0(o.p)+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">sem dado</span>')+'</div>'}
 /* Mercado em 3 partes: Minhas ações, Índices e Análise */
 var MKV='min',SCR='dy',CMP=null;
