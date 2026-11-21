@@ -12,7 +12,7 @@ function ghReq(method,body){
     .then(function(r){clearTimeout(to);return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j}},function(){return {ok:r.ok,status:r.status,j:{}}})});
 }
 function applyOps(trades,ops){
-  var out=trades.slice();
+  var out=trades.filter(function(x){return x&&typeof x==='object'&&x.id&&x.date});
   ops.forEach(function(o){
     if(o.t==='add'&&o.tr&&!out.some(function(x){return x.id===o.tr.id}))out.push(o.tr);
     else if(o.t==='del')out=out.filter(function(x){return x.id!==o.id});
