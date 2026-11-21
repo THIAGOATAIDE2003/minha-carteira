@@ -9,7 +9,8 @@ function ghReq(method,body){
   var c=new AbortController(),to=setTimeout(function(){c.abort()},15000);
   return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/carteira.json'+(method==='GET'?'?ref=main&_='+Date.now():''),{method:method,signal:c.signal,cache:'no-store',
     headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github+json'},body:body?JSON.stringify(body):undefined})
-    .then(function(r){clearTimeout(to);return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j}},function(){return {ok:r.ok,status:r.status,j:{}}})});
+    .then(function(r){clearTimeout(to);return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j}},function(){return {ok:r.ok,status:r.status,j:{}}})})
+    .then(function(x){if(!x.ok&&x.status!==404&&x.status!==409)logErro('nuvem GitHub','HTTP '+x.status+(x.j&&x.j.message?' '+x.j.message:''));return x},function(e){clearTimeout(to);logErro('nuvem GitHub',errMsg(e,15));throw e});
 }
 function applyOps(trades,ops){
   var out=trades.filter(function(x){return x&&typeof x==='object'&&x.id&&x.date});

@@ -3,7 +3,7 @@
 /* atualização automática (só funciona fora do Claude, em site próprio) */
 function getJSON(url){
   var c=new AbortController(),to=setTimeout(function(){c.abort()},8000);
-  return fetch(url,{signal:c.signal}).then(function(r){clearTimeout(to);if(!r.ok)throw new Error(r.status);return r.json()});
+  return fetch(url,{signal:c.signal}).then(function(r){clearTimeout(to);if(!r.ok)throw new Error(r.status);return r.json()}).catch(function(e){clearTimeout(to);logErro('rede '+String(url).replace(/^https?:\/\/([^\/?]+).*$/,'$1'),errMsg(e,8));throw e});
 }
 var RF={busy:false,last:0,err:''};
 function loadFxHistory(){
