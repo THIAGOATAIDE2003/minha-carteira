@@ -93,3 +93,5 @@ Key pieces inside the script:
 
 Keep user data and API keys out of the repo; the app must keep working offline from `localStorage` when network calls fail.
 
+
+- **Saúde dos dados** (1.46.0): `saudeProblemas()` (`js/atualizacao.js`) lista atrasos reais com bolsa BR/EUA aberta: preços sem busca há >25 min (`RF.last`), dólar (`S.fx.at`) e robô diário parado >30 h em dia útil. `renderSync` (`nuvem.js`) mostra o primeiro como aviso no pill do cabeçalho (toque abre Ajustes) quando a nuvem está ok; `abas.js` chama `renderSync` a cada 60 s; o painel Status das fontes (`tela.js`) lista todos no topo. Usa a hora da busca, não a do negócio, para não alarmar com ação pouco líquida.

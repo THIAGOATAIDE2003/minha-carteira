@@ -30,7 +30,7 @@ setTimeout(function(){try{provMD()}catch(e){}mergeUp();render()},0);
 setTimeout(function(){ghSync()},300);
 setInterval(function(){if(!document.hidden)ghSync()},5*60000);
 setInterval(function(){if(!document.hidden)try{renderTape()}catch(e){}},15000);
-setInterval(renderMktSt,60000);setTimeout(renderMktSt,0);
+setInterval(renderMktSt,60000);setInterval(renderSync,60000);setTimeout(renderMktSt,0);
 setInterval(function(){if(!document.hidden)doRefresh(true)},5*60000);
 setTimeout(function(){doRefresh(true)},600);
 setTimeout(function(){loadCDI()},900);
