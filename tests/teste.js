@@ -198,12 +198,12 @@ function contasAMao(F, P) {
     /* Orçamento: entrou, gastou, aportou e sobra à mão; meta de gasto muda de cor; salva como cfg 'orc'; telas abrem sem erro */
     const orc = await pg.evaluate(() => { var pend0 = S.pend.length; S.orc = { sal: 3900, meta: 2000, apo: 1000, conta: 500, fixos: [{ id: 'a', n: 'Aluguel', v: 800 }, { id: 'b', n: 'Luz', v: 300 }], m: { '2026-11': { sal: null, ex: [{ id: 'c', n: 'Bônus', v: 200 }], g: { Mercado: 500 } } } };
       var tr = [{ side: 'buy', date: '2026-11-05', market: 'BR', qty: 10, price: 20, taxa: 0 }, { side: 'rf', date: '2026-11-07', price: 300 }, { side: 'buy', date: '2026-11-09', market: 'US', qty: 1, price: 100, fx: 5, taxa: 0 }, { side: 'buy', date: '2026-10-09', market: 'BR', qty: 1, price: 999, taxa: 0 }];
-      var a = orcCalc('2026-11', tr); S.orc.m['2026-11'].sal = 3600; var b = orcCalc('2026-11', tr); S.orc.m['2026-11'].sal = null;
+      var a = orcCalc('2026-11', tr); S.orc.m['2026-11'].sal = 3600; var b = orcCalc('2026-11', tr); S.orc.m['2026-11'].sal = null; var pa = [Math.round(a.pFx * 1000), Math.round(a.pVr * 1000), Math.round(a.pApo * 1000), Math.round(a.pGas * 1000), Math.round(a.pSobra * 1000)]; S.orc.m['2026-11'].fx = { a: 1000 }; var cf = orcCalc('2026-11', tr); S.orc.m['2026-11'].fx = {}; ORM = '2026-11'; orcField('fx:b', '350'); var fb = S.orc.m['2026-11'].fx.b; orcField('fx:b', ''); var fb2 = S.orc.m['2026-11'].fx.b;
       ORM = '2026-11'; showTab('orcamento'); var h1 = document.getElementById('orctab').innerHTML; S.orc.meta = 1000; renderOrc(); var h2 = document.getElementById('orctab').innerHTML;
       orcField('g:Lazer', '150,50'); var lz = S.orc.m['2026-11'].g.Lazer; orcField('conta', ''); var cz = S.orc.conta; var op = S.pend.length - pend0 && S.pend[S.pend.length - 1].k;
       S.orc = undefined; S.pend.length = pend0; ORM = ''; showTab('resumo');
-      return [a.ent, a.gas, a.apo, a.sobra, a.livre, b.ent, /Sobra do m/.test(h1), /class="orb"><i class="ok"/.test(h1), /class="orb"><i class="bad"/.test(h2), lz, cz, op]; });
-    confere('Orçamento: contas do mês, meta, salvar e abrir a tela', orc, [4100, 1600, 1000, 1500, 2500, 3800, true, true, true, 150.5, 0, 'orc']);
+      return [a.ent, a.gas, a.apo, a.sobra, a.livre, b.ent, /Sobra do m/.test(h1), /class="orb"><i class="ok"/.test(h1), /class="orb"><i class="bad"/.test(h2), lz, cz, op, pa, cf.gas, fb, fb2, /class="orsk"/.test(h1) && /Para onde vai o sal/.test(h1)]; });
+    confere('Orçamento: contas do mês, meta, salvar e abrir a tela', orc, [4100, 1600, 1000, 1500, 2500, 3800, true, true, true, 150.5, 0, 'orc', [282, 128, 256, 410, 333], 1800, 350, undefined, true]);
     /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */
     await pg.clock.setFixedTime(new Date('2026-11-20T03:50:00Z'));
     confere('00h50 de Brasília: variação dos EUA já zerada (cotação de ontem à noite)', await pg.evaluate(() => window.__aporte.dzero(true, Date.now() - 6 * 3600000)), true);

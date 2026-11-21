@@ -117,3 +117,10 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 .orsub{margin:14px 0 4px;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}.orsub .num{margin-left:auto;font-weight:500}
 .orl{list-style:none;margin:4px 0;padding:0}.orl li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}.orl li span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.orx{border:0;background:none;color:var(--muted);font-size:15px;padding:4px 6px}
 .orr{display:flex;gap:8px;margin-top:8px}.orr .orin:first-child{flex:1}.orr .orv{width:92px;text-align:right}
+
+/* Orçamento: % do salário e valor do mês nos fixos */
+.orm2{width:96px;text-align:right;padding:7px 9px}.orl li small{font-size:12px}
+.orbig{text-align:center;margin:2px 0 6px;font-size:15px}.orbig b{font-size:30px}
+.orsk{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--tint);margin:8px 0 10px}.orsk i{display:block;height:100%}
+.orsk .fx,.ord.fx{background:var(--c2)}.orsk .vr,.ord.vr{background:var(--accent)}.orsk .ap,.ord.ap{background:var(--gain)}.orsk .sb,.ord.sb{background:var(--muted)}
+.ord{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
