@@ -81,15 +81,28 @@ function idxVal0(x){var I=MKT.idx;
   if(x.src==='ipca')return I.ipca?{v:I.ipca.v,sub:'até '+String(I.ipca.m||'').slice(3)}:null;
   return I[x.k]||null}
 function idxFmt(x,v){return x.f==='pts'?num(v,0)+' pts':x.f==='usd'?usd.format(v):x.f==='fx'?'R$ '+v.toFixed(4).replace('.',','):x.f==='pct'?pf.format(v)+'%':brl.format(v)}
+/* sugestões de ações: por sigla (começa com), por nome da empresa (palavras que começam com o que foi digitado) e por apelido (magalu) */
+function mkNorm(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
+function mkSug(q,max){var f=MD.d&&MD.d.fund&&MD.d.fund.d;if(!f)return [];var nq=mkNorm(q),tq=nq.replace(/ /g,'').toUpperCase();if(!nq)return [];var toks=nq.split(' ').filter(Boolean),sc={},liq=function(tk){var x=fundOf(tk);return x&&x.liq2m||0};
+  var put=function(tk,v){if(sc[tk]==null||v>sc[tk])sc[tk]=v};
+  var al=typeof ASAL!=='undefined'?ASAL:{};Object.keys(al).forEach(function(k){var kn=mkNorm(k);if(kn.indexOf(nq)===0||(nq.length>=3&&kn.indexOf(nq)>=0))put(al[k],kn===nq?95:85)});
+  Object.keys(f).forEach(function(tk){
+    if(tk===tq)put(tk,100);else if(tq&&tk.indexOf(tq)===0)put(tk,80);
+    var n=mkNorm(nomeEmp(tk)+' '+((MD.d.cvm&&MD.d.cvm.nomes&&MD.d.cvm.nomes[tk])||'')),w=n.split(' ');
+    if(n&&toks.every(function(t){return w.some(function(x){return x.indexOf(t)===0})}))put(tk,60);
+    else if(nq.length>=3&&n.indexOf(nq)>=0)put(tk,40)});
+  var seen={},o=[];Object.keys(sc).sort(function(a,b){return sc[b]-sc[a]||liq(b)-liq(a)||(a<b?-1:1)}).forEach(function(tk){var k=tk.slice(0,4)+(sc[tk]>=80?tk:'');if(seen[k]&&sc[tk]<80)return;seen[k]=1;o.push(tk)});
+  return o.slice(0,max||8)}
+function mkSugRow(x){var iw=wlist().indexOf(x)>=0,nm=nomeEmp(x),sub=fundSub(x);
+  return '<li><span><b>'+esc(x)+(nm?' <span style="font-weight:400;color:var(--muted)">· '+esc(nm)+'</span>':'')+'</b><small>'+(sub||'Ação ou ETF')+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(x)+'">Ver</button><button type="button" class="btn small'+(iw?' ghost':'')+'" data-wtog="'+esc(x)+'">'+(iw?'Remover':'Acompanhar')+'</button></span></li>'}
 function mkSearch(q){
   var el=$('mk-res');if(!el)return;q=String(q||'').trim();if(!q){el.innerHTML='';el.hidden=true;return}
-  var nq=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''),sel=idxSel();
-  var hits=MKV!=='idx'?[]:IDX.filter(function(x){return (x.n+' '+x.t+' '+(x.s||'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').indexOf(nq)>=0});
+  var nq=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),sel=idxSel();
+  var hits=MKV!=='idx'?[]:IDX.filter(function(x){return (x.n+' '+x.t+' '+(x.s||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').indexOf(nq)>=0});
   var h=hits.map(function(x){var on=sel.indexOf(x.k)>=0;return '<li><span><b>'+esc(x.n)+'</b><small>'+esc(x.t)+'</small></span><button type="button" class="btn small'+(on?' ghost':'')+'" data-idxt="'+x.k+'">'+(on?'Remover':'Adicionar')+'</button></li>'}).join('');
-  var tk=q.toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(MKV!=='idx'&&MD.d&&MD.d.fund&&tk.length>=2){Object.keys(MD.d.fund.d).filter(function(x){return x!==tk&&x.indexOf(tk)===0}).sort().slice(0,6).forEach(function(x){var iw=wlist().indexOf(x)>=0;
-    h+='<li><span><b>'+esc(x)+'</b><small>'+fundSub(x)+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(x)+'">Ver</button><button type="button" class="btn small'+(iw?' ghost':'')+'" data-wtog="'+esc(x)+'">'+(iw?'Remover':'Acompanhar')+'</button></span></li>'})}
-  if(/^[A-Z0-9]{2,7}$/.test(tk)&&(MKV!=='idx'?(/\d/.test(tk)||!hits.length):!hits.length)){var inW=wlist().indexOf(tk)>=0,F=fundOf(tk);
+  var tk=q.toUpperCase().replace(/[^A-Z0-9]/g,''),sg=mkSug(q,hits.length?4:8);
+  sg.forEach(function(x){h+=mkSugRow(x)});
+  if(/^[A-Z0-9]{2,7}$/.test(tk)&&sg.indexOf(tk)<0&&(MKV!=='idx'?(/\d/.test(tk)||!sg.length):!hits.length&&!sg.length)){var inW=wlist().indexOf(tk)>=0,F=fundOf(tk);
     h+='<li><span><b>'+esc(tk)+'</b><small>'+(F?'Ação do Brasil · P/L '+(F.pl!=null?num(F.pl,1):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):'Ação ou ETF')+'</small></span><span style="display:flex;gap:6px"><button type="button" class="btn small ghost" data-stk="'+esc(tk)+'">Ver</button><button type="button" class="btn small'+(inW?' ghost':'')+'" data-wtog="'+esc(tk)+'">'+(inW?'Remover':'Acompanhar')+'</button></span></li>'}
   el.innerHTML=h?'<ul class="mkres">'+h+'</ul>':'<p class="muted small" style="padding:8px 2px">Nada encontrado.</p>';el.hidden=false}
 function idxCard(lbl,o,fmt){return '<div class="idx"><small>'+lbl+'</small><b>'+(o&&isFinite(o.v)?fmt(o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+sg0(o.p)+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">sem dado</span>')+'</div>'}
@@ -322,7 +335,7 @@ function renderMkt(){
   var q0=$('mk-q')?$('mk-q').value:'',sel=idxSel();
   var on=0;try{var od=opData();on=od?od.n:0}catch(e){}
   var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['bc','BC'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
-  if(MKV!=='bc')h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice ou moeda':MKV==='ana'?'Buscar ação para analisar':'Buscar ação para ver ou acompanhar')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
+  if(MKV!=='bc')h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice, moeda ou ação':MKV==='ana'?'Buscar ação (sigla ou nome)':'Buscar ação: sigla ou nome (ex.: magalu)')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
   try{h+=mktOverview()}catch(e){}
   try{h+=bcCard()}catch(e){}
