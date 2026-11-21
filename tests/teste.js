@@ -192,6 +192,9 @@ function contasAMao(F, P) {
       IDX.forEach(function (x) { if (x.k === 'brent' && idxSel().indexOf('brent') < 0) S.idxSel = idxSel().concat(['brent']); }); ndRender(); var nd = document.getElementById('nd-b').innerHTML; return [nd.indexOf('Movimentos fortes') > 0 && nd.indexOf('data-ndw="brent"') > 0, h.indexOf('Por que Petróleo cai hoje?') > 0, h.indexOf('Opep avalia') > 0, old, zero, whyOf('brent') ? 1 : 0]; } catch (e) { return String(e); } });
     confere('por que cai hoje: aparece com movimento forte; some se antigo ou se a variação está zerada', wy, [true, true, true, '', '', 1]);
     await pg.clock.setFixedTime(new Date(fx.now));
+    /* Lucro total: tem 1D e 5D como os outros; no ano mostra só o valor (sem '(0,00%)') e a área fecha nos pontos */
+    const lt = await pg.evaluate(() => { heroOpen('luc'); var a = document.getElementById('stk-b').innerHTML; STK.rng = '1d'; heroRender(); var b = document.getElementById('stk-b').innerHTML; STK.rng = '5d'; heroRender(); var c = document.getElementById('stk-b').innerHTML; document.getElementById('stk').hidden = true; document.body.style.overflow = ''; return [/data-rng="1d"/.test(a) && /data-rng="5d"/.test(a), /\(0,00%\)/.test(a), /data-rng="1d"/.test(b) && /data-rng="1d"/.test(c), /<polygon points="0,/.test(a)]; });
+    confere('Lucro total tem 1D/5D, sem (0,00%) e com a área fechada nos pontos', lt, [true, false, true, false]);
     /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */
     await pg.clock.setFixedTime(new Date('2026-11-20T03:50:00Z'));
     confere('00h50 de Brasília: variação dos EUA já zerada (cotação de ontem à noite)', await pg.evaluate(() => window.__aporte.dzero(true, Date.now() - 6 * 3600000)), true);

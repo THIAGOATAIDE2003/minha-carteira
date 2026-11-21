@@ -7,6 +7,7 @@ function gWhen(at,tk){if(!at)return '';var d=new Date(at),m=Math.round((Date.now
 function gHead(name,sub,priceTxt,abs,pct,rg,absTxt,when){
   var up=pct==null?null:pct>=0,c=up==null?'':pct===0?'':up?'gain':'loss',sg=function(v){return v<0?'-':v>0?'+':''};
   return '<p class="muted small" style="margin:0 0 4px">'+esc(name||'')+(sub?' · '+esc(sub):'')+'</p><div class="gh"><b class="num">'+priceTxt+'</b></div>'+
+    (pct==null&&abs!=null?'<div class="gdl '+(abs===0?'':abs>0?'gain':'loss')+'">'+sg(abs)+pf.format(Math.abs(abs))+' '+(abs===0?'':'<span class="arr">'+(abs>0?'↑':'↓')+'</span> ')+esc(RGL[rg]||'')+'</div>':'')+
     (pct!=null?'<div class="gdl '+c+'">'+(abs!=null?sg(abs)+pf.format(Math.abs(abs))+' ':'')+'('+(abs==null?sg(pct):'')+pf.format(Math.abs(pct))+'%) '+(pct===0?'':'<span class="arr">'+(up?'↑':'↓')+'</span> ')+esc(RGL[rg]||'')+'</div>':'')+
     (when?'<p class="small gwh '+(/atrasado/.test(when)?'stale':'muted')+'">'+esc(when)+'</p>':'');
 }
@@ -45,7 +46,7 @@ function lineChart(hist,cur,pm,fmt,o){o=o||{};var gid='skg'+(++GID);
   var tk=niceTicks(mn+pd*.4,mx-pd*.4,4),dec=tk.st>=1?0:tk.st>=.1?2:3,lab=function(v){return fmt&&/%/.test(fmt(v))?fmt(v):num(v,dec)},xt=xTicks(hist,o).filter(function(t,k,a){var pc=(t.i+.5)/n*100,pv=k?(a[k-1].pc||0):-99;t.pc=pc;if(pc-(a._l==null?-99:a._l)<34&&k)return false;a._l=pc;return true});
   return '<div class="gch"><div class="gyc">'+tk.t.map(function(v){return '<span style="top:'+(yf(v)*100).toFixed(2)+'%">'+esc(lab(v))+'</span>'}).join('')+'</div><div class="gcw"><div class="tipc"'+tipAttr(tip)+'><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" width="100%" height="'+H+'" role="img" aria-label="Gráfico de preço"><defs><linearGradient id="'+gid+'" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:'+col+';stop-opacity:.38"/><stop offset="1" style="stop-color:'+col+';stop-opacity:.04"/></linearGradient></defs>'+
     tk.t.map(function(v){return '<line x1="0" x2="'+W+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)" stroke-width="1" vector-effect="non-scaling-stroke"/>'}).join('')+
-    '<polygon points="0,'+H+' '+pts+' '+W+','+H+'" fill="url(#'+gid+')"/><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<polygon points="'+x(0)+','+H+' '+pts+' '+x(n-1)+','+H+'" fill="url(#'+gid+')"/><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>'+
     (o.prev?'<line x1="0" x2="'+W+'" y1="'+y(o.prev)+'" y2="'+y(o.prev)+'" stroke="var(--muted)" stroke-dasharray="1 4" stroke-width="1.5" vector-effect="non-scaling-stroke"/>':'')+
     (pm?'<line x1="0" x2="'+W+'" y1="'+y(pm)+'" y2="'+y(pm)+'" stroke="var(--c2)" stroke-dasharray="5 4" stroke-width="1.5" vector-effect="non-scaling-stroke"/>':'')+
     '<line x1="0" x2="'+W+'" y1="'+(H-.5)+'" y2="'+(H-.5)+'" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke"/>'+
