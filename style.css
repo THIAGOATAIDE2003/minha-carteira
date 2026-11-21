@@ -369,7 +369,7 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 .rksim{display:flex;flex-direction:column;gap:10px}.rksim input[type=range]{width:100%;accent-color:var(--accent)}.rksq{font-size:15px;margin:12px 0 6px}
 .rkh3{font-size:14px;margin:14px 0 10px;color:var(--muted);font-weight:600}
 .rkcm{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}.rkcm th{font-weight:600;padding:6px;white-space:nowrap;font-size:12px}.rkcm td{padding:8px 6px;text-align:center;border:1px solid var(--line);min-width:52px}
-.stseg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:14px 0 10px}.stseg button{padding:9px 2px;font-size:12.5px}
+.stseg{display:flex;gap:5px;margin:14px 0 10px;overflow-x:auto;scrollbar-width:none}.stseg::-webkit-scrollbar{display:none}.stseg button{padding:9px 12px;font-size:12.5px;white-space:nowrap;flex:0 0 auto}
 .anp .lbl{display:block}.anh{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.anv{margin:4px 0 0;font-size:15px;line-height:1.45}.ans{flex:none;width:64px;height:64px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid currentColor}.ans b{font:700 22px/1 var(--disp)}.ans small{font-size:10.5px;opacity:.8}.ans.g{color:var(--gain)}.ans.m{color:var(--c2)}.ans.l{color:var(--loss)}
 .anc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:12px}.anc div{background:var(--tint);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;gap:2px;min-width:0}.anc span{font-size:11.5px;color:var(--muted)}.anc b{font-size:13.5px}.anc b.g,.vg{color:var(--gain)}.anc b.m,.vm{color:var(--c2)}.anc b.l,.vl{color:var(--loss)}
 .anl{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
@@ -504,3 +504,5 @@ h2{font-size:19px}h3{font-size:16px}.sbd h3{font-size:16.5px}
 /* Plano da carteira */
 .plst{border-left:4px solid var(--line);padding:2px 0 2px 12px}.plst b{display:block;font-size:16px}.plst p{margin:4px 0 0}
 .plst.ok{border-color:#3fb26b}.plst.at{border-color:#e3a73a}.plst.al{border-color:#e5534b}
+
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}

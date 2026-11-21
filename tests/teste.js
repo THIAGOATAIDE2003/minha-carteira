@@ -349,6 +349,16 @@ function contasAMao(F, P) {
       var h = A.sobHtml(tk); r.a = /Sobre a empresa/.test(h) && /Banco múltiplo que atua em varejo/.test(h) && /1808/.test(h) && /Estatal/.test(h) && /https:\/\/www\.exemplo\.com\.br/.test(h);
       M.d = Object.assign({}, old, { sobre: null }); var h2 = A.sobHtml(tk); r.b = /ainda não chegou/.test(h2) || h2 === ''; r.eua = A.sobHtml('AAPL') === ''; r.set = typeof A.sobSetor(tk) === 'string'; M.d = old; return r; });
     confere('sobre a empresa: painel com atividade, fundação, controle e site; sem cadastro avisa; EUA não mostra', [sob.a, sob.b, sob.eua, sob.set], [true, true, true, true]);
+    /* abas da ação: dividendos, receita e lucro por ano, sobre */
+    const emp = await pg.evaluate(function () { var A = window.__aporte, M = A.MD, old = M.d, tk = compute().held.filter(function (x) { return x.p.market !== 'US'; })[0].p.ticker, day = Math.floor(Date.now() / 864e5), r = {};
+      var dv = []; for (var i = 0; i < 8; i++) dv.push([day - 30 - i * 90, 0.5]); var hist = Object.assign({}, old.hist); hist[tk] = Object.assign({}, hist[tk], { div: dv });
+      var an = {}; an[tk] = {}; for (var y = 2015; y <= 2024; y++) an[tk][y] = [100e9 + y * 1e9, 10e9 + (y % 3) * 1e9];
+      M.d = Object.assign({}, old, { hist: hist, anual: { v: 1, ok: [], d: an } });
+      var d = { cur: 'BRL', price: 20, k: {}, name: 'X' }, hd = A.emDiv(tk, d, null, {}, 0), hr = A.emRec(tk, d);
+      r.div = /Dividendos/.test(hd) && /Dividend yield \(12 meses\)/.test(hd) && /Proventos por ano/.test(hd) && /Últimos pagamentos/.test(hd);
+      r.rec = /Receita e lucro/.test(hr) && /Em 2024: receita de/.test(hr) && /5 anos/.test(hr) && /Receita por país e por negócio/.test(hr) && /data-tip=/.test(hr);
+      M.d = Object.assign({}, old, { anual: null }); r.recVazio = /ainda não chegaram/.test(A.emRec(tk, d)); r.usa = /só estão disponíveis para ações do Brasil/.test(A.emRec('AAPL', d)); r.sob = /Sobre a empresa/.test(A.emSobre(tk, d)); M.d = old; return r; });
+    confere('abas da ação: dividendos com yield e gráfico anual, receita e lucro por ano com tooltip, avisos sem dados, sobre', [emp.div, emp.rec, emp.recVazio, emp.usa, emp.sob], [true, true, true, true, true]);
     /* catálogo da B3: setores, pouca liquidez escondida, IPO novo e ação que saiu */
     const cat = await pg.evaluate(() => { var A = window.__aporte, M = A.MD, old = M.d, hoje = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
       M.d = { fund: { cols: ['cot', 'liq2m'], d: { AAAA3: [10, 5e6], BBBB3: [10, 1e3], CCCC3: [10, 3e6], NEWC3: [5, 1e6] } }, cat: { v: 1, a: { AAAA3: ['', 5, 'Bancos'], BBBB3: ['', 5, 'Bancos'], CCCC3: ['', 7, 'Energia'], NEWC3: [hoje, null, ''] }, n: { 5: 'Bancos', 7: 'Energia' }, x: { OLDD3: ['', '2026-10-01'] } } };

@@ -281,10 +281,13 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
 
   var f0=function(v){return v!=null?pf.format(v):null},op=st?st.o:d.o,hh=st?st.h:d.h,ll=st?st.l:d.l;
   h+=gStats([['Abertura',f0(op)],['Alta',f0(hh)],['Baixa',f0(ll)],['Fech. ant.',f0(st&&st.prev!=null?st.prev:prv)],['Alt 52 sem',f0(K.hi)],['Bai 52 sem',f0(K.lo)]])+(tk.charAt(0)!=='^'?'<button type="button" class="gan" data-gan="1">Analisar '+esc(tk)+' ›</button>':'')+'</div>';
-  h+=(tk.charAt(0)!=='^'&&d.cur!=='USD'?sibHtml(tk):'')+'<div class="seg stseg" id="stv-top">'+[['res','Resumo'],['val','Preço justo'],['ind','Indicadores'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
+  h+=(tk.charAt(0)!=='^'&&d.cur!=='USD'?sibHtml(tk):'')+'<div class="seg stseg" id="stv-top">'+[['res','Resumo'],['val','Preço justo'],['ind','Indicadores'],['div','Dividendos'],['sob','Sobre'],['rec','Receita'],['news','Notícias']].map(function(x){return '<button type="button" data-stv="'+x[0]+'" aria-pressed="'+(STV===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>';
   var PE=d.cur==='USD'?null:anPeers(tk),sm=function(k,f){return PE&&PE[k]!=null?' <small class="ksec">setor '+f(PE[k])+'</small>':''},sp=function(v){return pf.format(v)+'%'},sn=function(v){return num(v,1)};
   if(STV==='val')h+=anVal(tk,d);
   else if(STV==='news')h+=rsNews(tk);
+  else if(STV==='div')h+=emDiv(tk,d,mine,K,pm);
+  else if(STV==='sob')h+=emSobre(tk,d);
+  else if(STV==='rec')h+=emRec(tk,d);
   else if(STV==='ind'){
   h+=qHtml(tk);
   h+='<div class="kpis" style="margin-top:6px">'+
@@ -293,7 +296,7 @@ function stkRender(){if(STK.tk&&STK.d&&!STK.idx&&STK.tk.charAt(0)!=='^'){var lv0
     (PE&&PE.n?'<p class="note">"Setor" é a mediana de '+PE.n+' empresas do setor '+esc(String(PE.name).toLowerCase())+'.</p>':'')+
     (!d.mods?'<p class="note">Indicadores ainda não disponíveis para essa ação. Eles chegam com o robô diário (até a próxima atualização).</p>':'');
   }else{
-  h+=(function(){try{return sobHtml(tk,d)}catch(e){return ''}})()+anResumo(tk,d)+rsMini(tk);
+  h+=anResumo(tk,d)+rsMini(tk);
   if(mine)h+='<div class="panel"><h2>Sua posição</h2><ul class="calc" style="margin-top:8px"><li><span>'+num(mine.p.qty,4)+(mine.p.market==='US'?' cotas':' ações')+' a '+F.format(pm)+' (preço médio)</span><span class="num '+cls(d.price-pm)+'">'+(d.price>=pm?'+':'−')+pf.format(Math.abs((d.price/pm-1)*100))+'%</span></li></ul></div>';
   if(d.divs&&d.divs.length)h+='<h3 style="margin:18px 0 6px">Últimos proventos'+(K.d12&&d.price?' <span class="muted small">('+F.format(K.d12)+' por ação em 12 meses)</span>':'')+'</h3><ul class="calc small">'+d.divs.slice(0,8).map(function(c){return '<li><span>'+esc(String(c.label||'').replace('JUROS SOBRE CAPITAL PRÓPRIO','JCP'))+' <span class="muted">'+(c.exDate?'data ex '+fmtDate(c.exDate):c.paymentDate?'pago em '+fmtDate(String(c.paymentDate).slice(0,10)):'a definir')+'</span></span><span class="num">'+(d.cur==='USD'?'US$ ':'R$ ')+num(+c.rate,4)+'</span></li>'}).join('')+'</ul>';
   }
