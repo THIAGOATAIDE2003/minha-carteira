@@ -331,6 +331,11 @@ function anaHtml(){
   return sg0+(ANV==='cmp'?hm:h);
 }
 function renderMkt(){
+  var a=document.activeElement,k=a&&a.id&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.closest&&a.closest('#mkttab')?{id:a.id,s:a.selectionStart,e:a.selectionEnd}:null;
+  try{renderMkt0()}finally{
+    if(k){var n=document.getElementById(k.id);if(n&&n!==a&&document.activeElement!==n){try{n.focus();if(k.s!=null)n.setSelectionRange(k.s,k.e)}catch(e){}}}}
+}
+function renderMkt0(){
   var el=$('mkttab');if(!el)return;var I=MKT.idx,f0=fxToday(),fxp=S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null;
   var q0=$('mk-q')?$('mk-q').value:'',sel=idxSel();
   var on=0;try{var od=opData();on=od?od.n:0}catch(e){}

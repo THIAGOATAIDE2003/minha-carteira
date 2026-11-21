@@ -2,7 +2,10 @@
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 function render(){
   if(!BOOT)return;
-  try{renderBody()}finally{CMEMO=null}
+  /* quem está digitando não perde o foco nem o cursor quando a tela é refeita por uma atualização de preço */
+  var a=document.activeElement,k=a&&a.id&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)?{id:a.id,v:a.value,s:a.selectionStart,e:a.selectionEnd}:null;
+  try{renderBody()}finally{CMEMO=null;
+    if(k){var n=document.getElementById(k.id);if(n&&n!==a&&document.activeElement!==n){try{if(n.tagName!=='SELECT'&&n.value!==k.v)n.value=k.v;n.focus();if(k.s!=null)n.setSelectionRange(k.s,k.e)}catch(e){}}}}
 }
 function renderBody(){
   try{tapeMerge()}catch(e){}
