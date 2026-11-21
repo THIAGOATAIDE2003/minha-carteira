@@ -2,8 +2,11 @@
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 function render(){
   if(!BOOT)return;
+  try{renderBody()}finally{CMEMO=null}
+}
+function renderBody(){
   try{tapeMerge()}catch(e){}
-  var R=compute();
+  CMEMO=null;var R=compute();CMEMO=R;
   try{renderTape()}catch(e){}
   renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderPerf(R);try{renderRisk(R)}catch(e){}try{if(CARV==='plano'&&!PL.busy)renderPlano()}catch(e){}renderMkt();renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
   pvRedraw();

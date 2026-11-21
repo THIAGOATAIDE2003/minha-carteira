@@ -1,7 +1,7 @@
 /* Aporte · js/nucleo.js — estado, ajudantes, câmbio, XIRR e compute() (as contas da carteira).
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 /* Versão do app: sobe a cada mudança que o usuário vê (veja CLAUDE.md). O sw.js usa este número no nome do cache offline. */
-var VERSAO='1.40.0';
+var VERSAO='1.41.0';
 /* Enquanto os arquivos de js/ ainda estão carregando, render() não faz nada (senão chamaria funções de arquivos que ainda não chegaram). abas.js liga isto no fim. */
 var BOOT=false;
 window.addEventListener('error',function(e){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent='Erro na página: '+e.message}});
@@ -42,7 +42,7 @@ function getQuote(tk){var m=S.quotes[tk];return m&&m.price>0?m:null}
 
 var brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 var usd=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'USD'});
-var num=function(n,d){return new Intl.NumberFormat('pt-BR',{maximumFractionDigits:d==null?4:d}).format(n)};
+var NUMF={};var num=function(n,d){d=d==null?4:d;return (NUMF[d]||(NUMF[d]=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:d}))).format(n)};
 var pf=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 /* sinal que trata zero como zero: sem + nem −, e cls() deixa cinza */
 var sg0=function(n){return Math.abs(n)<0.005?'':n>0?'+':'−'};
@@ -57,8 +57,8 @@ function xirr(flows){
   if(flows.length<2)return null;
   var pos=flows.some(function(f){return f[1]>0}),neg=flows.some(function(f){return f[1]<0});
   if(!pos||!neg)return null;
-  var t0=new Date(flows[0][0]).getTime();
-  var f=function(r){return flows.reduce(function(s,c){var y=(new Date(c[0]).getTime()-t0)/864e5/365;return s+c[1]/Math.pow(1+r,y)},0)};
+  var t0=new Date(flows[0][0]).getTime(),ys=flows.map(function(c){return (new Date(c[0]).getTime()-t0)/864e5/365}),vs=flows.map(function(c){return c[1]});
+  var f=function(r){var s=0;for(var j=0;j<vs.length;j++)s+=vs[j]/Math.pow(1+r,ys[j]);return s};
   var lo=-0.9999,hi=1000,flo=f(lo),fhi=f(hi);
   if(flo*fhi>0)return null;
   for(var i=0;i<200;i++){var mid=(lo+hi)/2,fm=f(mid);if(flo*fm<=0){hi=mid}else{lo=mid;flo=fm}}
@@ -67,7 +67,10 @@ function xirr(flows){
 
 /* preço efetivo com as taxas da B3 (compra soma, venda desconta): conta o dinheiro que saiu/entrou, mas não entra no preço médio */
 function ePx(t){var x=(t.taxa||0)/(t.qty||1);return t.side==='buy'?t.price+x:t.side==='sell'?t.price-x:t.price}
-function compute(){
+/* compute() é caro e o render() chama ele ~11 vezes: durante um render, todos recebem o mesmo resultado (CMEMO, zerado no fim) */
+var CMEMO=null;
+function compute(){if(CMEMO)return CMEMO;return computeRaw()}
+function computeRaw(){
   var by={},warns=[],flows=[],bought=0,proceeds=0,divs=0,cash=0,contrib=0;
   var ts=S.trades.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1)});
   var outs=0,fees=0;

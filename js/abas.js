@@ -46,7 +46,14 @@ setTimeout(function(){try{var v=document.createElement('div');v.className='vtoas
 /* aviso de versão nova: compara a versão em uso com a do servidor (sem cache) e oferece atualizar na hora */
 function checkVersao(){if(document.hidden||!navigator.onLine)return;
   fetch('js/nucleo.js?_v='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(t){var m=/var VERSAO='([0-9.]+)'/.exec(t||'');if(!m||m[1]===VERSAO||$('vnova'))return;
+    var duro=function(){return (window.caches?caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}):Promise.resolve()).then(function(){return navigator.serviceWorker&&navigator.serviceWorker.getRegistrations?navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(x){return x.unregister()}))}):0}).then(function(){location.reload()}).catch(function(){location.reload()})};
+    /* atualiza: instala o service worker da versão nova (ele baixa a versão inteira, sem usar o cache do navegador, e troca o cache), e só então recarrega; se algo falhar, limpa tudo e recarrega */
+    var go=function(){if(!navigator.serviceWorker||!navigator.serviceWorker.register)return duro();
+      return navigator.serviceWorker.register('sw.js?v='+m[1]).then(function(reg){return new Promise(function(res,rej){var w=reg.installing||reg.waiting||reg.active;if(!w)return rej();var tm=setTimeout(rej,20000),fim=function(){if(w.state==='activated'){clearTimeout(tm);res()}else if(w.state==='redundant'){clearTimeout(tm);rej()}};w.addEventListener('statechange',fim);fim()})}).then(function(){location.reload()}).catch(duro)};
+    /* logo ao abrir (primeiros 15 s) e sem nada sendo digitado: atualiza sozinho, no máximo 1 vez a cada 10 min (evita repetir se o servidor ainda serve a versão antiga) */
+    try{var au=+localStorage.getItem(LS+'-autoup')||0,ae=document.activeElement,dig=ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+      if(performance.now()<15000&&!dig&&Date.now()-au>600000){localStorage.setItem(LS+'-autoup',String(Date.now()));go();return}}catch(e){}
     var b=document.createElement('button');b.id='vnova';b.type='button';b.className='vtoast vnova';b.textContent='Nova versão '+m[1]+' · toque para atualizar';
-    b.addEventListener('click',function(){b.textContent='Atualizando...';(window.caches?caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}):Promise.resolve()).then(function(){return navigator.serviceWorker&&navigator.serviceWorker.getRegistrations?navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(x){return x.unregister()}))}):0}).then(function(){location.reload()}).catch(function(){location.reload()})});
+    b.addEventListener('click',function(){b.textContent='Atualizando...';go()});
     document.body.appendChild(b)}).catch(function(){})}
 setTimeout(checkVersao,4000);setInterval(checkVersao,3*60000);document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(checkVersao,800)});
