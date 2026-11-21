@@ -1,5 +1,5 @@
 /* Aporte · js/assistente-chat.js — continuação do antigo assistente.js (parte 2 de 3). Mesmo escopo global; a ordem de carga importa. */
-function asSave(){try{localStorage.setItem(LS+'-assist',JSON.stringify(AS.m.slice(-40)))}catch(e){}}
+function asSave(){if(!AS.m.length)return;var c=asCur();if(!c){c={id:AS.id,t:'',at:0,m:[]};ASC.unshift(c)}c.m=AS.m.slice(-40);c.at=Date.now();c.t=asTitulo(c.m);ASC.sort(function(a,b){return b.at-a.at});ASC=ASC.slice(0,30);asPersist()}
 var ASQ=['Como está minha carteira hoje?','Onde estou correndo mais risco?','Qual ação da carteira está mais barata?','Quanto recebo de proventos por mês?','Quais oportunidades o garimpo achou?','Como estou indo perto das minhas metas?'];
 var ASGQ=['llama-3.3-70b-versatile','meta-llama/llama-4-scout-17b-16e-instruct','openai/gpt-oss-120b','meta-llama/llama-4-maverick-17b-128e-instruct','qwen/qwen3-32b','openai/gpt-oss-20b','llama-3.1-8b-instant'];
 function asTxt(h){return String(h==null?'':h).replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim()}
@@ -95,6 +95,6 @@ function asAsk(q){q=String(q||'').trim();if(!q||AS.busy)return;var gq=S.keys.gq,
   var run=function(k){return provs[k][1]().catch(function(e){if((e&&e.name==='AbortError')||a.t)throw e;errs.push(asErrTxt(e,provs[k][0]));if(k+1<provs.length)return run(k+1);throw e})};
   run(0).then(function(){a.mod=AS.mod;if(!a.t){a.e=1;a.t='A IA não mandou resposta. Tente de novo.'}}).catch(function(e){if(e&&e.name==='AbortError'){if(a.t){a.mod=AS.mod;a.t+=' …';return}a.e=1;a.t='Demorou demais para responder. Tente de novo.';return}
     if(a.t){a.mod=AS.mod;return}a.e=1;a.t='Não consegui responder: '+errs.join(' E ')})
-   .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;asSave();asRender()})}
+   .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;asSave();asRender();try{asvFim(a)}catch(e){}})}
 var ASRF=0;function asTick(){if(ASRF)return;ASRF=requestAnimationFrame(function(){ASRF=0;var el=document.querySelector('#as-b .asm.a:last-child .ast'),a=AS.m[AS.m.length-1];if(el&&a){setHtml(el,asMd(a.t));asScroll()}})}
 /* markdown simples: **negrito**, listas com "- ", parágrafos */

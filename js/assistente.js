@@ -86,5 +86,17 @@ function asEmp(tk,held){var F=fundOf(tk),lv=livePx(tk),d=opD(tk),h=MD.d&&MD.d.hi
   L.push('NÃO DISPONÍVEL NO APP: '+falta.join('; ')+'.');
   return L.join('\n')}
 /* ===== Assistente: conversa com a IA sobre a sua carteira (Groq rápido, Gemini de reserva) ===== */
-var AS={m:[],busy:false,ab:null,mod:'',err:''};
-try{AS.m=JSON.parse(localStorage.getItem(LS+'-assist')||'[]')||[]}catch(e){AS.m=[]}
+var AS={m:[],busy:false,ab:null,mod:'',err:'',hist:false,id:''};
+/* vários chats: cada conversa guardada é {id,t (título),at (última mensagem),m (mensagens)}; AS.m é sempre a conversa aberta */
+var ASC=[];try{ASC=JSON.parse(localStorage.getItem(LS+'-aschats')||'null')}catch(e){ASC=null}
+if(!Array.isArray(ASC)){ASC=[];try{var asOld=JSON.parse(localStorage.getItem(LS+'-assist')||'[]');if(asOld&&asOld.length)ASC.push({id:'c'+Date.now().toString(36),t:'',at:Date.now(),m:asOld})}catch(e){}}
+ASC=ASC.filter(function(c){return c&&c.id&&Array.isArray(c.m)&&c.m.length}).sort(function(a,b){return (b.at||0)-(a.at||0)});
+function asNewId(){return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function asCur(){for(var i=0;i<ASC.length;i++)if(ASC[i].id===AS.id)return ASC[i];return null}
+function asTitulo(m){var u=m.filter(function(x){return x.r==='u'})[0],t=u?String(u.t).replace(/\s+/g,' ').trim():'';return t?(t.length>48?t.slice(0,47)+'…':t):'Nova conversa'}
+function asPersist(){try{localStorage.setItem(LS+'-aschats',JSON.stringify(ASC))}catch(e){}}
+function asNovo(){if(AS.busy)return;AS.hist=false;if(AS.m.length){AS.id=asNewId();AS.m=[]}asRender()}
+function asAbrir(id){if(AS.busy)return;for(var i=0;i<ASC.length;i++)if(ASC[i].id===id){AS.id=id;AS.m=ASC[i].m.slice();AS.hist=false;break}asRender()}
+function asApagar(id){if(AS.busy)return;ASC=ASC.filter(function(c){return c.id!==id});asPersist();if(AS.id===id){AS.id=asNewId();AS.m=[]}asRender()}
+ASC.forEach(function(c){if(!c.t)c.t=asTitulo(c.m)});
+if(ASC.length){AS.id=ASC[0].id;AS.m=ASC[0].m.slice()}else AS.id=asNewId();
