@@ -460,6 +460,17 @@ function contasAMao(F, P) {
     confere('contexto da GA: métricas rotuladas e conciliadas (ativos, caixa, custo, preço, câmbio, vendas, proventos, taxas)', [rot.erro || 'ok', rot.geral], ['ok', [true, true, true, true, true, true, true]]);
     confere('contexto da GA, cenário à mão: valores idênticos às contas (ativos, caixa, custo, ativos−custo, preço, câmbio, valorização, vendas, proventos, lucro total)', rot.num, [32328, 7700, 34000, -1672, -3272, 1600, -2572, 2000, 700, 1028]);
     confere('contexto da GA: valorização negativa não vira prejuízo total (lucro total positivo e separado)', [rot.txt, rot.sinais], [[true, true, true, true, true], [true, true, true]]);
+    /* LUCRO DISTORCIDO: o aviso (e os comandos ligados a ele) só vai para a Vale; ITUB4, BBSE3, SBSP3 e B3SA3 não recebem */
+    const ld = await pg.evaluate(() => {
+      var old = MD.d, o = {};
+      try {
+        var cols = ['cot', 'pl', 'pvp', 'psr', 'dy', 'pativo', 'pebit', 'evebit', 'evebitda', 'mebit', 'ml', 'lc', 'roic', 'roe', 'liq2m', 'pl_r', 'divpl', 'cr5'];
+        var row = function (cot, pl, pvp, dy, mebit, ml) { return [cot, pl, pvp, 0, dy, 0, 0, 0, 0, mebit, ml, 0, 0, 10, 1e9, 1e11, 0, 0]; };
+        MD.d = { ts: Date.now() / 1000, cvm: { nomes: {}, q: {} }, hist: {}, idx: {},
+          fund: { cols: cols, d: { VALE3: row(58.48, 118.65, 1.33, 9.6, 30.38, 0.26), ITUB4: row(40.07, 9.45, 2.02, 7.8, 0, 0), BBSE3: row(36.99, 7.82, 5.33, 12.6, 0, 0), SBSP3: row(27.35, 12, 2, 4, 31.35, 17.52), B3SA3: row(14.28, 10, 3, 6, 58.88, 46.4) } } };
+        ['VALE3', 'ITUB4', 'BBSE3', 'SBSP3', 'B3SA3'].forEach(function (t) { var e = asEmp(t, true); o[t] = [/LUCRO DISTORCIDO/.test(e), /NÃO CONFIÁVEL|Preço indefinido/.test(e)]; });
+      } catch (e) { o.erro = e.message; } MD.d = old; return o; });
+    confere('LUCRO DISTORCIDO: só a Vale recebe o aviso; ITUB4, BBSE3, SBSP3 e B3SA3 não (e nenhum comando de "não confiável" fora dela)', [ld.erro || 'ok', ld.VALE3[0], ld.ITUB4, ld.BBSE3, ld.SBSP3, ld.B3SA3], ['ok', true, [false, false], [false, false], [false, false], [false, false]]);
     /* metas pela tela: escrever, salvar, inválido, apagar linha, apagar todas */
     await pg.click('[data-go=resumo]'); await pg.waitForTimeout(200);
     const mu = await (async () => {
