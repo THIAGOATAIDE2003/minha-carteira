@@ -43,7 +43,18 @@ var IDX=[
  {k:'tnx',n:'Juros EUA 10 anos',t:'Rendimento do título de 10 anos do Tesouro americano',src:'cmd',s:'^TNX',f:'pct',tp:'JUROS EUA 10A'},
  {k:'selic',n:'Selic (ao ano)',t:'Taxa básica de juros, definida pelo Copom',src:'selic',f:'pct'},
  {k:'cdi',n:'CDI (ao ano)',t:'Juro entre bancos, que rende a renda fixa',src:'cdi',f:'pct'},
- {k:'ipca',n:'IPCA (12 meses)',t:'Inflação oficial',src:'ipca',f:'pct'}];
+ {k:'ipca',n:'IPCA (12 meses)',t:'Inflação oficial',src:'ipca',f:'pct'},
+ /* futuros dos EUA, Europa e EWZ: valor de agora vem do servidor de cotações (FUT.d), histórico do robô */
+ {k:'ES=F',n:'S&P 500 futuro',t:'Contrato futuro do S&P 500 · negocia quase 24 horas',src:'fut',s:'ES=F',f:'pts'},
+ {k:'NQ=F',n:'Nasdaq futuro',t:'Contrato futuro do Nasdaq 100 · negocia quase 24 horas',src:'fut',s:'NQ=F',f:'pts'},
+ {k:'YM=F',n:'Dow Jones futuro',t:'Contrato futuro do Dow Jones · negocia quase 24 horas',src:'fut',s:'YM=F',f:'pts'},
+ {k:'RTY=F',n:'Russell 2000 futuro',t:'Contrato futuro das small caps dos EUA · negocia quase 24 horas',src:'fut',s:'RTY=F',f:'pts'},
+ {k:'^FTSE',n:'Inglaterra (FTSE 100)',t:'Bolsa de Londres',src:'fut',s:'^FTSE',f:'pts'},
+ {k:'^FCHI',n:'França (CAC 40)',t:'Bolsa de Paris',src:'fut',s:'^FCHI',f:'pts'},
+ {k:'^GDAXI',n:'Alemanha (DAX)',t:'Bolsa de Frankfurt',src:'fut',s:'^GDAXI',f:'pts'},
+ {k:'^IBEX',n:'Espanha (IBEX 35)',t:'Bolsa de Madri',src:'fut',s:'^IBEX',f:'pts'},
+ {k:'FTSEMIB.MI',n:'Itália (FTSE MIB)',t:'Bolsa de Milão',src:'fut',s:'FTSEMIB.MI',f:'pts'},
+ {k:'EWZ',n:'EWZ · Brasil em dólar',t:'ETF do Brasil negociado nos EUA (faz o papel do Ibovespa futuro)',src:'fut',s:'EWZ',f:'usd'}];
 var IDXDEF=['ibov','SPY','QQQ','ifix','usd','eur','btc','cdi'],MKED=false;
 function idxSel(){var a=Array.isArray(S.idxSel)?S.idxSel:IDXDEF;return a.filter(function(k){return IDX.some(function(x){return x.k===k})})}
 function idxSet(a){S.idxSel=a;S.pend.push({t:'cfg',k:'idx',v:a});save();ghSync()}
@@ -75,6 +86,7 @@ function idxVal(x){var r=idxVal0(x);if(r&&r.p!=null&&IDZ[x.k]!=null&&dzero(!!IDZ
 function idxVal0(x){var I=MKT.idx;
   if(x.k==='ibov'||x.k==='eur'){var tv=tapeIdx(x.k==='ibov'?'IBOV':'EURO');if(tv&&(!I[x.k]||MKT.at<tv.at))return {v:tv.v,p:tv.p}}
   if(x.src==='cmd'){var tv=x.tp&&tapeIdx(x.tp),D0=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(tv)return {v:tv.v,p:tv.p,sub:'robô, a cada 15 min no pregão'};if(D0&&D0.d&&D0.d.length>1){var l0=D0.d[D0.d.length-1][1],l1=D0.d[D0.d.length-2][1];return {v:l0,p:(l0/l1-1)*100,sub:'último fechamento'}}return null}
+  if(x.src==='fut'){var q=FUT.d&&FUT.d[x.s];if(q&&q.p>0)return {v:q.p,p:q.prev>0?(q.p/q.prev-1)*100:null,sub:futEstado(q)};var D1=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(D1&&D1.d&&D1.d.length>1){var m0=D1.d[D1.d.length-1][1],m1=D1.d[D1.d.length-2][1];return {v:m0,p:(m0/m1-1)*100,sub:'último fechamento'}}return null}
   if(x.src==='usd'){var f0=fxToday();return f0?{v:f0.rate,p:S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null}:null}
   if(x.src==='cdi')return CDI.dates.length?{v:(Math.pow(1+CDI.s[CDI.dates[CDI.dates.length-1]]/100,252)-1)*100,sub:'Banco Central'}:null;
   if(x.src==='selic'){if(I.selic)return {v:I.selic.v,sub:'Copom'};var Ds=MD.d&&MD.d.idx&&MD.d.idx.selic;return Ds&&Ds.last?{v:Ds.last,sub:'Copom'}:null}

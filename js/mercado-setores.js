@@ -126,7 +126,7 @@ function mdStk(tk,rg){
 var STK={tk:'',rng:'1y',d:null,busy:false,err:''},STKC={};
 function stkOpen(tk){if(typeof THE!=='undefined')THE=null;STK={tk:tk,rng:STK.rng||'1y',d:null,busy:false,err:''};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=tk;stkLoad()}
 /* página de um índice (dados do robô diário: Yahoo para bolsas e moedas, Banco Central para CDI e IPCA) */
-function idxOpen(k){var x=idxDef(k);STK={tk:'',idx:k,rng:STK.rng&&STK.rng!=='2y'?STK.rng:'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=x?x.n:k;idxRender();if(!MD.d||!MD.d.idx)loadMD(true)}
+function idxOpen(k){var x=idxDef(k);if(x&&x.src==='fut'){try{futLoad()}catch(e){}}STK={tk:'',idx:k,rng:STK.rng&&STK.rng!=='2y'?STK.rng:'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=x?x.n:k;idxRender();if(!MD.d||!MD.d.idx)loadMD(true)}
 function idxRender(){
   var b=$('stk-b'),k=STK.idx,x=idxDef(k),D=MD.d&&MD.d.idx&&MD.d.idx[k],rg=STK.rng;if(!b||!x)return;
   var rate=x.src==='cdi'||x.src==='ipca'||x.src==='selic'||x.k==='tnx',sym=D&&D.sym||'',same=!D||x.src==='usd'||x.src==='fx'||sym===x.s||sym===x.s+'.SA';
