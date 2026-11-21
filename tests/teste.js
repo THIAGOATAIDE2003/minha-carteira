@@ -359,6 +359,16 @@ function contasAMao(F, P) {
       r.rec = /Receita e lucro/.test(hr) && /Em 2024: receita de/.test(hr) && /5 anos/.test(hr) && /Receita por país e por negócio/.test(hr) && /data-tip=/.test(hr);
       M.d = Object.assign({}, old, { anual: null }); r.recVazio = /ainda não chegaram/.test(A.emRec(tk, d)); r.usa = /só estão disponíveis para ações do Brasil/.test(A.emRec('AAPL', d)); r.sob = /Sobre a empresa/.test(A.emSobre(tk, d)); M.d = old; return r; });
     confere('abas da ação: dividendos com yield e gráfico anual, receita e lucro por ano com tooltip, avisos sem dados, sobre', [emp.div, emp.rec, emp.recVazio, emp.usa, emp.sob], [true, true, true, true, true]);
+    /* aba Resultados: leitura dos trimestres por regras, consenso e superou/abaixo do esperado */
+    const rs = await pg.evaluate(function () { var A = window.__aporte, M = A.MD, old = M.d;
+      var q = [[2024, 1, 100, 10], [2024, 2, 100, 10], [2024, 3, 100, 10], [2024, 4, 100, 10], [2025, 1, 110, 12], [2025, 2, 110, 13]];
+      var q2 = [[2024, 1, 100, 10], [2024, 2, 100, 10], [2024, 3, 100, 10], [2024, 4, 100, 10], [2025, 1, 100, 8], [2025, 2, 100, 7]];
+      var L1 = A.trLeit(q), L2 = A.trLeit(q2), L3 = A.trLeit(q.slice(0, 3));
+      var C = { at: '2026-11-21', n: 10, rec: [3, 6, 4, 1, 0], rk: 2.1, alvo: [45, 60, 30], ph: [['2025-03-31', 1.2, 1.0, 0.2], ['2025-06-30', 0.8, 1.0, -0.2]], est: { '0y': [4, 0.1, 1e10, 0.05, 10, '2025-12-31'], '+1y': [4.8, 0.2, 1.1e10, 0.1, 8, '2026-12-31'] } };
+      M.d = Object.assign({}, old, { cons: { v: 1, d: { PETR4: C } } });
+      var d = { cur: 'BRL', price: 40 }, h = A.resHtml('PETR4', d), h2 = A.resHtml('XXXX3', d); M.d = old;
+      return { a: L1 && L1.k, b: L2 && L2.k, c: L3, compra: h.indexOf('Consenso: <b class="gain">Compra</b>') >= 0 && h.indexOf('14 analistas') >= 0, alvo: h.indexOf('+12') >= 0, sup: h.indexOf('1 acima') >= 0 && h.indexOf('1 abaixo') >= 0, esp: h.indexOf('+20') >= 0, sem: h2.indexOf('Sem cobertura') >= 0 || h2.indexOf('ainda não trouxe') >= 0 }; });
+    confere('resultados: trimestres bom/mau, consenso (compra, alvo, superou/abaixo, projeções), sem dado avisa', [rs.a, rs.b, rs.c, rs.compra, rs.alvo, rs.sup, rs.esp, rs.sem], ['bom', 'mau', null, true, true, true, true, true]);
     /* busca: por sigla (B3), por nome (magazine luiza) e por apelido (magalu), sem acento */
     const bus = await pg.evaluate(function () { var A = window.__aporte, M = A.MD, old = M.d; M.d = Object.assign({}, old, { fund: { cols: ['cot', 'liq2m'], d: { MGLU3: [10, 9e8], B3SA3: [12, 8e8], BBAS3: [30, 7e8], BBDC4: [14, 6e8], BBSE3: [35, 5e8], PETR4: [38, 9e9] } }, cvm: { nomes: { MGLU3: 'MAGAZINE LUIZA S.A.', B3SA3: 'B3 S.A. - BRASIL, BOLSA, BALCAO', BBAS3: 'BANCO DO BRASIL S.A.', BBDC4: 'BANCO BRADESCO S.A.', BBSE3: 'BB SEGURIDADE PARTICIPACOES S.A.', PETR4: 'PETROLEO BRASILEIRO S.A. PETROBRAS' } } });
       var r = { luiza: A.mkSug('magazine luiza')[0], magalu: A.mkSug('magalu')[0], b: A.mkSug('b').slice(0, 3), b3: A.mkSug('b3')[0], acento: A.mkSug('petróleo')[0], banco: A.mkSug('banco b')[0], nada: A.mkSug('zzzz').length }; M.d = old; return r; });
