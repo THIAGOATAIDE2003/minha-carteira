@@ -485,3 +485,11 @@ details.info>summary::after{width:6px;height:6px;border-width:1.5px}
 #ajseg{margin:0}
 
 .vsr{padding:10px 0;border-bottom:1px solid var(--line)}.vsr:last-child{border-bottom:0}.vsr .vsh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:16px}.vsr .vsh b{font-size:17px;font-variant-numeric:tabular-nums}.vsr small{display:block;margin-top:2px;color:var(--muted);font-size:12.5px}.vsr.tot .vsh{font-weight:700}
+
+/* letras maiores onde se procura as coisas: menu de baixo, abas, chips e títulos (1.25.2) */
+.tabs button{font-size:13px;font-weight:600}.tabs svg{width:24px;height:24px}
+#carseg button,#mkseg button,#maisseg button{font-size:15.5px}
+.cchips button{font-size:16px;padding:10px 17px}
+.stseg button{font-size:14px}
+.bell,.news,.atl button{font-size:15px}
+h2{font-size:19px}h3{font-size:16px}.sbd h3{font-size:16.5px}
