@@ -136,5 +136,6 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 .orsw,.orsw2{display:flex;gap:8px;margin:0 0 10px}.orsw button,.orsw2 button{flex:1;white-space:nowrap}
 .orb i.ac{background:var(--accent)}.orrk{margin:8px 0}.orrh{display:flex;gap:8px;align-items:baseline;font-size:14px}.orrh span:first-child{flex:1;min-width:0}.orcm button:disabled{opacity:.35}
 /* todas as sub-abas no mesmo formato: grade de 3 colunas, quebrando em linhas (sem rolar para o lado) */
-#carseg,#mkseg,#maisseg,.seg.anseg,.seg.stseg{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;overflow:visible!important}
+#carseg:not([hidden]),#mkseg:not([hidden]),#maisseg:not([hidden]),.seg.anseg:not([hidden]),.seg.stseg:not([hidden]){display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;overflow:visible!important}
 #carseg button,#mkseg button,#maisseg button,.anseg button,.stseg button{flex:none!important;white-space:normal!important;padding:9px 4px!important;font-size:14.5px!important;letter-spacing:0!important;line-height:1.2}
+#carseg[hidden],#mkseg[hidden],#maisseg[hidden],.seg.anseg[hidden],.seg.stseg[hidden]{display:none!important}
