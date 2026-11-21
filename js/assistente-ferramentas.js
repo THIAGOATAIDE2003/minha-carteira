@@ -24,11 +24,11 @@ function asRota(q){var n=asNorm(q),o={base:1,ativos:1,metas:1};
   if(/oportunid|garimp|barat|acompanh|alerta|comprar|aportar/.test(n)){o.op=1;o.lista=1}
   if(/mercado|economia|selic|cdi|ipca|dolar|ibov|juros|inflac|petroleo|noticia/.test(n)){o.eco=1;o.res=1}
   return {o:o,det:/detalh|cada ativo|cada acao|minhas acoes|nota|preco justo|valuation|indicador/.test(n)}}
-function asMsgsT(q){var rt=asRota(q);ASCMP=!rt.det;var ctx;try{ctx=asCtx(q,rt.o)}finally{ASCMP=false}
+function asMsgsT(q){asSysAtual();var rt=asRota(q);ASCMP=!rt.det;var ctx;try{ctx=asCtx(q,rt.o)}finally{ASCMP=false}
   var held={};compute().held.forEach(function(x){held[x.p.ticker]=1});
   var emp=asFind(q).map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean);
   var h=AS.m.filter(function(x){return x.t&&!x.e}).slice(-11,-1).map(function(x){var t=x.t.length>1500?x.t.slice(0,1500)+' […]':x.t;return {role:x.r==='u'?'user':'model',parts:[{text:t}]}});
-  return {sys:ASSYS+ASTH+'\n\nRESUMO DA CARTEIRA AGORA:\n'+ctx+(emp.length?'\n\n'+emp.join('\n\n'):''),ct:h.concat([{role:'user',parts:[{text:q}]}])}}
+  return {sys:ASSYS+ASTH+'\n\nRESUMO DA CARTEIRA AGORA:\n'+ctx+(emp.length?'\n\n'+emp.join('\n\n'):'')+asmCtxT(q),ct:h.concat([{role:'user',parts:[{text:q}]}])}}
 /* pensar pouco no chat: o raciocínio longo do Gemini deixava até "oi" levando dezenas de segundos */
 function asThink(m){return /gemini-3/.test(m)?{thinkingLevel:'low'}:/2\.5/.test(m)?{thinkingBudget:1024}:null}
 /* Gemini com ferramentas: repete (até 5 vezes) enquanto ele pedir dados; no fim, a resposta chega em streaming.
