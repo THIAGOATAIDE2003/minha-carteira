@@ -32,9 +32,10 @@ function asPxHist(tk,P){var h=MD.d&&MD.d.hist&&MD.d.hist[tk];if(!h||!P)return nu
   var dv=h.div||[],d12=0,d24=0,n12=0;dv.forEach(function(x){var a=day-x[0];if(a<=365){d12+=x[1];n12++}else if(a<=730)d24+=x[1]});
   var b12=src(365);if(b12){o.tot=(P+d12)/b12-1;o.px=P/b12-1}o.d12=d12;o.d24=d24;o.n12=n12;return o}
 /* commodity que mais mexe com o setor */
-function asCmd(sec){var k=/Minera|Siderur/i.test(sec)?'iron':/Petr[oó]leo/i.test(sec)?'brent':null;if(!k)return '';var D=MD.d&&MD.d.idx&&MD.d.idx[k],x=idxDef(k);if(!D||!D.d||!D.d.length)return '';
+function asCmd(sec,px){var k=/Minera|Siderur/i.test(sec)?'iron':/Petr[oó]leo/i.test(sec)?'brent':null;if(!k)return '';var D=MD.d&&MD.d.idx&&MD.d.idx[k],x=idxDef(k);if(!D||!D.d||!D.d.length)return '';
   var l=D.d[D.d.length-1],day=l[0],b=null;(D.w||[]).concat(D.d).forEach(function(p){if(p[0]<=day-365&&(b==null||p[0]>b[0]))b=p});b=b&&b[1];
-  return 'Commodity ligada ao setor: '+x.n+' US$ '+num(l[1],2)+(b?' ('+asP((l[1]/b-1)*100,1)+' em 12 meses)':'')+' [fonte: Yahoo, contrato futuro, robô].'}
+  var ch=b?(l[1]/b-1)*100:null,sv=px!=null?px*100:null,cp=ch!=null&&sv!=null?' Comparação conferida pelo app (12 meses): a ação '+(sv<0?'caiu ':'subiu ')+num(Math.abs(sv),1)+'% e a commodity '+(ch<0?'caiu ':'subiu ')+num(Math.abs(ch),1)+'% — '+(Math.abs(sv-ch)<2?'movimentos parecidos':sv<ch?'a ação teve desempenho PIOR que a commodity':'a ação teve desempenho MELHOR que a commodity')+' (diferença de '+num(Math.abs(sv-ch),1)+' pontos). Use esta leitura; só diga "caiu mais" se o número for mais negativo.':'';
+  return 'Commodity ligada ao setor: '+x.n+' US$ '+num(l[1],2)+(b?' ('+asP((l[1]/b-1)*100,1)+' em 12 meses)':'')+' [fonte: Yahoo, contrato futuro, robô].'+cp}
 /* o app refaz as contas antes da IA interpretar: margens, P/L e dívida/EBITDA a partir dos números brutos, apontando o que diverge */
 function asConf(F,B,L){var cf=[],ok=function(d){return d?' — DIVERGE':' — confere'};
   if(B&&B.rec>0){if(B.ebit!=null&&F.mebit!=null){var me=B.ebit/B.rec*100;cf.push('margem EBIT = EBIT ÷ receita = '+num(me,1)+'% (Fundamentus informa '+num(F.mebit,1)+'%)'+ok(Math.abs(me-F.mebit)>1.5))}
@@ -42,6 +43,9 @@ function asConf(F,B,L){var cf=[],ok=function(d){return d?' — DIVERGE':' — co
   if(B&&B.ll>0&&B.pl>0&&F.pvp>0&&F.pl>0){var im=F.pvp*B.pl/B.ll;cf.push('P/L = valor de mercado (P/VP × patrimônio) ÷ lucro = '+num(im,1)+' (Fundamentus informa '+num(F.pl,1)+')'+ok(Math.abs(im/F.pl-1)>0.15))}
   if(B&&B.divl!=null&&B.ebit>0&&F.evebit>0&&F.evebitda>0){var d2=B.divl/(B.ebit*F.evebit/F.evebitda);cf.push('dívida líquida/EBITDA (derivada) = '+num(d2,2)+' vezes ('+(d2<0?'caixa líquido':d2<2?'baixa':d2<3.5?'moderada':'alta')+')')}
   if(cf.length)L.push('CONFERÊNCIA DOS NÚMEROS (contas refeitas pelo app com os dados acima; onde diz DIVERGE, mostre os dois valores): '+cf.join('; ')+'.')}
+/* lucro de 12 meses por duas fontes (Fundamentus x CVM): se divergem muito, mostra os dois com o período e avisa que a causa não é conhecida */
+function asConc(B,T,L,Q){if(!B||!T||!(B.ll>0)||!(T.a>0))return;var f=B.ll*ASSC,r=f/T.a;if(r>0.8&&r<1.25)return;var l=Q[Q.length-1];
+  L.push('CONCILIAÇÃO DE FONTES (lucro líquido de 12 meses): Fundamentus (página da empresa) '+qfmt(f)+' contra CVM (soma dos 4 últimos trimestres até '+l[1]+'T'+String(l[0]).slice(2)+') '+qfmt(T.a)+' — DIVERGEM (uma é '+num(r>1?r:1/r,1)+' vezes a outra). Período, base de consolidação (controladores x total) ou ajustes contábeis podem ser diferentes e o app NÃO sabe qual explica. Mostre os dois valores com a fonte, não os misture na mesma conta e não escolha um sem avisar.')}
 function asEmp(tk,held){var F=fundOf(tk),lv=livePx(tk),d=opD(tk),h=MD.d&&MD.d.hist&&MD.d.hist[tk],e=rsOf(tk),robo=MD.d&&MD.d.ts?asDt(MD.d.ts*1000):'?',L=[],falta=[],aviso=[],dist=0;
   var nm=(MD.d&&MD.d.cvm&&MD.d.cvm.nomes&&MD.d.cvm.nomes[tk])||(h&&h.name)||(e&&e.nome)||'',v1=function(v,dd,suf){return v!=null?num(v,dd)+(suf||''):'?'};
   L.push('=== EMPRESA '+tk+(nm?' — '+nm:'')+(held?' (está na carteira do Thiago)':' (fora da carteira)'));
@@ -62,13 +66,13 @@ function asEmp(tk,held){var F=fundOf(tk),lv=livePx(tk),d=opD(tk),h=MD.d&&MD.d.hi
       L.push('Concorrentes do setor '+pe.name+' — mediana de '+pe.n+' empresas ('+cf+'; uma ação por empresa) [fonte: Fundamentus]: P/L '+v1(pe.pl,1)+'; P/VP '+v1(pe.pvp,2)+'; EV/EBIT '+v1(pe.evebit,1)+'; EV/EBITDA '+v1(pe.evebitda,1)+'; DY '+v1(pe.dy,1,'%')+'; ROE '+v1(pe.roe,1,'%')+'; ROIC '+v1(pe.roic,1,'%')+'; margem EBIT '+v1(pe.mebit,1,'%')+'; margem líquida '+v1(pe.ml,1,'%')+' ("?" = mediana não calculada: não compare esse item com o setor). Quem entrou: '+pe.t.slice(0,10).map(function(t){var n=MD.d.cvm&&MD.d.cvm.nomes&&MD.d.cvm.nomes[t];return t+(n?' ('+n.split(' ').slice(0,3).join(' ')+')':'')}).join(', ')+'. Veja se são mesmo comparáveis (mesmo negócio) antes de concluir.')}
     else falta.push('comparação com concorrentes (setor não encontrado ou menos de 3 empresas)')}
   else falta.push('indicadores do Fundamentus');
-  if(sec[0]){var cm=asCmd(sec.join(' '));if(cm)L.push(cm)}
+  if(sec[0]){var cm=asCmd(sec.join(' '),ph&&ph.px!=null?ph.px:null);if(cm)L.push(cm)}
   /* resultados trimestrais */
   var Q=cvmQ(tk);if(Q&&Q.length){var cv=MD.d.cvm.ts?asDt(MD.d.cvm.ts*1000):'?',yo=function(x,ix){var p=Q.filter(function(y){return y[0]===x[0]-1&&y[1]===x[1]})[0];return p&&p[ix]>0&&x[ix]!=null?' ('+asP((x[ix]/p[ix]-1)*100,0)+' vs '+p[1]+'T'+String(p[0]).slice(2)+')':''};
     L.push('Resultados trimestrais [fonte: balanços entregues à CVM (ITR/DFP), consolidado; 4º tri = ano − 9 meses; é o lucro contábil, que pode diferir do lucro ajustado ou recorrente citado na imprensa; atualizado pelo robô em '+cv+']:');
     var temE=false;Q.slice(ASCMP?-5:-8).forEach(function(x){var e1=x[4]!=null;if(e1)temE=true;L.push('- '+x[1]+'T'+String(x[0]).slice(2)+': receita '+qfmt(x[2])+yo(x,2)+(e1?'; EBIT (lucro da operação) '+qfmt(x[4])+(x[2]>0?' = margem EBIT '+num(x[4]/x[2]*100,1)+'%':''):'')+(x[5]!=null?'; resultado financeiro (juros e outros) '+qfmt(x[5]):'')+(x[6]!=null?'; impostos sobre o lucro '+qfmt(x[6]):'')+'; lucro líquido '+qfmt(x[3])+yo(x,3)+(x[2]>0&&x[3]!=null?' = margem líquida '+num(x[3]/x[2]*100,1)+'%':''))});
     if(!temE)falta.push(MD.d.cvm.q[tk]&&MD.d.cvm.q[tk].slice(-1)[0].length>=7?'EBIT e resultado financeiro por trimestre (o balanço de bancos, seguradoras e holdings não separa esses itens do mesmo jeito)':'EBIT, resultado financeiro e impostos por trimestre (chegam na próxima atualização dos balanços da CVM)');
-    var T=qTtm(Q);if(T)L.push('Lucro dos últimos 12 meses (4 trimestres) '+qfmt(T.a)+' contra '+qfmt(T.b)+' nos 12 meses anteriores'+(T.g!=null?' ('+asP(T.g*100,1)+')':'')+' [fonte: CVM, soma dos trimestres].');
+    var T=qTtm(Q);if(T)L.push('Lucro dos últimos 12 meses (4 trimestres) '+qfmt(T.a)+' contra '+qfmt(T.b)+' nos 12 meses anteriores'+(T.g!=null?' ('+asP(T.g*100,1)+')':'')+' [fonte: CVM, soma dos trimestres].');try{asConc(B,T,L,Q)}catch(e){}
     var l=Q[Q.length-1],ag=Date.now()-Date.UTC(l[0],l[1]*3,1);if(ag>200*864e5)falta.push('o último balanço na base é do '+l[1]+'º tri de '+l[0]+' (pode haver um mais novo)')}
   else falta.push('resultados trimestrais da CVM (o robô só baixa para ações da carteira e da lista de acompanhamento)');
   /* análise automática do app */
