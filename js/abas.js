@@ -3,7 +3,7 @@
 var TABS=['resumo','ativos','proventos','mercado','mais'],MAISV='cambio',CARV='pos';
 function showTab(n){
   if(n==='cambio'||n==='ajustes'||n==='imposto'){MAISV=n;n='mais'}
-  if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='aporte'){CARV='apo';n='ativos'}else if(n==='desempenho'){CARV='perf';n='ativos'}else if(n==='risco'){CARV='risk';n='ativos'}else if(n==='lancamentos'||n==='extrato'){CARV='ext';n='ativos'}else if(n==='ativos')CARV='pos';
+  if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='aporte'){CARV='apo';n='ativos'}else if(n==='desempenho'){CARV='perf';n='ativos'}else if(n==='risco'){CARV='risk';n='ativos'}else if(n==='plano'){CARV='plano';n='ativos'}else if(n==='lancamentos'||n==='extrato'){CARV='ext';n='ativos'}else if(n==='ativos')CARV='pos';
   if(TABS.indexOf(n)<0)n='resumo';
   Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(el){el.hidden=el.getAttribute('data-tab')!==n||(!!el.dataset.sub&&el.dataset.sub!==MAISV)||(!!el.dataset.sub2&&el.dataset.sub2!==CARV)});
   Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){if(b.dataset.go===n)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
@@ -11,6 +11,7 @@ function showTab(n){
   Array.prototype.forEach.call(document.querySelectorAll('#maisseg button'),function(b){b.setAttribute('aria-pressed',String(b.dataset.mais===MAISV))});
   Array.prototype.forEach.call(document.querySelectorAll('#carseg button'),function(b){b.setAttribute('aria-pressed',String(b.dataset.cv===CARV))});
   window.scrollTo(0,0);
+  if(n==='ativos'&&CARV==='plano'){try{renderPlano()}catch(e){}}
   if(n==='mercado'){loadMkt();loadMD()}
 }
 BOOT=true;
@@ -21,7 +22,7 @@ var fixedMsg=sanitize();
 render();
 if(fixedMsg)warnIn(fixedMsg);
 /* só para os testes automáticos (tests/teste.js): expõe as contas, sem mudar nada no app */
-if(window.__APORTE_TESTE__)window.__aporte={VERSAO:VERSAO,BC:BC,bcIngest:bcIngest,bcLeitura:bcLeitura,bcMudou:bcMudou,bcHtml:bcHtml,bcCard:bcCard,bcCtx:bcCtx,rpMsgs:rpMsgs,rpHtml:rpHtml,rpExtra:rpExtra,RPSYS:RPSYS,heroOpen:heroOpen,heroRender:heroRender,setRng:function(r){STK.rng=r},dzero:dzero,cls:cls,renderTape:renderTape,sibHtml:sibHtml,dvAlerts:dvAlerts,DV:DV,vpill:vpill,pct:pct,sgn:sgn,S:S,CDI:CDI,compute:compute,valoriz:valoriz,xirr:xirr,ePx:ePx,irData:irData,bensEm:bensEm,splitNeed:splitNeed,rfCalc:rfCalc,cdiBench:cdiBench,pvItems:pvItems,b3Hol:b3Hol,annRets:annRets,evoData:evoData,dayDiff:dayDiff,irRate:irRate,catSetores:catSetores,stkAna:stkAna,anMom:anMom,catTickers:catTickers,catNovo:catNovo,catSaiu:catSaiu,MD:MD,vendaCalc:vendaCalc,renderApo:renderApo,entInfo:entInfo,ENT:ENT,concFor:concFor,vendaHtml:vendaHtml,VND:VND};
+if(window.__APORTE_TESTE__)window.__aporte={VERSAO:VERSAO,PL:PL,plHtml:plHtml,plGat:plGat,plSnap:plSnap,plMsgs:plMsgs,plMundo:plMundo,BC:BC,bcIngest:bcIngest,bcLeitura:bcLeitura,bcMudou:bcMudou,bcHtml:bcHtml,bcCard:bcCard,bcCtx:bcCtx,rpMsgs:rpMsgs,rpHtml:rpHtml,rpExtra:rpExtra,RPSYS:RPSYS,heroOpen:heroOpen,heroRender:heroRender,setRng:function(r){STK.rng=r},dzero:dzero,cls:cls,renderTape:renderTape,sibHtml:sibHtml,dvAlerts:dvAlerts,DV:DV,vpill:vpill,pct:pct,sgn:sgn,S:S,CDI:CDI,compute:compute,valoriz:valoriz,xirr:xirr,ePx:ePx,irData:irData,bensEm:bensEm,splitNeed:splitNeed,rfCalc:rfCalc,cdiBench:cdiBench,pvItems:pvItems,b3Hol:b3Hol,annRets:annRets,evoData:evoData,dayDiff:dayDiff,irRate:irRate,catSetores:catSetores,stkAna:stkAna,anMom:anMom,catTickers:catTickers,catNovo:catNovo,catSaiu:catSaiu,MD:MD,vendaCalc:vendaCalc,renderApo:renderApo,entInfo:entInfo,ENT:ENT,concFor:concFor,vendaHtml:vendaHtml,VND:VND};
 
 /* Arranque dos temporizadores: ficam aqui, no último arquivo, para nenhum deles disparar antes de todos os js/ terem carregado
    (lá atrás eles estavam dentro de um arquivo só). Mesma ordem de antes. */

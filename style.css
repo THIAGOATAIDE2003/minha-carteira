@@ -501,3 +501,6 @@ h2{font-size:19px}h3{font-size:16px}.sbd h3{font-size:16.5px}
 .bct .bcc{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25}
 .bct .bcc small{font-size:11.5px}
 .bcl2{margin:0;padding-left:18px}.bcl2 li{margin:4px 0}
+/* Plano da carteira */
+.plst{border-left:4px solid var(--line);padding:2px 0 2px 12px}.plst b{display:block;font-size:16px}.plst p{margin:4px 0 0}
+.plst.ok{border-color:#3fb26b}.plst.at{border-color:#e3a73a}.plst.al{border-color:#e5534b}

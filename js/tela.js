@@ -5,7 +5,7 @@ function render(){
   try{tapeMerge()}catch(e){}
   var R=compute();
   try{renderTape()}catch(e){}
-  renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderPerf(R);try{renderRisk(R)}catch(e){}renderMkt();renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
+  renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderPerf(R);try{renderRisk(R)}catch(e){}try{if(CARV==='plano'&&!PL.busy)renderPlano()}catch(e){}renderMkt();renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
   pvRedraw();
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
   $('c-fx').placeholder=S.fx&&S.fx.src==='auto'?String(S.fx.rate).replace('.',','):(MK.fxLatest?String(MK.fxLatest).replace('.',','):'5,35');
@@ -178,7 +178,7 @@ document.addEventListener('click',function(e){
   else if(t.dataset&&t.dataset.dvy){DVY=t.dataset.dvy;render()}
   else if(t.dataset&&t.dataset.trf){TRF=t.dataset.trf;renderTrades()}
   else if(t.dataset&&t.dataset.edit){startEdit(t.dataset.edit)}
-  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':t.dataset.cv==='apo'?'aporte':t.dataset.cv==='perf'?'desempenho':t.dataset.cv==='risk'?'risco':t.dataset.cv==='ext'?'extrato':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
+  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':t.dataset.cv==='apo'?'aporte':t.dataset.cv==='perf'?'desempenho':t.dataset.cv==='risk'?'risco':t.dataset.cv==='plano'?'plano':t.dataset.cv==='ext'?'extrato':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
   else if(t.closest&&t.closest('[data-evt]')){var cb=t.closest('[data-evt]');[].forEach.call(document.querySelectorAll('[data-evt]'),function(x){x.setAttribute('aria-pressed',String(x===cb))})}
   else if(t.closest&&t.closest('[data-evf]')){var ac=t.closest('[data-evf]').getAttribute('data-evf'),sh=$('evsheet');
     if(ac==='open'&&sh){sh.hidden=false;document.body.style.overflow='hidden'}
