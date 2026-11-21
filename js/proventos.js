@@ -5,7 +5,7 @@ var hm=function(t){return new Date(t).toLocaleString('pt-BR',{day:'2-digit',mont
 var DVV='mes';
 /* ===== Proventos (estilo Investidor10): cartões, evolução, por ativo, meus proventos ===== */
 var PVD={ep:'12',ex:'m',et:'all',ea:'all',ap:'12',ag:'tk',lp:'',lt:'all',la:'all',more:0};
-var PV=(function(){var o={};try{o=JSON.parse(localStorage.getItem(LS+'-pv')||'null')||{}}catch(e){}for(var k in PVD)if(!(k in o))o[k]=PVD[k];return o})();
+var PV=(function(){var o={};try{o=JSON.parse(localStorage.getItem(LS+'-pv')||'null')||{};if(typeof o!=='object'||Array.isArray(o))o={}}catch(e){o={}}for(var k in PVD)if(!(k in o))o[k]=PVD[k];return o})();
 var PCI=0,PVS=null,PVLY=null;
 function pvSave(){try{localStorage.setItem(LS+'-pv',JSON.stringify(PV))}catch(e){}}
 function pvMatch(t){var k=t.ticker+'|',best=null;
