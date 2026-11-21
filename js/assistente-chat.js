@@ -71,10 +71,10 @@ function asCacheSet(k,l){try{localStorage.setItem(LS+'-asm'+k,JSON.stringify({at
 function asGroqModels(key){var c=asCache('g2');if(c)return Promise.resolve(c);
   return fetch('https://api.groq.com/openai/v1/models',{headers:{Authorization:'Bearer '+key}}).then(asHttp).then(function(r){return r.json()}).then(function(j){var have={};(j.data||[]).forEach(function(m){have[m.id]=1});
     var l=ASGQ.filter(function(m){return have[m]});if(!l.length)l=(j.data||[]).map(function(m){return m.id}).filter(function(x){return !/whisper|guard|tts|orpheus|compound|prompt/i.test(x)});if(l.length)asCacheSet('g2',l);return l.length?l:ASGQ}).catch(function(e){if(e.st===401)throw e;return ASGQ})}
-function asGemModels(key){var c=asCache('m');if(c)return Promise.resolve(c);
+function asGemModels(key){var c=asCache('m2');if(c)return Promise.resolve(c);
   return fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200',{headers:{'x-goog-api-key':key}}).then(asHttp).then(function(r){return r.json()}).then(function(j){
     var l=(j.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf('generateContent')>=0}).map(function(m){return m.name.replace('models/','')}).filter(function(n){return /flash/.test(n)&&!/image|tts|live|audio|thinking|exp|preview/.test(n)});
-    var vr=function(n){var m=n.match(/(\d+(?:\.\d+)?)/);return m?+m[1]:0};l.sort(function(a,b){return (/lite/.test(a)-/lite/.test(b))||vr(b)-vr(a)});l=l.slice(0,4);if(!l.length)l=['gemini-2.5-flash','gemini-flash-latest'];asCacheSet('m',l);return l}).catch(function(e){if(e.st===400||e.st===403)throw e;return ['gemini-2.5-flash','gemini-flash-latest']})}
+    var vr=function(n){var m=n.match(/(\d+(?:\.\d+)?)/);return m?+m[1]:0};l.sort(function(a,b){return (/lite/.test(a)-/lite/.test(b))||(/2\.5/.test(b)-/2\.5/.test(a))||vr(b)-vr(a)});l=l.slice(0,4);if(!l.length)l=['gemini-2.5-flash','gemini-flash-latest'];asCacheSet('m2',l);/* 2.5-flash primeiro: os modelos 3.x mais novos podem travar sem resposta */return l}).catch(function(e){if(e.st===400||e.st===403)throw e;return ['gemini-2.5-flash','gemini-flash-latest']})}
 function asGroq(key,mk,on,sig){var full=mk(false),small=null;return asGroqModels(key).then(function(ms){var i=0,last=null,cmp=false;
   var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i],got=0,msgs=cmp?(small||(small=mk(true))):full;
     return fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',signal:sig,headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify(Object.assign({model:m,messages:msgs,temperature:0.3,max_tokens:1600,stream:true},/gpt-oss/.test(m)?{reasoning_effort:'low'}:{}))})
@@ -90,7 +90,7 @@ function asAsk(q){q=String(q||'').trim();if(!q||AS.busy)return;var gq=S.keys.gq,
   AS.m.push({r:'u',t:q});var a={r:'a',t:'',mod:''};AS.m.push(a);AS.busy=true;asRender();
   if(!gq&&!gm){a.e=1;a.t='Para eu responder, cole a chave da Groq em **Mais → Ajustes → Assistente**. É grátis em console.groq.com (a mesma que você criou para o robô serve).';AS.busy=false;asSave();asRender();return}
   var mk=function(c){try{return asMsgs(q,c)}catch(e){return [{role:'system',content:ASSYS},{role:'user',content:q}]}},msgs=null,gmk=function(){return msgs||(msgs=mk(false))};
-  var ab=window.AbortController?new AbortController():null;AS.ab=ab;var sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab&&!a.t)ab.abort()},S.asia==='gem'?90000:30000),errs=[];
+  var ab=window.AbortController?new AbortController():null;AS.ab=ab;var sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab&&!a.t)ab.abort()},100000),errs=[];
   var on=function(t){a.t+=t;asTick()};
   /* ordem das IAs: Groq primeiro (rápida) ou Gemini primeiro (mais caprichada), conforme Ajustes; a outra fica de reserva */
   var provs=[];if(gq)provs.push(['Groq',function(){return asGroq(gq,mk,on,sig)}]);if(gm)provs.push(['Gemini',function(){return asGemT(gm,q,on,sig).catch(function(e){if(e&&e.st===400&&!a.t)return asGem(gm,gmk(),on,sig);throw e})}]);if(S.asia==='gem'&&gm)provs.reverse();
