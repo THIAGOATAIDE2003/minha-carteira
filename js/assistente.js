@@ -81,6 +81,7 @@ function asEmp(tk,held){var F=fundOf(tk),lv=livePx(tk),d=opD(tk),h=MD.d&&MD.d.hi
   falta.push('custo de produção, volumes, fluxo de caixa livre, investimentos (capex) e projeções da empresa — o app não tem essas fontes');
   if(aviso.length)L.push(aviso.join('\n'));
   try{if(isBR(tk)){var vte=vtCtx([tk]);if(vte)L.push(vte)}}catch(e){}
+  try{var tz=thCtx(tk);if(tz)L.push(tz)}catch(e){}
   try{if(isBR(tk)){var rxe=riCtx([tk],true);if(rxe)L.push(rxe.replace('=== RISCOS E POLÍTICA','RISCOS E POLÍTICA DESTA EMPRESA'))}}catch(e){}
   L.push('NÃO DISPONÍVEL NO APP: '+falta.join('; ')+'.');
   return L.join('\n')}

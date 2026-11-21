@@ -359,6 +359,14 @@ function contasAMao(F, P) {
       r.rec = /Receita e lucro/.test(hr) && /Em 2024: receita de/.test(hr) && /5 anos/.test(hr) && /Receita por país e por negócio/.test(hr) && /data-tip=/.test(hr);
       M.d = Object.assign({}, old, { anual: null }); r.recVazio = /ainda não chegaram/.test(A.emRec(tk, d)); r.usa = /só estão disponíveis para ações do Brasil/.test(A.emRec('AAPL', d)); r.sob = /Sobre a empresa/.test(A.emSobre(tk, d)); M.d = old; return r; });
     confere('abas da ação: dividendos com yield e gráfico anual, receita e lucro por ano com tooltip, avisos sem dados, sobre', [emp.div, emp.rec, emp.recVazio, emp.usa, emp.sob], [true, true, true, true, true]);
+    /* tese do usuário: mostra o que ele escreveu, números de hoje, lembrete quando o trimestre é ruim, contexto da IA, lista por linha */
+    const te = await pg.evaluate(function () { var A = window.__aporte, S = A.S, old = S.teses, M = A.MD, od = M.d;
+      S.teses = { XYZW3: { papel: 'Complementar', res: 'Tese de teste', por: 'Porque sim', acomp: ['Lucro', 'ROE'], quebra: ['Queda do lucro por 2 trimestres'], nota: '', at: '2020-01-01' } };
+      M.d = Object.assign({}, od, { cvm: { q: { XYZW3: [[2024, 1, 100, 10], [2024, 2, 100, 10], [2024, 3, 100, 10], [2024, 4, 100, 10], [2025, 1, 100, 8], [2025, 2, 100, 7]] }, nomes: {} } });
+      var h = A.thHtml('XYZW3', { cur: 'BRL' }), vazio = A.thHtml('SEMTESE3', { cur: 'BRL' }), lem = A.thLembra('XYZW3'), ctx = A.thCtx('XYZW3'), ln = A.thLn('• um\n\n- dois \n três');
+      var r = { mostra: h.indexOf('Tese de teste') >= 0 && h.indexOf('Complementar') >= 0 && h.indexOf('vale rever') >= 0, num: h.indexOf('Os números de hoje') >= 0 && h.indexOf('Vindo mal') >= 0, vazio: vazio.indexOf('Escrever minha tese') >= 0, lem: lem.indexOf('Queda do lucro') >= 0, ctx: ctx.indexOf('REVER SE: Queda do lucro') >= 0, ln: ln.join('|') };
+      S.teses = old; M.d = od; return r; });
+    confere('tese: aparece, números do dia, vazio convida a escrever, lembra quando o trimestre é ruim, vai para a IA, lista por linha', [te.mostra, te.num, te.vazio, te.lem, te.ctx, te.ln], [true, true, true, true, true, 'um|dois|três']);
     /* ideias para estudar: histórico guardado por dia e comparado com o Ibovespa; qualidade do dado */
     const gh = await pg.evaluate(function () { var A = window.__aporte, ls = localStorage, K = 'minha-carteira-v1-gar', old = ls.getItem(K), M = A.MD, od = M.d, oq = A.S.quotes;
       var out = {}; ls.setItem(K, JSON.stringify({ r: {} })); out.h0 = A.garHist().indexOf('sem histórico') >= 0 && A.garRes().n === 0;
