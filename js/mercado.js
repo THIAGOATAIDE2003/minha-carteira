@@ -188,6 +188,27 @@ function rsMini(tk){var e=rsOf(tk);if(!e||!e.ai)return '';var a=e.ai,sn=RSSN[a.s
   return '<div class="panel rsmini"><div class="grp"><h2>O que dizem as notícias '+bal('Resumo rápido da IA sobre as notícias da empresa. Veja tudo na aba Notícias.')+'</h2><b class="'+sn[1]+'">'+sn[0]+'</b></div><p class="anv" style="margin-top:6px">'+esc(a.resumo||'')+'</p><button type="button" class="link" data-stv="news">Ver notícias e eventos</button></div>'}
 
 /* ===== Market Overview: resumo do mercado no topo dos Índices ===== */
+/* Futuros e pré-mercado (Worker /q e /x): futuros dos EUA, bolsas da Europa e o pré/pós-mercado das suas ações americanas */
+var FUT={d:{},x:{},at:0,busy:false,ok:false};
+var FUTL=[['ES=F','S&P 500'],['NQ=F','Nasdaq'],['YM=F','Dow Jones'],['RTY=F','Russell 2000']],EURL=[['^FTSE','Inglaterra'],['^FCHI','França'],['^GDAXI','Alemanha'],['^IBEX','Espanha'],['FTSEMIB.MI','Itália']];
+function futLoad(){var u=pxBase();if(!u||FUT.busy||Date.now()-FUT.at<60000)return;FUT.busy=true;FUT.at=Date.now();
+  var syms=FUTL.concat(EURL).map(function(f){return f[0]}).join(','),us=[],seen={};
+  compute().held.forEach(function(x){if(x.p.market==='US')us.push(x.p.ticker)});wlist().forEach(function(t){if(!isBR(t)&&t.charAt(0)!=='^')us.push(t)});
+  us=us.filter(function(t){if(seen[t])return false;seen[t]=1;return true}).slice(0,20);
+  Promise.all([getJSON(u+'/q?s='+encodeURIComponent(syms)).catch(function(){return null}),us.length?getJSON(u+'/x?s='+encodeURIComponent(us.join(','))).catch(function(){return null}):Promise.resolve({})]).then(function(r){
+    FUT.busy=false;if(r[0]){FUT.d=r[0];FUT.ok=true}if(r[1])FUT.x=r[1];FUT.at=Date.now();
+    var a=document.activeElement;if(MKV==='idx'&&!(a&&a.id==='mk-q'))try{renderMkt()}catch(e){}})}
+function futCard(n,q){var pc=q&&q.prev>0?(q.p/q.prev-1)*100:null;
+  return '<div class="idx"><small>'+esc(n)+'</small><b>'+(q&&q.p>0?num(q.p,2):'—')+'</b>'+(pc!=null?'<span class="num '+cls(pc)+'">'+sg0(pc)+pf.format(Math.abs(pc))+'%</span>':'<span class="small muted">sem dado</span>')+'</div>'}
+function futHtml(){
+  if(!pxBase())return '<div class="panel"><div class="grp"><h2>Futuros e pré-mercado</h2></div><p class="note">Para ver os futuros, preencha o servidor de cotações em Ajustes.</p></div>';
+  var d=FUT.d||{},x=FUT.x||{},pre=Object.keys(x).filter(function(t){return x[t]&&x[t].ref>0});
+  var h='<div class="panel"><div class="grp"><h2>Futuros e pré-mercado</h2><span class="det">'+(FUT.busy&&!FUT.ok?'carregando...':FUT.at?'às '+new Date(FUT.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'</span></div>';
+  h+='<p class="muted small" style="margin:0 0 6px">Futuros dos EUA</p><div class="idxg">'+FUTL.map(function(f){return futCard(f[1]+' fut.',d[f[0]])}).join('')+'</div>';
+  h+='<p class="muted small" style="margin:10px 0 6px">Europa</p><div class="idxg">'+EURL.map(function(f){return futCard(f[1],d[f[0]])}).join('')+'</div>';
+  if(pre.length)h+='<p class="muted small" style="margin:10px 0 6px">Pré-mercado e após o fechamento (suas ações dos EUA)</p><div class="idxg">'+pre.map(function(t){var e=x[t],pc=(e.p/e.ref-1)*100;
+    return '<div class="idx" data-stk="'+esc(t)+'" role="button" tabindex="0"><small>'+esc(t)+' · '+(e.fase==='pre'?'pré':'pós')+'</small><b>'+usd.format(e.p)+'</b><span class="num '+cls(pc)+'">'+sg0(pc)+pf.format(Math.abs(pc))+'%</span></div>'}).join('')+'</div>';
+  return h+'</div>'}
 function mktOverview(){var it=tapeItems();if(it.length<3)return '';
   var by={};it.forEach(function(x){by[x.l]=x});
   var key=[['IBOV','Ibovespa','ibov'],['S&P 500','S&P 500','SPY'],['NASDAQ','Nasdaq','QQQ'],['DÓLAR','Dólar','usd'],['JUROS EUA 10A','Juros EUA','tnx'],['PETRÓLEO','Petróleo','brent'],['MINÉRIO','Minério','iron'],['OURO','Ouro','GLD'],['BITCOIN','Bitcoin','btc']].filter(function(k){return by[k[0]]});
@@ -300,6 +321,7 @@ function renderMkt(){
   h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice ou moeda':MKV==='ana'?'Buscar ação para analisar':'Buscar ação para ver ou acompanhar')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
   try{h+=mktOverview()}catch(e){}
+  try{h+=futHtml();futLoad()}catch(e){}
   h+='<div class="panel"><div class="grp"><h2>Índices</h2><span style="display:flex;gap:10px;align-items:center"><span class="det">'+(MKT.busy?'atualizando...':MKT.at?'às '+new Date(MKT.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'</span><button type="button" class="link" data-mked="1">'+(MKED?'Pronto':'Editar')+'</button></span></div>'+
     (sel.length?'<div class="idxg'+(MKED?' ed':'')+'">'+sel.map(function(k){var x=idxDef(k),o=idxVal(x);
       return '<div class="idx"'+(MKED?'':' data-idxo="'+k+'" role="button" tabindex="0"')+'>'+(MKED?'<button type="button" class="idxx" data-idxt="'+k+'" aria-label="Remover '+esc(x.n)+'">✕</button>':'')+'<small>'+esc(x.n)+'</small><b>'+(o&&isFinite(o.v)?idxFmt(x,o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+sg0(o.p)+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">'+(o&&o.sub?esc(o.sub):'sem dado')+'</span>')+'</div>'}).join('')+'</div>':'<p class="muted small">Nenhum índice escolhido. Use a busca acima para adicionar.</p>')+
