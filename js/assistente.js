@@ -98,7 +98,7 @@ function asP(v,d){return v==null||!isFinite(v)?'?':(v>=0?'+':'')+num(v,d==null?1
 function asCtx(q){var R=compute(),T=R.tot,L=[],fx=T.fxNow||0,dl=dayLbl();
   L.push('FONTES DO CONTEXTO: cotações ao vivo (brapi para o Brasil, Finnhub para os EUA, robô a cada 15 min); indicadores do Fundamentus, histórico do Yahoo e setores baixados pelo robô em '+(MD.d&&MD.d.ts?asDt(MD.d.ts*1000):'?')+'; balanços da CVM; notícias do Google Notícias; nota, preço justo e diagnóstico de risco são cálculos fixos do próprio app (não IA); resumos de notícias e relatórios são de outra IA (o robô).');
   L.push('Hoje: '+fmtDate(today())+'. Bolsa: '+(mktOpen&&mktOpen()?'aberta agora':'fechada agora')+'. Dólar: R$ '+(fx?num(fx,2):'?')+'.');
-  L.push(pfCtx());
+  L.push(pfCtx());try{var tp=thPapeis();if(tp)L.push(tp)}catch(e){}
   var pat=T.value+T.cash,V=valoriz(R);
   L.push('PATRIMÔNIO: '+asR(pat)+' (investido ao custo: '+asR(T.cost)+'). Valorização dos ativos que tem hoje (preço + proventos, dólar de hoje): '+asR(V.g)+' ('+asP(V.p*100)+'). Lucro total desde o início (inclui câmbio, vendas, proventos, menos taxas): '+asR(T.gain)+'. Rentabilidade anual (XIRR): '+(T.xirr!=null?asP(T.xirr*100):'?')+'. Proventos recebidos no total: '+asR(T.div)+'.');
   var dv=0,dp=0;R.held.forEach(function(x){var lv=livePx(x.p.ticker);if(!lv||lv.pct==null)return;var F=x.p.market==='US'?(fx||1):1,a=x.p.qty*lv.p*F,b=a/(1+lv.pct/100);dv+=a-b;dp+=b});

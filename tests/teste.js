@@ -366,6 +366,8 @@ function contasAMao(F, P) {
       var h = A.thHtml('XYZW3', { cur: 'BRL' }), vazio = A.thHtml('SEMTESE3', { cur: 'BRL' }), lem = A.thLembra('XYZW3'), ctx = A.thCtx('XYZW3'), ln = A.thLn('• um\n\n- dois \n três');
       var r = { mostra: h.indexOf('Tese de teste') >= 0 && h.indexOf('Complementar') >= 0 && h.indexOf('vale rever') >= 0, num: h.indexOf('Os números de hoje') >= 0 && h.indexOf('Vindo mal') >= 0, vazio: vazio.indexOf('Escrever minha tese') >= 0, lem: lem.indexOf('Queda do lucro') >= 0, ctx: ctx.indexOf('REVER SE: Queda do lucro') >= 0, ln: ln.join('|') };
       S.teses = old; M.d = od; return r; });
+    const tp = await pg.evaluate(function () { var A = window.__aporte, S = A.S, old = S.teses; S.teses = { RF: { papel: 'Reserva de oportunidades', res: 'Reserva para aproveitar quedas' }, VT: { papel: 'Diversificação internacional e dólar' } }; var r = [A.thRF().indexOf('Reserva para aproveitar') >= 0, A.thPapeis().indexOf('Renda fixa: Reserva de oportunidades') >= 0 && A.thPapeis().indexOf('VT: Diversificação') >= 0]; S.teses = old; return r; });
+    confere('tese: papel da renda fixa e do VT chega à carteira e à IA', tp, [true, true]);
     confere('tese: aparece, números do dia, vazio convida a escrever, lembra quando o trimestre é ruim, vai para a IA, lista por linha', [te.mostra, te.num, te.vazio, te.lem, te.ctx, te.ln], [true, true, true, true, true, 'um|dois|três']);
     /* ideias para estudar: histórico guardado por dia e comparado com o Ibovespa; qualidade do dado */
     const gh = await pg.evaluate(function () { var A = window.__aporte, ls = localStorage, K = 'minha-carteira-v1-gar', old = ls.getItem(K), M = A.MD, od = M.d, oq = A.S.quotes;

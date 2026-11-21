@@ -35,6 +35,9 @@ function thForm(tk,T){T=T||{};var ta=function(id,lb,v,rows,ph){return '<label cl
 /* lembrete da tese quando o trimestre vem ruim, dentro da aba Resultados */
 function thLembra(tk){var T=thOf(tk);if(!T||!T.quebra||!T.quebra.length)return '';var q=isBR(tk)?cvmQ(tk):null,L=q?trLeit(q):null;if(!L||L.k!=='mau')return '';
   return '<div class="panel"><h2>Sua tese diz</h2><p class="anv" style="margin:4px 0">Os últimos balanços estão fracos. Antes de decidir, releia o que você escreveu que faria você rever a posição:</p><ul class="thq">'+T.quebra.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul><p class="note">Um trimestre ruim isolado não quebra uma tese. O que conta é saber se o motivo é passageiro ou estrutural.</p></div>'}
+/* a renda fixa não é ação: o papel dela fica em S.teses.RF e aparece no grupo Renda fixa da carteira */
+function thRF(){var T=thOf('RF');return T&&(T.papel||T.res)?'<p class="note" style="margin:8px 0 0"><b>Para que serve:</b> '+esc(T.res||T.papel)+'</p>':''}
+function thPapeis(){var o=[];Object.keys(S.teses||{}).forEach(function(k){var T=S.teses[k];if(T&&(T.papel||(k==='RF'&&T.res)))o.push((k==='RF'?'Renda fixa':k)+': '+(T.papel||T.res))});return o.length?'PAPEL DE CADA PARTE DA CARTEIRA (escrito pelo usuário): '+o.join('; ')+'.':''}
 /* contexto do assistente */
 function thCtx(tk){var T=thOf(tk);if(!T)return '';var a=function(x){return (x||[]).join('; ')};
   return 'TESE ESCRITA PELO USUÁRIO ('+tk+', '+(T.at||'sem data')+'): '+(T.papel?'papel: '+T.papel+'. ':'')+(T.res||'')+(T.acomp&&T.acomp.length?' ACOMPANHA: '+a(T.acomp)+'.':'')+(T.quebra&&T.quebra.length?' REVER SE: '+a(T.quebra)+'.':'')+' (Compare os números do app com isso, sem decidir pelo usuário.)'}

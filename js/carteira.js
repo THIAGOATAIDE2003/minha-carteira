@@ -147,7 +147,7 @@ function renderPositions(R){
   var sum=function(a,f){return a.reduce(function(s,x){return s+f(x)},0)};
   var br=R.held.filter(function(x){return x.p.market!=='US'}),us=R.held.filter(function(x){return x.p.market==='US'}),h='';
   if(br.length||us.length)h+=atvTable(R);
-  if(rfo.length)h+=grp('Renda fixa','Valor líquido, já sem IOF e IR',T.rfV,rfo.map(rfCard).join('')+
+  if(rfo.length)h+=grp('Renda fixa','Valor líquido, já sem IOF e IR',T.rfV,rfo.map(rfCard).join('')+(typeof thRF==='function'?thRF():'')+
     '<details><summary>Como a renda fixa é calculada</summary><div class="small" style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+
     '<p><b>Rendimento:</b> todo dia útil o CDI do dia (taxa do Banco Central) é aplicado sobre o seu saldo, multiplicado pelo seu % do CDI. Por exemplo, CDI de 0,055% ao dia × 110% dá 0,0605% naquele dia. O banco credita de manhã cedo, com o CDI do dia anterior, e o app faz igual.</p>'+
     '<p><b>IOF:</b> só se resgatar antes de 30 dias. Começa em 96% do rendimento no 1º dia e cai até zerar no 30º.</p>'+
