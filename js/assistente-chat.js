@@ -94,8 +94,8 @@ function asAsk(q){q=String(q||'').trim();if(!q||AS.busy)return;var gq=S.keys.gq,
   var on=function(t){a.t+=t;asTick()};
   /* ordem das IAs: Groq primeiro (rápida) ou Gemini primeiro (mais caprichada), conforme Ajustes; a outra fica de reserva */
   var provs=[];if(gq)provs.push(['Groq',function(){return asGroq(gq,mk,on,sig)}]);if(gm)provs.push(['Gemini',function(){return asGemT(gm,q,on,sig).catch(function(e){if(e&&e.st===400&&!a.t)return asGem(gm,gmk(),on,sig);throw e})}]);if(S.asia==='gem'&&gm)provs.reverse();
-  var run=function(k){return provs[k][1]().catch(function(e){if((e&&e.name==='AbortError')||a.t)throw e;errs.push(asErrTxt(e,provs[k][0]));if(k+1<provs.length)return run(k+1);throw e})};
-  run(0).then(function(){a.mod=AS.mod;if(!a.t){a.e=1;a.t='A IA não mandou resposta. Tente de novo.'}}).catch(function(e){if(e&&e.name==='AbortError'){if(a.t){a.mod=AS.mod;a.t+=' …';return}a.e=1;a.t='Demorou demais para responder. Tente de novo.';return}
+  var run=function(k){AS.st=provs[k][0]+': aguardando resposta';return provs[k][1]().catch(function(e){if((e&&e.name==='AbortError')||a.t)throw e;errs.push(asErrTxt(e,provs[k][0]));if(k+1<provs.length)return run(k+1);throw e})};
+  run(0).then(function(){a.mod=AS.mod;if(!a.t){a.e=1;a.t='A IA não mandou resposta. Tente de novo.'}}).catch(function(e){if(e&&e.name==='AbortError'){if(a.t){a.mod=AS.mod;a.t+=' …';return}a.e=1;a.t='Demorou demais para responder. Tente de novo. (parou em: '+(AS.st||'?')+')';return}
     if(a.t){a.mod=AS.mod;return}a.e=1;a.t='Não consegui responder: '+errs.join(' E ')})
    .then(function(){clearTimeout(tm);AS.busy=false;AS.ab=null;asSave();asRender();try{asvFim(a)}catch(e){}})}
 var ASRF=0;function asTick(){if(ASRF)return;ASRF=requestAnimationFrame(function(){ASRF=0;var el=document.querySelector('#as-b .asm.a:last-child .ast'),a=AS.m[AS.m.length-1];if(el&&a){setHtml(el,asMd(a.t));asScroll()}})}

@@ -24,16 +24,21 @@ function asMsgsT(q){ASCMP=true;var ctx;try{ctx=asCtx(q,{base:1,ativos:1,metas:1}
   return {sys:ASSYS+ASTH+'\n\nRESUMO DA CARTEIRA AGORA:\n'+ctx+(emp.length?'\n\n'+emp.join('\n\n'):''),ct:h.concat([{role:'user',parts:[{text:q}]}])}}
 /* pensar pouco no chat: o raciocínio longo do Gemini deixava até "oi" levando dezenas de segundos */
 function asThink(m){return /gemini-3/.test(m)?{thinkingLevel:'low'}:/2\.5/.test(m)?{thinkingBudget:1024}:null}
-/* Gemini com ferramentas: repete (até 5 vezes) enquanto ele pedir dados; no fim, a resposta chega em streaming */
-function asGemT(key,q,on,sig){var P=asMsgsT(q);
+/* Gemini com ferramentas: repete (até 5 vezes) enquanto ele pedir dados; no fim, a resposta chega em streaming.
+   Cada tentativa tem 35 s para o primeiro sinal; se não vier, desiste do Gemini (a Groq assume) e AS.st guarda em que etapa parou. */
+function asGemT(key,q,on,sig){AS.st='Gemini: lista de modelos';var P=asMsgsT(q);
   return asGemModels(key).then(function(ms){var i=0,last=null;
     var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i++],got=0,hops=0,ct=P.ct.slice(),usadas=[],th=asThink(m);
       var step=function(){var calls=[],body={systemInstruction:{parts:[{text:P.sys}]},contents:ct,generationConfig:{temperature:0.3,maxOutputTokens:6000}};if(th)body.generationConfig.thinkingConfig=th;if(hops<5)body.tools=[{functionDeclarations:ASTD}];
-        return fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':streamGenerateContent?alt=sse',{method:'POST',signal:sig,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)})
+        var ac=window.AbortController?new AbortController():null,fired=0,tmo=null,fin=function(){if(tmo){clearTimeout(tmo);tmo=null}};
+        if(ac){if(sig){if(sig.aborted)ac.abort();else sig.addEventListener('abort',function(){ac.abort()})}tmo=setTimeout(function(){fired=1;ac.abort()},35000)}
+        AS.st='Gemini '+m+': aguardando resposta'+(hops?' (rodada '+(hops+1)+')':'');
+        return fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':streamGenerateContent?alt=sse',{method:'POST',signal:ac?ac.signal:sig,headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)})
           .then(asHttp).then(function(r){AS.mod='Gemini · '+m+(usadas.length?' · consultou '+usadas.join(', '):'');
-            return asSSE(r,function(j){var c=j.candidates&&j.candidates[0],ps=c&&c.content&&c.content.parts||[];ps.forEach(function(p){if(p.functionCall)calls.push(p)});return ps.filter(function(p){return !p.functionCall&&!p.thought}).map(function(p){return p.text||''}).join('')},function(t){got=1;on(t)})})
-          .then(function(){if(!calls.length)return;hops++;ct.push({role:'model',parts:calls});
-            var rs=calls.map(function(p){var n=p.functionCall.name,l=ASTL[n]||n;if(usadas.indexOf(l)<0)usadas.push(l);return {functionResponse:{name:n,response:{result:asToolRun(n,p.functionCall.args,q)}}}});
-            ct.push({role:'user',parts:rs});return step()})};
-      var run=function(){return step().catch(function(e){if(e.name==='AbortError'||got)throw e;if(e.st===400&&th&&!hops){th=null;return run()}last=e;return go()})};return run()};
+            return asSSE(r,function(j){fin();AS.st='Gemini '+m+': recebendo';var c=j.candidates&&j.candidates[0],ps=c&&c.content&&c.content.parts||[];ps.forEach(function(p){if(p.functionCall)calls.push(p)});return ps.filter(function(p){return !p.functionCall&&!p.thought}).map(function(p){return p.text||''}).join('')},function(t){got=1;on(t)})})
+          .then(function(){fin();if(!calls.length)return;hops++;ct.push({role:'model',parts:calls});
+            var rs=calls.map(function(p){var n=p.functionCall.name,l=ASTL[n]||n;AS.st='ferramenta '+n;if(usadas.indexOf(l)<0)usadas.push(l);return {functionResponse:{name:n,response:{result:asToolRun(n,p.functionCall.args,q)}}}});
+            ct.push({role:'user',parts:rs});return step()})
+          .catch(function(e){fin();if(fired&&!(sig&&sig.aborted)){var t=new Error('o modelo '+m+' não respondeu em 35 s');t.tmo=1;throw t}throw e})};
+      var run=function(){return step().catch(function(e){if(e.name==='AbortError'||got||e.tmo)throw e;if(e.st===400&&th&&!hops){th=null;return run()}last=e;return go()})};return run()};
     return go()})}
