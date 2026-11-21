@@ -15,3 +15,9 @@ function asTeste(){var o=$('as-teste');if(!o||AS.tst)return;var gq=S.keys.gq,gm=
       .catch(function(e){pr('Gemini: '+asErrTxt(e,'Gemini'))})};
   gro().then(gem).then(function(){if(okG&&!okM&&S.asia==='gem'){S.asia='groq';save();pr('O Gemini não respondeu, então deixei a Groq como primeira.')}else if(okM&&!okG&&S.asia==='groq'){S.asia='gem';save();pr('A Groq não respondeu, então deixei o Gemini como primeiro.')}
     if(!okG&&!okM)pr('Nenhuma IA respondeu. Confira as chaves e a internet.');try{$('k-asia').value=S.asia==='gem'?'gem':'groq'}catch(e){}AS.tst=0})}
+
+/* "Ver desempenho das respostas" em Ajustes: últimas perguntas com tempo até o 1º texto (TTFT), tempo total, chamadas, caracteres e tokens estimados (~3,3 caracteres por token), modelo e trocas */
+function asPerf(){var o=$('as-perf');if(!o)return;var l=[];try{l=JSON.parse(localStorage.getItem(LS+'-asperf')||'[]')}catch(e){}l=l.slice(-10).reverse();
+  if(!l.length){setHtml(o,'<p class="note" style="margin:0">Ainda sem perguntas medidas. Faça uma pergunta à assistente e volte aqui.</p>');return}
+  var sc=function(v){return v==null?'—':num(v/1000,1)+' s'};
+  setHtml(o,'<p class="note" style="margin:0">'+l.map(function(x){var dt=new Date(x.d);return esc(('0'+dt.getDate()).slice(-2)+'/'+('0'+(dt.getMonth()+1)).slice(-2)+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2)+' · 1º texto '+sc(x.ft)+' · total '+sc(x.tt)+' · '+x.nc+' chamada'+(x.nc===1?'':'s')+' · ~'+num(x.ch/3.3/1000,1)+' mil tokens · '+(x.mod||'sem resposta')+(x.fb?' · '+x.fb+' troca'+(x.fb===1?'':'s'):'')+(x.e?' · ERRO':''))}).join('<br>')+'</p>')}
