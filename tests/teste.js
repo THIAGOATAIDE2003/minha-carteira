@@ -104,7 +104,7 @@ async function abas(pg) {
   await pg.click('[data-go=mercado]'); await pg.click('[data-mkv=ana]');
   for (const v of ['rel', 'opp', 'cls', 'set', 'cmp']) { await pg.click('[data-anv=' + v + ']'); await pg.waitForTimeout(120); vistos.push('análise ' + v); }
   await pg.click('[data-go=resumo]'); await pg.waitForTimeout(100);
-  await pg.click('[data-as=open]'); await pg.waitForTimeout(100); await pg.click('[data-as=close]');
+  await pg.evaluate(() => document.querySelector('[data-as=open]').click()); await pg.waitForTimeout(100); await pg.click('[data-as=close]');
   await pg.click('[data-go=mais]'); await pg.click('[data-mais=ajustes]'); await pg.click('#perfbox [data-pf=open]'); await pg.click('[data-pf="obj:renda"]'); await pg.click('#pfsheet [data-pf=close]'); vistos.push('perfil');
   return vistos;
 }
