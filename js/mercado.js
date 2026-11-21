@@ -192,9 +192,9 @@ function rsMini(tk){var e=rsOf(tk);if(!e||!e.ai)return '';var a=e.ai,sn=RSSN[a.s
 var FUT={d:{},x:{},at:0,busy:false,ok:false};
 var FUTL=[['ES=F','S&P 500'],['NQ=F','Nasdaq'],['YM=F','Dow Jones'],['RTY=F','Russell 2000']],EURL=[['^FTSE','Inglaterra'],['^FCHI','França'],['^GDAXI','Alemanha'],['^IBEX','Espanha'],['FTSEMIB.MI','Itália']];
 function futLoad(){var u=pxBase();if(!u||FUT.busy||Date.now()-FUT.at<60000)return;FUT.busy=true;FUT.at=Date.now();
-  var syms=FUTL.concat(EURL).map(function(f){return f[0]}).join(','),us=[],seen={};
+  var syms=FUTL.concat(EURL).map(function(f){return f[0]}).concat(['EWZ']).join(','),us=[],seen={};
   compute().held.forEach(function(x){if(x.p.market==='US')us.push(x.p.ticker)});wlist().forEach(function(t){if(!isBR(t)&&t.charAt(0)!=='^')us.push(t)});
-  us=us.filter(function(t){if(seen[t])return false;seen[t]=1;return true}).slice(0,20);
+  us.push('EWZ');us=us.filter(function(t){if(seen[t])return false;seen[t]=1;return true}).slice(0,20);
   Promise.all([getJSON(u+'/q?s='+encodeURIComponent(syms)).catch(function(){return null}),us.length?getJSON(u+'/x?s='+encodeURIComponent(us.join(','))).catch(function(){return null}):Promise.resolve({})]).then(function(r){
     FUT.busy=false;if(r[0]){FUT.d=r[0];FUT.ok=true}if(r[1])FUT.x=r[1];FUT.at=Date.now();
     var a=document.activeElement;if(MKV==='idx'&&!(a&&a.id==='mk-q'))try{renderMkt()}catch(e){}})}
@@ -202,9 +202,10 @@ function futCard(n,q){var pc=q&&q.prev>0?(q.p/q.prev-1)*100:null;
   return '<div class="idx"><small>'+esc(n)+'</small><b>'+(q&&q.p>0?num(q.p,2):'—')+'</b>'+(pc!=null?'<span class="num '+cls(pc)+'">'+sg0(pc)+pf.format(Math.abs(pc))+'%</span>':'<span class="small muted">sem dado</span>')+'</div>'}
 function futHtml(){
   if(!pxBase())return '<div class="panel"><div class="grp"><h2>Futuros e pré-mercado</h2></div><p class="note">Para ver os futuros, preencha o servidor de cotações em Ajustes.</p></div>';
-  var d=FUT.d||{},x=FUT.x||{},pre=Object.keys(x).filter(function(t){return x[t]&&x[t].ref>0});
+  var d=FUT.d||{},x=FUT.x||{},pre=Object.keys(x).filter(function(t){return t!=='EWZ'&&x[t]&&x[t].ref>0}),ew=x.EWZ&&x.EWZ.ref>0?x.EWZ:null,ep=ew?(ew.p/ew.ref-1)*100:null;
   var h='<div class="panel"><div class="grp"><h2>Futuros e pré-mercado</h2><span class="det">'+(FUT.busy&&!FUT.ok?'carregando...':FUT.at?'às '+new Date(FUT.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'</span></div>';
   h+='<p class="muted small" style="margin:0 0 6px">Futuros dos EUA</p><div class="idxg">'+FUTL.map(function(f){return futCard(f[1]+' fut.',d[f[0]])}).join('')+'</div>';
+  h+='<p class="muted small" style="margin:10px 0 6px">Brasil nos EUA (no lugar do Ibovespa futuro)</p><div class="idxg">'+futCard('EWZ · Brasil em dólar',d.EWZ)+(ew?'<div class="idx" data-stk="EWZ" role="button" tabindex="0"><small>EWZ · '+(ew.fase==="pre"?'pré':'pós')+'</small><b>'+usd.format(ew.p)+'</b><span class="num '+cls(ep)+'">'+sg0(ep)+pf.format(Math.abs(ep))+'%</span></div>':'')+'</div>';
   h+='<p class="muted small" style="margin:10px 0 6px">Europa</p><div class="idxg">'+EURL.map(function(f){return futCard(f[1],d[f[0]])}).join('')+'</div>';
   if(pre.length)h+='<p class="muted small" style="margin:10px 0 6px">Pré-mercado e após o fechamento (suas ações dos EUA)</p><div class="idxg">'+pre.map(function(t){var e=x[t],pc=(e.p/e.ref-1)*100;
     return '<div class="idx" data-stk="'+esc(t)+'" role="button" tabindex="0"><small>'+esc(t)+' · '+(e.fase==='pre'?'pré':'pós')+'</small><b>'+usd.format(e.p)+'</b><span class="num '+cls(pc)+'">'+sg0(pc)+pf.format(Math.abs(pc))+'%</span></div>'}).join('')+'</div>';
