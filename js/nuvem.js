@@ -23,7 +23,7 @@ function applyOps(trades,ops){
 function applyPx(f,ops){var o=JSON.parse(JSON.stringify(f||{}));ops.forEach(function(x){if(x.t==='px'){(o[x.tk]=o[x.tk]||{})[x.m]=x.p}});return o}
 function applyCfg(d,ops,k){k=k||'alvos';var a=d[k]||null;ops.forEach(function(x){if(x.t==='cfg'&&x.k===k)a=x.v});return a}
 function ghAdopt(d){
-  S.mclose=applyPx(d.fechamentos,S.pend||[]);var na=applyCfg(d,S.pend||[]);if(na)S.alvos=na;var nm2=applyCfg(d,S.pend||[],'metas');if(nm2)S.metas=nm2;var nw2=applyCfg(d,S.pend||[],'watch');if(nw2)S.watch=nw2;var ni2=applyCfg(d,S.pend||[],'idx');if(ni2)S.idxSel=ni2;var np2=applyCfg(d,S.pend||[],'perfil');if(np2)S.perfil=np2;var nt3=applyCfg(d,S.pend||[],'teses');if(nt3)S.teses=nt3;
+  S.mclose=applyPx(d.fechamentos,S.pend||[]);var na=applyCfg(d,S.pend||[]);if(na)S.alvos=na;var nm2=applyCfg(d,S.pend||[],'metas');if(nm2)S.metas=nm2;var nw2=applyCfg(d,S.pend||[],'watch');if(nw2)S.watch=nw2;var ni2=applyCfg(d,S.pend||[],'idx');if(ni2)S.idxSel=ni2;var np2=applyCfg(d,S.pend||[],'perfil');if(np2)S.perfil=np2;var nt3=applyCfg(d,S.pend||[],'teses');if(nt3)S.teses=nt3;var no3=applyCfg(d,S.pend||[],'orc');if(no3)S.orc=no3;
   var tr=applyOps(Array.isArray(d.trades)?d.trades:[],S.pend||[]);
   var before=JSON.stringify([S.trades,S.cambio||[]]);
   S.trades=tr;if(Array.isArray(d.cambio))S.cambio=d.cambio;save();
@@ -42,7 +42,7 @@ function ghRound(attempt){
     }
     var pend=(S.pend||[]).slice();
     if(!pend.length){ghAdopt(remote);return}
-    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});var a2=applyCfg(remote,pend);if(a2)data.alvos=a2;var m2=applyCfg(remote,pend,'metas');if(m2)data.metas=m2;var w2=applyCfg(remote,pend,'watch');if(w2)data.watch=w2;var i2=applyCfg(remote,pend,'idx');if(i2)data.idx=i2;var p2=applyCfg(remote,pend,'perfil');if(p2)data.perfil=p2;var t3=applyCfg(remote,pend,'teses');if(t3)data.teses=t3;
+    var data=Object.assign({},remote,{versao:1,atualizadoEm:new Date().toISOString(),trades:applyOps(remote.trades||[],pend),fechamentos:applyPx(remote.fechamentos,pend)});var a2=applyCfg(remote,pend);if(a2)data.alvos=a2;var m2=applyCfg(remote,pend,'metas');if(m2)data.metas=m2;var w2=applyCfg(remote,pend,'watch');if(w2)data.watch=w2;var i2=applyCfg(remote,pend,'idx');if(i2)data.idx=i2;var p2=applyCfg(remote,pend,'perfil');if(p2)data.perfil=p2;var t3=applyCfg(remote,pend,'teses');if(t3)data.teses=t3;var o3=applyCfg(remote,pend,'orc');if(o3)data.orc=o3;
     var body={message:'App: '+pend.length+(pend.length>1?' alterações':' alteração'),content:b64enc(JSON.stringify(data,null,1)+'\n'),sha:sha,branch:'main'};
     return ghReq('PUT',body).then(function(w){
       if((w.status===409||w.status===422)&&attempt<3)return new Promise(function(r){setTimeout(r,1500*(attempt+1))}).then(function(){return ghRound(attempt+1)});
