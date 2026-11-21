@@ -4,7 +4,7 @@
    Cada mês é o mês de REFERÊNCIA (as contas de dezembro entram em dezembro, mesmo que o salário caia em janeiro).
    S.orc = {v:2, inicio:'AAAA-MM' (primeiro mês do orçamento; meses antes ficam de fora), sal, meta, apo, conta, fixos:[{id,n,v}], cats:[{id,n,lim}],
             m:{'AAAA-MM':{sal (recebido, null = usa o previsto), ex:[{id,n,v}], fx:{idDoFixo:valor deste mês}, l:[{id,c:idDaCategoria,v,n,d:'AAAA-MM-DD',f:'d|c|p|m'|''}]}}} */
-var ORM='',ORV='mes',ORE='mes',ORINI='2026-11',ORCATS=['Mercado','Transporte','Lazer','Saúde','Outros'],ORO={},ORF={d:'débito',c:'crédito',p:'Pix',m:'dinheiro'};
+var ORQC='',ORM='',ORV='mes',ORE='mes',ORINI='2026-11',ORCATS=['Mercado','Transporte','Lazer','Saúde','Outros'],ORO={},ORF={d:'débito',c:'crédito',p:'Pix',m:'dinheiro'};
 function orcId(){return 'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function orcO(){if(!S.orc||typeof S.orc!=='object')S.orc={sal:0,meta:0,apo:0,conta:0,fixos:[],m:{},inicio:ORINI};var o=S.orc,chg=0;if(!Array.isArray(o.fixos))o.fixos=[];if(!o.m||typeof o.m!=='object')o.m={};
   if(!Array.isArray(o.cats))o.cats=ORCATS.map(function(n,i){return {id:'c'+i,n:n,lim:0}});
@@ -37,11 +37,6 @@ function orcList(kind,arr){return arr.length?'<ul class="orl">'+arr.map(function
 function orcFxList(o,m,sal){return o.fixos.length?'<ul class="orl">'+o.fixos.map(function(x){var ov=m.fx&&m.fx[x.id],v=orcFxV(x,m);
   return '<li><span>'+esc(x.n||'—')+(sal>0?' <small class="muted">'+Math.round(v/sal*100)+'%</small>':'')+'</span><input class="orin orm2" inputmode="decimal" data-orf="fx:'+esc(x.id)+'" value="'+(ov!=null&&isFinite(ov)?orcNum(ov)||'0':'')+'" placeholder="'+esc(orcNum(x.v)||'0')+'" autocomplete="off"><button type="button" class="orx" data-ordel="fx:'+esc(x.id)+'" aria-label="Apagar">✕</button></li>'}).join('')+'</ul>':''}
 function orcAdd(kind,ph){return '<div class="orr"><input class="orin" id="or-'+kind+'-n" maxlength="30" placeholder="'+esc(ph)+'" autocomplete="off"><input class="orin orv" id="or-'+kind+'-v" inputmode="decimal" placeholder="R$" autocomplete="off"><button type="button" class="btn small" data-oradd="'+kind+'">+</button></div>'}
-function orcPanel(c){if(!(c.sal>0))return '';var tot=c.gas+c.res+c.apoE,d=Math.max(c.sal,tot),w=function(v){return Math.max(0,v/d*100).toFixed(1)},sb=c.sal-tot,
-  rows=[['fx','Gastos fixos',c.fx,c.pFx],['vr','Gastos variáveis',c.vr,c.pVr],['rs','Reservado nos limites',c.res,c.pRes],['ap',c.apoE>c.apo?'Aporte (planejado)':'Aporte',c.apoE,c.pApo],['sb',sb<0?'Passou do salário':'Sobra do salário',sb,c.pSobra]];
-  return '<section class="panel"><h2>Para onde vai o salário'+bal('Tudo em % do salário do mês (o que caiu, ou o previsto). Extras não entram na conta. Gastos = fixos + variáveis + o que ainda resta nos limites (reservado: já conta como gasto).')+'</h2><p class="orbig"><b class="num '+((c.pGas+(c.pRes||0))>1?'loss':'')+'">'+orcP(c.pGas+(c.pRes||0))+'</b> vai em gastos'+(c.res>0?' (com o reservado)':'')+'</p>'+
-    '<div class="orsk"><i class="fx" style="width:'+w(c.fx)+'%"></i><i class="vr" style="width:'+w(c.vr)+'%"></i><i class="rs" style="width:'+w(c.res)+'%"></i><i class="ap" style="width:'+w(c.apoE)+'%"></i>'+(sb>0?'<i class="sb" style="width:'+w(sb)+'%"></i>':'')+'</div>'+
-    '<ul class="orl">'+rows.map(function(r){return '<li><span><i class="ord '+r[0]+'"></i>'+r[1]+'</span><span class="num">'+brl.format(Math.abs(r[2]))+'</span><b class="num'+(r[0]==='sb'?' '+cls(r[2]):'')+'" style="min-width:48px;text-align:right">'+(r[0]==='sb'&&r[2]<0?'−':'')+orcP(Math.abs(r[3]))+'</b></li>'}).join('')+'</ul></section>'}
 /* um envelope: limite, quanto já saiu, quanto resta, quanto dá por dia e os gastos lançados */
 function orcEnv(k,m,ym,cur,sal){var ls=(m.l||[]).filter(function(x){return x.c===k.id}),sp=0;ls.forEach(function(x){sp+=+x.v||0});
   var lim=+k.lim||0,p=lim>0?sp/lim:0,cl=p>1?'bad':p>=.85?'warn':'ok',rest=lim-sp,dim=new Date(+ym.slice(0,4),+ym.slice(5,7),0).getDate(),dl=cur?dim-(+today().slice(8,10))+1:0,i=esc(k.id),
@@ -49,8 +44,6 @@ function orcEnv(k,m,ym,cur,sal){var ls=(m.l||[]).filter(function(x){return x.c==
   ls=ls.slice().sort(function(a,b){return a.d<b.d?1:a.d>b.d?-1:0});
   return '<div class="ore"><div class="oreh"><b>'+esc(k.n)+(sal>0&&sp>0?' <small class="muted">'+Math.round(sp/sal*100)+'%</small>':'')+'</b><span class="num">'+brl.format(sp)+(lim>0?' <small class="muted">de '+brl.format(lim)+'</small>':'')+'</span><button type="button" class="orx" data-orcdel="'+i+'" aria-label="Apagar categoria">✕</button></div>'+
     (lim>0?orcBar(p,cl)+'<p class="orm">'+info+'</p>':'')+
-    '<div class="orr"><input class="orin orv" id="or-lv-'+i+'" inputmode="decimal" placeholder="R$" autocomplete="off"><input class="orin" id="or-ln-'+i+'" maxlength="30" placeholder="Anotação (opcional)" autocomplete="off"></div>'+
-    '<div class="orr"><select class="orin" id="or-lf-'+i+'" aria-label="Forma de pagamento"><option value="">Forma</option>'+Object.keys(ORF).map(function(f){return '<option value="'+f+'">'+ORF[f]+'</option>'}).join('')+'</select><button type="button" class="btn small orgo" data-orl="'+i+'">+ gasto</button></div>'+
     (ls.length?'<details class="ord2" data-ork="'+i+'"'+(ORO[k.id]?' open':'')+'><summary>Ver gastos ('+ls.length+')</summary><ul class="orl">'+ls.map(function(x){return '<li><span>'+fmtDate(x.d).slice(0,5)+(x.n?' · '+esc(x.n):'')+(x.f&&ORF[x.f]?' <small class="muted">'+ORF[x.f]+'</small>':'')+'</span><span class="num">'+brl.format(+x.v||0)+'</span><button type="button" class="orx" data-orld="'+esc(x.id)+'" aria-label="Apagar gasto">✕</button></li>'}).join('')+'</ul></details>':'')+
     '<label class="orlb orlim">Limite do mês'+orcIn('lim:'+k.id,k.lim)+'</label></div>'}
 /* ===== Análise: onde o dinheiro vai, no mês e no ano ===== */
@@ -82,32 +75,48 @@ function orcAnaHtml(){var o=orcO(),ym=ORM,ano=ORE==='ano',yr=ym.slice(0,4),ms=an
     if(fk.length&&fk.some(function(k){return k!==''})){h+='<section class="panel"><h2>Gastos variáveis por forma de pagamento</h2><ul class="orl">'+fk.sort(function(a,b){return A.fm[b]-A.fm[a]}).map(function(k){return '<li><span>'+(k&&ORF[k]?ORF[k].charAt(0).toUpperCase()+ORF[k].slice(1):'Sem forma')+'</span><span class="num">'+brl.format(A.fm[k])+'</span><b class="num" style="min-width:44px;text-align:right">'+orcP(A.fm[k]/tf)+'</b></li>'}).join('')+'</ul></section>'}}
   if(ano){var lu=orcLucroAno(yr);h+='<section class="panel"><h2>Investimentos em '+yr+bal('Lucro total da carteira (preço, dólar, vendas e proventos, menos taxas) desde 1º de janeiro: o Lucro total de hoje menos o que ele era no fim do ano anterior.')+'</h2><div class="orn"><div><small>Lucro no ano</small><span class="num '+(lu==null?'muted':cls(lu))+'">'+(lu==null?'—':sgn(lu))+'</span></div><div><small>Aportado no ano</small><span class="num">'+brl.format(A.apo)+'</span></div></div></section>'}
   return h}
+/* cabeçalho de cada cartão: título à esquerda, total e % do salário à direita */
+function orcSh(id,t,tip,v,p){return '<div class="orsh" id="'+id+'"><h2>'+t+(tip?bal(tip):'')+'</h2>'+(v!=null?'<span class="orsv"><b class="num">'+brl.format(v)+'</b>'+(p!=null?'<small>'+orcP(p)+'</small>':'')+'</span>':'')+'</div>'}
+function orcHero(c,o,cur,dl){
+  var sal=c.sal,vt=c.vr+c.res,pv=sal>0?vt/sal:null,base=Math.max(c.ent,c.fx+vt+c.apoE,1),w=function(v){return Math.max(0,v/base*100).toFixed(1)},sb=c.sobra,
+    rows=[['en','Entrou',c.ent,null,'salário + extras','or-s-rec'],['fx','− Gastos fixos',c.fx,c.pFx,'','or-s-fx'],['vr','− Variáveis',vt,pv,c.res>0?brl.format(c.res)+' ainda a gastar':'','or-s-lim'],['ap','− '+(c.apoE>c.apo?'Aporte (planejado)':'Aporte'),c.apoE,c.pApo,c.apoE>c.apo&&c.apo>0?brl.format(c.apo)+' já aportado':'','or-s-apo']],
+    gp=c.meta>0?c.gas/c.meta:0,gc=gp>1?'bad':gp>=.85?'warn':'ok';
+  return '<section class="panel orhero"><div class="orhl">'+(cur?'Sobra do mês':'Sobra do mês')+bal('Entrou (salário + extras) menos os gastos fixos, menos os variáveis (o que você já gastou e o que ainda resta nos limites) e menos o aporte (planejado ou já feito). É o que realmente fica livre.')+'</div>'+
+    '<b class="orhn num '+cls(sb)+'">'+sgn(sb)+'</b>'+
+    '<p class="orhs">'+(sal>0?orcP(c.pSobra)+' do salário':'Lance o salário em Receitas')+(cur&&dl>0&&sb>0?' · dá '+brl.format(sb/dl)+' por dia':'')+'</p>'+
+    '<div class="orsk"><i class="fx" style="width:'+w(c.fx)+'%"></i><i class="vr" style="width:'+w(c.vr)+'%"></i><i class="rs" style="width:'+w(c.res)+'%"></i><i class="ap" style="width:'+w(c.apoE)+'%"></i>'+(sb>0?'<i class="sb" style="width:'+w(sb)+'%"></i>':'')+'</div>'+
+    '<p class="orsub" style="margin:10px 0 2px">Para onde vai o salário</p><ul class="orf">'+rows.map(function(r){return '<li data-orgo="'+r[5]+'" role="button" tabindex="0"><span><i class="ord '+r[0]+'"></i>'+r[1]+(r[4]?'<small>'+r[4]+'</small>':'')+'</span><span class="num">'+brl.format(r[2])+'</span><b class="num">'+(r[3]!=null?orcP(r[3]):'')+'</b></li>'}).join('')+
+    '<li class="orfs"><span><i class="ord sb"></i>'+(sb<0?'Passou do salário':'= Sobra')+'</span><span class="num '+cls(sb)+'">'+sgn(sb)+'</span><b class="num '+cls(sb)+'">'+(c.pSobra!=null?orcP(Math.abs(c.pSobra)):'')+'</b></li></ul>'+
+    (c.meta>0?'<div class="orme"><span>Meta de gasto <b class="num">'+brl.format(c.gas)+'</b> de <b class="num">'+brl.format(c.meta)+'</b></span>'+orcBar(gp,gc)+'<small>'+(c.gas>c.meta?'<b class="loss">passou '+brl.format(c.gas-c.meta)+'</b>':'<b class="'+(gc==='warn'?'warnc':'gain')+'">resta '+brl.format(c.meta-c.gas)+'</b>')+'</small></div>':'')+'</section>'}
+function orcQuick(o,cur){
+  if(!o.cats.length)return '';
+  return '<section class="panel orq">'+orcSh('or-s-q','Lançar gasto','Escolha a categoria e lance o gasto na hora. A forma de pagamento (débito, crédito, Pix...) é só uma etiqueta: o gasto conta no dia em que você fez e sai do limite da categoria.')+
+    '<div class="orr"><input class="orin orv" id="or-qv" inputmode="decimal" placeholder="R$" autocomplete="off"><select class="orin" id="or-qc" aria-label="Categoria">'+o.cats.map(function(k){return '<option value="'+esc(k.id)+'"'+(k.id===ORQC?' selected':'')+'>'+esc(k.n)+'</option>'}).join('')+'</select></div>'+
+    '<div class="orr"><input class="orin" id="or-qn" maxlength="30" placeholder="Anotação (opcional)" autocomplete="off"><select class="orin" id="or-qf" aria-label="Forma de pagamento" style="flex:0 0 118px"><option value="">Forma</option>'+Object.keys(ORF).map(function(f){return '<option value="'+f+'">'+ORF[f]+'</option>'}).join('')+'</select></div>'+
+    '<button type="button" class="btn orgo orqb" data-orq="1">+ Lançar gasto</button></section>'}
 function renderOrc(){
   var el=$('orctab');if(!el||el.hidden)return;if(el.contains(document.activeElement)&&/INPUT|SELECT/.test(document.activeElement.tagName))return;
   var o=orcO();if(!ORM||ORM<o.inicio)ORM=orcDef();var m=orcMes(ORM),c=orcCalc(ORM),cur=ORM===today().slice(0,7);
-  var T=compute().tot,h='<div class="seg orsw"><button type="button" data-orv="mes" aria-pressed="'+(ORV==='mes')+'">Mês</button><button type="button" data-orv="ana" aria-pressed="'+(ORV==='ana')+'">Análise</button></div><div class="orcm"><button type="button" data-orm="-1" aria-label="Mês anterior"'+(ORM<=o.inicio?' disabled':'')+'>‹</button><b>'+esc(orcLabel(ORM))+'</b><button type="button" data-orm="1" aria-label="Próximo mês">›</button></div>';
+  var T=compute().tot,dim=new Date(+ORM.slice(0,4),+ORM.slice(5,7),0).getDate(),dl=cur?dim-(+today().slice(8,10))+1:0,
+    h='<div class="orhd"><div class="orcm"><button type="button" data-orm="-1" aria-label="Mês anterior"'+(ORM<=o.inicio?' disabled':'')+'>‹</button><b>'+esc(orcLabel(ORM))+'</b><button type="button" data-orm="1" aria-label="Próximo mês">›</button></div>'+
+    '<div class="ortabs"><button type="button" data-orv="mes" aria-pressed="'+(ORV==='mes')+'">Mês</button><button type="button" data-orv="ana" aria-pressed="'+(ORV==='ana')+'">Análise</button></div></div>';
   if(ORV==='ana'){setHtml(el,h+orcAnaHtml());return}
-  h+='<section class="panel orh"><small class="muted">'+(cur?'Sobra do mês até agora':'Sobra do mês')+bal('Entrou (salário + extras) menos o que você gastou (fixos + variáveis) menos o que ainda resta nos limites e no aporte planejado (reservado) menos o que você já aportou. É o que realmente fica livre.')+'</small><b class="num '+cls(c.sobra)+'">'+sgn(c.sobra)+'</b>'+
-    '<div class="orn"><div><small>Entrou</small><span class="num">'+brl.format(c.ent)+'</span></div><div><small>Gastou</small><span class="num">'+brl.format(c.gas)+'</span></div>'+(c.res>0?'<div><small>Reservado</small><span class="num">'+brl.format(c.res)+'</span></div>':'')+'<div><small>Aportou</small><span class="num">'+brl.format(c.apo)+'</span></div></div></section>';
-  h+=orcPanel(c);
-  var gp=c.meta>0?c.gas/c.meta:0,gc=gp>1?'bad':gp>=.85?'warn':'ok';
-  h+='<section class="panel"><h2>Meta de gasto'+bal('O quanto você quer gastar no máximo por mês (fixos + variáveis). Verde: dentro; amarelo: perto do limite (85%); vermelho: passou.')+'</h2>'+
-    (c.meta>0?orcBar(gp,gc)+'<p class="orm"><span class="num">'+brl.format(c.gas)+'</span> de <span class="num">'+brl.format(c.meta)+'</span> · '+(c.gas>c.meta?'<b class="loss">passou '+brl.format(c.gas-c.meta)+'</b>':'<b class="'+(gc==='warn'?'warnc':'gain')+'">resta '+brl.format(c.meta-c.gas)+'</b>')+'</p>':'')+
-    '<label class="orlb">Meta por mês'+orcIn('meta',o.meta)+'</label></section>';
-  h+='<section class="panel"><h2>Receitas</h2><label class="orlb">Salário previsto (todo mês)'+orcIn('sal',o.sal)+'</label>'+
-    '<label class="orlb">Salário que caiu em '+esc(orcLabel(ORM).split(' de ')[0].toLowerCase())+bal('Deixe vazio para usar o previsto. Se vier menos (ou mais), digite o valor real: o mês se ajusta.')+orcIn('salrec',m.sal,o.sal?String(o.sal).replace('.',','):'igual ao previsto')+'</label>'+
-    '<p class="orsub">Extras do mês'+bal('Dinheiro que entrou além do salário: bônus, venda de algo, freela, presente. Entra na conta do mês.')+'</p>'+orcList('ex',m.ex)+orcAdd('ex','De onde veio')+'</section>';
-  h+='<section class="panel"><h2>Gastos fixos'+bal('Aluguel, contas, parcelas... Você cadastra uma vez e eles contam em todos os meses. O número cinza do campo é o valor normal. Se este mês veio diferente (ex.: consórcio), digite o valor real: só este mês muda.')+' <span class="num muted" style="margin-left:auto">'+brl.format(c.fx)+'</span></h2>'+orcFxList(o,m,c.sal)+orcAdd('fx','Ex.: aluguel')+'</section>';
-  h+='<section class="panel"><h2>Limites por categoria'+bal('Separe um limite para cada categoria e lance cada gasto (débito, crédito, Pix...). A categoria mostra quanto resta e quanto dá para gastar por dia. A forma de pagamento é só uma etiqueta: o gasto conta no dia em que você fez.')+'</h2>'+
+  h+=orcHero(c,o,cur,dl)+orcQuick(o,cur);
+  h+='<section class="panel">'+orcSh('or-s-lim','Limites do mês','Separe um limite para cada categoria. O que ainda resta em cada uma já sai da sobra, como se já estivesse gasto. Cada gasto que você lança aqui em cima tira do limite da categoria.',c.vr+c.res,c.sal>0?(c.vr+c.res)/c.sal:null)+
     (c.lims>0?'<p class="orm muted">Limites somam <span class="num">'+brl.format(c.lims)+'</span>'+(c.pLim!=null?' · '+orcP(c.pLim)+' do salário':'')+'</p>':'')+
     o.cats.map(function(k){return orcEnv(k,m,ORM,cur,c.sal)}).join('')+
     '<p class="orsub">Nova categoria</p><div class="orr"><input class="orin" id="or-cat-n" maxlength="24" placeholder="Ex.: Pets" autocomplete="off"><input class="orin orv" id="or-cat-v" inputmode="decimal" placeholder="Limite" autocomplete="off"><button type="button" class="btn small" data-oradd="cat">+</button></div></section>';
+  h+='<section class="panel">'+orcSh('or-s-fx','Gastos fixos','Aluguel, contas, parcelas... Você cadastra uma vez e eles contam em todos os meses. O número cinza do campo é o valor normal. Se este mês veio diferente (ex.: consórcio), digite o valor real: só este mês muda.',c.fx,c.pFx)+orcFxList(o,m,c.sal)+orcAdd('fx','Ex.: aluguel')+'</section>';
+  h+='<section class="panel">'+orcSh('or-s-rec','Receitas','',c.ent,null)+'<label class="orlb">Salário previsto (todo mês)'+orcIn('sal',o.sal)+'</label>'+
+    '<label class="orlb">Salário que caiu em '+esc(orcLabel(ORM).split(' de ')[0].toLowerCase())+bal('Deixe vazio para usar o previsto. Se vier menos (ou mais), digite o valor real: o mês se ajusta.')+orcIn('salrec',m.sal,o.sal?String(o.sal).replace('.',','):'igual ao previsto')+'</label>'+
+    '<p class="orsub">Extras do mês'+bal('Dinheiro que entrou além do salário: bônus, venda de algo, freela, presente. Entra na conta do mês.')+'</p>'+orcList('ex',m.ex)+orcAdd('ex','De onde veio')+'</section>';
   var ap=c.apoPl>0?c.apo/c.apoPl:0;
-  h+='<section class="panel"><h2>Aporte do mês'+bal('Planejado é o quanto você quer aportar por mês. Aportado é o que o app já viu de compras (ações e renda fixa) neste mês. Livre é o que entrou menos o que você gastou: o máximo que dá para aportar.')+'</h2>'+
+  h+='<section class="panel">'+orcSh('or-s-apo','Aporte e metas','Planejado é o quanto você quer aportar por mês: até a compra acontecer, ele já fica reservado na sobra. Aportado é o que o app já viu de compras (ações e renda fixa) neste mês. Livre é o que entrou menos o que você gastou.',c.apoE,c.pApo)+
     (c.apoPl>0?orcBar(ap,ap>=1?'ok':'warn'):'')+'<div class="orn"><div><small>Planejado</small><span class="num">'+(c.apoPl>0?brl.format(c.apoPl):'—')+'</span></div><div><small>Aportado</small><span class="num">'+brl.format(c.apo)+'</span></div><div><small>Livre</small><span class="num '+cls(c.livre)+'">'+sgn(c.livre)+'</span></div></div>'+
-    '<label class="orlb">Aporte planejado por mês'+orcIn('apo',o.apo)+'</label></section>';
+    '<label class="orlb">Aporte planejado por mês'+orcIn('apo',o.apo)+'</label>'+
+    '<label class="orlb">Meta de gasto por mês'+bal('O quanto você quer gastar no máximo por mês (fixos + variáveis). A barra aparece lá em cima, no resumo: verde dentro, amarela perto do limite (85%), vermelha passou.')+orcIn('meta',o.meta)+'</label></section>';
   var ct=+o.conta||0;
-  h+='<section class="panel"><h2>Dinheiro na conta'+bal('Saldo parado na conta, fora dos investimentos. Fica só aqui: não entra no Patrimônio do Início.')+'</h2><label class="orlb">Saldo hoje'+orcIn('conta',o.conta)+'</label>'+
+  h+='<section class="panel">'+orcSh('or-s-ct','Dinheiro na conta','Saldo parado na conta, fora dos investimentos. Fica só aqui: não entra no Patrimônio do Início.',ct||null,null)+'<label class="orlb">Saldo hoje'+orcIn('conta',o.conta)+'</label>'+
     '<p class="orm muted">Investimentos + conta: <span class="num">'+brl.format(T.value+T.cash+ct)+'</span></p></section>';
   setHtml(el,h)}
 function orcField(f,raw){var o=orcO(),m=orcMes(ORM),v=parseNum(raw);
@@ -117,15 +126,17 @@ function orcField(f,raw){var o=orcO(),m=orcMes(ORM),v=parseNum(raw);
   else if(f==='sal'||f==='meta'||f==='apo'||f==='conta'){o[f]=isFinite(v)?v:0}else return;
   orcSave()}
 document.addEventListener('change',function(e){var t=e.target;if(!t||!t.getAttribute)return;var f=t.getAttribute('data-orf');if(!f)return;orcField(f,t.value);if(t.blur)t.blur();renderOrc()});
+document.addEventListener('keydown',function(e){if(e.key!=='Enter'&&e.key!==' ')return;var t=e.target;if(t&&t.getAttribute&&t.getAttribute('data-orgo')){e.preventDefault();t.click()}});
 document.addEventListener('toggle',function(e){var t=e.target;if(t&&t.getAttribute&&t.getAttribute('data-ork')){var id=t.getAttribute('data-ork');if(t.open)ORO[id]=1;else delete ORO[id]}},true);
-document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-orv],[data-ore],[data-orm],[data-ordel],[data-oradd],[data-orl],[data-orld],[data-orcdel]'):null;if(!t)return;
+document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-orv],[data-ore],[data-orm],[data-ordel],[data-oradd],[data-orq],[data-orgo],[data-orld],[data-orcdel]'):null;if(!t)return;
   if(t.hasAttribute('data-orv')){ORV=t.getAttribute('data-orv');renderOrc();return}
   if(t.hasAttribute('data-ore')){ORE=t.getAttribute('data-ore');renderOrc();return}
   if(t.hasAttribute('data-orm')){ORM=orcShift(ORM||orcDef(),+t.getAttribute('data-orm'));renderOrc();return}
   var ym=ORM||orcDef(),o=orcO(),m=orcMes(ym);
   if(t.hasAttribute('data-ordel')){var p=t.getAttribute('data-ordel').split(':'),id=p[1];if(p[0]==='fx'){o.fixos=o.fixos.filter(function(x){return x.id!==id});Object.keys(o.m).forEach(function(k){if(o.m[k]&&o.m[k].fx)delete o.m[k].fx[id]})}else m.ex=m.ex.filter(function(x){return x.id!==id});orcSave();renderOrc();return}
-  if(t.hasAttribute('data-orl')){var ci=t.getAttribute('data-orl'),lv=parseNum(($('or-lv-'+ci)||{}).value);if(!isFinite(lv)||lv<=0)return;
-    m.l.push({id:orcId(),c:ci,v:lv,n:((($('or-ln-'+ci)||{}).value)||'').trim().slice(0,30),d:ym===today().slice(0,7)?today():ym+'-01',f:(($('or-lf-'+ci)||{}).value)||''});orcSave();ORO[ci]=1;renderOrc();return}
+  if(t.hasAttribute('data-orgo')){var sc=$(t.getAttribute('data-orgo'));if(sc&&sc.scrollIntoView)sc.scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(t.hasAttribute('data-orq')){var ci=(($('or-qc')||{}).value)||'',lv=parseNum(($('or-qv')||{}).value);if(!ci||!isFinite(lv)||lv<=0)return;ORQC=ci;
+    m.l.push({id:orcId(),c:ci,v:lv,n:((($('or-qn')||{}).value)||'').trim().slice(0,30),d:ym===today().slice(0,7)?today():ym+'-01',f:(($('or-qf')||{}).value)||''});orcSave();ORO[ci]=1;renderOrc();return}
   if(t.hasAttribute('data-orld')){var li=t.getAttribute('data-orld');m.l=m.l.filter(function(x){return x.id!==li});orcSave();renderOrc();return}
   if(t.hasAttribute('data-orcdel')){var cd=t.getAttribute('data-orcdel'),k=o.cats.filter(function(x){return x.id===cd})[0],n=0;if(!k)return;Object.keys(o.m).forEach(function(q){n+=(o.m[q].l||[]).filter(function(x){return x.c===cd}).length});
     if(n&&!confirm('Apagar "'+k.n+'" e os '+n+' gasto'+(n>1?'s':'')+' lançado'+(n>1?'s':'')+' nela?'))return;

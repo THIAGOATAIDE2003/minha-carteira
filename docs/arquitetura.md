@@ -110,3 +110,6 @@ Keep user data and API keys out of the repo; the app must keep working offline f
 
 ## Orçamento: reservado nos envelopes (1.50.0)
 `orcCalc` calcula `res` = soma de max(0, limite − gasto) por envelope, só no mês atual e nos futuros. A sobra (`sobra`, `livre`, `pSobra`) já desconta `res`; `gas` continua sendo o gasto real (usado na Análise). O painel "Para onde vai o salário" mostra a linha "Reservado nos envelopes".
+
+## Orçamento: visual novo (1.51.0)
+Cabeçalho único (mês + abas Mês/Análise), cartão-resumo `orcHero` (sobra, barra, "Para onde vai o salário" com linhas que levam à seção, meta de gasto), lançador único `orcQuick` (`data-orq`; categoria em `ORQC`), e seções com cabeçalho `orcSh` (total + % do salário): Limites do mês, Gastos fixos, Receitas, Aporte e metas, Dinheiro na conta. Os campos de lançar gasto por categoria foram removidos.
