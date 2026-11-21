@@ -29,13 +29,19 @@ function asMsgsT(q){asSysAtual();var rt=asRota(q);ASCMP=!rt.det;var ctx;try{ctx=
   var emp=asFind(q).map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean);
   var h=AS.m.filter(function(x){return x.t&&!x.e}).slice(-11,-1).map(function(x){var t=x.t.length>1500?x.t.slice(0,1500)+' […]':x.t;return {role:x.r==='u'?'user':'model',parts:[{text:t}]}});
   return {sys:ASSYS+ASTH+'\n\nRESUMO DA CARTEIRA AGORA:\n'+ctx+(emp.length?'\n\n'+emp.join('\n\n'):'')+asmCtxT(q),ct:h.concat([{role:'user',parts:[{text:q}]}])}}
+/* versão mínima para o limite pequeno da Groq grátis: prompt curto + só a empresa citada (ou o resumo da carteira) */
+var ASMINI='Você é a assistente do Aporte, app de investimentos do Thiago. Português do Brasil, simples e direto, frases curtas, sem termos em inglês. Use só os números do CONTEXTO; nunca invente número, data, notícia ou causa. Cite a fonte entre parênteses. Se faltar dado, diga que o app não tem. Faça as contas certas. Se o contexto disser LUCRO DISTORCIDO ou NÃO CONFIÁVEL, obedeça: não conclua cara ou barata por P/L ou preço justo e não explique a causa. Onde a CONFERÊNCIA disser DIVERGE, mostre os dois valores. Nunca inverta a direção "preço justo X% abaixo do preço". Em empresa cíclica não conclua por um indicador só. Formato: pergunta simples = resposta curta; análise = **Os números**, **Minha leitura**, **O que falta saber**. Não dê ordem de compra ou venda.';
+function asMsgsMini(q){ASCMP=true;var ctx;try{var tks=asFind(q),held={};compute().held.forEach(function(x){held[x.p.ticker]=1});
+    ctx=tks.length?tks.map(function(tk){try{return asEmp(tk,!!held[tk])}catch(e){return ''}}).filter(Boolean).join('\n\n'):asCtx(q,{base:1,metas:1})}finally{ASCMP=false}
+  var h=AS.m.filter(function(x){return x.t&&!x.e}).slice(-3,-1).map(function(x){return {role:x.r==='u'?'user':'assistant',content:x.t.length>400?x.t.slice(0,400)+' […]':x.t}});
+  return [{role:'system',content:ASMINI+'\n\nCONTEXTO DO APP:\n'+ctx.slice(0,9000)}].concat(h,[{role:'user',content:q}])}
 /* pensar pouco no chat: o raciocínio longo do Gemini deixava até "oi" levando dezenas de segundos */
 function asThink(m){return /gemini-3/.test(m)?{thinkingLevel:'low'}:/2\.5/.test(m)?{thinkingBudget:1024}:null}
 /* Gemini com ferramentas: repete (até 5 vezes) enquanto ele pedir dados; no fim, a resposta chega em streaming.
    Cada tentativa tem 25 s para o primeiro sinal; se não vier, tenta o 2º modelo e depois desiste do Gemini (a Groq assume) e AS.st guarda em que etapa parou. */
 function asGemT(key,q,on,sig){AS.st='Gemini: lista de modelos';var P=asMsgsT(q);
   return asGemModels(key).then(function(ms){ms=ms.slice(0,3);var i=0,last=null;
-    var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i++],got=0,hops=0,ct=P.ct.slice(),usadas=[],th=asThink(m);
+    var go=function(){if(i>=ms.length)return Promise.reject(last||new Error('sem modelo'));var m=ms[i++],got=0,hops=0,ct=P.ct.slice(),usadas=[],th=asThink(m),rt=0;
       var step=function(){var calls=[],body={systemInstruction:{parts:[{text:P.sys}]},contents:ct,generationConfig:{temperature:0.3,maxOutputTokens:6000}};if(th)body.generationConfig.thinkingConfig=th;if(hops<2)body.tools=[{functionDeclarations:ASTD}];
         var ac=window.AbortController?new AbortController():null,fired=0,tmo=null,fin=function(){if(tmo){clearTimeout(tmo);tmo=null}};
         if(ac){if(sig){if(sig.aborted)ac.abort();else sig.addEventListener('abort',function(){ac.abort()})}tmo=setTimeout(function(){fired=1;ac.abort()},25000)}
@@ -47,5 +53,5 @@ function asGemT(key,q,on,sig){AS.st='Gemini: lista de modelos';var P=asMsgsT(q);
             var rs=calls.map(function(p){var n=p.functionCall.name,l=ASTL[n]||n;AS.st='ferramenta '+n;if(usadas.indexOf(l)<0)usadas.push(l);return {functionResponse:{name:n,response:{result:asToolRun(n,p.functionCall.args,q)}}}});
             ct.push({role:'user',parts:rs});return step()})
           .catch(function(e){fin();if(fired&&!(sig&&sig.aborted)){var t=new Error('o modelo '+m+' não respondeu em 25 s');t.tmo=1;throw t}throw e})};
-      var run=function(){return step().catch(function(e){if(e.name==='AbortError'||got)throw e;if(e.st===400&&th&&!hops){th=null;return run()}last=e;return go()})};return run()};
+      var run=function(){return step().catch(function(e){if(e.name==='AbortError'||got)throw e;if(e.st===400&&th&&!hops){th=null;return run()}if(e.st===429&&!rt&&!got){var ra=/"retryDelay":\s*"(\d+)/.exec(e.tx||''),w=ra?+ra[1]:0;if(w>0&&w<=20){rt=1;AS.st='Gemini '+m+': esperando o limite liberar ('+w+' s)';return new Promise(function(r){setTimeout(r,(w+1)*1000)}).then(run)}}last=e;return go()})};return run()};
     return go()})}
