@@ -130,3 +130,7 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 .oreh{display:flex;align-items:center;gap:8px;font-size:15px}.oreh b{flex:1;min-width:0}.oreh b small{font-weight:400;font-size:12px;margin-left:4px}.oreh .num small{font-size:12px}
 .ore .orr{margin-top:8px}.ore select.orin{flex:1}.ore .orgo{flex:1;white-space:nowrap}.ore .orr .orin:not(.orv){flex:1}
 .ord2{margin:8px 0 0}.ord2 summary{cursor:pointer;color:var(--muted);font-size:13px}.orlim{margin-top:6px}
+
+/* Orçamento: análise */
+.orsw,.orsw2{display:flex;gap:8px;margin:0 0 10px}.orsw button,.orsw2 button{flex:1;white-space:nowrap}
+.orb i.ac{background:var(--accent)}.orrk{margin:8px 0}.orrh{display:flex;gap:8px;align-items:baseline;font-size:14px}.orrh span:first-child{flex:1;min-width:0}.orcm button:disabled{opacity:.35}
