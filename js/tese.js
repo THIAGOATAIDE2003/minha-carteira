@@ -12,7 +12,16 @@ function thChk(tk){var L=[],F=isBR(tk)?fundOf(tk):null,q=isBR(tk)?cvmQ(tk):null,
   if(F){if(F.roe!=null)L.push(['ROE',pf.format(F.roe)+'%','retorno sobre o patrimônio','']);if(F.dy!=null)L.push(['Dividendos (DY)',pf.format(F.dy)+'%','últimos 12 meses','']);if(F.divpl!=null)L.push(['Dívida / patrimônio',num(F.divpl,2),'','']);if(F.ml!=null)L.push(['Margem líquida',pf.format(F.ml)+'%','','']);if(F.cr5!=null)L.push(['Crescimento da receita (5 anos)',pf.format(F.cr5)+'%','por ano, média','']);}
   if(C&&C.rk!=null){var rk=C.rk,rot=rk<=1.5?'Compra forte':rk<=2.5?'Compra':rk<=3.5?'Manter':rk<=4.5?'Venda':'Venda forte';L.push(['Analistas',rot,(C.n?C.n+' analistas':''),'']);}
   return L}
-function thHtml(tk,d){var T=thOf(tk),h='';
+/* Tese de quem compra (1.61.0): escrita pela IA do robô (res.tese[tk], refeita a cada ~3 semanas), aparece acima da tese do próprio usuário */
+function thAuto(tk){if(!isBR(tk))return '';var A=MD.d&&MD.d.res&&MD.d.res.tese&&MD.d.res.tese[tk],a=A&&A.ai,tt='Tese de quem compra '+bal('Escrita pela IA do robô com os números da empresa e o que se sabe do negócio: por que alguém compraria a ação e o que poderia dar errado. É a tese de quem compra, não a sua, e não é recomendação. A sua fica logo abaixo.');
+  if(!a)return '<div class="panel"><h2>'+tt+'</h2><p class="muted">A tese automática deste papel ainda não foi escrita. O robô escreve primeiro para as suas ações e as de Acompanhando, depois para as 50 maiores, e refaz a cada 3 semanas.</p></div>';
+  var ls=function(t,x){x=(x||[]).filter(Boolean);return x.length?'<h3 class="rkh3">'+t+'</h3><ul class="thq">'+x.map(function(y){return '<li>'+esc(y)+'</li>'}).join('')+'</ul>':''};
+  return '<div class="panel"><div class="grp"><h2>'+tt+'</h2><span class="det">'+rsWhen(A.at)+'</span></div>'+
+    (a.negocio?'<p class="anv" style="margin:6px 0">'+esc(a.negocio)+'</p>':'')+ls('Por que alguém compra',a.tese)+
+    (a.perfil?'<p class="anv" style="margin:8px 0 0"><b>Para quem:</b> '+esc(a.perfil)+'</p>':'')+ls('O que pode quebrar a tese',a.riscos)+ls('Para acompanhar',a.acompanhar)+
+    '<p class="note">Escrita pela IA ('+esc(A.mod||'Gemini')+') em '+rsWhen(A.at)+'. Pode errar e não é recomendação.</p></div>'}
+function thHtml(tk,d){if(THE===tk)return thHtml0(tk,d);return thAuto(tk)+thHtml0(tk,d)}
+function thHtml0(tk,d){var T=thOf(tk),h='';
   if(THE===tk)return thForm(tk,T);
   if(!T)return '<div class="panel"><h2>Minha tese '+bal('Escreva por que você tem essa ação, o que vai acompanhar e o que faria você rever a decisão. Quando o preço cair ou o balanço vier ruim, a tese está aqui para você decidir sem pressa.')+'</h2><p class="muted">Você ainda não escreveu a tese desta ação.</p><button type="button" class="btn" data-th="edit">Escrever minha tese</button></div>';
   var dias=T.at?Math.round((Date.parse(today())-Date.parse(T.at))/864e5):null,ls=function(a){return a&&a.length?'<ul class="thq">'+a.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>':''};
