@@ -167,10 +167,11 @@ function renderPositions(R){
 var ATF='all',ASRT={k:'v',d:-1};
 function tkLogo(tk,us){var ini=esc(tk.slice(0,2));return '<span class="tlg"><span>'+ini+'</span><img alt="" loading="lazy" src="'+(us?'https://financialmodelingprep.com/image-stock/'+encodeURIComponent(tk)+'.png':'https://icons.brapi.dev/icons/'+encodeURIComponent(tk)+'.svg')+'"></span>'}
 function vpill(p,txt){if(p==null||!isFinite(p))return '<span class="vpl n">—</span>';var z=Math.abs(p*100)<0.005;return bal(txt,'<span class="vpl '+(z?'n':p>0?'g':'l')+'">'+(z?'':p>0?'+':'−')+pf.format(Math.abs(p*100))+'%'+(z?'':' <i>'+(p>0?'▲':'▼')+'</i>')+'</span>')}
+function sgU(n){return (n>0.005?'+':n<-0.005?'−':'')+usd.format(Math.abs(n))}
 function atvTable(R){
   var T=R.tot,fx=T.fxNow||1,dl=dayLbl(),rows=R.held.map(function(x){var us=x.p.market==='US',F=us?fx:1,pm=x.p.cN/x.p.qty,q=S.quotes[x.p.ticker];
     var tg=(x.P1-pm)*x.p.qty*F,dd=q&&q.prev&&q.src==='auto'?(dzero(us,q.at)?0:(q.price-q.prev)*x.p.qty*F):null;
-    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,pm:pm,px:x.P1,t:pm?x.P1/pm-1:null,tg:tg,d:dd!=null?(dzero(us,q.at)?0:q.price/q.prev-1):null,dg:dd,prev:q&&q.prev}});
+    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,pm:pm,px:x.P1,t:pm?x.P1/pm-1:null,tg:tg,tgU:us?(x.P1-pm)*x.p.qty:null,dgU:us&&dd!=null?(dzero(us,q.at)?0:(q.price-q.prev)*x.p.qty):null,d:dd!=null?(dzero(us,q.at)?0:q.price/q.prev-1):null,dg:dd,prev:q&&q.prev}});
   var has={BR:rows.some(function(r){return !r.us}),US:rows.some(function(r){return r.us})};if(ATF!=='all'&&!has[ATF])ATF='all';
   var vis=rows.filter(function(r){return ATF==='all'||(ATF==='US')===r.us});
   vis.sort(function(a,b){var k=ASRT.k,A=k==='n'?a.tk:a[k],B=k==='n'?b.tk:b[k];if(A==null)return 1;if(B==null)return -1;return (A<B?-1:A>B?1:0)*ASRT.d});
@@ -183,9 +184,9 @@ function atvTable(R){
     vis.map(function(r){var F=F2(r),qt=num(r.q,r.us?4:0),qs=num(r.q,r.us?2:0),vk=r.v>=1e3?'R$ '+num(r.v/1e3,1)+' mil':brl.format(r.v);
       return '<div class="atr"><button type="button" class="a1" data-stk="'+esc(r.tk)+'" aria-label="Abrir análise de '+esc(r.tk)+'">'+tkLogo(r.tk,r.us)+'<span class="an"><b>'+esc(r.tk)+'</b><small>'+vk+'</small></span></button>'+
         '<span class="aq">'+qs+'</span>'+
-        vpill(r.t,r.tk+': '+sgn(r.tg)+' desde a compra ('+qt+(r.us?' cotas':' ações')+', preço médio '+F.format(r.pm)+', agora '+F.format(r.x.P1)+(r.us?'; em reais pelo dólar de hoje, sem câmbio':'')+').')+
-        vpill(r.d,r.tk+(dl.t==='hoje'?' hoje':' no último pregão ('+dl.d+')')+': '+(r.dg!=null?sgn(r.dg)+' (de '+F.format(r.prev)+' para '+F.format(r.x.P1)+')':'sem dado')+'.')+
-        '<span class="av '+cls(r.tg)+'">'+sgn(r.tg)+'</span><span class="av">'+F.format(r.pm)+'</span><span class="av">'+F.format(r.x.P1)+'</span><span class="av">'+brl.format(r.v)+'</span></div>'}).join('')+
+        vpill(r.t,r.tk+': '+sgn(r.tg)+' desde a compra ('+qt+(r.us?' cotas':' ações')+', preço médio '+F.format(r.pm)+', agora '+F.format(r.x.P1)+(r.us?'; em reais pelo dólar de hoje, sem câmbio. Em dólar: '+sgU(r.tgU):'')+').')+
+        vpill(r.d,r.tk+(dl.t==='hoje'?' hoje':' no último pregão ('+dl.d+')')+': '+(r.dg!=null?sgn(r.dg)+(r.us&&r.dgU!=null?' · em dólar '+sgU(r.dgU):'')+' (de '+F.format(r.prev)+' para '+F.format(r.x.P1)+')':'sem dado')+'.')+
+        '<span class="av '+cls(r.tg)+'">'+sgn(r.tg)+(r.us?'<small class="avu">'+sgU(r.tgU)+'</small>':'')+'</span><span class="av">'+F.format(r.pm)+'</span><span class="av">'+F.format(r.x.P1)+'</span><span class="av">'+brl.format(r.v)+'</span></div>'}).join('')+
     '</div><p class="note" style="margin-top:10px">Arraste para o lado para ver mais colunas. Toque no % para ver o valor; toque no nome do ativo para abrir a análise.</p></div>';
   return h;
 }
