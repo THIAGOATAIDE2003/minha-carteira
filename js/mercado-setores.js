@@ -31,6 +31,7 @@ function cmpSugHtml(id,v){v=String(v||'').trim();var u=v.toUpperCase().replace(/
   return sg.map(function(x){var nm=nomeEmp(x);return '<li><span><b>'+esc(x)+(nm?' <span style="font-weight:400;color:var(--muted)">· '+esc(nm)+'</span>':'')+'</b></span><button type="button" class="btn small ghost" data-cmps="'+id+':'+esc(x)+'">Usar</button></li>'}).join('')}
 function anaHtml(){
   var sg0=anSeg();
+  if(ANV==='rank')return rankHtml();
   if(ANV==='opp')return sg0+(oppHtml()||'<div class="panel"><p class="muted">Os dados chegam com o robô diário. Volte em alguns minutos.</p></div>');
   var f=MD.d&&MD.d.fund;if(!f||!f.d)return sg0+'<div class="panel"><p class="muted">Os indicadores chegam com o robô diário. Volte em alguns minutos.</p></div>';
   var sc=SCRS.filter(function(x){return x.k===SCR})[0]||SCRS[0],W=wlist(),mine={};compute().held.forEach(function(x){mine[x.p.ticker]=1});

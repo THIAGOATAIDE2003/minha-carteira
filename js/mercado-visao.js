@@ -51,9 +51,9 @@ function qHtml(tk){var q=cvmQ(tk);if(!q||q.length<2)return '';var l=q[q.length-1
   return '<div class="panel"><h2>Resultados trimestrais '+bal('Receita e lucro de cada trimestre, tirados dos balanços oficiais que a empresa entrega à CVM. Mostra se ela está crescendo ou piorando.')+'</h2><p class="anv" style="margin:4px 0 0">No '+l[1]+'º tri de '+l[0]+': '+(l[2]!=null?'receita de <b>'+qfmt(l[2])+'</b>'+(gr!=null?' ('+sg(gr)+' no ano)':'')+' e ':'')+'lucro de <b>'+qfmt(l[3])+'</b>'+(gl!=null?' ('+sg(gl)+' no ano)':'')+'.'+(t?' Lucro dos últimos 12 meses: <b>'+qfmt(t.a)+'</b>'+(t.g!=null?' ('+sg(t.g)+' contra os 12 meses anteriores)':'')+'.':'')+'</p>'+
     qChart(q,2,'Receita')+qChart(q,3,'Lucro')+'<p class="note">Balanços entregues à CVM (consolidado). O 4º trimestre é o ano inteiro menos os 9 primeiros meses. Toque nas barras para ver cada trimestre.</p></div>'}
 
-var ANV='opp';try{var av0=localStorage.getItem(LS+'-anv');if(av0==='cmp')ANV=av0}catch(e){}
+var ANV='opp';try{var av0=localStorage.getItem(LS+'-anv');if(av0==='cmp'||av0==='rank')ANV=av0}catch(e){}
 function anSeg(){var on=0;try{var od=opData();on=od?od.n:0}catch(e){}
-  return '<div class="seg anseg" id="anseg">'+[['opp','Ideias'+(on?' <i class="mkb">'+on+'</i>':'')],['cmp','Comparar']].map(function(v){return '<button type="button" data-anv="'+v[0]+'" aria-pressed="'+(ANV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>'}
+  return '<div class="seg anseg" id="anseg">'+[['opp','Ideias'+(on?' <i class="mkb">'+on+'</i>':'')],['cmp','Comparar'],['rank','Ranking']].map(function(v){return '<button type="button" data-anv="'+v[0]+'" aria-pressed="'+(ANV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>'}
 /* Relatório da carteira (IA): aba própria, sempre aberta, com a data de quando foi escrito logo no topo; o texto de economia (macro) não aparece mais */
 function rsRel(){var c=MD.d&&MD.d.res&&MD.d.res.cart;if(!c||!c.ai)return '<div class="panel"><h2>Relatório da carteira · IA</h2><p class="muted">O relatório chega com o robô, uma vez por dia. Volte em alguns minutos.</p></div>';var a=c.ai;
   var lst=function(t,arr,cl){return arr&&arr.length?'<h3 class="rkh3">'+t+'</h3><ul class="rkl">'+arr.map(function(x){return '<li>'+rkLvl(cl)+'<div><p style="margin:0;color:var(--fg)">'+esc(x)+'</p></div></li>'}).join('')+'</ul>':''};
