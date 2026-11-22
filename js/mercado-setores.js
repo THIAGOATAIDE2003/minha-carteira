@@ -140,7 +140,7 @@ function idxRender(){
   var y1=(D.d||[]).map(function(p){return p[1]}),hi=Math.max.apply(null,y1),lo=Math.min.apply(null,y1);
   var at=function(daysAgo){var t=Date.now()/864e5-daysAgo,a=(daysAgo>370?D.w:D.d)||[];for(var i=a.length-1;i>=0;i--)if(a[i][0]<=t)return a[i][1];return null};
   var v1=at(365),v5=at(1790),chg=function(a){return a==null||!last?'—':((last/a-1)>=0?'+':'−')+pf.format(Math.abs((last/a-1)*100))+'%'};
-  var fv=finView(sym,rg),fo=null,fmsg='';if(fv){if(fv.st==='ok'){hist=fv.hist;fo=fv.o}else{fmsg=fv.msg;hist=rg==='5d'?hist.slice(-6):[]}}
+  var fv=finView(sym,rg,true),fo=null,fmsg='';if(fv){if(fv.st==='ok'){hist=fv.hist;fo=fv.o}else{fmsg=fv.msg;hist=rg==='5d'?hist.slice(-6):[]}}
   hist=rgCut(hist,STK.rng);ch=hist.length>1?(rate?hist[hist.length-1].c-hist[0].c:hist[hist.length-1].c/((fo&&fo.prev)||hist[0].c)-1):null;
   var pAbs=ch==null?null:rate?ch:hist[hist.length-1].c-((fo&&fo.prev)||hist[0].c),pPct=ch==null?null:rate?(hist[0].c?ch/hist[0].c*100:null):ch*100,per=rg==='yr'||ch==null?'1d':rg;
   if(ch==null||rg==='yr'){pPct=dp;pAbs=dp!=null&&last!=null?last-last/(1+dp/100):null}

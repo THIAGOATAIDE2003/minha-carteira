@@ -226,6 +226,13 @@ function contasAMao(F, P) {
       var st = futStrip('SPY'), sv = /Futuro do S&amp;P 500/.test(st) && /ao vivo/.test(st) && /7\.000/.test(st), nq = futStrip('ibov') === '', nada = !IDX.some(function (x) { return x.k === 'ES=F' || x.k === 'EWZ'; });
       S.keys.proxy = ''; FUT.d = {}; return [ok, sv, nq, nada]; });
     confere('Futuros dentro do índice, sem perfil próprio', fut, [true, true, true, true]);
+    /* pré e pós-mercado: pontos fora do pregão vêm marcados, o gráfico pinta de cinza e quem não pede (Início) não os recebe */
+    const ext = await pg.evaluate(function () {
+      var off = -18000, mk = function (d, h, m) { return Date.UTC(2026, 10, d, h, m) / 1000 - off; }, P = [[19, 9, 30, 147], [19, 15, 55, 147.17], [20, 5, 0, 146], [20, 9, 30, 146.3], [20, 12, 0, 144], [20, 15, 55, 142.08], [20, 16, 5, 142.5], [20, 19, 55, 142.2]].map(function (r) { return [mk(r[0], r[1], r[2]), r[3]]; });
+      FIN['intra/VT'] = { d: { ext: 1, off: off, p: P, prev: 147.17, at: P[P.length - 1][0] }, at: Date.now() };
+      var com = finView('VT', '1d', true), sem = finView('VT', '1d'), nx = com.hist.filter(function (p) { return p.x; }).length, svg = lineChart(com.hist, 'USD', null, null, com.o);
+      delete FIN['intra/VT']; return [com.hist.length, nx, sem.hist.length, /stroke="var\(--muted\)" stroke-width="2"/.test(svg), /pré e pós-mercado/.test(svg)]; });
+    confere('Gráfico com pré e pós-mercado em cinza', ext, [6, 3, 3, true, true]);
     confere('Orçamento: contas, %, fixo do mês, envelopes e gastos lançados', orc, [4100, 1600, 1000, 400, 1400, 3800, true, true, true, 0, 'orc', [282, 128, 256, 410, 51], 1800, 350, undefined, true, 85, 585, true, 35, 1200.5, 120, 'Aluguel:800,Mercado:600,Luz:300', 2400, true, ['2026-11', '2026-11,2026-12']]);
     /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */
     await pg.clock.setFixedTime(new Date('2026-11-20T03:50:00Z'));
