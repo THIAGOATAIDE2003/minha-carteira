@@ -25,10 +25,12 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
   else if(t.hasAttribute('data-catall')){CATALL=!CATALL;try{localStorage.setItem(LS+'-catall',CATALL?'1':'0')}catch(x){}}
   else CLSN+=20;
   renderMkt()});
+/* sugestões por nome nos campos do Comparar; refeitas junto com a tela, para não sumirem numa atualização de fundo */
+var CMPL='';
+function cmpSugHtml(id,v){v=String(v||'').trim();var u=v.toUpperCase().replace(/[^A-Z0-9]/g,''),sg=v.length>=2?mkSug(v,5).filter(function(x){return x!==u}):[];
+  return sg.map(function(x){var nm=nomeEmp(x);return '<li><span><b>'+esc(x)+(nm?' <span style="font-weight:400;color:var(--muted)">· '+esc(nm)+'</span>':'')+'</b></span><button type="button" class="btn small ghost" data-cmps="'+id+':'+esc(x)+'">Usar</button></li>'}).join('')}
 function anaHtml(){
   var sg0=anSeg();
-  if(ANV==='rel')return sg0+rsRel();
-  if(ANV==='set')return sg0+setoresHtml();
   if(ANV==='opp')return sg0+(oppHtml()||'<div class="panel"><p class="muted">Os dados chegam com o robô diário. Volte em alguns minutos.</p></div>');
   var f=MD.d&&MD.d.fund;if(!f||!f.d)return sg0+'<div class="panel"><p class="muted">Os indicadores chegam com o robô diário. Volte em alguns minutos.</p></div>';
   var sc=SCRS.filter(function(x){return x.k===SCR})[0]||SCRS[0],W=wlist(),mine={};compute().held.forEach(function(x){mine[x.p.ticker]=1});
@@ -39,7 +41,8 @@ function anaHtml(){
   var A=fundOf(CMP[0]),B=fundOf(CMP[1]),row=function(l,k,fm,better){var a=A&&A[k],b=B&&B[k],wa=a!=null&&b!=null&&(better>0?a>b:a<b),wb=a!=null&&b!=null&&(better>0?b>a:b<a);
     return '<div class="cmpr"><span>'+l+'</span><b class="'+(wa?'gain':'')+'">'+(a!=null?fm(a):'—')+'</b><b class="'+(wb?'gain':'')+'">'+(b!=null?fm(b):'—')+'</b></div>'};
   var n1=function(v){return num(v,2)},pc=function(v){return pf.format(v)+'%'};
-  var hm='<div class="panel"><h2>Comparar duas ações '+bal('Digite duas ações para ver os indicadores lado a lado. O melhor de cada linha fica em verde.')+'</h2><form class="cmpf" id="cmpf"><input id="cmp-a" value="'+esc(CMP[0])+'" maxlength="8" autocomplete="off"><span>×</span><input id="cmp-b" value="'+esc(CMP[1])+'" maxlength="8" autocomplete="off"><button class="btn small" type="submit">Comparar</button></form>'+
+  var ia=$('cmp-a'),ib=$('cmp-b'),va=ia?ia.value:null,vb=ib?ib.value:null;
+  var hm='<div class="panel"><h2>Comparar duas ações '+bal('Digite o código ou o nome de duas ações (ex.: caixa seguridade) para ver os indicadores lado a lado. O melhor de cada linha fica em verde.')+'</h2><form class="cmpf" id="cmpf"><input id="cmp-a" value="'+esc(va!=null?va:CMP[0])+'" maxlength="30" placeholder="código ou nome" autocomplete="off"><span>×</span><input id="cmp-b" value="'+esc(vb!=null?vb:CMP[1])+'" maxlength="30" placeholder="código ou nome" autocomplete="off"><button class="btn small" type="submit">Comparar</button></form>'+(function(){var sh=CMPL&&(CMPL==='cmp-a'?va:vb);sh=sh!=null?cmpSugHtml(CMPL,sh):'';return '<ul class="mkres" id="cmp-sg"'+(sh?'':' hidden')+'>'+sh+'</ul>'})()+
     '<div class="cmp"><div class="cmpr cmph"><span></span><button type="button" data-stk="'+esc(CMP[0])+'">'+esc(CMP[0])+'</button><button type="button" data-stk="'+esc(CMP[1])+'">'+esc(CMP[1])+'</button></div>'+
     row('Cotação','cot',function(v){return brl.format(v)},0)+row('P/L','pl',n1,-1)+row('P/VP','pvp',n1,-1)+row('Dividendos (DY)','dy',pc,1)+row('ROE','roe',pc,1)+row('ROIC','roic',pc,1)+row('Margem líquida','ml',pc,1)+row('EV/EBITDA','evebitda',n1,-1)+row('Liquidez corrente','lc',n1,1)+row('Receita 5 anos','cr5',pc,1)+'</div>'+
     ((!A||!B)?'<p class="warn" style="margin-top:8px">'+(!A?esc(CMP[0]):esc(CMP[1]))+' não está no Fundamentus (só ações do Brasil).</p>':'')+
@@ -55,7 +58,7 @@ function renderMkt0(){
   var el=$('mkttab');if(!el)return;var I=MKT.idx,f0=fxToday(),fxp=S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null;
   var q0=$('mk-q')?$('mk-q').value:'',sel=idxSel();
   var on=0;try{var od=opData();on=od?od.n:0}catch(e){}
-  var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['bc','BC'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
+  var h='<div class="seg" id="mkseg">'+[['min','Acompanhando'],['idx','Índices'],['bc','BC'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
   if(MKV!=='bc')h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice, moeda ou ação':MKV==='ana'?'Buscar ação (sigla ou nome)':'Buscar ação: sigla ou nome (ex.: magalu)')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
   h+='<div class="seg" id="ixseg">'+[['lista','Índices'],['fg','Medo e Ganância']].map(function(v){return '<button type="button" data-ixv="'+v[0]+'" aria-pressed="'+(IXV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
@@ -66,10 +69,10 @@ function renderMkt0(){
     (MKED?'<p class="note">Toque no ✕ para tirar. Para colocar outro, procure na busca acima.</p>':'')+'</div>';
   h+='<p class="note exp" style="margin:0 4px">Ibovespa e IFIX vêm do brapi, S&P 500 e Nasdaq do Finnhub (pelos ETFs SPY e QQQ), dólar, euro e bitcoin da AwesomeAPI, CDI do Banco Central. Toque numa ação para ver gráfico e indicadores. A lista de acompanhamento fica salva na nuvem.</p>';
   }
-  }else if(MKV==='bc'){h+=bcHtml()}else if(MKV==='ana'){h+=anaHtml()}else{h+=mineHtml();
+  }else if(MKV==='bc'){h+=bcHtml()}else if(MKV==='ana'){h+=anaHtml()}else{
   var W=wlist();
-  h+='<div class="panel"><div class="grp"><h2>Acompanhando</h2><span class="det">'+W.length+' ações</span></div>'+
-    (W.length?'<ul class="wl">'+W.map(function(tk){var q=MKT.q[tk];return '<li><button type="button" class="wtk" data-stk="'+esc(tk)+'"><b>'+esc(tk)+'</b><small>'+(function(){var F=fundOf(tk);return F?'P/L '+(F.pl!=null?num(F.pl,1):'—')+' · P/VP '+(F.pvp!=null?num(F.pvp,2):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):esc(q&&q.name||(isBR(tk)?'Brasil':'EUA'))})()+'</small></button><span class="wpx">'+(q?'<span>'+(q.cur==='USD'?usd:brl).format(q.price)+'</span><span class="num small '+cls(q.pct)+'">'+sg0(q.pct)+pf.format(Math.abs(q.pct||0))+'%</span>':'<span class="muted">—</span>')+'</span><button type="button" class="wx" data-wdel="'+esc(tk)+'" aria-label="Parar de acompanhar '+esc(tk)+'">✕</button></li>'}).join('')+'</ul>':'<p class="muted small">Adicione ações que você quer vigiar, mesmo sem ter. Ex.: PETR4, VALE3, WEGE3, AAPL.</p>')+
+  h+='<div class="panel"><div class="grp"><h2>Acompanhando '+bal('Ações que você está de olho para comprar, mesmo sem ter. Embaixo de cada uma aparece o preço de entrada: o preço justo calculado pelo app menos 20% de margem de segurança. Quando a cotação chega nele, aparece "chegou no ponto". É uma referência para estudar, não uma ordem de compra.')+'</h2><span class="det">'+W.length+' ações</span></div>'+
+    (W.length?'<ul class="wl">'+W.map(function(tk){var q=MKT.q[tk];return '<li><button type="button" class="wtk" data-stk="'+esc(tk)+'"><b>'+esc(tk)+'</b><small>'+(function(){var F=fundOf(tk);return F?'P/L '+(F.pl!=null?num(F.pl,1):'—')+' · P/VP '+(F.pvp!=null?num(F.pvp,2):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):esc(q&&q.name||(isBR(tk)?'Brasil':'EUA'))})()+'</small>'+entradaTxt(tk)+'</button><span class="wpx">'+(q?'<span>'+(q.cur==='USD'?usd:brl).format(q.price)+'</span><span class="num small '+cls(q.pct)+'">'+sg0(q.pct)+pf.format(Math.abs(q.pct||0))+'%</span>':'<span class="muted">—</span>')+'</span><button type="button" class="wx" data-wdel="'+esc(tk)+'" aria-label="Parar de acompanhar '+esc(tk)+'">✕</button></li>'}).join('')+'</ul>':'<p class="muted small">Adicione ações que você quer vigiar, mesmo sem ter. Ex.: PETR4, VALE3, WEGE3, AAPL.</p>')+
     '<form class="wadd" id="wadd"><input id="w-tk" placeholder="Código da ação" maxlength="12" autocomplete="off"><button class="btn" type="submit">Adicionar</button></form>'+
     (MKT.err?'<p class="warn" style="margin-top:8px">'+esc(MKT.err)+'</p>':'')+'</div>';
   }

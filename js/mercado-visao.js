@@ -6,6 +6,12 @@ var FUTL=[['ES=F','S&P 500'],['NQ=F','Nasdaq'],['YM=F','Dow Jones'],['RTY=F','Ru
 function fgZ(v){return v<25?['Medo extremo','var(--loss)']:v<45?['Medo','#e8a05a']:v<56?['Neutro','var(--muted)']:v<76?['Ganância','#8fd08a']:['Ganância extrema','var(--gain)']}
 function fgArc(a,b,col){var R=100,r=70,c=function(t,q){var x=Math.PI*(1-t/100);return [120+q*Math.cos(x),115-q*Math.sin(x)]},p1=c(a,R),p2=c(b,R),p3=c(b,r),p4=c(a,r),f=function(n){return n.toFixed(1)};
   return '<path d="M'+f(p1[0])+' '+f(p1[1])+' A'+R+' '+R+' 0 0 1 '+f(p2[0])+' '+f(p2[1])+' L'+f(p3[0])+' '+f(p3[1])+' A'+r+' '+r+' 0 0 0 '+f(p4[0])+' '+f(p4[1])+' Z" fill="'+col+'" opacity=".85"/>'}
+/* preço de entrada na lista Acompanhando: preço justo do app menos 20% de margem; cache curto por ação */
+var ENTR={};
+function entradaTxt(tk){var c=ENTR[tk],lv=livePx(tk),P=lv&&lv.p;if(!(P>0)||!isBR(tk))return '';
+  if(!c||Date.now()-c.at>10*60000){var al=null;try{var o=opEval(tk);if(o&&o.V&&o.V.med>0)al=Math.round(o.V.med*0.8*100)/100}catch(e){}c=ENTR[tk]={al:al,at:Date.now()}}
+  if(!(c.al>0))return '';var f=P/c.al-1;
+  return '<small class="ent" style="display:block;margin-top:2px;color:'+(f<=0?'var(--gain)':'var(--muted)')+'">Entrada '+brl.format(c.al)+' · '+(f<=0?'chegou no ponto':f<=1?'falta cair '+pf.format(f*100)+'%':'bem acima do preço justo')+'</small>'}
 var FGT=0,IXV='lista';try{IXV=localStorage.getItem(LS+'-ixv')==='fg'?'fg':'lista'}catch(e){}
 function fgQuando(d){var h=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),n=new Date(),dia=function(x){return x.getFullYear()*400+x.getMonth()*32+x.getDate()},y=new Date(n.getTime()-864e5);
   return (dia(d)===dia(n)?'hoje':dia(d)===dia(y)?'ontem':d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}))+' às '+h}
@@ -45,9 +51,9 @@ function qHtml(tk){var q=cvmQ(tk);if(!q||q.length<2)return '';var l=q[q.length-1
   return '<div class="panel"><h2>Resultados trimestrais '+bal('Receita e lucro de cada trimestre, tirados dos balanços oficiais que a empresa entrega à CVM. Mostra se ela está crescendo ou piorando.')+'</h2><p class="anv" style="margin:4px 0 0">No '+l[1]+'º tri de '+l[0]+': '+(l[2]!=null?'receita de <b>'+qfmt(l[2])+'</b>'+(gr!=null?' ('+sg(gr)+' no ano)':'')+' e ':'')+'lucro de <b>'+qfmt(l[3])+'</b>'+(gl!=null?' ('+sg(gl)+' no ano)':'')+'.'+(t?' Lucro dos últimos 12 meses: <b>'+qfmt(t.a)+'</b>'+(t.g!=null?' ('+sg(t.g)+' contra os 12 meses anteriores)':'')+'.':'')+'</p>'+
     qChart(q,2,'Receita')+qChart(q,3,'Lucro')+'<p class="note">Balanços entregues à CVM (consolidado). O 4º trimestre é o ano inteiro menos os 9 primeiros meses. Toque nas barras para ver cada trimestre.</p></div>'}
 
-var ANV='rel';try{var av0=localStorage.getItem(LS+'-anv');if(av0==='rel'||av0==='opp'||av0==='cls'||av0==='set'||av0==='cmp')ANV=av0}catch(e){}
+var ANV='opp';try{var av0=localStorage.getItem(LS+'-anv');if(av0==='cmp')ANV=av0}catch(e){}
 function anSeg(){var on=0;try{var od=opData();on=od?od.n:0}catch(e){}
-  return '<div class="seg anseg" id="anseg">'+[['rel','Relatório'],['opp','Ideias'+(on?' <i class="mkb">'+on+'</i>':'')],['cls','Classificação'],['set','Setores'],['cmp','Comparar']].map(function(v){return '<button type="button" data-anv="'+v[0]+'" aria-pressed="'+(ANV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>'}
+  return '<div class="seg anseg" id="anseg">'+[['opp','Ideias'+(on?' <i class="mkb">'+on+'</i>':'')],['cmp','Comparar']].map(function(v){return '<button type="button" data-anv="'+v[0]+'" aria-pressed="'+(ANV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>'}
 /* Relatório da carteira (IA): aba própria, sempre aberta, com a data de quando foi escrito logo no topo; o texto de economia (macro) não aparece mais */
 function rsRel(){var c=MD.d&&MD.d.res&&MD.d.res.cart;if(!c||!c.ai)return '<div class="panel"><h2>Relatório da carteira · IA</h2><p class="muted">O relatório chega com o robô, uma vez por dia. Volte em alguns minutos.</p></div>';var a=c.ai;
   var lst=function(t,arr,cl){return arr&&arr.length?'<h3 class="rkh3">'+t+'</h3><ul class="rkl">'+arr.map(function(x){return '<li>'+rkLvl(cl)+'<div><p style="margin:0;color:var(--fg)">'+esc(x)+'</p></div></li>'}).join('')+'</ul>':''};

@@ -133,6 +133,6 @@ function riskHtml(R){
 function rkSimOut(r){r=r||RKC.r;if(!r)return '';var s=RSIM.s/100,im=rkImpact(r,RSIM.f,s);
   return '<p class="rksq">Se <b>'+RFAC[RSIM.f][0]+'</b> '+(s>=0?'subir':'cair')+' <b>'+Math.abs(RSIM.s)+'%</b>, sua carteira '+(im.tot>=0?'ganha':'perde')+' uns <b class="'+cls(im.tot)+'">'+brl.format(Math.abs(im.tot))+'</b> ('+(im.tot>=0?'+':'−')+pf.format(Math.abs(im.tot/r.tot*100))+'%).</p>'+
     '<ul class="calc small">'+im.rows.filter(function(x){return Math.abs(x.v)>=0.5}).sort(function(a,b){return a.v-b.v}).map(function(x){return '<li><span>'+esc(x.tk)+' <span class="muted">'+(x.d>=0?'+':'−')+pf.format(Math.abs(x.d*100))+'%</span></span><span class="num '+cls(x.v)+'">'+(x.v>=0?'+':'−')+brl.format(Math.abs(x.v))+'</span></li>'}).join('')+'</ul>'}
-function renderRisk(R){var el=$('risktab');if(!el)return;try{setHtml(el,riskHtml(R||compute()))}catch(e){setHtml(el,'<div class="panel"><p class="warn">Não consegui calcular o risco agora.</p></div>')}}
+function renderRisk(R){var el=$('risktab');if(!el)return;try{setHtml(el,(function(){try{return rsRel()}catch(e){return ''}})()+riskHtml(R||compute()))}catch(e){setHtml(el,'<div class="panel"><p class="warn">Não consegui calcular o risco agora.</p></div>')}}
 document.addEventListener('input',function(e){var t=e.target;if(t&&t.id==='rk-s'){RSIM.s=+t.value;var o=$('rk-out');if(o)setHtml(o,rkSimOut())}});
 document.addEventListener('change',function(e){var t=e.target;if(t&&t.id==='rk-f'){RSIM.f=t.value;var o=$('rk-out');if(o)setHtml(o,rkSimOut())}});
