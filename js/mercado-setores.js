@@ -125,7 +125,7 @@ function mdStk(tk,rg){
 var STK={tk:'',rng:'1y',d:null,busy:false,err:''},STKC={};
 function stkOpen(tk){if(typeof THE!=='undefined')THE=null;STK={tk:tk,rng:STK.rng||'1y',d:null,busy:false,err:''};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=tk;stkLoad()}
 /* página de um índice (dados do robô diário: Yahoo para bolsas e moedas, Banco Central para CDI e IPCA) */
-function idxOpen(k){var x=idxDef(k);if(x&&x.src==='fut'){try{futLoad()}catch(e){}}STK={tk:'',idx:k,rng:STK.rng&&STK.rng!=='2y'?STK.rng:'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=x?x.n:k;idxRender();if(!MD.d||!MD.d.idx)loadMD(true)}
+function idxOpen(k){var x=idxDef(k);if(x&&(x.src==='fut'||FUTX[k])){try{futLoad()}catch(e){}}STK={tk:'',idx:k,rng:STK.rng&&STK.rng!=='2y'?STK.rng:'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=x?x.n:k;idxRender();if(!MD.d||!MD.d.idx)loadMD(true)}
 function idxRender(){
   var b=$('stk-b'),k=STK.idx,x=idxDef(k),D=MD.d&&MD.d.idx&&MD.d.idx[k],rg=STK.rng;if(!b||!x)return;
   var rate=x.src==='cdi'||x.src==='ipca'||x.src==='selic'||x.k==='tnx',sym=D&&D.sym||'',same=!D||x.src==='usd'||x.src==='fx'||sym===x.s||sym===x.s+'.SA';
@@ -149,6 +149,7 @@ function idxRender(){
   var rows=rate?[['Agora',last!=null?fmt(last):'—'],['Há 1 ano',v1!=null?fmt(v1):'—'],['Há 5 anos',v5!=null?fmt(v5):'—'],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)]]
     .concat(k==='cdi'&&D.acc12!=null?[['Rendeu em 12 meses',pf.format(D.acc12)+'%']]:[]).concat(k==='ipca'&&D.mes!=null?[['Último mês',pf.format(D.mes)+'%']]:[])
     :[['Em 12 meses',chg(v1)],['Em 5 anos',chg(v5)],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)],['Distância da máxima',last&&hi?'−'+pf.format(Math.abs((last/hi-1)*100))+'%':'—']];
+  h+=futStrip(k);
   h+='<h3 style="margin:18px 0 6px">Resumo</h3><div class="kpis">'+rows.map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'}).join('')+'</div>'+
     '<p class="note">'+(rate?(k==='cdi'?'CDI em % ao ano, do Banco Central. É o juro que os bancos cobram entre si e fica sempre um pouco abaixo da Selic; é ele que rende CDB, LCI e LCA.':k==='selic'?'Selic meta em % ao ano, do Banco Central. É a taxa básica de juros, definida pelo Copom a cada 45 dias; o CDI anda colado nela, uns 0,10 ponto abaixo.':'IPCA acumulado em 12 meses, do Banco Central (IBGE).'):(same?'Histórico do Yahoo Finance'+(sym?' ('+esc(sym)+')':'')+', atualizado pelo robô diário; o valor de agora vem das APIs do app.':'Gráfico do próprio índice ('+esc(sym)+', Yahoo Finance) pelo fechamento mais recente; a variação de hoje vem do '+esc(x.s)+', que acompanha o índice.'))+'</p>';
   setHtml(b,h);
