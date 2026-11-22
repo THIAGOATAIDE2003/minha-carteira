@@ -66,6 +66,8 @@ function finGet(kind,sym){var k=kind+'/'+sym,px=kind==='intra'&&pxBase(),ttl=kin
   FIN[k]={p:p,d:old,at:0};return p}
 /* base da variação: primeiro ponto do pregão (sem o pré-mercado); e fecha o gráfico no último preço conhecido, se for mais novo que o último ponto */
 function finBase(h){for(var i=0;i<h.length;i++)if(!h[i].x)return h[i].c;return h.length?h[0].c:null}
+/* último ponto do pregão regular (sem o pós-mercado): é daí que parte a variação do topo, como no Google; o pós-mercado fica na linha própria (extHtml) */
+function finLast(h){for(var i=h.length-1;i>=0;i--)if(!h[i].x)return h[i].c;return h[h.length-1].c}
 function finTail(h,price,at,fo){if(!h||!h.length||!(price>0)||!(at>h[h.length-1].t)||!fo||!fo.intra)return h;var l=h[h.length-1];if(Math.abs(price/l.c-1)<1e-6)return h;
   var q=fo.off==null?null:((((at/1000+fo.off)%86400)+86400)%86400),pt={t:at,c:price};if(fo.ext&&q!=null&&(q<34200||q>=57600))pt.x=1;return h.concat([pt])}
 function finRedo(){if($('stk').hidden)return;if(STK.hero)heroRender();else if(STK.idx)idxRender();else stkRender()}
