@@ -77,7 +77,7 @@ function loadMkt(force){
   Promise.all(jobs).then(function(){MKT.at=Date.now();MKT.busy=false;mktSave();renderMkt()});
 }
 var IDZ={ibov:0,XFIX11:0,SMAL11:0,DIVO11:0,SPY:1,QQQ:1,DIA:1,ACWI:1,EEM:1};
-function idxVal(x){var r=idxVal0(x);if(r&&r.p!=null&&IDZ[x.k]!=null&&dzero(!!IDZ[x.k],MKT.at))return {v:r.v,p:0,sub:r.sub};return r}
+function idxVal(x){var r=idxVal0(x);if(r&&r.p!=null&&(x.src==='usd'||x.src==='fx')&&fxParado())return {v:r.v,p:0,sub:r.sub};if(r&&r.p!=null&&IDZ[x.k]!=null&&dzero(!!IDZ[x.k],MKT.at))return {v:r.v,p:0,sub:r.sub};return r}
 function idxVal0(x){var I=MKT.idx;
   if(x.k==='ibov'||x.k==='eur'){var tv=tapeIdx(x.k==='ibov'?'IBOV':'EURO');if(tv&&(!I[x.k]||MKT.at<tv.at))return {v:tv.v,p:tv.p}}
   if(x.src==='cmd'){var tv=x.tp&&tapeIdx(x.tp),D0=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(tv)return {v:tv.v,p:tv.p,sub:'robô, a cada 15 min no pregão'};if(D0&&D0.d&&D0.d.length>1){var l0=D0.d[D0.d.length-1][1],l1=D0.d[D0.d.length-2][1];return {v:l0,p:(l0/l1-1)*100,sub:'último fechamento'}}return null}

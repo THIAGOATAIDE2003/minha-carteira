@@ -30,6 +30,8 @@ function usHol(ymd){var y=+ymd.slice(0,4);if(!USHC[y]){var o={},f=function(m,d){
   o[new Date(Date.UTC(y,mo-1,da)-2*864e5).toISOString().slice(0,10)]=1;USHC[y]=o}return !!USHC[y][ymd]}
 function nyNow(){try{var p={};new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value});
   var d=new Date(Date.UTC(+p.year,+p.month-1,+p.day));return {d:d,min:(+p.hour%24)*60+ +p.minute}}catch(e){return null}}
+/* câmbio (dólar, euro...) negocia de domingo 17h a sexta 17h (Nova York); fora disso a variação do dia fica zerada */
+function fxParado(){var n=nyNow();if(!n)return false;var w=n.d.getUTCDay();return w===6||(w===5&&n.min>=1020)||(w===0&&n.min<1020)}
 function usBDay(d){var w=d.getUTCDay();return w>=1&&w<=5&&!usHol(d.toISOString().slice(0,10))}
 function hfm(m){var h=Math.floor(m/60),n=m%60;return h+'h'+(n?(n<10?'0':'')+n:'')}
 function dur(m){return m<60?m+' min':hfm(m)}
@@ -90,10 +92,11 @@ function tapeItems(){
     if(l==='DÓLAR'&&S.fx&&S.fx.src==='auto'&&S.fx.prev){v=S.fx.rate;p=S.fx.prev}
     var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if(TPIX[l]&&dzero(l!=='IBOV',tat))p=v
     var ik=l==='IBOV'?'ibov':l==='EURO'?'eur':'',mi=ik&&MKT.idx[ik];if(mi&&mi.v>0&&mi.p!=null&&MKT.at>MD.d.tape.ts*1000){v=mi.v;p=mi.v/(1+mi.p/100)}
+    if((l==='DÓLAR'||l==='EURO')&&fxParado())p=v;
     add(l,v,p,c,st,x[5])});
   try{R=compute()}catch(e){}
   if(R)R.held.forEach(function(x){var tk=x.p.ticker,lv=livePx(tk);if(lv&&lv.pct!=null)add(tk,lv.p,lv.p/(1+lv.pct/100),x.p.market==='US'?'USD':'BRL',1)});
-  if(!seen['DÓLAR']&&S.fx&&S.fx.prev)add('DÓLAR',S.fx.rate,S.fx.prev,'BRL',0,'usd');
+  if(!seen['DÓLAR']&&S.fx&&S.fx.prev)add('DÓLAR',S.fx.rate,fxParado()?S.fx.rate:S.fx.prev,'BRL',0,'usd');
   return it}
 function tapeVal(x){if(/^JUROS/.test(x.l))return pf.format(x.v)+'%';if(TPIX[x.l])return num(x.v,x.v>=1000?0:2);if(x.l==='DÓLAR'||x.l==='EURO')return 'R$ '+num(x.v,4);if(x.c==='USD')return x.v>=1000?'US$ '+num(x.v,0):usd.format(x.v);return brl.format(x.v)}
 function tapeIn(x){var c=Math.abs(x.p)<0.005?'z':x.p>0?'g':'l';return [tapeVal(x),c,(c==='z'?'':x.p>0?'▲ ':'▼ ')+pf.format(Math.abs(x.p))+'%']}

@@ -59,7 +59,7 @@ function renderSummary(R){
       (dok&&dp>0?'<div class="hcm"><b class="num '+cls(dn-dp)+'">'+sgn(dn-dp)+'</b><span class="num '+cls(dn-dp)+'">'+pct((dn-dp)/dp)+' '+arrow(dn-dp)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
       (pB?'<div><small>Brasil</small><span class="num '+cls(dB)+'">'+pct(dB/pB)+'</span></div>':'')+(pU?'<div><small>VT</small><span class="num '+cls(dU)+'">'+pct(dU/pU)+'</span></div>':'')+(times.length&&dl.t==='hoje'?'<div><small>Preços de</small><span'+(mktOpen()&&Date.now()-times[times.length-1]>30*60000?' class="loss" title="atrasados"':'')+'>'+hm(times[times.length-1])+(mktOpen()&&Date.now()-times[times.length-1]>30*60000?' (atrasados)':'')+'</span></div>':''),'dia')];
   var nUSh=R.held.some(function(x){return x.p.market==='US'&&x.p.qty>0});
-  if(nUSh){var fxr=(fxToday()||{}).rate,fp=S.fx&&S.fx.prev>0&&S.fx.src==='auto'?S.fx.prev:0,vUh=0;R.held.forEach(function(x){if(x.p.market==='US')vUh+=x.p.qty*x.P1});
+  if(nUSh){var fxr=(fxToday()||{}).rate,fp=S.fx&&S.fx.prev>0&&S.fx.src==='auto'?(fxParado()&&fxr?fxr:S.fx.prev):0,vUh=0;R.held.forEach(function(x){if(x.p.market==='US')vUh+=x.p.qty*x.P1});
     var fxp2=T.uA+T.rfU+T.uF-VZ.pv,dc=fp&&fxr?vUh*(fxr-fp):null;
     cards.push(card(IC.cam,'Câmbio','O dólar contra o real. O número grande é quanto o dólar de hoje mexeu no seu VT (em reais). Abaixo, o dólar agora e quanto o câmbio já deu de lucro (ou prejuízo) no que você tem em dólar desde as compras. Toque para ver o histórico.',
       (dc!=null?'<div class="hcm"><b class="num '+cls(dc)+'">'+sgn(dc)+'</b><span class="num '+cls(dc)+'">'+pct(fxr/fp-1)+' '+arrow(dc)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
