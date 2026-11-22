@@ -32,6 +32,13 @@ function nyNow(){try{var p={};new Intl.DateTimeFormat('en-US',{timeZone:'America
   var d=new Date(Date.UTC(+p.year,+p.month-1,+p.day));return {d:d,min:(+p.hour%24)*60+ +p.minute}}catch(e){return null}}
 /* câmbio (dólar, euro...) negocia de domingo 17h a sexta 17h (Nova York); fora disso a variação do dia fica zerada */
 function fxParado(){var n=nyNow();if(!n)return false;var w=n.d.getUTCDay();return w===6||(w===5&&n.min>=1020)||(w===0&&n.min<1020)}
+/* futuros e commodities (CME): fechado de sexta 17h a domingo 18h (Nova York) e na pausa diária das 17h às 18h */
+function cmeParado(){var n=nyNow();if(!n)return false;var w=n.d.getUTCDay();return w===6||(w===5&&n.min>=1020)||(w===0&&n.min<1080)||(w>=1&&w<=4&&n.min>=1020&&n.min<1080)}
+/* bolsas da Europa: seg a sex, 9h às 17h30 (Londres 8h às 16h30), no horário local */
+function euParado(k){try{var tz=k==='^FTSE'?'Europe/London':k==='^IBEX'||k==='^FCHI'||k==='^GDAXI'||k==='FTSEMIB.MI'?(k==='^IBEX'?'Europe/Madrid':k==='^FCHI'?'Europe/Paris':k==='^GDAXI'?'Europe/Berlin':'Europe/Rome'):'Europe/Paris',p={};new Intl.DateTimeFormat('en-US',{timeZone:tz,weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value});
+  var m=(+p.hour%24)*60+ +p.minute,wk=p.weekday!=='Sat'&&p.weekday!=='Sun',a=k==='^FTSE'?480:540,f=k==='^FTSE'?990:1050;return !(wk&&m>=a&&m<f)}catch(e){return false}}
+/* mercado fechado agora? vale para os cartões de Índices e a faixa: variação do dia fica neutra (bolsas BR/EUA já passam por dzero) */
+function idxFechado(x){if(!x)return false;if(x.k==='usd'||x.k==='eur'||x.k==='gbp')return fxParado();if(x.k==='tnx')return dzero(true,0);if(x.src==='cmd')return cmeParado();if(x.src==='fut')return euParado(x.k);return false}
 function usBDay(d){var w=d.getUTCDay();return w>=1&&w<=5&&!usHol(d.toISOString().slice(0,10))}
 function hfm(m){var h=Math.floor(m/60),n=m%60;return h+'h'+(n?(n<10?'0':'')+n:'')}
 function dur(m){return m<60?m+' min':hfm(m)}
@@ -92,7 +99,7 @@ function tapeItems(){
     if(l==='DÓLAR'&&S.fx&&S.fx.src==='auto'&&S.fx.prev){v=S.fx.rate;p=S.fx.prev}
     var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if(TPIX[l]&&dzero(l!=='IBOV',tat))p=v
     var ik=l==='IBOV'?'ibov':l==='EURO'?'eur':'',mi=ik&&MKT.idx[ik];if(mi&&mi.v>0&&mi.p!=null&&MKT.at>MD.d.tape.ts*1000){v=mi.v;p=mi.v/(1+mi.p/100)}
-    if((l==='DÓLAR'||l==='EURO')&&fxParado())p=v;
+    var dk=x[5]||(l==='DÓLAR'?'usd':l==='EURO'?'eur':''),dd=dk&&idxDef(dk);if(dd&&idxFechado(dd))p=v;
     add(l,v,p,c,st,x[5])});
   try{R=compute()}catch(e){}
   if(R)R.held.forEach(function(x){var tk=x.p.ticker,lv=livePx(tk);if(lv&&lv.pct!=null)add(tk,lv.p,lv.p/(1+lv.pct/100),x.p.market==='US'?'USD':'BRL',1)});
