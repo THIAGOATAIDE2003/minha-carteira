@@ -168,6 +168,7 @@ document.addEventListener('click',function(e){
   var wt=t.closest&&t.closest('[data-wtog]');if(wt){var tk2=wt.getAttribute('data-wtog'),W2=wlist().slice();if(W2.indexOf(tk2)>=0)W2=W2.filter(function(x){return x!==tk2});else W2.push(tk2);watchSet(W2);stkRender();renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(W2.indexOf(tk2)>=0)loadMkt(true);return}
   var io=t.closest&&t.closest('[data-idxo]');if(io&&!(t.closest('.idxx'))){idxOpen(io.getAttribute('data-idxo'));return}
   var aj=t.closest&&t.closest('[data-ajv]');if(aj){AJV=aj.getAttribute('data-ajv');try{localStorage.setItem(LS+'-ajv',AJV)}catch(e){}ajApply();return}
+  var ixv=t.closest&&t.closest('[data-ixv]');if(ixv){IXV=ixv.getAttribute('data-ixv')==='fg'?'fg':'lista';try{localStorage.setItem(LS+'-ixv',IXV)}catch(e){}renderMkt();return}
   var mv=t.closest&&t.closest('[data-mkv]');if(mv){MKV=mv.getAttribute('data-mkv');try{localStorage.setItem(LS+'-mkv',MKV)}catch(e){}if($('mk-q'))$('mk-q').value='';renderMkt();return}
   var sr=t.closest&&t.closest('[data-scr]');if(sr){SCR=sr.getAttribute('data-scr');renderMkt();return}
   var it=t.closest&&t.closest('[data-idxt]');if(it){var ik=it.getAttribute('data-idxt'),A=idxSel().slice();if(A.indexOf(ik)>=0)A=A.filter(function(x){return x!==ik});else A.push(ik);idxSet(A);renderMkt();if($('mk-q')&&$('mk-q').value)mkSearch($('mk-q').value);if(A.indexOf(ik)>=0)loadMkt(true);return}

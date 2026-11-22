@@ -6,7 +6,7 @@ var FUTL=[['ES=F','S&P 500'],['NQ=F','Nasdaq'],['YM=F','Dow Jones'],['RTY=F','Ru
 function fgZ(v){return v<25?['Medo extremo','var(--loss)']:v<45?['Medo','#e8a05a']:v<56?['Neutro','var(--muted)']:v<76?['Ganância','#8fd08a']:['Ganância extrema','var(--gain)']}
 function fgArc(a,b,col){var R=100,r=70,c=function(t,q){var x=Math.PI*(1-t/100);return [120+q*Math.cos(x),115-q*Math.sin(x)]},p1=c(a,R),p2=c(b,R),p3=c(b,r),p4=c(a,r),f=function(n){return n.toFixed(1)};
   return '<path d="M'+f(p1[0])+' '+f(p1[1])+' A'+R+' '+R+' 0 0 1 '+f(p2[0])+' '+f(p2[1])+' L'+f(p3[0])+' '+f(p3[1])+' A'+r+' '+r+' 0 0 0 '+f(p4[0])+' '+f(p4[1])+' Z" fill="'+col+'" opacity=".85"/>'}
-var FGT=0;
+var FGT=0,IXV='lista';try{IXV=localStorage.getItem(LS+'-ixv')==='fg'?'fg':'lista'}catch(e){}
 function fgHtml(){var g=MD.d&&MD.d.fg;if(!g||!(g.score>=0)){if(Date.now()-FGT>120000&&!MD.busy){FGT=Date.now();loadMD(true).then(function(){try{if(MD.d&&MD.d.fg&&MKV==='idx')renderMkt()}catch(e){}})}return ''}var z=fgZ(g.score),x=Math.PI*(1-g.score/100),nx=120+78*Math.cos(x),ny=115-78*Math.sin(x),
   zs=[[0,24.5],[25.5,44.5],[45.5,55.5],[56.5,75.5],[76.5,100]],cols=['var(--loss)','#e8a05a','var(--muted)','#8fd08a','var(--gain)'],
   rows=[['Fechamento anterior',g.prev],['1 semana atrás',g.w1],['1 mês atrás',g.m1],['1 ano atrás',g.y1]].filter(function(r){return r[1]!=null}),
