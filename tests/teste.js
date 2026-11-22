@@ -219,13 +219,12 @@ function contasAMao(F, P) {
       S.orc = undefined; S.pend.length = pend0; ORM = ''; showTab('resumo');
       return [a.ent, a.gas, a.apo, a.sobra, a.livre, b.ent, /Sobra do m/.test(h1), /class="orb"><i class="ok"/.test(h1), /class="orb"><i class="bad"/.test(h2), cz, op, pa, cf.gas, fb, fb2, /class="orsk"/.test(h1) && /Para onde vai o sal/.test(h1),
         lz, c2.vr, /resta R\$(&nbsp;|\s)?915,00/.test(h3), lz2, lm, mg.c2, rk, gd, /Onde mais gasto/.test(ha) && /Aluguel/.test(ha) && /Cr.dito/.test(ha), ini]; });
-    /* futuros vivem dentro do índice (S&P/Nasdaq/Dow) e a Europa abre a página do índice; cartões mostram ao vivo/fechado */
+    /* futuros vivem dentro do índice (S&P/Nasdaq/Dow), sem painel nem perfil próprio */
     const fut = await pg.evaluate(function () {
-      var now = Math.floor(Date.now() / 1000); S.keys.proxy = 'https://x.workers.dev'; FUT.d = { 'ES=F': { p: 7000, prev: 6900, t: now - 60 }, '^FTSE': { p: 8000, prev: 8100, t: now - 86400 * 2 }, EWZ: { p: 30, prev: 29, t: now } }; FUT.at = Date.now(); FUT.ok = true; FUT.x = {};
-      var h = futHtml(), ok = /data-idxo="SPY"/.test(h) && /data-idxo="\^FTSE"/.test(h) && /data-stk="EWZ"/.test(h) && !/data-idxo="ES=F"/.test(h) && /ao vivo/.test(h) && /fechado/.test(h);
-      var st = futStrip('SPY'), sv = /Futuro do S&amp;P 500/.test(st) && /ao vivo/.test(st) && /7\.000/.test(st), nq = futStrip('ibov') === '', nada = !IDX.some(function (x) { return x.k === 'ES=F' || x.k === 'EWZ'; });
-      S.keys.proxy = ''; FUT.d = {}; return [ok, sv, nq, nada]; });
-    confere('Futuros dentro do índice, sem perfil próprio', fut, [true, true, true, true]);
+      var now = Math.floor(Date.now() / 1000); FUT.d = { 'ES=F': { p: 7000, prev: 6900, t: now - 60 }, 'NQ=F': { p: 25000, prev: 25100, t: now - 86400 * 2 } }; FUT.ok = true;
+      var st = futStrip('SPY'), sv = /Futuro do S&amp;P 500/.test(st) && /ao vivo/.test(st) && /7\.000/.test(st), fe = /fechado/.test(futStrip('QQQ')), nq = futStrip('ibov') === '', nada = !IDX.some(function (x) { return x.k === 'ES=F' || x.k === 'EWZ'; }), semPainel = typeof futHtml === 'undefined';
+      FUT.d = {}; return [sv, fe, nq, nada, semPainel]; });
+    confere('Futuros dentro do índice, sem painel nem perfil próprio', fut, [true, true, true, true, true]);
     /* pré e pós-mercado: pontos fora do pregão vêm marcados, o gráfico pinta de cinza e quem não pede (Início) não os recebe */
     const ext = await pg.evaluate(function () {
       var off = -18000, mk = function (d, h, m) { return Date.UTC(2026, 10, d, h, m) / 1000 - off; }, P = [[19, 9, 30, 147], [19, 15, 55, 147.17], [20, 5, 0, 146], [20, 9, 30, 146.3], [20, 12, 0, 144], [20, 15, 55, 142.08], [20, 16, 5, 142.5], [20, 19, 55, 142.2]].map(function (r) { return [mk(r[0], r[1], r[2]), r[3]]; });
