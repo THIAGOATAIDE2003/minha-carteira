@@ -58,7 +58,6 @@ function renderMkt0(){
   var h='<div class="seg" id="mkseg">'+[['min','Minhas ações'],['idx','Índices'],['bc','BC'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
   if(MKV!=='bc')h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice, moeda ou ação':MKV==='ana'?'Buscar ação (sigla ou nome)':'Buscar ação: sigla ou nome (ex.: magalu)')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
-  try{h+=mktOverview()}catch(e){}
   try{h+=bcCard()}catch(e){}
   try{h+=futHtml();futLoad()}catch(e){}
   h+='<div class="panel"><div class="grp"><h2>Índices</h2><span style="display:flex;gap:10px;align-items:center"><span class="det">'+(MKT.busy?'atualizando...':MKT.at?'às '+new Date(MKT.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'')+'</span><button type="button" class="link" data-mked="1">'+(MKED?'Pronto':'Editar')+'</button></span></div>'+

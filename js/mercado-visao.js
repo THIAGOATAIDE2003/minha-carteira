@@ -24,20 +24,6 @@ function futHtml(){
   if(pre.length)h+='<p class="muted small" style="margin:10px 0 6px">Pré-mercado e após o fechamento (suas ações dos EUA)</p><div class="idxg">'+pre.map(function(t){var e=x[t],pc=(e.p/e.ref-1)*100;
     return '<div class="idx" data-stk="'+esc(t)+'" role="button" tabindex="0"><small>'+esc(t)+' · '+(e.fase==='pre'?'pré':'pós')+'</small><b>'+usd.format(e.p)+'</b><span class="num '+cls(pc)+'">'+sg0(pc)+pf.format(Math.abs(pc))+'%</span></div>'}).join('')+'</div>';
   return h+'</div>'}
-function mktOverview(){var it=tapeItems();if(it.length<3)return '';
-  var by={};it.forEach(function(x){by[x.l]=x});
-  var key=[['IBOV','Ibovespa','ibov'],['S&P 500','S&P 500','SPY'],['NASDAQ','Nasdaq','QQQ'],['DÓLAR','Dólar','usd'],['JUROS EUA 10A','Juros EUA','tnx'],['PETRÓLEO','Petróleo','brent'],['MINÉRIO','Minério','iron'],['OURO','Ouro','GLD'],['BITCOIN','Bitcoin','btc']].filter(function(k){return by[k[0]]});
-  var sg=function(p){return (p>=0?'+':'−')+pf.format(Math.abs(p))+'%'};
-  var st=it.filter(function(x){return x.st}).slice().sort(function(a,b){return b.p-a.p}),up=st.filter(function(x){return x.p>0}).slice(0,3),dn=st.filter(function(x){return x.p<0}).slice(-3).reverse();
-  var R=compute(),dv=0,dp=0;R.held.forEach(function(x){var lv=livePx(x.p.ticker);if(!lv||lv.pct==null)return;var F=x.p.market==='US'?(R.tot.fxNow||1):1,a=x.p.qty*lv.p*F,b=a/(1+lv.pct/100);dv+=a-b;dp+=b});
-  var d=MD.d&&MD.d.res&&MD.d.res.dia,a=d&&d.ai,dl=dayLbl();
-  var h='<div class="panel mko"><div class="grp"><h2>Resumo do mercado '+bal('Como foi o dia na bolsa: texto da IA, variação dos principais índices, dólar, juros e commodities, quanto sua carteira mexeu e as maiores altas e quedas.')+'</h2><span class="det">'+(dl.t==='hoje'?'hoje':'último pregão')+'</span></div>';
-  if(a)h+='<p class="mkot">'+esc(a.titulo||'')+'</p><p class="anv" style="margin-top:4px">'+esc(a.texto||'')+'</p>'+(a.carteira?'<p class="anv mkoc">'+esc(a.carteira)+'</p>':'');
-  h+='<div class="mkog">'+key.map(function(k){var x=by[k[0]],c=Math.abs(x.p)<0.005?'':x.p>0?'gain':'loss';return '<button type="button" data-idxo="'+k[2]+'"><span>'+k[1]+'</span><b class="num '+c+'">'+sg(x.p)+'</b></button>'}).join('')+'</div>';
-  if(dp)h+='<div class="mkoy"><span>Sua carteira '+(dl.t==='hoje'?'hoje':'no último pregão')+'</span><b class="num '+cls(dv)+'">'+sgn(dv)+' <small>('+sg(dv/dp*100)+')</small></b></div>';
-  if(up.length||dn.length)h+='<div class="mkom"><div><span class="lbl">Maiores altas</span>'+up.map(function(x){return '<button type="button" data-stk="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span class="gain">'+sg(x.p)+'</span></button>'}).join('')+'</div><div><span class="lbl">Maiores quedas</span>'+dn.map(function(x){return '<button type="button" data-stk="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span class="loss">'+sg(x.p)+'</span></button>'}).join('')+'</div></div>';
-  h+='<p class="small muted" style="margin:10px 0 0">'+(a?'Texto da IA ('+esc(d.mod||'')+') em '+rsWhen(d.at)+'. ':'')+'Números da faixa de cotações, entre as grandes empresas do Brasil e dos EUA.</p></div>';
-  return h}
 /* ===== Resultados trimestrais (CVM) na página da ação ===== */
 function cvmQ(tk){var c=MD.d&&MD.d.cvm&&MD.d.cvm.q,q=c&&c[tk];return Array.isArray(q)?q.map(function(x){var y=x.slice();y[2]=x[2]?x[2]:null;return y}):null}
 function qfmt(v){if(v==null)return '—';var a=Math.abs(v),s=v<0?'−':'';return s+'R$ '+(a>=1e9?num(a/1e9,a>=1e10?1:2)+' bi':num(a/1e6,0)+' mi')}
