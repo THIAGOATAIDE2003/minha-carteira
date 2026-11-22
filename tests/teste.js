@@ -219,13 +219,13 @@ function contasAMao(F, P) {
       S.orc = undefined; S.pend.length = pend0; ORM = ''; showTab('resumo');
       return [a.ent, a.gas, a.apo, a.sobra, a.livre, b.ent, /Sobra do m/.test(h1), /class="orb"><i class="ok"/.test(h1), /class="orb"><i class="bad"/.test(h2), cz, op, pa, cf.gas, fb, fb2, /class="orsk"/.test(h1) && /Para onde vai o sal/.test(h1),
         lz, c2.vr, /resta R\$(&nbsp;|\s)?915,00/.test(h3), lz2, lm, mg.c2, rk, gd, /Onde mais gasto/.test(ha) && /Aluguel/.test(ha) && /Cr.dito/.test(ha), ini]; });
-    /* futuros, Europa e EWZ: os cartões abrem a página do índice (antes não faziam nada) e mostram se está ao vivo ou fechado */
+    /* futuros vivem dentro do índice (S&P/Nasdaq/Dow) e a Europa abre a página do índice; cartões mostram ao vivo/fechado */
     const fut = await pg.evaluate(function () {
       var now = Math.floor(Date.now() / 1000); S.keys.proxy = 'https://x.workers.dev'; FUT.d = { 'ES=F': { p: 7000, prev: 6900, t: now - 60 }, '^FTSE': { p: 8000, prev: 8100, t: now - 86400 * 2 }, EWZ: { p: 30, prev: 29, t: now } }; FUT.at = Date.now(); FUT.ok = true; FUT.x = {};
-      var h = futHtml(), ok = /data-idxo="ES=F"/.test(h) && /data-idxo="\^FTSE"/.test(h) && /data-idxo="EWZ"/.test(h) && /ao vivo/.test(h) && /fechado/.test(h);
-      var v = idxVal0(idxDef('ES=F')), a = v && Math.round(v.p * 100) / 100; idxOpen('ES=F'); var t = document.getElementById('stk-h').textContent; document.getElementById('stk').hidden = true; document.body.style.overflow = ''; S.keys.proxy = ''; FUT.d = {};
-      return [ok, a, t]; });
-    confere('Futuros e Europa: cartões clicáveis, ao vivo/fechado e página do índice', fut, [true, 1.45, 'S&P 500 futuro']);
+      var h = futHtml(), ok = /data-idxo="SPY"/.test(h) && /data-idxo="\^FTSE"/.test(h) && /data-stk="EWZ"/.test(h) && !/data-idxo="ES=F"/.test(h) && /ao vivo/.test(h) && /fechado/.test(h);
+      var st = futStrip('SPY'), sv = /Futuro do S&amp;P 500/.test(st) && /ao vivo/.test(st) && /7\.000/.test(st), nq = futStrip('ibov') === '', nada = !IDX.some(function (x) { return x.k === 'ES=F' || x.k === 'EWZ'; });
+      S.keys.proxy = ''; FUT.d = {}; return [ok, sv, nq, nada]; });
+    confere('Futuros dentro do índice, sem perfil próprio', fut, [true, true, true, true]);
     confere('Orçamento: contas, %, fixo do mês, envelopes e gastos lançados', orc, [4100, 1600, 1000, 400, 1400, 3800, true, true, true, 0, 'orc', [282, 128, 256, 410, 51], 1800, 350, undefined, true, 85, 585, true, 35, 1200.5, 120, 'Aluguel:800,Mercado:600,Luz:300', 2400, true, ['2026-11', '2026-11,2026-12']]);
     /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */
     await pg.clock.setFixedTime(new Date('2026-11-20T03:50:00Z'));
