@@ -38,7 +38,8 @@ function lineChart(hist,cur,pm,fmt,o){o=o||{};var gid='skg'+(++GID);
   var W=320,H=190,vs=hist.map(function(p){return p.c}),lo=Math.min.apply(null,vs),hi=Math.max.apply(null,vs);if(pm)vs.push(pm);if(o.prev)vs.push(o.prev);
   var mn=Math.min.apply(null,vs),mx=Math.max.apply(null,vs),pd=(mx-mn)*.08||mx*.02;mn-=pd;mx+=pd;
   var n=hist.length,x=function(i){return ((i+.5)/n*W).toFixed(1)},yf=function(v){return (H-4-(v-mn)/(mx-mn)*(H-8))/H},y=function(v){return (yf(v)*H).toFixed(1)},up=hist[n-1].c>=(o.prev||hist[0].c);
-  var pts=hist.map(function(p,i){return x(i)+','+y(p.c)}).join(' '),col=up?'var(--gain)':'var(--loss)',F=fmt?{format:fmt}:cur==='USD'?usd:brl;
+  var pts=hist.map(function(p,i){return x(i)+','+y(p.c)}).join(' '),hasX=hist.some(function(p){return p.x}),runs=[],col=up?'var(--gain)':'var(--loss)',F=fmt?{format:fmt}:cur==='USD'?usd:brl;
+  if(hasX)hist.forEach(function(p,i){var f=!!p.x,r=runs[runs.length-1];if(!r||r.x!==f)runs.push({x:f,a:i>0?i-1:i,e:i});else r.e=i});/* trechos seguidos de pregão e fora do pregão; cada um começa no ponto anterior para a linha não ter buraco */
   var span=(hist[n-1].t-hist[0].t)/864e5,step=Math.max(1,Math.ceil(n/90)),tp=[];for(var i=0;i<n;i+=step)tp.push(i);if(tp[tp.length-1]!==n-1)tp.push(n-1);
   var wd=['dom.','seg.','ter.','qua.','qui.','sex.','sáb.'],mm=['jan.','fev.','mar.','abr.','mai.','jun.','jul.','ago.','set.','out.','nov.','dez.'];
   var dl=function(t){var q=new Date(t),b=wd[q.getDay()]+', '+q.getDate()+' de '+mm[q.getMonth()]+(span>300?' de '+q.getFullYear():'');return o.intra?(o.d1?'':b+', ')+('0'+q.getHours()).slice(-2)+':'+('0'+q.getMinutes()).slice(-2):b};
@@ -46,13 +47,13 @@ function lineChart(hist,cur,pm,fmt,o){o=o||{};var gid='skg'+(++GID);
   var tk=niceTicks(mn+pd*.4,mx-pd*.4,4),dec=tk.st>=1?0:tk.st>=.1?2:3,lab=function(v){return fmt&&/%/.test(fmt(v))?fmt(v):num(v,dec)},xt=xTicks(hist,o).filter(function(t,k,a){var pc=(t.i+.5)/n*100,pv=k?(a[k-1].pc||0):-99;t.pc=pc;if(pc-(a._l==null?-99:a._l)<34&&k)return false;a._l=pc;return true});
   return '<div class="gch"><div class="gyc">'+tk.t.map(function(v){return '<span style="top:'+(yf(v)*100).toFixed(2)+'%">'+esc(lab(v))+'</span>'}).join('')+'</div><div class="gcw"><div class="tipc"'+tipAttr(tip)+'><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" width="100%" height="'+H+'" role="img" aria-label="Gráfico de preço"><defs><linearGradient id="'+gid+'" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:'+col+';stop-opacity:.38"/><stop offset="1" style="stop-color:'+col+';stop-opacity:.04"/></linearGradient></defs>'+
     tk.t.map(function(v){return '<line x1="0" x2="'+W+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)" stroke-width="1" vector-effect="non-scaling-stroke"/>'}).join('')+
-    '<polygon points="'+x(0)+','+H+' '+pts+' '+x(n-1)+','+H+'" fill="url(#'+gid+')"/><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>'+
+    (hasX?runs.map(function(r){var q=hist.slice(r.a,r.e+1).map(function(pp,k){return x(r.a+k)+','+y(pp.c)}).join(' ');return r.x?'<polyline points="'+q+'" fill="none" stroke="var(--muted)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>':'<polygon points="'+x(r.a)+','+H+' '+q+' '+x(r.e)+','+H+'" fill="url(#'+gid+')"/><polyline points="'+q+'" fill="none" stroke="'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>'}).join(''):'<polygon points="'+x(0)+','+H+' '+pts+' '+x(n-1)+','+H+'" fill="url(#'+gid+')"/><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>')+
     (o.prev?'<line x1="0" x2="'+W+'" y1="'+y(o.prev)+'" y2="'+y(o.prev)+'" stroke="var(--muted)" stroke-dasharray="1 4" stroke-width="1.5" vector-effect="non-scaling-stroke"/>':'')+
     (pm?'<line x1="0" x2="'+W+'" y1="'+y(pm)+'" y2="'+y(pm)+'" stroke="var(--c2)" stroke-dasharray="5 4" stroke-width="1.5" vector-effect="non-scaling-stroke"/>':'')+
     '<line x1="0" x2="'+W+'" y1="'+(H-.5)+'" y2="'+(H-.5)+'" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke"/>'+
     xt.map(function(t){return '<line x1="'+x(t.i)+'" x2="'+x(t.i)+'" y1="'+(H-6)+'" y2="'+H+'" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke"/>'}).join('')+'</svg></div>'+
     '<div class="gx">'+xt.map(function(t){var pc=(t.i+.5)/n*100;return '<span style="left:'+pc.toFixed(1)+'%"'+(pc>86?' class="r"':pc<10?' class="l"':'')+'>'+esc(t.l)+'</span>'}).join('')+'</div></div></div>'+
-    (o.prev?'<div class="spkl" style="color:var(--muted)"><span class="lg"><i class="d"></i>antes do fechamento: '+esc(F.format(o.prev))+'</span></div>':'')+(pm?'<div class="spkl" style="color:var(--muted)"><span class="lg"><i class="d" style="border-color:var(--c2)"></i>seu preço médio</span></div>':'');
+    (o.prev?'<div class="spkl" style="color:var(--muted)"><span class="lg"><i class="d"></i>antes do fechamento: '+esc(F.format(o.prev))+'</span>'+(hasX?'<span class="lg"><i class="d" style="border-style:solid;border-color:var(--muted)"></i>cinza: pré e pós-mercado</span>':'')+'</div>':'')+(pm?'<div class="spkl" style="color:var(--muted)"><span class="lg"><i class="d" style="border-color:var(--c2)"></i>seu preço médio</span></div>':'');
 }
 /* dados finos do robô (repositório privado, pasta dados/): um arquivo por ativo, baixado só quando precisa */
 var FIN={};
@@ -60,18 +61,20 @@ function ySym(tk){return tk.charAt(0)==='^'||!isBR(tk)?tk:tk+'.SA'}
 function finGet(kind,sym){var k=kind+'/'+sym,px=kind==='intra'&&pxBase(),ttl=kind==='intra'?(px?60000:240000):6*3600000,c=FIN[k];
   if(c&&c.p)return c.p;if(c&&(c.err?Date.now()-c.at<60000:c.d!==undefined&&Date.now()-c.at<ttl))return Promise.resolve(c.d);if(!S.keys.gh&&!px){FIN[k]={d:null,at:Date.now()};return Promise.resolve(null)}
   var ac=new AbortController(),to=setTimeout(function(){ac.abort()},15000),old=c&&c.d;
-  var p=(px?fetch(px+'/i?s='+encodeURIComponent(sym),{signal:ac.signal}):fetch('https://api.github.com/repos/'+ghRepo()+'/contents/dados/'+kind+'/'+sym.replace(/[^A-Za-z0-9._-]/g,'_')+'.json?ref=main',{headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'},signal:ac.signal,cache:'no-store'}))
+  var p=(px?fetch(px+'/i?s='+encodeURIComponent(sym)+(/^[A-Za-z0-9]{1,10}$/.test(sym)?'&x=1':''),{signal:ac.signal}):fetch('https://api.github.com/repos/'+ghRepo()+'/contents/dados/'+kind+'/'+sym.replace(/[^A-Za-z0-9._-]/g,'_')+'.json?ref=main',{headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'},signal:ac.signal,cache:'no-store'}))
     .then(function(r){clearTimeout(to);if(r.status===404)return null;if(!r.ok)throw 0;return r.json()}).catch(function(){return old===undefined?undefined:old}).then(function(d){FIN[k]={d:d,at:Date.now(),err:d===undefined};return d});
   FIN[k]={p:p,d:old,at:0};return p}
 function finRedo(){if($('stk').hidden)return;if(STK.hero)heroRender();else if(STK.idx)idxRender();else stkRender()}
 /* 1D/5D (pontos de 5 min) e Máx (candles diários): {st:'ok',hist,o} | {st:'load'|'none',msg} ou null quando o período não usa esses dados */
-function finView(sym,rg){var kind=rg==='1d'||rg==='5d'?'intra':rg==='max'?'dia':null;if(!kind||!sym)return null;
+function finView(sym,rg,ext){var kind=rg==='1d'||rg==='5d'?'intra':rg==='max'?'dia':null;if(!kind||!sym)return null;
   var k=kind+'/'+sym,c=FIN[k];if(!c||(!c.p&&Date.now()-c.at>(c.err?60000:kind==='intra'?(pxBase()?60000:240000):6*3600000)))finGet(kind,sym).then(finRedo);
   c=FIN[k];var d=c&&c.d;if(c&&c.err&&!c.p&&d===undefined)return {st:'none',msg:'Não consegui carregar o histórico agora. Tente de novo em instantes.'};if(!c||c.p&&d===undefined)return {st:'load',msg:'Carregando o histórico...'};
   if(!d||!(d.p||d.d)||(d.p||d.d).length<2)return {st:'none',msg:kind==='intra'?'Ainda não há pontos de 5 minutos desse ativo. O robô os grava durante o pregão (a cada 30 min); volte depois da abertura.':'Ainda não há o histórico completo desse ativo.'};
   if(kind==='dia')return {st:'ok',hist:d.d.map(function(r){return {t:r[0]*864e5,c:r[4]}}),o:{}};
-  var off=d.off==null?-10800:d.off,dia=function(t){return Math.floor((t+off)/86400)},ult=dia(d.p[d.p.length-1][0]),pts=d.p.filter(function(p){return rg==='5d'||dia(p[0])===ult});
-  return {st:'ok',hist:pts.map(function(p){return {t:p[0]*1000,c:p[1]}}),o:rg==='1d'&&d.prev?{prev:d.prev,intra:1,d1:1}:{intra:1},at:d.at*1000}}
+  var off=d.off==null?-10800:d.off,dia=function(t){return Math.floor((t+off)/86400)},ult=dia(d.p[d.p.length-1][0]),pts=d.p.filter(function(p){return rg==='5d'||dia(p[0])===ult}),xo=function(t){var q=(((t+off)%86400)+86400)%86400;return d.ext&&(q<34200||q>=57600)};/* d.ext: o servidor mandou pré (4h–9h30) e pós-mercado (16h–20h) do horário de Nova York */
+  if(!ext)pts=pts.filter(function(p){return !xo(p[0])});
+  if(pts.length<2)return {st:'none',msg:'Ainda não há pontos de 5 minutos desse ativo.'};
+  return {st:'ok',hist:pts.map(function(p){var o={t:p[0]*1000,c:p[1]};if(ext&&xo(p[0]))o.x=1;return o}),o:rg==='1d'&&d.prev?{prev:d.prev,intra:1,d1:1}:{intra:1},at:d.at*1000}}
 
 /* abertura, máxima, mínima e fechamento anterior do último pregão (arquivo de 5 min do robô) */
 function finStat(sym){if(!sym)return null;var k='intra/'+sym,c=FIN[k];if(!c||(!c.p&&Date.now()-c.at>(c.err?60000:pxBase()?60000:240000)))finGet('intra',sym).then(finRedo);c=FIN[k];var d=c&&c.d;return d&&d.o!=null?{o:d.o,h:d.h,l:d.l,prev:d.prev}:null}
