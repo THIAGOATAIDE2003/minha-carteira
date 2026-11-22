@@ -231,6 +231,12 @@ function contasAMao(F, P) {
       FIN['intra/VT'] = { d: { ext: 1, off: off, p: P, prev: 147.17, at: P[P.length - 1][0] }, at: Date.now() };
       var com = finView('VT', '1d', true), sem = finView('VT', '1d'), nx = com.hist.filter(function (p) { return p.x; }).length, svg = lineChart(com.hist, 'USD', null, null, com.o);
       delete FIN['intra/VT']; return [com.hist.length, nx, sem.hist.length, /stroke="var\(--muted\)" stroke-width="2"/.test(svg), /pré e pós-mercado/.test(svg)]; });
+    /* gráfico fecha no último preço (se for mais novo) e a variação parte do pregão, não do pré-mercado */
+    const cauda = await pg.evaluate(function () {
+      var off = -18000, T = function (h, m) { return (Date.UTC(2026, 10, 20, h, m) / 1000 - off) * 1000; }, H = [{ t: T(5, 0), c: 153, x: 1 }, { t: T(9, 30), c: 152 }, { t: T(15, 55), c: 142 }, { t: T(19, 36), c: 143.41, x: 1 }], fo = { prev: 147.17, intra: 1, d1: 1, off: off, ext: 1 };
+      var a = finTail(H, 142.08, T(20, 0), fo), b = finTail(H, 142.08, T(19, 0), fo), c = finTail(H, 143.41, T(20, 0), fo), d = finTail(H, 142.08, T(20, 0), { intra: 0 }), e = finTail(H, 142.08, T(19, 36) + 3e5, { prev: 1, intra: 1, off: off, ext: 0 });
+      return [finBase(H), a.length, a[4].c, !!a[4].x, b.length, c.length, d.length, !!e[4].x]; });
+    confere('Gráfico: fecha no último preço e base da variação sem o pré-mercado', cauda, [152, 5, 142.08, true, 4, 4, 4, false]);
     confere('Gráfico com pré e pós-mercado em cinza', ext, [6, 3, 3, true, true]);
     confere('Orçamento: contas, %, fixo do mês, envelopes e gastos lançados', orc, [4100, 1600, 1000, 400, 1400, 3800, true, true, true, 0, 'orc', [282, 128, 256, 410, 51], 1800, 350, undefined, true, 85, 585, true, 35, 1200.5, 120, 'Aluguel:800,Mercado:600,Luz:300', 2400, true, ['2026-11', '2026-11,2026-12']]);
     /* variação do dia zerada depois da meia-noite de Brasília (EUA ainda fechados), cinza quando zero */

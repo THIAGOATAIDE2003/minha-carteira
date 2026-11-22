@@ -64,6 +64,10 @@ function finGet(kind,sym){var k=kind+'/'+sym,px=kind==='intra'&&pxBase(),ttl=kin
   var p=(px?fetch(px+'/i?s='+encodeURIComponent(sym)+(/^[A-Za-z0-9]{1,10}$/.test(sym)?'&x=1':''),{signal:ac.signal}):fetch('https://api.github.com/repos/'+ghRepo()+'/contents/dados/'+kind+'/'+sym.replace(/[^A-Za-z0-9._-]/g,'_')+'.json?ref=main',{headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'},signal:ac.signal,cache:'no-store'}))
     .then(function(r){clearTimeout(to);if(r.status===404)return null;if(!r.ok)throw 0;return r.json()}).catch(function(){return old===undefined?undefined:old}).then(function(d){FIN[k]={d:d,at:Date.now(),err:d===undefined};return d});
   FIN[k]={p:p,d:old,at:0};return p}
+/* base da variação: primeiro ponto do pregão (sem o pré-mercado); e fecha o gráfico no último preço conhecido, se for mais novo que o último ponto */
+function finBase(h){for(var i=0;i<h.length;i++)if(!h[i].x)return h[i].c;return h.length?h[0].c:null}
+function finTail(h,price,at,fo){if(!h||!h.length||!(price>0)||!(at>h[h.length-1].t)||!fo||!fo.intra)return h;var l=h[h.length-1];if(Math.abs(price/l.c-1)<1e-6)return h;
+  var q=fo.off==null?null:((((at/1000+fo.off)%86400)+86400)%86400),pt={t:at,c:price};if(fo.ext&&q!=null&&(q<34200||q>=57600))pt.x=1;return h.concat([pt])}
 function finRedo(){if($('stk').hidden)return;if(STK.hero)heroRender();else if(STK.idx)idxRender();else stkRender()}
 /* 1D/5D (pontos de 5 min) e Máx (candles diários): {st:'ok',hist,o} | {st:'load'|'none',msg} ou null quando o período não usa esses dados */
 function finView(sym,rg,ext){var kind=rg==='1d'||rg==='5d'?'intra':rg==='max'?'dia':null;if(!kind||!sym)return null;
@@ -74,7 +78,7 @@ function finView(sym,rg,ext){var kind=rg==='1d'||rg==='5d'?'intra':rg==='max'?'d
   var off=d.off==null?-10800:d.off,dia=function(t){return Math.floor((t+off)/86400)},ult=dia(d.p[d.p.length-1][0]),pts=d.p.filter(function(p){return rg==='5d'||dia(p[0])===ult}),xo=function(t){var q=(((t+off)%86400)+86400)%86400;return d.ext&&(q<34200||q>=57600)};/* d.ext: o servidor mandou pré (4h–9h30) e pós-mercado (16h–20h) do horário de Nova York */
   if(!ext)pts=pts.filter(function(p){return !xo(p[0])});
   if(pts.length<2)return {st:'none',msg:'Ainda não há pontos de 5 minutos desse ativo.'};
-  return {st:'ok',hist:pts.map(function(p){var o={t:p[0]*1000,c:p[1]};if(ext&&xo(p[0]))o.x=1;return o}),o:rg==='1d'&&d.prev?{prev:d.prev,intra:1,d1:1}:{intra:1},at:d.at*1000}}
+  return {st:'ok',hist:pts.map(function(p){var o={t:p[0]*1000,c:p[1]};if(ext&&xo(p[0]))o.x=1;return o}),o:rg==='1d'&&d.prev?{prev:d.prev,intra:1,d1:1,off:off,ext:d.ext?1:0}:{intra:1,off:off,ext:d.ext?1:0},at:d.at*1000}}
 
 /* abertura, máxima, mínima e fechamento anterior do último pregão (arquivo de 5 min do robô) */
 function finStat(sym){if(!sym)return null;var k='intra/'+sym,c=FIN[k];if(!c||(!c.p&&Date.now()-c.at>(c.err?60000:pxBase()?60000:240000)))finGet('intra',sym).then(finRedo);c=FIN[k];var d=c&&c.d;return d&&d.o!=null?{o:d.o,h:d.h,l:d.l,prev:d.prev}:null}
