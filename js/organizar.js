@@ -1,5 +1,5 @@
 /* Organizar abas (1.59.0): segurar o dedo numa barra de sub-abas abre "Organizar abas" (mudar a ordem e esconder abas). Só usa CSS order + hidden, então funciona em barras que o app refaz o tempo todo. Guardado no aparelho. */
-var ORGB=[['#carseg','Carteira'],['#mkseg','Mercado'],['#ixseg','Mercado → Índices'],['#anseg','Mercado → Análise'],['.opseg','Mercado → Ideias'],['#maisseg','Mais'],['#ajseg','Ajustes'],['#stv-top','Página da ação']];
+var ORGB=[['#carseg','Carteira'],['#mkseg','Mercado'],['#ixseg','Mercado → Índices'],['#anseg','Mercado → Análise'],['.opseg','Mercado → Ideias'],['#maisseg','Mais'],['#ajseg','Ajustes'],['#stv-top','Página da ação'],['.tabs','Menu de baixo']];
 var ORGS={},ORGK=null,ORGT=null,ORGX=0;
 try{ORGS=JSON.parse(localStorage.getItem(LS+'-abas')||'{}')||{}}catch(e){ORGS={}}
 function orgSave(){try{localStorage.setItem(LS+'-abas',JSON.stringify(ORGS))}catch(e){}}
