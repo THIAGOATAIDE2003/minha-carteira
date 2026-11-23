@@ -6,6 +6,8 @@
 var PARFIM='Material para estudo, não é recomendação de compra.';
 var PARLEI=['a favor','equilibrada','com cautela'];
 var PARMAX={fav:3,pre:4,err:2,ace:3};
+var PARRET=10; /* retorno esperado só entra em "a favor" acima disso (%) */
+var PAREST=1;  /* lucro que varia menos que isso (%) conta como estável */
 /* ---------- formatação em português ---------- */
 function parF(v,d){return (v<0?'−':'')+Math.abs(+v).toFixed(d).replace('.',',')}
 function parI(v){return (v<0?'−':'')+String(Math.round(Math.abs(v))).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
@@ -70,8 +72,8 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   if(f&&f.margem_de_seguranca_pct>=0&&f.preco_hoje_frente_ao_conservador==='abaixo do conservador')add(fav,'O preço de '+parP(pk,pk.preco)+' está abaixo do cenário conservador de '+parP(pk,f.conservador)+' (margem de segurança de '+parF(f.margem_de_seguranca_pct,1)+'%).');
   if(vm&&vm.resultado==='favorável')add(fav,'Vento macro favorável: '+vm.razao);
   if(sd&&!pk.financeira&&sd.testes_reprovados_de_3===0){var sx=[];if(sd.caixa_maior_que_a_divida)sx.push('a empresa tem mais caixa do que dívida');else if(sd.divida_liquida_sobre_patrimonio!=null)sx.push('dívida líquida de '+parX(sd.divida_liquida_sobre_patrimonio)+'× o patrimônio');if(sd.cobertura_de_juros!=null)sx.push('o lucro da operação cobre '+parF(sd.cobertura_de_juros,1)+'× os juros');add(fav,'Os 3 testes de saúde financeira passaram'+(sx.length?': '+sx.join(' e ')+'.':'.'))}
-  if(tl&&tl.tendencia==='melhorando'&&lucA&&mlA&&lucA.variacao_pct!=null&&mlA.variacao_pp!=null)add(fav,'De '+tl.de+' para '+tl.para+', '+parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu')+' e '+parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu')+' (tendência: melhorando).');
-  if(f&&f.retorno_esperado_pct>0&&f.retorno_esperado_pct<=100)add(fav,'O retorno esperado pelo modelo (média ponderada dos 3 cenários contra o preço de hoje) é de '+parF(f.retorno_esperado_pct,1)+'%.');
+  if(tl&&tl.tendencia==='melhorando'&&lucA&&mlA&&lucA.variacao_pct>PAREST&&mlA.variacao_pp>0)add(fav,'De '+tl.de+' para '+tl.para+', '+parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu')+' e '+parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu')+' (tendência: melhorando).');
+  if(f&&f.retorno_esperado_pct>PARRET&&f.retorno_esperado_pct<=100)add(fav,'O retorno esperado pelo modelo (média ponderada dos 3 cenários contra o preço de hoje) é de '+parF(f.retorno_esperado_pct,1)+'%.');
   if(cx!=null&&cx>0)add(fav,'O caixa operacional dos últimos 12 meses foi de '+parI(cx)+' milhões.');
   var fn=pk.financeira?parFinFatos(pk):null;if(fn)fn.fav.forEach(function(t){add(fav,t)});
   /* preocupam (os obrigatórios entram primeiro) */
@@ -88,6 +90,7 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   if(fn)fn.pre.filter(function(x){return !x[1]}).forEach(function(x){add(pre,x[0])});
   (pk.lucros_atipicos||[]).filter(function(n){return n.recente}).slice(0,1).forEach(function(n){add(pre,'O lucro de '+n.trimestre+' ('+parI(n.lucro_milhoes)+' milhões) ficou '+(n.tipo==='lucro acima do normal'?'acima':'abaixo')+' do normal (mediana de '+parI(n.mediana_milhoes)+' milhões) e pode não se repetir.')});
   if(tl&&((lucA&&lucA.variacao_pct<0)||(mlA&&mlA.variacao_pp<=-1))){var pp=[];if(lucA&&lucA.variacao_pct!=null)pp.push(parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu'));if(mlA&&mlA.variacao_pp!=null)pp.push(parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu'));add(pre,'De '+tl.de+' para '+tl.para+', '+pp.join(' e ')+(/\.$/.test(pp[pp.length-1])?'':'.'))}
+  if(tl&&lucA&&mlA&&lucA.variacao_pct!=null&&mlA.variacao_pp!=null&&Math.abs(lucA.variacao_pct)<=PAREST&&mlA.variacao_pp<0&&mlA.variacao_pp>-1)add(pre,'De '+tl.de+' para '+tl.para+', o lucro ficou estável (variação de '+parF(lucA.variacao_pct,1)+'%) e a margem líquida ficou menor ('+parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu').replace('a margem líquida ','')+').');
   pre=pre.filter(function(x){return x.obr}).concat(pre.filter(function(x){return !x.obr}));
   if(pre.length<2)add(pre,'Mesmo sem alertas fortes nos números, a faixa de preço justo é uma estimativa simples e pode estar errada.');
   /* o que me faria estar errado */
@@ -122,7 +125,7 @@ var PARSYS='Você reescreve, em português simples e curto, itens de um parecer 
 '- Não mude o sentido: o que está em "preocupam" continua sendo preocupação; o que está em "a_favor" continua sendo ponto a favor. Não passe item de uma lista para outra.\n'+
 '- Cada frase reescrita tem no máximo cerca de 1,5 vezes o tamanho do fato.\n'+
 '- Resumo: 2 frases curtas, só com ideias e números que estejam nos fatos. Não escreva a palavra "leitura" nem diga se vale comprar. Se "avisar_no_inicio_do_resumo" começar com "sim", a PRIMEIRA frase do resumo avisa isso.\n'+
-'- Não dê recomendação de compra ou venda.\n'+
+'- Não dê recomendação de compra ou venda. Não use "prevê", "projeta", "garante" nem "indica melhora"; para falar do cálculo do app, use "o cálculo mostra" ou "o modelo calcula".\n'+
 'RESPONDA SÓ COM JSON, sem texto fora dele, neste formato exato (todos os ids recebidos, nenhum a mais):\n'+
 '{"resumo":"...","a_favor":[{"id":"A1","texto":"..."}],"preocupam":[{"id":"P1","texto":"..."}],"errado_se":[{"id":"E1","texto":"..."}],"acompanhar":[{"id":"G1","texto":"..."}]}';
 /* ---------- 4) VALIDADOR ---------- */
@@ -134,7 +137,8 @@ function parSem(t){return String(t||'').toLowerCase().normalize('NFD').replace(/
 function parPal(t){return parSem(t).replace(/[^a-z ]/g,' ').split(/\s+/).filter(function(w){return w.length>=5})}
 /* palavras de causa, período e previsão: só valem se já estiverem escritas nos fatos */
 var PARPROIB=[/\bao ano\b/,/\bpor ano\b/,/\banual(mente)?\b/,/\bao mes\b/,/\bpor mes\b/,/\bmensal(mente)?\b/,/\bao trimestre\b/,/\bpor trimestre\b/,/\bporque\b/,/\bpois\b/,/\bdevido\b/,/\bpor causa\b/,/\bja que\b/,/\buma vez que\b/,/\bgracas\b/,/\bem razao\b/,/\bem funcao\b/,/\bdecorrente\b/,/\bpor conta\b/,
-  /\bhistoricamente\b/,/\btende(m)? a\b/,/\bprovavelmente\b/,/\bdeve(ra|ria)? (subir|cair|aumentar|diminuir|melhorar|piorar)/,/\bprevis/,/\bprojet/,/\bsensivel\b/,/\bsetor\b/,/\bdemanda\b/,/\binflacao\b/,/\bconcorrenc/,/\bpressao\b/,/\bdesvaloriz/,/\bvolatil/,/\bpotencial\b/,/\bmuito\b/];
+  /\bhistoricamente\b/,/\btende(m)? a\b/,/\bprovavelmente\b/,/\bdeve(ra|ria)? (subir|cair|aumentar|diminuir|melhorar|piorar)/,/\bprevis/,/\bprojet/,/\bsensivel\b/,/\bsetor\b/,/\bdemanda\b/,/\binflacao\b/,/\bconcorrenc/,/\bpressao\b/,/\bdesvaloriz/,/\bvolatil/,/\bpotencial\b/,/\bmuito\b/,
+  /\bpreve(m|r|ra|ria)?\b/,/\bprojeta(m|r)?\b/,/\bgarante(m)?\b/,/\bgarantia\b/,/\bgarantido\b/,/\bindic(a|am|ando|ou) (uma )?melhora\b/,/\bindicio\b/];
 function parProib(t,tudo){var s=parSem(t),a=[];PARPROIB.forEach(function(r){var m=s.match(r);if(m&&!r.test(tudo))a.push(m[0])});return a}
 function parItem(t,fato){var n=parNums(t),perm=parNums(fato).map(function(x){return x.v}),ex=n.filter(function(x){return !parAchou(x,perm)});if(ex.length)return 'número fora do fato ('+ex.slice(0,3).map(function(x){return x.s}).join(', ')+')';
   var w=parPal(fato),tw=parPal(t);if(!tw.some(function(x){return w.indexOf(x)>=0})&&!(n.length&&parNums(fato).length))return 'frase sem relação com o fato';

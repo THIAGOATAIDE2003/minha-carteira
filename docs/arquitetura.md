@@ -187,3 +187,8 @@ Robô: `scripts/copom.py` (chamado na rodada completa de `mercado.py`, no máxim
 - Foto diária: `fotoLinha` leva `tipo` ('banco', 'seguradora', 'bolsa') e `ref` (banco: ROE, custo, P/VP hoje e justo; seguradora/bolsa: P/L alvo e de hoje, payout); `regra` do documento descreve as duas contas.
 - Em verificação por poucos trimestres: `fxQuando` (banco.js) calcula o prazo legal da CVM do balanço que falta (ITR 45 dias após o trimestre, DFP 90 dias após o ano) e o motivo diz "Previsão: deve sair da verificação por volta de dd/mm/aaaa" (ou "já deveria estar disponível").
 - Testes: `node tests/financeiras.js` (30, no CI).
+
+### Ajustes do parecer (1.76.1)
+- "Melhorando" só quando o lucro sobe mais de `PAREST` (1%) e a margem sobe; lucro estável (até 1%) com margem menor vira o fato "o lucro ficou estável (variação de X%) e a margem líquida ficou menor (reduziu Y p.p.)" em "preocupam".
+- Retorno esperado só entra em "a favor" acima de `PARRET` (10%).
+- Palavras barradas pelo validador (se não estiverem no fato): prevê/prever, projeta, garante/garantia/garantido, indica/indicando melhora, indício. A instrução à IA manda usar "o cálculo mostra" ou "o modelo calcula". Cache do parecer `p5`.

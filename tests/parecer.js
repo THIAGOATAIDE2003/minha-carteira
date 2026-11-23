@@ -45,7 +45,22 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   T = await tx('pk.saude_financeira=null');
   ok('tendência melhorando: "subiu" e "aumentou", valores sem sinal', T.some(t => /o lucro subiu 28,6% e a margem líquida aumentou 1,2 p\.p\. \(tendência: melhorando\)/.test(t)) && T.some(t => /^A margem líquida aumentou 1,2 p\.p\. no último ano\.$/.test(t)), T);
   T = await tx("pk.saude_financeira=null;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=0;pk.tendencias.ano_contra_ano.itens[0].variacao_pct=0");
-  ok('variação zero vira "ficou estável" (sem "0,0")', T.some(t => /o lucro ficou estável e a margem líquida ficou estável/.test(t)) && !T.some(t => /ficou estável [\d]|0,0 p\.p/.test(t)), T);
+  const fa = (g) => p.evaluate((g) => { const pk = PKB(); eval(g); const x = parFatos(pk); return { fav: x.fav.map(y => y.txt), pre: x.pre.map(y => y.txt) }; }, g);
+  let R = await fa("pk.saude_financeira=null;pk.tendencias.ano_contra_ano.itens[0].variacao_pct=0.4;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=-0.5");
+  ok('lucro +0,4% com margem −0,5 p.p.: não é "melhorando"; vira "lucro estável, margem menor"', !R.fav.concat(R.pre).some(t => /melhorando/.test(t)) && R.pre.some(t => /o lucro ficou estável \(variação de 0,4%\) e a margem líquida ficou menor \(reduziu 0,5 p\.p\.\)/.test(t)), R);
+  R = await fa("pk.saude_financeira=null;pk.tendencias.ano_contra_ano.itens[0].variacao_pct=0;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=0");
+  ok('lucro e margem zerados: sem "melhorando" e sem frase de margem menor', !R.fav.concat(R.pre).some(t => /melhorando|margem líquida ficou menor/.test(t)), R);
+  R = await fa("pk.saude_financeira=null;pk.tendencias.ano_contra_ano.itens[0].variacao_pct=12;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=-0.5");
+  ok('lucro sobe mas margem cai: não é "melhorando"', !R.fav.some(t => /melhorando/.test(t)), R);
+  R = await fa("pk.saude_financeira=null;pk.tendencias.ano_contra_ano.itens[0].variacao_pct=0.5;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=1.5");
+  ok('lucro estável (+0,5%) com margem maior: também não é "melhorando" (lucro precisa subir mais de 1%)', !R.fav.some(t => /melhorando/.test(t)), R);
+  R = await fa("pk.saude_financeira=null;pk.faixa.retorno_esperado_pct=3.8");
+  ok('retorno esperado de 3,8% não entra em "a favor"', !R.fav.some(t => /retorno esperado/.test(t)), R);
+  R = await fa("pk.saude_financeira=null;pk.faixa.retorno_esperado_pct=10");
+  ok('retorno esperado de exatamente 10% ainda não entra', !R.fav.some(t => /retorno esperado/.test(t)), R);
+  R = await fa("pk.saude_financeira=null;pk.vento_macro=null;pk.tendencias=null;pk.faixa.retorno_esperado_pct=10.1");
+  ok('retorno esperado de 10,1% entra em "a favor"', R.fav.some(t => /retorno esperado.*10,1%/.test(t)), R);
+
   for (const g of ['', "pk.tendencias.ano_contra_ano.itens[0].variacao_pct=-34.6;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=-8.6", "pk.tendencias.ano_contra_ano.itens[0].variacao_pct=-34.6;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=0;pk.limitacoes=['a: b.']", "pk.faixa=null;pk.saude_financeira=null;pk.tendencias=null"]) { T = await tx(g); ok('nenhum fato tem ponto duplo ("p.p..")', !T.some(t => /[^.]\.\.(?!\.)/.test(t)), T); }
   ok('vento favorável SEMPRE em a favor, nunca em preocupam', f.fav.some(x => /^Vento macro favorável/.test(x.txt)) && !f.pre.some(x => /Vento macro/.test(x.txt)), f);
   f = await F("pk.vento_macro.resultado='contrário';pk.vento_macro.razao='dólar alto pesa: custos em dólar.'");
@@ -80,6 +95,13 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   v = await V("j.preocupam.push({id:'P9',texto:'Fato novo'})"); ok('fato novo (id inexistente) reprova', !v.ok && /não pertence/.test(v.motivo), v);
   v = await V("j.resumo='Leitura: a favor, vale comprar.'"); ok('resumo que fala da leitura reprova', !v.ok, v);
   v = await V("j.resumo='O preço está 99,9% abaixo.'"); ok('número inventado no resumo reprova', !v.ok && /resumo/.test(v.motivo), v);
+  for (const [w, t] of [['prevê', ' O modelo prevê retorno.'], ['projeta', ' O modelo projeta lucro.'], ['garante', ' Isso garante o retorno.'], ['indica melhora', ' O quadro indica melhora.'], ['indicando melhora', ' O quadro, indicando melhora.']]) {
+    v = await V("j.preocupam[0].texto=j.preocupam[0].texto+'" + t + "'"); ok('"' + w + '" em um item reprova', !v.ok && /palavra proibida/.test(v.motivo), v);
+    v = await V("j.resumo=j.resumo+'" + t + "'"); ok('"' + w + '" no resumo reprova', !v.ok && /palavra proibida/.test(v.motivo), v);
+  }
+  v = await V("j.preocupam[0].texto=j.preocupam[0].texto+' O cálculo mostra isso.'"); ok('"o cálculo mostra" é permitido', v.ok, v);
+  v = await V("j.preocupam[0].texto=j.preocupam[0].texto+' O modelo calcula isso.'"); ok('"o modelo calcula" é permitido', v.ok, v);
+  ok('a instrução à IA lista as palavras barradas e as trocas', await E(() => /prevê.*projeta.*garante.*indica melhora/.test(PARSYS) && /o cálculo mostra/.test(PARSYS) && /o modelo calcula/.test(PARSYS)));
   ok('resposta que não é JSON reprova', await E(() => !parValida('## Resumo\ntexto', ENT).ok));
   ok('JSON dentro de cercas de código é aceito', await E(() => parValida('```json\n' + OK() + '\n```', ENT).ok));
   ok('arredondamento (R$ 10,5 no lugar de R$ 10,50) é aceito', (await V("j.a_favor[0].texto=j.a_favor[0].texto.replace('R$ 10,50','R$ 10,5')")).ok);
