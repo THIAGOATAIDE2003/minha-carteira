@@ -10,10 +10,10 @@ function opD(tk){var F=fundOf(tk),lv=livePx(tk),h=MD.d&&MD.d.hist&&MD.d.hist[tk]
 /* banco/financeira (setor Financeiro): Graham, Bazin e fluxo de lucro não servem (1.62.0); fica sem preço justo até existir modelo por P/VP e ROE */
 function opEval(tk){var d=opD(tk);if(!d)return null;var A=stkAna(tk,d);if(A.etf)return null;var fin=!!(A.sec&&A.sec[0]==='Financeiro'),V=fin?{ms:[]}:anValCalc(tk,d,A);
   return {tk:tk,d:d,A:A,V:V.ms&&V.ms.length?V:null,score:A.score,banco:fin}}
-function opHist(){try{return JSON.parse(localStorage.getItem(LS+'-opp')||'{}')||{}}catch(e){return {}}}
+function opHist(){return metParse('opp').d}
 /* guarda uma foto por dia de cada ação (nota, preço justo, preço) para comparar depois */
 function opSnap(list){var H=opHist(),td=today(),ch=0;list.forEach(function(o){if(!o)return;var a=H[o.tk]=H[o.tk]||[];if(a.length&&a[a.length-1][0]===td)return;a.push([td,o.score,o.V?Math.round(o.V.med*100)/100:null,Math.round(o.d.price*100)/100]);if(a.length>60)a.splice(0,a.length-60);ch=1});
-  if(ch)try{localStorage.setItem(LS+'-opp',JSON.stringify(H))}catch(e){}return H}
+  if(ch)metGrava('opp',H);return H}
 function opAlerts(o,H,mine){var al=[],F=o.d.cur==='USD'?usd:brl;
   var fx=o.fx;
   if(fx&&fx.ok){if(fx.est!=='acima')al.push(['ok',fx.est==='abaixo'?'Abaixo do cenário conservador':'Muito perto do cenário conservador','Faixa de preço justo '+fxFaixa(fx)+'; margem de segurança de '+(fx.ms>=0?'':'−')+pf.format(Math.abs(fx.ms*100))+'% sobre o conservador.']);

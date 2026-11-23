@@ -45,20 +45,18 @@ function resHtml(tk,d){var us=d.cur==='USD',C=csD(tk),h=us?'':trHtml(tk)+hiHtml(
 
 /* ===== Ideias para estudar (antigo Garimpo): qualidade do dado e histórico do que o app já apontou ===== */
 var GHK=LS+'-gar';
-function garLoad(){try{var g=JSON.parse(localStorage.getItem(GHK)||'{}')||{};if(!g.r||typeof g.r!=='object')g.r={};Object.keys(g.r).forEach(function(d){var x=g.r[d];if(!x||!Array.isArray(x.l)||!/^\d{4}-\d{2}-\d{2}$/.test(d))delete g.r[d]});return g}catch(e){return {r:{}}}}
+function garLoad(){return metParse('gar').d}
 function garIbov(){try{var x=IDX.filter(function(i){return i.k==='ibov'})[0],r=x&&idxVal0(x);if(r&&r.v>0)return r.v}catch(e){}var D=MD.d&&MD.d.idx&&MD.d.idx.ibov;return D&&D.d&&D.d.length?D.d[D.d.length-1][1]:null}
 /* uma foto por dia das ideias novas: ação, preço, nota e preço justo; o Ibovespa do dia serve de régua */
-function garRec(D){if(!D||!D.length)return;var g=garLoad(),td=today();if(g.r[td])return;g.r[td]={i:garIbov(),l:D.map(function(o){return [o.tk,Math.round(o.d.price*100)/100,o.score,o.V?Math.round(o.V.med*100)/100:null]})};
-  var ks=Object.keys(g.r).sort();while(ks.length>420)delete g.r[ks.shift()];try{localStorage.setItem(GHK,JSON.stringify(g))}catch(e){}}
+function garRec(D){try{metCiclo()}catch(e){}if(!D||!D.length)return;var g=garLoad(),td=today();if(g.r[td])return;g.r[td]={i:garIbov(),l:D.map(function(o){return [o.tk,Math.round(o.d.price*100)/100,o.score,o.V?Math.round(o.V.med*100)/100:null]})};
+  var ks=Object.keys(g.r).sort();while(ks.length>420)delete g.r[ks.shift()];metGrava('gar',g)}
 function garDias(a,b){return Math.round((Date.parse(b)-Date.parse(a))/864e5)}
 /* cada ação conta uma vez, a partir do dia em que apareceu; só entra quem tem ao menos 30 dias de vida */
 function garRes(){var g=garLoad(),td=today(),ib=garIbov(),first={},ks=Object.keys(g.r).sort();ks.forEach(function(d){g.r[d].l.forEach(function(x){if(Array.isArray(x)&&x[0]&&!first[x[0]])first[x[0]]={d:d,p:x[1],i:g.r[d].i}})});
   var L=[];Object.keys(first).forEach(function(tk){var f=first[tk],age=garDias(f.d,td),lv=livePx(tk);if(age<30||!lv||!(lv.p>0)||!(f.p>0)||!(f.i>0)||!(ib>0))return;L.push({tk:tk,age:age,r:lv.p/f.p-1,b:ib/f.i-1})});
   if(!L.length)return {n:0,dias:ks.length,desde:ks[0]||null};var bat=L.filter(function(x){return x.r>x.b}).length,ex=L.map(function(x){return x.r-x.b}).sort(function(a,b){return a-b}),med=ex[Math.floor(ex.length/2)],am=L.reduce(function(s,x){return s+x.age},0)/L.length;
   return {n:L.length,bat:bat,med:med,age:Math.round(am),dias:ks.length,desde:ks[0],L:L}}
-function garHist(){var R=garRes(),h='<div class="panel"><h2>Esse método já acertou? '+bal('O app guarda todo dia as ideias que apontou, com o preço daquele dia, e compara com o Ibovespa. Assim dá para ver, com o tempo, se o método funciona ou só parece bom. Vale só para este aparelho e não conta dividendos.')+'</h2>';
-  if(!R.n)return h+'<p class="muted">Ainda sem histórico: '+(R.dias?'o app começou a guardar as ideias em '+esc(R.desde.split('-').reverse().join('/'))+' ('+R.dias+(R.dias>1?' dias':' dia')+'). ':'')+'É preciso pelo menos 30 dias para a primeira comparação. Até lá, trate as ideias como pontos para estudar, não como sinal.</p></div>';
-  return h+'<p class="anv" style="margin:4px 0">Das <b>'+R.n+'</b> ideias com 30 dias ou mais (idade média '+R.age+' dias), <b>'+R.bat+'</b> subiram mais que o Ibovespa desde que apareceram. Diferença mediana: <b class="'+(R.med>=0?'gain':'loss')+'">'+csPc(R.med*100)+'</b>.</p>'+(R.n<10?'<p class="note">São poucos casos (menos de 10): ainda não prova nada, nem a favor nem contra.</p>':'')+'<p class="note">Preço de hoje contra o preço do dia em que a ideia apareceu, sem dividendos. Desde '+esc(R.desde.split('-').reverse().join('/'))+'.</p></div>'}
+function garHist(){return metHtml()}
 /* qualidade do dado de uma ideia: balanço, preço e indicadores que faltam */
 /* ===== Confiança do dado das Ideias (1.62.0): separada da nota; a nota (stkAna) não muda ===== */
 var OPKS=['pl','pvp','roe','dy','ml','divpl','cr5'];
