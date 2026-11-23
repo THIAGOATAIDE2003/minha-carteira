@@ -37,7 +37,7 @@ function csRec(C,tk,d,us){if(!C||!(C.rec||C.alvo))return '';var F=us?usd:brl,r=C
     '<div class="small" style="display:flex;justify-content:space-between"><span class="gain">'+cmp+' compra</span><span class="muted">'+man+' manter</span><span class="loss">'+ven+' venda</span></div>'}
   if(C.alvo&&C.alvo[0]){var up=px?C.alvo[0]/px-1:null;h+='<p class="anv" style="margin:10px 0 2px">Preço-alvo médio: <b>'+F.format(C.alvo[0])+'</b>'+(up!=null?' ('+csPc(up*100)+' contra o preço de hoje)':'')+'</p>'+(C.alvo[1]&&C.alvo[2]?'<p class="small muted" style="margin:0">Mais otimista '+F.format(C.alvo[1])+' · mais pessimista '+F.format(C.alvo[2])+'</p>':'')}
   return h+'<p class="note">Fonte: Yahoo Finance, em '+csAt(C)+'. Opinião de analistas, que erram e costumam seguir o preço; use como mais uma informação.</p></div>'}
-function resHtml(tk,d){var us=d.cur==='USD',C=csD(tk),h=us?'':trHtml(tk);try{h+=thLembra(tk)}catch(e){}
+function resHtml(tk,d){var us=d.cur==='USD',C=csD(tk),h=us?'':trHtml(tk)+hiHtml(tk);try{h+=thLembra(tk)}catch(e){}
   if(C){h+=csRec(C,tk,d,us)+csSup(C)+csEsp(C,tk,us)}
   else h+='<div class="panel"><h2>Consenso dos analistas</h2><p class="muted">Sem cobertura de analistas para essa ação'+(MD.d&&MD.d.cons?' no Yahoo Finance (comum em empresas menores).':': o robô ainda não trouxe esses dados. Eles chegam na próxima rodada completa.')+'</p></div>';
   if(!us)h+=qHtml(tk);

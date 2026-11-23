@@ -15,5 +15,6 @@ jobs:
       - run: node tests/lint.js
       - run: node tests/teste.js
       - run: node tests/ideias.js
+      - run: node tests/historico.js
       - run: node tests/sethtml.js
       - run: node tests/erros.js

@@ -170,3 +170,4 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 .avu{display:block;font-size:11px;font-weight:500;opacity:.85;white-space:nowrap}
 .opc{font-weight:700;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}.opc.g{color:var(--gain)}.opc.m{color:var(--c2)}.opc.l{color:var(--loss)}
 .opw{color:var(--c2)}
+.hil{display:flex;flex-wrap:wrap;gap:4px 14px;margin:2px 0 6px;font-size:13px}.hii{white-space:nowrap}.hiw{color:var(--c2)}
