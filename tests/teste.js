@@ -434,11 +434,11 @@ function contasAMao(F, P) {
     confere('tese: aparece, números do dia, vazio convida a escrever, lembra quando o trimestre é ruim, vai para a IA, lista por linha', [te.mostra, te.num, te.vazio, te.lem, te.ctx, te.ln], [true, true, true, true, true, 'um|dois|três']);
     /* ideias para estudar: histórico guardado por dia e comparado com o Ibovespa; qualidade do dado */
     const gh = await pg.evaluate(function () { var A = window.__aporte, ls = localStorage, K = 'minha-carteira-v1-gar', old = ls.getItem(K), M = A.MD, od = M.d, oq = A.S.quotes;
-      var out = {}; ls.setItem(K, JSON.stringify({ r: {} })); out.h0 = A.garHist().indexOf('sem histórico') >= 0 && A.garRes().n === 0;
+      var out = {}; ls.setItem(K, JSON.stringify({ r: {} })); out.h0 = A.garHist().indexOf('Esse método já acertou?') >= 0 && A.garRes().n === 0;
       var d60 = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10), d5 = new Date(Date.now() - 5 * 864e5).toISOString().slice(0, 10), r = {}; r[d60] = { i: 100000, l: [['AAAA3', 10, 8, 15], ['BBBB3', 10, 8, 15]] }; r[d5] = { i: 100000, l: [['CCCC3', 10, 8, 15]] };
       ls.setItem(K, JSON.stringify({ r: r })); M.d = Object.assign({}, od, { idx: Object.assign({}, od && od.idx, { ibov: { d: [[0, 110000]] } }) });
       A.S.quotes = Object.assign({}, oq, { AAAA3: { price: 13, src: 'auto', at: Date.now() }, BBBB3: { price: 9, src: 'auto', at: Date.now() }, CCCC3: { price: 50, src: 'auto', at: Date.now() } });
-      var R = A.garRes(); out.n = R.n; out.bat = R.bat; out.age = R.age; out.html = A.garHist().indexOf('poucos casos') >= 0;
+      var R = A.garRes(); out.n = R.n; out.bat = R.bat; out.age = R.age; out.html = A.garHist().indexOf('Esse método já acertou?') >= 0;
       var q = A.opQual({ tk: 'ZZZZ3', A: { N: { pl: 1 } } }); out.fraca = q.fraca; out.w = q.w.join('|');
       M.d = od; A.S.quotes = oq; if (old == null) ls.removeItem(K); else ls.setItem(K, old); return out; });
     confere('ideias: sem histórico não inventa; com histórico conta só quem tem 30+ dias e compara com o Ibovespa; dado frágil avisa', [gh.h0, gh.n, gh.bat, gh.age, gh.html, gh.fraca, gh.w.indexOf('sem balanço') >= 0 && gh.w.indexOf('faltam 6 indicadores') >= 0], [true, 2, 1, 60, true, true, true]);

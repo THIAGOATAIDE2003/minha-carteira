@@ -5,9 +5,9 @@ var GH={busy:false,last:0,err:'',again:false};
 function ghRepo(){return (S.keys.repo||'THIAGOATAIDE2003/minha-carteira-dados').replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'').trim()}
 function b64dec(x){var b=atob(String(x).replace(/\s/g,'')),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new TextDecoder().decode(u)}
 function b64enc(x){var u=new TextEncoder().encode(x),b='';for(var i=0;i<u.length;i+=8192)b+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(b)}
-function ghReq(method,body){
+function ghReq(method,body,path){
   var c=new AbortController(),to=setTimeout(function(){c.abort()},15000);
-  return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/carteira.json'+(method==='GET'?'?ref=main&_='+Date.now():''),{method:method,signal:c.signal,cache:'no-store',
+  return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/'+(path||'carteira.json')+(method==='GET'?'?ref=main&_='+Date.now():''),{method:method,signal:c.signal,cache:'no-store',
     headers:{'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github+json'},body:body?JSON.stringify(body):undefined})
     .then(function(r){clearTimeout(to);return r.json().then(function(j){return {ok:r.ok,status:r.status,j:j}},function(){return {ok:r.ok,status:r.status,j:{}}})})
     .then(function(x){if(!x.ok&&x.status!==404&&x.status!==409)logErro('nuvem GitHub','HTTP '+x.status+(x.j&&x.j.message?' '+x.j.message:''));return x},function(e){clearTimeout(to);logErro('nuvem GitHub',errMsg(e,15));throw e});

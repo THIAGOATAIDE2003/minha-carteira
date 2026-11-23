@@ -22,7 +22,7 @@ function fotoMontar(r,dia){if(!r||!r.D||!r.X)return null;
   var pend=r.D.concat(r.X).some(function(o){return o.fx&&o.fx.pend});if(pend)return null;
   var L=r.D.filter(function(o){return o.fx&&o.fx.ok}).map(function(o){return fotoLinha(o,'ideia')}).concat(r.X.filter(function(o){return o.fx&&o.fx.ok}).map(function(o){return fotoLinha(o,'verificacao')}));
   if(!L.length)return null;
-  return {v:1,dia:dia,versao:VERSAO,gravado:new Date().toISOString(),regra:{motor:'faixa-unica',conservador:'margem p25 + múltiplo '+FXMC+'×',pesos:FXW,tolerancia:FXTOL,banco:'ROE p25; P/VP justo = (ROE − g) ÷ (custo − g); custo = média(Selic, Focus 2-3 anos) + '+BKPREM,seguradora:'lucro p25 × P/L p25 (histórico da ação)'},ideias:L}}
+  return {v:1,dia:dia,versao:VERSAO,gravado:new Date().toISOString(),ibov:garIbov(),regra:{motor:'faixa-unica',conservador:'margem p25 + múltiplo '+FXMC+'×',pesos:FXW,tolerancia:FXTOL,banco:'ROE p25; P/VP justo = (ROE − g) ÷ (custo − g); custo = média(Selic, Focus 2-3 anos) + '+BKPREM,seguradora:'lucro p25 × P/L p25 (histórico da ação)'},ideias:L}}
 function fotoSalvar(r){var dia=today();if(FOTOQ||fotoFeita()===dia||Date.now()-FOTOE<6e5)return;
   var doc=fotoMontar(r,dia);if(!doc){if(r&&r.D&&r.X&&!r.D.concat(r.X).some(function(o){return o.fx&&o.fx.pend})){var st=fotoStLer();if(!st||st.dia!==dia)fotoSt(false,'não há ideias com faixa calculada hoje',dia)}return}
   if(!S.keys.gh){fotoSt(false,'sem token do GitHub (cole em Ajustes, na nuvem)',dia);return}

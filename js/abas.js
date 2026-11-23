@@ -58,6 +58,6 @@ function checkVersao(){if(document.hidden||!navigator.onLine)return;
     var b=document.createElement('button');b.id='vnova';b.type='button';b.className='vtoast vnova';b.textContent='Nova versão '+m[1]+' · toque para atualizar';
     b.addEventListener('click',function(){b.textContent='Atualizando...';go()});
     document.body.appendChild(b)}).catch(function(){})}
-setTimeout(checkVersao,1500);setInterval(checkVersao,60000);document.addEventListener('visibilitychange',function(){if(!document.hidden){VIS0=Date.now();setTimeout(checkVersao,500)}});
+setTimeout(function(){try{metCiclo()}catch(e){}},4000);setTimeout(checkVersao,1500);setInterval(checkVersao,60000);document.addEventListener('visibilitychange',function(){if(!document.hidden){VIS0=Date.now();setTimeout(checkVersao,500)}});
 /* Organizar abas: aplica a ordem guardada e reaplica sempre que o app refaz uma barra */
 try{orgAplica();var orgRaf=0;new MutationObserver(function(){if(orgRaf)return;orgRaf=requestAnimationFrame(function(){orgRaf=0;try{orgAplica()}catch(e){}})}).observe(document.body,{childList:true,subtree:true})}catch(e){}
