@@ -80,7 +80,7 @@ function opConf(o,now){var tk=o.tk,N=o.A&&o.A.N||{},pts=0,w=[],blk=false,ks=opKe
   var ev=((o.A&&o.A.pos)||[]).length+((o.A&&o.A.neg)||[]).length;if(ev<4){pts+=1;w.push('poucos sinais para a nota ('+ev+')')}
   var n=blk||pts>=3?'Baixa':pts>=1?'Média':'Alta';
   return {n:n,w:w,f:n==='Alta'?1:n==='Média'?0.8:0}}
-function opQual(o){var tk=o.tk,q=cvmQ(tk),l=q&&q.length?q[q.length-1]:null,w=[],N=o.A&&o.A.N||{},ks=['pl','pvp','roe','dy','ml','divpl','cr5'],miss=ks.filter(function(k){return N[k]==null}).length,lb;
+function opQual(o){var tk=o.tk,q=cvmQ(tk),l=q&&q.length?q[q.length-1]:null,w=[],N=o.A&&o.A.N||{},ks=opKeys(o),miss=ks.filter(function(k){return N[k]==null}).length,lb;
   if(!l){lb='sem balanço da CVM';w.push('sem balanço')}else{lb='balanço do '+l[1]+'º tri de '+l[0];var fim=Date.UTC(l[0],l[1]*3,0),vel=(Date.now()-fim)/864e5;if(vel>240){w.push('balanço antigo')}}
   var lv=livePx(tk),pa=lv&&lv.at?Math.round((Date.now()-lv.at)/60000):null,pt=pa==null?'preço sem hora':pa<90?'preço de '+Math.max(1,pa)+' min atrás':pa<2880?'preço de '+Math.round(pa/60)+' h atrás':'preço de '+Math.round(pa/1440)+' dias atrás';
   if(pa!=null&&pa>4320)w.push('preço velho');if(lv&&lv.sus)w.push('preço duvidoso');if(miss>=3)w.push('faltam '+miss+' indicadores');

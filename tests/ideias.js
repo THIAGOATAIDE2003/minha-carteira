@@ -57,6 +57,13 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   });
   ok('linha de banco mostra "valuation de banco em breve"', /valuation de banco em breve/.test(B.banco) && /em breve<\/span>/.test(B.banco), B.banco);
   ok('linha de empresa comum não mostra isso', !/em breve/.test(B.outro));
+  const S1 = await p.evaluate(() => {
+    const mk = (n, w) => ({ tk: 'XXXX3', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: ['Energia', ''], alr: [], pos: [], neg: [] }, V: null, score: 7, al: [], cf: { n: n, w: w, f: 1 }, gq: { t: 'balanço do 3º tri de 2026 · preço de 1 h atrás', fraca: false, w: [] } });
+    return { alta: opRow(mk('Alta', []), 1), media: opRow(mk('Média', ['faltam 2 de 7 indicadores']), 1), baixa: opRow(mk('Baixa', ['preço velho (de 09/11)']), 1) };
+  });
+  ok('selo Alta aparece com a data do balanço', /Confiança alta/.test(S1.alta) && /balanço do 3º tri/.test(S1.alta), S1.alta);
+  ok('selo Média mostra o motivo', /Confiança média/.test(S1.media) && /faltam 2 de 7 indicadores/.test(S1.media));
+  ok('selo Baixa mostra o motivo em destaque', /Confiança baixa/.test(S1.baixa) && /⚠ preço velho \(de 09\/11\)/.test(S1.baixa) && /opq fr/.test(S1.baixa), S1.baixa);
   ok('nenhum erro de JavaScript', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Ideias: ' + total + ' conferências ok');
