@@ -70,6 +70,12 @@ function opYmd(ms){return new Date(ms-3*36e5).toISOString().slice(0,10)}
 function opDU(ms,now){if(!ms)return null;var a=opYmd(ms),b=opYmd(now||Date.now()),n=0,d=new Date(a+'T00:00:00Z');
   for(var i=0;i<40&&opYmd(d.getTime()+3*36e5)<b;i++){d=new Date(d.getTime()+864e5);if(bDay(d))n++}return n}
 /* Alta / Média / Baixa. Baixa = não vira ideia (vai para Em verificação). `now` só existe para o teste. */
+/* trava de sanidade (1.62.3): potencial acima de 50% com dado só médio = Em verificação; com dado alto, mostra normal com aviso */
+var OPEXT=0.5;
+function opSanidade(o){var cf=o&&o.cf;if(!cf||!o.V||!(o.V.up>OPEXT))return o;
+  if(cf.n==='Média'){cf.ext=true;if(cf.w.indexOf('potencial extremo, dados incompletos')<0)cf.w.unshift('potencial extremo, dados incompletos')}
+  else if(cf.n==='Alta')cf.aviso='potencial muito alto, confira';
+  return o}
 function opConf(o,now){var tk=o.tk,N=o.A&&o.A.N||{},pts=0,w=[],blk=false,ks=opKeys(o),miss=ks.filter(function(k){return N[k]==null}).length;
   if(miss>=3){pts+=3;w.push('faltam '+miss+' de '+ks.length+' indicadores')}else if(miss>0){pts+=1;w.push('faltam '+miss+' de '+ks.length+' indicadores')}
   var lv=null;try{lv=livePx(tk)}catch(e){}

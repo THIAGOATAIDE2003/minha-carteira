@@ -169,3 +169,4 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 .rkch{margin:6px 0 10px}.rkl2{list-style:none;margin:0;padding:0}.rkrow{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 0!important}.rkn{width:22px;text-align:right;color:var(--muted);font-size:13px;flex:none}.rkv{display:flex;flex-direction:column;align-items:flex-end;flex:none;text-align:right}.rkv b{font-size:15px}.rkv small{font-size:11.5px;color:var(--muted);white-space:nowrap}
 .avu{display:block;font-size:11px;font-weight:500;opacity:.85;white-space:nowrap}
 .opc{font-weight:700;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}.opc.g{color:var(--gain)}.opc.m{color:var(--c2)}.opc.l{color:var(--loss)}
+.opw{color:var(--c2)}

@@ -71,6 +71,17 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   ok('ranking: Alta vale 100%, Média 80%', V.rank[0] === 100 && Math.abs(V.rank[1] - 80) < 1e-9 && V.rank[2] === 100, V.rank);
   ok('sem ações em verificação não mostra a seção', V.vazio === '');
   ok('Em verificação mostra título, contagem, ação e motivo', /Em verificação \(1\)/.test(V.cheio) && /PINE4/.test(V.cheio) && /preço velho \(de 09\/11\)/.test(V.cheio), V.cheio);
+  const X = await p.evaluate(() => {
+    const mk = (n, w, up) => ({ tk: 'XXXX3', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: ['Energia', ''], alr: [], pos: [], neg: [] }, V: { med: 10 * (1 + up), up: up }, score: 7, al: [], cf: { n: n, w: w.slice(), f: n === 'Alta' ? 1 : 0.8 } });
+    const a = opSanidade(mk('Média', ['faltam 2 de 7 indicadores'], 0.9)), b = opSanidade(mk('Alta', [], 0.9)), c = opSanidade(mk('Média', [], 0.4)), d = opSanidade(mk('Alta', [], 0.5)), e = opSanidade(mk('Baixa', ['preço velho'], 0.9));
+    return { a: a.cf, b: b.cf, c: c.cf, d: d.cf, e: e.cf, rb: opRow(b, 1), ra: opRow(a, 1) };
+  });
+  ok('Média + potencial > 50% vai para verificação com o motivo', X.a.ext === true && X.a.w[0] === 'potencial extremo, dados incompletos' && X.a.w.length === 2, X.a);
+  ok('Alta + potencial > 50% fica normal com aviso', !X.b.ext && X.b.aviso === 'potencial muito alto, confira' && /Potencial muito alto, confira/.test(X.rb), X.b);
+  ok('Média com potencial de 40% não é mexida', !X.c.ext && !X.c.aviso && !X.c.w.length, X.c);
+  ok('exatamente 50% não dispara', !X.d.ext && !X.d.aviso, X.d);
+  ok('Baixa não ganha motivo extra', !X.e.ext && X.e.w.length === 1, X.e);
+  ok('linha em verificação mostra ⚠ e o motivo', /⚠ potencial extremo, dados incompletos/.test(X.ra) && /opq fr/.test(X.ra), X.ra);
   ok('nenhum erro de JavaScript', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Ideias: ' + total + ' conferências ok');
