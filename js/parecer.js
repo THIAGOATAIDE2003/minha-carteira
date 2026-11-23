@@ -1,10 +1,10 @@
 /* Aporte · js/parecer.js — Parecer da IA em cada ideia (1.70.0). Botão "Ver parecer", sob demanda (nunca automático).
    A IA só recebe o pacote JSON de parPacote() (números que o app já calculou) e só interpreta. O texto passa por parValida() (js/parecer-nucleo.js):
    se algum número não existir no pacote, o parecer é descartado e aparece "Parecer indisponível". Cache por ação + data do último balanço + versão do modelo de valuation. */
-var PARTEMP=0.2,PARMS=15000,PAR={busy:null,err:{},open:{}};
+var PARTEMP=0.2,PARMS=25000,PAR={busy:null,err:{},open:{}};
 var PARON=true; /* o botão só aparece quando for true (ligado depois do teste de consistência) */
 var PARORD='groq'; /* 'gem' ou 'groq' força a ordem dos provedores; null = a escolha do app (S.asia) */
-function parMod(){return 'fx:'+FXW.join('/')+':'+FXTOL+':'+FXMC+':'+FXPAY+':'+FXN+'|sd:'+[SDPL,SDLL,SDCOB,SDEB,SDEBL,SDMAXS].join('/')+'|p2'}
+function parMod(){return 'fx:'+FXW.join('/')+':'+FXTOL+':'+FXMC+':'+FXPAY+':'+FXN+'|sd:'+[SDPL,SDLL,SDCOB,SDEB,SDEBL,SDMAXS].join('/')+'|p3'}
 function parKey(o,D){var u=D&&D.t&&D.t.length?D.t[D.t.length-1].ref:'sem-balanco';return o.tk+'|'+u+'|'+parMod()}
 function parLer(){try{return JSON.parse(localStorage.getItem(LS+'-parecer')||'{}')||{}}catch(e){return {}}}
 function parGravar(tk,k,v){var c=parLer();c[tk]=Object.assign({k:k},v);var ks=Object.keys(c);if(ks.length>40){ks.sort(function(a,b){return (c[a].at||0)-(c[b].at||0)}).slice(0,ks.length-40).forEach(function(x){delete c[x]})}try{localStorage.setItem(LS+'-parecer',JSON.stringify(c))}catch(e){}}
@@ -24,11 +24,11 @@ function parPacote(o){var D=fxDoc(o.tk),f=o.fx,sd=o.sd,m=sd&&sd.m,cf=o.cf,lim=[]
     lucro_normalizado:{trimestres_usados:nm.usados,trimestres_no_historico:nm.n,por_trimestre_milhoes:parMi(nm.med),por_ano_milhoes:parMi(nm.anual),ultimos_12_meses_milhoes:parMi(nm.last12),trimestres_atipicos_de_fora:nm.excl}};
   }else if(f&&!f.pend)lim.push(f.banco?'valuation de banco ainda não existe':'faixa de preço justo indisponível: '+f.motivo);
   if(!D)lim.push('sem histórico de balanços da CVM para esta empresa');
-  if(D&&D.nr&&D.nr.length)pk.lucros_atipicos=D.nr.slice(-4).map(function(n){return {trimestre:n.q,tipo:n.tipo==='alto'?'lucro acima do normal':'lucro abaixo do normal',lucro_milhoes:parMi(n.luc),mediana_milhoes:parMi(n.med)}});
+  if(D&&D.nr&&D.nr.length)var u4=D.t.slice(-4).map(hiQ);pk.lucros_atipicos=D.nr.slice(-4).map(function(n){return {trimestre:n.q,recente:u4.indexOf(n.q)>=0,tipo:n.tipo==='alto'?'lucro acima do normal':'lucro abaixo do normal',lucro_milhoes:parMi(n.luc),mediana_milhoes:parMi(n.med)}});
   if(D&&D.cmp)pk.tendencias={ano_contra_ano:parCmp(D.cmp.yoy),trimestre_contra_trimestre:parCmp(D.cmp.qoq)};
   if(sd){pk.saude_financeira={testes_reprovados_de_3:sd.n,motivos:sd.mot,regra_de_divida:m&&m.regra==='ebitda'?'dívida líquida sobre EBITDA (setor de dívida estrutural)':'dívida líquida sobre patrimônio e sobre lucro',
     divida_liquida_sobre_patrimonio:m&&m.dlpl!=null?parR(m.dlpl,2):null,divida_liquida_sobre_lucro_anual:m&&m.dll!=null?parR(m.dll,1):null,divida_liquida_sobre_ebitda:m&&m.dleb!=null?parR(m.dleb,1):null,
-    cobertura_de_juros:m&&m.cob!=null?parR(m.cob,1):null,caixa_operacional_12_meses_milhoes:m&&m.fco!=null?parMi(m.fco):null,caixa_maior_que_a_divida:!!(m&&m.caixa)};if(sd.n>=2)lim.push('2 ou mais testes de saúde financeira reprovados')}
+    cobertura_de_juros:m&&m.cob!=null?parR(m.cob,1):null,caixa_operacional_12_meses_milhoes:m&&m.fco!=null?parMi(m.fco):null,caixa_maior_que_a_divida:!!(m&&m.caixa),limites:{divida_patrimonio:SDPL,divida_lucro_anual:SDLL,cobertura_juros:SDCOB,divida_ebitda:m&&m.regra==='ebitda'?m.lim:null}};if(sd.n>=2)lim.push('2 ou mais testes de saúde financeira reprovados')}
   try{var r=riscosFor(o);if(r.length)pk.riscos_calculados=r}catch(e){}
   var vm=macroVento(o.tk);if(vm){var mc=macroGet();pk.vento_macro={resultado:vm.n,razao:vm.w,regime_da_selic:mc.regime.r,selic_meta_pct:mc.selic.meta,dolar_nivel:mc.dolar&&mc.dolar.nivel||null}}
   if(cf){pk.confianca={nivel:cf.n,motivos:cf.w,aviso:cf.aviso||null};if(cf.n==='Baixa'||cf.ext)lim.push('confiança baixa nos dados'+(cf.w.length?': '+cf.w.join('; '):''))}
@@ -38,19 +38,19 @@ function parHtml(t){var h='',ul=false;String(t||'').split('\n').forEach(function
 function parRow(o){if(!PARON||!o||!o.fx||o.fx.pend)return '';var D=fxDoc(o.tk),k=parKey(o,D),c=parLer()[o.tk],ok=c&&c.k===k,ab=!!PAR.open[o.tk],bz=PAR.busy===o.tk,er=PAR.err[o.tk];
   var bt='<button type="button" class="fqb" data-par="'+esc(o.tk)+'"'+(PAR.busy?' disabled':'')+'>'+(bz?'Gerando o parecer…':ab&&ok?'Esconder parecer':er?'Tentar de novo':'Ver parecer')+'</button>';
   var h='<div class="fql">'+bt+(er&&!bz?' <span class="opw">'+esc(er)+'</span>':'')+'</div>';
-  if(ab&&ok)h+='<div class="fqp parbox">'+parHtml(c.t)+'<p class="note" style="margin:6px 0 0">Escrito pela IA ('+esc(c.mod||'IA')+') em '+rsWhen(c.at)+', com preço de '+esc(c.moeda)+' '+num(c.preco,2)+' e balanço '+esc(c.bal)+'. Só interpreta números do app; pode errar.</p></div>';
+  if(ab&&ok)h+='<div class="fqp parbox">'+parHtml(c.t)+'<p class="note" style="margin:6px 0 0">'+(c.lei?'Leitura definida por regra do app ('+esc(c.reg||'')+(c.mot&&c.mot.length?': '+esc(c.mot.join('; ')):'')+'). ':'')+'Texto escrito pela IA ('+esc(c.mod||'IA')+') em '+rsWhen(c.at)+', com preço de '+esc(c.moeda)+' '+num(c.preco,2)+' e balanço '+esc(c.bal)+'. Só interpreta números do app; pode errar.</p></div>';
   return h}
 function parGerar(tk){if(PAR.busy)return;var r=OPC&&OPC.r,all=r?[].concat(r.D||[],r.X||[],r.W||[],r.M||[]):[],o=all.filter(function(x){return x.tk===tk})[0];if(!o||!o.fx)return;
   var D=fxDoc(o.tk),k=parKey(o,D),c=parLer()[tk];if(c&&c.k===k){PAR.open[tk]=!PAR.open[tk];renderMkt();return}
   var gq=S.keys.gq,gm=S.keys.gem;if(!gq&&!gm){PAR.err[tk]='Falta a chave da Groq ou do Gemini em Mais → Ajustes → Assistente.';PAR.open[tk]=false;renderMkt();return}
-  var pk=parPacote(o),txt='',ab=window.AbortController?new AbortController():null,sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab)ab.abort()},PARMS),errs=[],on=function(t){txt+=t};
+  var pk=parPacote(o),ent=parEntrada(pk),txt='',ab=window.AbortController?new AbortController():null,sig=ab?ab.signal:undefined,tm=setTimeout(function(){if(ab)ab.abort()},PARMS),errs=[],on=function(t){txt+=t};
   PAR.busy=tk;PAR.err[tk]='';renderMkt();
-  var mk=function(){return [{role:'system',content:PARSYS},{role:'user',content:'PACOTE:\n'+JSON.stringify(pk)}]},msgs=mk();
+  var mk=function(){return [{role:'system',content:PARSYS},{role:'user',content:'DADOS:\n'+JSON.stringify(ent.ia)}]},msgs=mk();
   var provs=[];if(gq)provs.push(['Groq',function(){return asGroq(gq,mk,on,sig)}]);if(gm)provs.push(['Gemini',function(){return asGem(gm,msgs,on,sig)}]);
   if((PARORD||S.asia)==='gem')provs.sort(function(a,b){return (b[0]==='Gemini')-(a[0]==='Gemini')});else provs.sort(function(a,b){return (b[0]==='Groq')-(a[0]==='Groq')});
   var run=function(i){txt='';return provs[i][1]().catch(function(e){if(e&&e.name==='AbortError')throw e;errs.push(asErrTxt(e,provs[i][0]));if(i+1<provs.length)return run(i+1);throw e})};
   ASTEMP=PARTEMP;
-  run(0).then(function(){var v=parValida(txt,pk);if(v.ok){parGravar(tk,k,{t:v.texto,at:Date.now(),mod:AS.mod,lei:v.leitura,preco:pk.preco,moeda:pk.moeda,bal:pk.balanco?pk.balanco.ultimo:'—'});PAR.open[tk]=true;PAR.err[tk]=''}else{PAR.open[tk]=false;PAR.err[tk]='Parecer indisponível (a IA escreveu algo que não bate com os números do app). Tente de novo.';try{logErro('parecer '+tk,v.motivo)}catch(e){}}})
+  run(0).then(function(){var v=parValida(txt,ent);if(v.ok){parGravar(tk,k,{t:v.texto,at:Date.now(),mod:AS.mod,lei:v.leitura,mot:ent.leitura.motivos,reg:ent.leitura.regra,preco:pk.preco,moeda:pk.moeda,bal:pk.balanco?pk.balanco.ultimo:'—'});PAR.open[tk]=true;PAR.err[tk]=''}else{PAR.open[tk]=false;PAR.err[tk]='Parecer indisponível (a IA escreveu algo que não bate com os números do app). Tente de novo.';try{logErro('parecer '+tk,v.motivo)}catch(e){}}})
    .catch(function(e){PAR.open[tk]=false;PAR.err[tk]=e&&e.name==='AbortError'?'A IA não respondeu em '+PARMS/1000+' segundos. Tente de novo mais tarde.':'Parecer indisponível: '+(errs.join(' E ')||'a IA falhou')+'.'})
    .then(function(){ASTEMP=null;clearTimeout(tm);PAR.busy=null;try{renderMkt()}catch(e){}})}
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-par]');if(t)parGerar(t.getAttribute('data-par'))});
