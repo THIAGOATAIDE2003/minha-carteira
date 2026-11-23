@@ -34,8 +34,10 @@ var MCDN={'selic-queda':'queda da Selic','selic-alta':'Selic alta','dolar-alto':
 /* vento macro de uma ação: soma do efeito da Selic (pelo regime) e do dólar (pelo nível); >0 favorável, <0 contrário, 0 neutro */
 function macroVento(tk){if(!macroOk())return null;var m=macroGet(),x=macroSens(tk),r=m.regime.r,nv=m.dolar&&m.dolar.nivel,
     es=r==='caindo'?x.selic:r==='subindo'?-x.selic:0,ed=nv==='alto'?x.dolar:nv==='baixo'?-x.dolar:0,v=es+ed,p=[];
-  if(es)p.push((r==='caindo'?'Selic em queda':'Selic em alta')+(es>0?' ajuda':' pesa')+': '+x.rs);
-  if(ed)p.push('dólar '+nv+(ed>0?' ajuda':' pesa')+': '+x.rd);
+  /* o motivo da tabela descreve um lado só (Selic: o lado que ajuda; dólar: o efeito do dólar ALTO); no cenário oposto o texto diz "o contrário de ..." */
+  var CT='o contrário de: ';
+  if(es)p.push((r==='caindo'?'Selic em queda':'Selic em alta')+(es>0?' ajuda':' pesa')+': '+((x.selic>0?r==='caindo':r==='subindo')?'':CT)+x.rs);
+  if(ed)p.push('dólar '+nv+(ed>0?' ajuda':' pesa')+': '+(nv==='alto'?'':CT)+x.rd);
   if(!p.length)p.push(x.selic||x.dolar?'o cenário atual (Selic '+r.replace('estavel','estável')+', dólar '+(nv||'normal')+') não mexe com este setor':'setor sem sensibilidade clara à Selic ou ao dólar');
   return {v:v>0?1:v<0?-1:0,n:v>0?'favorável':v<0?'contrário':'neutro',w:p.join('; ')+'.',setor:x.setor}}
 function macroRow(o){var v=o&&o.tk?macroVento(o.tk):null;if(!v)return '';
