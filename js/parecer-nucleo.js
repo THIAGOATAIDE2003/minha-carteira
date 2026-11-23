@@ -45,7 +45,7 @@ function parFinFatos(pk){var F=pk.financeira,f=pk.faixa,fav=[],pre=[],err=[],ace
     else pre.push(['O P/VP de hoje ('+parF(F.pvp_hoje,2)+'×) está acima do P/VP justo do cenário central ('+parF(F.pvp_justo_central,2)+'×).']);
     if(F.roe_ultimo_pct!=null&&F.roe_ultimo_pct<F.roe_conservador_pct)pre.push(['O ROE mais recente ('+parF(F.roe_ultimo_pct,1)+'%) está abaixo do ROE do cenário conservador ('+parF(F.roe_conservador_pct,1)+'%).']);
     err.push('O custo de capital subir de '+parF(F.custo_de_capital_pct,0)+'% para '+parF(F.preco_justo_central_com_custo_maior.custo_pct,0)+'%: o preço justo central cairia para '+parP(pk,F.preco_justo_central_com_custo_maior.preco)+'.');
-    err.push('O ROE cair para o do cenário conservador ('+parF(F.roe_conservador_pct,1)+'%): o preço justo seria '+parP(pk,f.conservador)+'.');
+    if(f.margem_de_seguranca_pct<0)err.push('O ROE cair para o do cenário conservador ('+parF(F.roe_conservador_pct,1)+'%): o preço justo seria '+parP(pk,f.conservador)+'.');
     ace.push('O ROE do próximo balanço contra o ROE sustentável de '+parF(F.roe_sustentavel_pct,1)+'%.');
   }else{
     var nome=F.tipo==='bolsa'?'da bolsa':'da seguradora';
@@ -54,7 +54,7 @@ function parFinFatos(pk){var F=pk.financeira,f=pk.faixa,fav=[],pre=[],err=[],ace
       else if(F.pl_hoje>F.pl_alvo_central)pre.push(['O P/L de hoje ('+parF(F.pl_hoje,1)+'×) está acima do P/L alvo central ('+parF(F.pl_alvo_central,1)+'×).'])}
     if(F.rendimento_sustentavel_pct!=null&&F.dividendo_sustentavel_por_acao!=null)fav.push('O dividendo sustentável é de '+parP(pk,F.dividendo_sustentavel_por_acao)+' por ação, '+parF(F.rendimento_sustentavel_pct,1)+'% do preço.');
     err.push('O lucro por ação ficar no do cenário conservador ('+parP(pk,F.lucro_por_acao_conservador)+').');
-    err.push('O P/L cair para o do cenário conservador ('+parF(F.pl_alvo_conservador,1)+'×): o preço justo seria '+parP(pk,F.preco_justo_com_pl_conservador)+'.');
+    if(F.pl_hoje!=null&&F.pl_hoje>F.pl_alvo_conservador)err.push('O P/L cair para o do cenário conservador ('+parF(F.pl_alvo_conservador,1)+'×): o preço justo seria '+parP(pk,F.preco_justo_com_pl_conservador)+'.');
     if(F.dividendo_por_acao!=null&&pay!=null)ace.push('O dividendo por ação ('+parP(pk,F.dividendo_por_acao)+') contra o lucro por ação normalizado do cenário central.')}
   if(pay!=null){if(pay>100)pre.push(['O payout de '+parF(pay,0)+'% passa de 100% do lucro.',true]);else if(F.tipo==='banco')fav.push('Os dividendos pagos equivalem a '+parF(pay,0)+'% do lucro, abaixo de 100%.');}
   if(pay!=null)ace.push('O payout (hoje: '+parF(pay,0)+'%).');

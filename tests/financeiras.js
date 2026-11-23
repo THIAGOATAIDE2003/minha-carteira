@@ -49,7 +49,9 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   const G = await mkO('SEGU3', 8, { pvp: 1, pl_r: 4000 / 1, dy: 8, pl: 10 });
   if (G.erro) { ok('seguradora monta o pacote', false, G.erro); } else {
     ok('pacote da seguradora: bloco financeira com P/L alvo, dividendo sustentável e origem do P/L', G.pk.financeira.tipo === 'seguradora' && G.pk.financeira.pl_alvo_central != null && G.pk.financeira.origem_do_pl === 'histórico da própria ação', G.pk.financeira);
-    ok('fatos da seguradora: P/L, dividendo sustentável e itens não avaliados (sinistralidade, solvência e resultado financeiro)', /P\/L de hoje/.test(txt(G.ent, 'fav') + txt(G.ent, 'pre')) && /sinistralidade, solvência e resultado financeiro/.test(txt(G.ent, 'pre')) && /P\/L cair para o do cenário conservador/.test(txt(G.ent, 'err')), G.ent.fatos);
+    ok('fatos da seguradora: P/L, dividendo sustentável e itens não avaliados (sinistralidade, solvência e resultado financeiro)', /P\/L de hoje/.test(txt(G.ent, 'fav') + txt(G.ent, 'pre')) && /sinistralidade, solvência e resultado financeiro/.test(txt(G.ent, 'pre')) && /lucro por ação ficar no do cenário conservador/.test(txt(G.ent, 'err')), G.ent.fatos);
+    const G2 = await mkO('SEGU3', 8, { pvp: 1, pl_r: 4000, dy: 8, pl: 12 });
+    ok('gatilho "P/L cair para o do conservador" só quando o P/L de hoje está acima dele', !G2.erro && /P\/L cair para o do cenário conservador/.test(txt(G2.ent, 'err')) && !/P\/L cair para o do cenário conservador/.test(txt(G.ent, 'err')), G2.erro || txt(G2.ent, 'err'));
     ok('seguradora: ainda tem o lucro normalizado no pacote', G.pk.faixa.lucro_normalizado && G.pk.faixa.lucro_normalizado.por_ano_milhoes != null);
   }
   /* validador: mesmos fatos, a IA reescreve; número inventado barra */
