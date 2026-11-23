@@ -39,7 +39,7 @@ function metParse(n){var raw=metRaw(n),r={d:n==='opp'?{}:{r:{}},raw:raw,ruim:0,x
   try{o=JSON.parse(raw)}catch(e){o=undefined}
   if(n==='opp'){if(metPlain(o))c=metOpp(o)}else if(metPlain(o)&&(o.r===undefined||metPlain(o.r)))c=metGar(o);
   if(!c){r.ruim=1;MTBAD[n]=1;metRuim(n,raw);return r}
-  r.d=c.d;r.x=c.x;if(c.x)metRuim(n,raw);return r}
+  r.d=c.d;r.x=c.x;if(c.x){MTBAD[n]=1;metRuim(n,raw)}return r}
 /* gravação: fica parada enquanto o dado ilegível ainda não teve chance de ser restaurado da nuvem */
 function metTrava(n){return !!MTBAD[n]&&!MTREST}
 function metGrava(n,obj,forca){if(!forca&&metTrava(n))return false;try{localStorage.setItem(metK(n),JSON.stringify(obj));return true}catch(e){logErro('histórico do método','não consegui gravar '+n+' (armazenamento cheio?)');return false}}
@@ -116,11 +116,11 @@ function metPainel(R){var NM=Math.max(10,metI(R&&R.nmin)),H=METH,A=R&&R.agg&&met
       h+='<p class="anv" style="margin:6px 0"><b>'+n+'</b> ideias medidas'+(metI(A.datas)?' (entraram em '+metI(A.datas)+' datas)':'')+'</p>'+ln('Bateram o Ibovespa','<b>'+metI(T.bI)+' de '+n+' ('+pc(T.bI)+')</b>')+ln('Bateram o CDI','<b>'+metI(T.bC)+' de '+n+' ('+pc(T.bC)+')</b>')+ln('Bateram os dois','<b>'+metI(T.bAmbos)+' de '+n+' ('+pc(T.bAmbos)+')</b>')+
         ln('Retorno mediano','<b>'+metP(T.med)+'</b> <span class="muted">(Ibov '+metP(T.medI)+' · CDI '+metP(T.medC)+')</span>')+'<p class="note">com dividendos, antes de imposto</p>';
       if(metI(A.datas)>0&&metI(A.datas)<5)h+='<p class="note">As ideias entraram em poucas datas diferentes: se parecem entre si, então '+n+' ideias valem menos do que '+n+' casos separados.</p>'}
-    var C=metPlain(A.conf)?A.conf:{},M=metPlain(A.ms)?A.ms:{};
+    if(conc){var C=metPlain(A.conf)?A.conf:{},M=metPlain(A.ms)?A.ms:{};
     h+='<div class="metg"><b>Por confiança</b>'+[['Alta','Alta'],['Média','Média'],['Verificação','Em verificação']].map(function(k){var g=C[k[0]];return ln(k[1]+' <span class="muted">'+metI(g&&g.n)+'</span>',metGrupo(g,NM,k[0]==='Verificação'))}).join('')+
       '<b>Por margem de segurança</b>'+[['neg','Negativa'],['0-20','0 a 20%'],['20+','20% ou mais']].map(function(k){var g=M[k[0]];return ln(k[1]+' <span class="muted">'+metI(g&&g.n)+'</span>',metGrupo(g,NM,0))}).join('')+'</div>';
     var f=metPlain(A.fora)?A.fora:{},fp=[[f.semSaida,'sem preço de saída'],[f.split,'desdobramento'],[f.semDiv,'sem dividendos conferidos'],[f.semFoto,'sem foto']].filter(function(x){return metI(x[0])>0}).map(function(x){return metI(x[0])+' '+x[1]});
-    if(fp.length)h+='<p class="note">Fora da conta: '+fp.join(', ')+'.</p>';
+    if(fp.length)h+='<p class="note">Fora da conta: '+fp.join(', ')+'.</p>'}
     var s=metStLer();h+='<p class="note">'+esc(s&&s.ok?'Histórico guardado na nuvem ✓':metTxt())+(R.gerado?' · conta de '+esc(metDmy(String(R.gerado).slice(0,10))):'')+'</p>'}
   return {sum:sum,h:h}}
 function metHtml(){try{metLer()}catch(e){}var R=METR&&METR.ok?METR.r:null,P=metPainel(R);
