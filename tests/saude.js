@@ -80,7 +80,7 @@ function doc(f, over) {
     const cap = opCapSetor([{ tk: 'A1' }, { tk: 'B1' }, { tk: 'A2' }, { tk: 'A3' }, { tk: 'A4' }, { tk: 'A5' }, { tk: 'Z9' }]);
     return { cx150: opGate(mk('P', 2.26, ['caixa'])), cx100: opGate(mk('P', 1.0, ['caixa'])), cx50: opGate(mk('P', 0.5, ['caixa'])), div150: opGate(mk('P', 2.26, ['divida'])), dois: opGate(mk('P', 0.3, ['divida', 'caixa'])), limpo: opGate(mk('P', 2.26, [])), semSd: opGate({ tk: 'P', fx: { ok: true, opp: true, espPct: 3 }, sd: null }), naoOpp: opGate({ tk: 'P', fx: { ok: true, opp: false, espPct: 3 }, sd: { n: 2, f: [], mot: [] } }), cap: cap.D.map(x => x.tk), skip: cap.skip };
   });
-  ok('caixa operacional negativo + retorno esperado acima de 100% = verificação com motivo', /caixa operacional negativo nos últimos 12 meses e retorno esperado acima de 100%/.test(G.cx150), G.cx150);
+  ok('caixa operacional negativo + retorno esperado acima de 100% = verificação com motivo', /caixa operacional negativo nos últimos 12 meses e potencial acima de 100%/.test(G.cx150), G.cx150);
   ok('caixa negativo com retorno de 100% ou menos continua (só aviso)', G.cx100 === null && G.cx50 === null);
   ok('retorno alto sem caixa negativo não é barrado por essa regra', G.div150 === null && G.limpo === null);
   ok('2 falhas continua indo para verificação', /saúde financeira: dívida alta, caixa operacional negativo/.test(G.dois), G.dois);

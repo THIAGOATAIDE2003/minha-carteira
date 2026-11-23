@@ -131,7 +131,8 @@ const val = (L0, fm, g, r, m) => { let e = L0 * fm, v = 0; for (let i = 1; i <= 
   ok('linha mostra margem de segurança sobre o conservador', /Margem de segurança <b class="num (gain|loss)">/.test(H.fechada) && /sobre o conservador/.test(H.fechada));
   ok('premissas escondidas até tocar; botão aparece', !/Lucro normalizado/.test(H.fechada) && /data-fxp="TEST3"/.test(H.fechada) && />Premissas</.test(H.fechada));
   ok('ao tocar mostra premissas: lucro normalizado, crescimento, margem, desconto, múltiplo e pesos', /Lucro normalizado/.test(H.aberta) && /Crescimento do lucro/.test(H.aberta) && /Margem líquida/.test(H.aberta) && /Desconto \(% a\.a\.\)/.test(H.aberta) && /Múltiplo de saída/.test(H.aberta) && /pesos 25\/50\/25/.test(H.aberta) && /Esconder premissas/.test(H.aberta));
-  ok('coluna Esperado mostra o retorno esperado (não um número único de preço justo)', !/justo R\$/.test(H.fechada) && new RegExp('opu (gain|loss)">[+−]').test(H.fechada));
+  ok('coluna Potencial mostra o potencial até o valor justo (não um número único de preço justo)', !/justo R\$/.test(H.fechada) && new RegExp('opu (gain|loss)">[+−]').test(H.fechada));
+  ok('premissas dizem "Potencial até o valor justo" com balão e sem "Retorno esperado"', /Potencial até o valor justo<\/b> <button[^>]*data-bal="[^"]*não é retorno anual/.test(H.aberta) && !/Retorno esperado/i.test(H.aberta) && !/Retorno esperado/i.test(H.fechada), H.aberta.slice(-700));
   ok('armadilha de valor aparece na linha e nas premissas', /Possível armadilha de valor/.test(H.rt));
   ok('sem armadilha no caso normal', !/armadilha/.test(H.fechada));
   ok('alerta de ideia usa o conservador, não o preço justo único', H.ra.length >= 0 && !H.ra.some(a => /Abaixo do preço justo/.test(a[1])));

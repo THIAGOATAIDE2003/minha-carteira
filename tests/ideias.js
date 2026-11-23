@@ -124,7 +124,23 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   ok('E3 (d): só 60 ações recebem faixa', E3.d === 60, E3.d);
   ok('E3 (e): faixa calculando fica em Ideias (não cai antes da hora)', E3.e.D.join() === 'PEND3' && E3.e.X.length === 0, E3.e);
   ok('E3 (f): exceção rara usa a margem da faixa (45% passa, 30% não)', E3.f.D.join() === 'RARA3' && E3.f.rara[0] === true && E3.f.skipC === 1, E3.f);
-  ok('E3 (g): sem faixa vai para Em verificação com o motivo', E3.g.D.length === 0 && E3.g.X.join() === 'SEMF3' && /faixa indisponível: sem histórico da CVM/.test(E3.g.w), E3.g);
+  ok('E3 (extra): sem faixa vai para Em verificação com o motivo', E3.g.D.length === 0 && E3.g.X.join() === 'SEMF3' && /faixa indisponível: sem histórico da CVM/.test(E3.g.w), E3.g);
+  /* E3 (C2): cabeçalho e nota das Ideias dizem Potencial, não Esperado */
+  const CAB = await p.evaluate(() => {
+    const ant = opData, o = { tk: 'XXXX3', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: ['Energia', ''], alr: [], pos: [], neg: [] }, V: null, score: 7, al: [], cf: { n: 'Alta', w: [], f: 1 }, gq: { t: '', fraca: false, w: [] } };
+    opData = () => ({ W: [o], M: [], D: [o], X: [], n: 0, cand: 10, skipC: 0, skipV: 0, skipF: 3, skipS: 0 }); const v0 = OPV;
+    try { OPV = 'lst'; const a = oppHtml(); OPV = 'gar'; const b = oppHtml(); return { a: a, b: b }; } finally { opData = ant; OPV = v0; }
+  });
+  ok('E3 (C2): cabeçalho da lista diz Potencial (nunca Esperado)', /<span>Potencial<\/span>/.test(CAB.a) && !/<span>Esperado<\/span>/.test(CAB.a) && /<span>Potencial<\/span>/.test(CAB.b), CAB.a.slice(0, 300));
+  ok('E3 (C2): nota explica Potencial sem prometer retorno e conta as ações acima da faixa', /A coluna Potencial mostra quanto o preço de hoje teria de subir/.test(CAB.b) && /Não é retorno anual nem promessa/.test(CAB.b) && /3 ficaram de fora por estarem acima disso/.test(CAB.b) && !/retorno esperado/i.test(CAB.b), CAB.b.slice(-900));
+  /* E3 (g): contexto do assistente com o.V=null (banco) não quebra e mantém a linha ALERTAS */
+  const AS = await p.evaluate(() => {
+    const ant = opData, cf = { n: 'Média', w: [], f: 0.8 };
+    opData = () => ({ D: [{ tk: 'BANC4', score: 8.2, V: null, cf: cf, fx: { ok: true, espPct: 0.214, cons: 10, oti: 18, F: brl } }, { tk: 'PEND3', score: 7, V: null, fx: { ok: false, pend: true } }], W: [{ tk: 'XXXX3', al: [['ok', 'Abaixo do cenário conservador', 'x']] }], M: [], X: [] });
+    try { return asCtx('oi', { op: 1 }); } finally { opData = ant; }
+  });
+  ok('E3 (g): assistente lista IDEIAS NOVAS com potencial e faixa, sem quebrar com V=null', /IDEIAS NOVAS \(/.test(AS) && /BANC4 nota 8,2, potencial até o valor justo \+21%, faixa R\$\s?10,00 a R\$\s?18,00, confiança média/.test(AS) && !/GARIMPO/.test(AS) && !/PEND3/.test(AS), AS);
+  ok('E3 (g): linha ALERTAS continua no contexto', /ALERTAS: XXXX3: Abaixo do cenário conservador/.test(AS), AS);
   ok('nenhum erro de JavaScript', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Ideias: ' + total + ' conferências ok');

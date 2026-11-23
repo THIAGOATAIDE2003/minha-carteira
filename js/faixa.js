@@ -1,7 +1,7 @@
 /* Aporte · js/faixa.js — Preço justo em FAIXA (1.64.0): 3 cenários feitos com o lucro normalizado do histórico da CVM.
    Só usado pelas Ideias (opData/opRow em mercado-oportunidades.js). Não mexe no stkAna nem no anValCalc.
    Tudo é conta feita por código com premissas simples e visíveis; nada vem de IA. */
-var FXV=0,FXL={},FXP=0,FXOPEN={},FXW=[25,50,25],FXTOL=0.10,FXPAY=0.5,FXN=8,FXMC=0.85,FXOLD=false;  /* FXOLD só serve para comparar com a regra antiga de 4 cortes (1.64.0) */
+var FXPOT='Quanto o preço de hoje teria de subir (ou cair) para chegar ao valor justo: média dos 3 cenários (pesos 25/50/25). Não tem prazo e não é retorno anual nem promessa.',FXV=0,FXL={},FXP=0,FXOPEN={},FXW=[25,50,25],FXTOL=0.10,FXPAY=0.5,FXN=8,FXMC=0.85,FXOLD=false;  /* FXOLD só serve para comparar com a regra antiga de 4 cortes (1.64.0) */
 /* mediana e percentil (interpolado) de uma lista de números */
 function fxPct(a,p){if(!a.length)return null;var s=a.slice().sort(function(x,y){return x-y}),i=(s.length-1)*p,lo=Math.floor(i),hi=Math.ceil(i);return s[lo]+(s[hi]-s[lo])*(i-lo)}
 /* arquivo do histórico (dados/cvm/<TICKER>.json): undefined = baixando, null = não existe/indisponível */
@@ -65,6 +65,6 @@ function fxPrem(f){if(f.bank)return bkPrem(f);if(f.seg)return sgPrem(f);var F=f.
     '<tr><td>Múltiplo de saída (P/L)</td>'+td(function(c){return num(c.m,1)+'×'})+'</tr>'+
     '<tr><td>Valor por ação</td>'+td(function(c){return '<b>'+F.format(c.v)+'</b>'})+'</tr></tbody></table></div>'+
     '<p class="note" style="margin:6px 0 0">Cada cenário projeta o lucro por ação normalizado ('+F.format(f.L0)+') por 5 anos, distribui '+Math.round(FXPAY*100)+'% dele e vende no ano 5 pelo múltiplo de saída, tudo trazido a valor de hoje pela taxa de desconto. O conservador muda só 2 coisas em relação ao central: margem de um trimestre fraco (percentil 25 do histórico) e múltiplo de saída 15% menor; crescimento e desconto são os mesmos do central. O otimista usa margem de um trimestre forte (percentil 75), mais crescimento, menos desconto e múltiplo maior.</p>'+
-    '<p class="anv" style="margin:8px 0 2px"><b>Retorno esperado</b>: média dos 3 cenários com pesos '+FXW.join('/')+' = <b class="num">'+F.format(f.esp)+'</b> (<b class="num '+(f.espPct>=0?'gain':'loss')+'">'+csPc(f.espPct*100)+'</b> sobre o preço de hoje, '+F.format(f.P)+').</p>'+
+    '<p class="anv" style="margin:8px 0 2px"><b>Potencial até o valor justo</b> '+bal(FXPOT)+': média dos 3 cenários com pesos '+FXW.join('/')+' = <b class="num">'+F.format(f.esp)+'</b> (<b class="num '+(f.espPct>=0?'gain':'loss')+'">'+csPc(f.espPct*100)+'</b> sobre o preço de hoje, '+F.format(f.P)+').</p>'+
     '<p class="note" style="margin:0">Vira ideia só se o preço estiver abaixo do conservador ou até '+Math.round(FXTOL*100)+'% acima dele. '+(f.trap?'<b class="hiw">Possível armadilha de valor: o '+f.trap+' caiu 3 trimestres seguidos, então o cenário central foi rebaixado (média entre conservador e central).</b> ':'')+'Mude crescimento e desconto na aba Valuation da ação, se quiser testar. É uma estimativa com premissas simples, não garantia.</p></div>'}
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-fxp]');if(!b)return;var t=b.getAttribute('data-fxp');FXOPEN[t]=!FXOPEN[t];try{renderMkt()}catch(x){}});
