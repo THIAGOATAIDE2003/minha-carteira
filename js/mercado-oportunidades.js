@@ -5,8 +5,9 @@ function opD(tk){var F=fundOf(tk),lv=livePx(tk),h=MD.d&&MD.d.hist&&MD.d.hist[tk]
   var P=lv?lv.p:h&&h.last?h.last:F&&F.cot;if(!(P>0))return null;
   var k={};if(h&&h.d&&h.d.length>20){var y=h.d.map(function(p){return p[1]});k.hi=Math.max.apply(null,y);k.lo=Math.min.apply(null,y)}
   return {cur:us?'USD':'BRL',price:P,pct:lv&&lv.pct,k:k}}
-function opEval(tk){var d=opD(tk);if(!d)return null;var A=stkAna(tk,d);if(A.etf)return null;var V=anValCalc(tk,d,A);
-  return {tk:tk,d:d,A:A,V:V.ms&&V.ms.length?V:null,score:A.score}}
+/* banco/financeira (setor Financeiro): Graham, Bazin e fluxo de lucro não servem (1.62.0); fica sem preço justo até existir modelo por P/VP e ROE */
+function opEval(tk){var d=opD(tk);if(!d)return null;var A=stkAna(tk,d);if(A.etf)return null;var fin=!!(A.sec&&A.sec[0]==='Financeiro'),V=fin?{ms:[]}:anValCalc(tk,d,A);
+  return {tk:tk,d:d,A:A,V:V.ms&&V.ms.length?V:null,score:A.score,banco:fin}}
 function opHist(){try{return JSON.parse(localStorage.getItem(LS+'-opp')||'{}')||{}}catch(e){return {}}}
 /* guarda uma foto por dia de cada ação (nota, preço justo, preço) para comparar depois */
 function opSnap(list){var H=opHist(),td=today(),ch=0;list.forEach(function(o){if(!o)return;var a=H[o.tk]=H[o.tk]||[];if(a.length&&a[a.length-1][0]===td)return;a.push([td,o.score,o.V?Math.round(o.V.med*100)/100:null,Math.round(o.d.price*100)/100]);if(a.length>60)a.splice(0,a.length-60);ch=1});
@@ -37,8 +38,8 @@ function opData(){var f=MD.d&&MD.d.fund;if(!f||!f.d)return null;var R=compute(),
   var n=W.concat(M).reduce(function(s,o){return s+o.al.filter(function(a){return a[0]!=='at'||!mine[o.tk]}).length},0);
   OPC={k:key,r:{W:W,M:M,D:D,n:n,cand:cand.length,skipC:skipC,skipV:skipV}};return OPC.r}
 function opRow(o,add){var F=o.d.cur==='USD'?usd:brl,sc=o.score,cl=sc==null?'':sc>=7?'g':sc>=4.5?'m':'l',inW=wlist().indexOf(o.tk)>=0;
-  return '<div class="opr"><button type="button" class="opt" data-stk="'+esc(o.tk)+'">'+tkLogo(o.tk,o.d.cur==='USD')+'<span><b>'+esc(o.tk)+'</b><small>'+F.format(o.d.price)+(o.V?' · justo '+F.format(o.V.med):'')+(o.A.alr&&o.A.alr.length?' · ⚠ '+o.A.alr.length+(o.A.alr.length>1?' avisos':' aviso'):'')+(o.rara?' · ideia rara (quebra a regra de concentração)':'')+'</small></span></button>'+
-    '<span class="opn '+cl+'">'+(sc!=null?num(sc,1):'—')+'</span>'+(o.V?'<span class="num opu '+(o.V.up>=0?'gain':'loss')+'">'+(o.V.up>=0?'+':'−')+pf.format(Math.abs(o.V.up*100))+'%</span>':'<span class="opu muted">—</span>')+
+  return '<div class="opr"><button type="button" class="opt" data-stk="'+esc(o.tk)+'">'+tkLogo(o.tk,o.d.cur==='USD')+'<span><b>'+esc(o.tk)+'</b><small>'+F.format(o.d.price)+(o.V?' · justo '+F.format(o.V.med):o.banco?' · valuation de banco em breve':'')+(o.A.alr&&o.A.alr.length?' · ⚠ '+o.A.alr.length+(o.A.alr.length>1?' avisos':' aviso'):'')+(o.rara?' · ideia rara (quebra a regra de concentração)':'')+'</small></span></button>'+
+    '<span class="opn '+cl+'">'+(sc!=null?num(sc,1):'—')+'</span>'+(o.V?'<span class="num opu '+(o.V.up>=0?'gain':'loss')+'">'+(o.V.up>=0?'+':'−')+pf.format(Math.abs(o.V.up*100))+'%</span>':o.banco?'<span class="opu muted" style="font-size:11px;font-weight:500">em breve</span>':'<span class="opu muted">—</span>')+
     (o.gq?'<span class="opq'+(o.gq.fraca?' fr':'')+'">'+(o.gq.fraca?'⚠ Dado frágil ('+esc(o.gq.w.join(', '))+'). ':'')+esc(o.gq.t)+'</span>':'')+(add?'<button type="button" class="opa" data-wtog="'+esc(o.tk)+'" aria-label="'+(inW?'Parar de acompanhar ':'Acompanhar ')+esc(o.tk)+'">'+(inW?'★':'☆')+'</button>':'')+
     (o.al&&o.al.length?'<ul class="opal">'+o.al.slice(0,3).map(function(a){return '<li>'+rkLvl(a[0])+'<span><b>'+a[1]+'</b> '+a[2]+'</span></li>'}).join('')+'</ul>':'')+'</div>'}
 function oppHtml(){var r=opData();if(!r)return '';

@@ -50,6 +50,13 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   ok('balanço de 9 meses = Média', R.bal9m.n === 'Média', R.bal9m);
   ok('banco sem margem/dívida não é penalizado', R.banco.n === 'Alta', R.banco);
   ok('mesma falta em não-banco é penalizada', R.naoBanco.n === 'Média', R.naoBanco);
+  /* banco/financeira: sem preço justo, com o aviso na linha */
+  const B = await p.evaluate(() => {
+    const fx = (sec) => { const o = { tk: 'BANC4', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: sec, alr: [], pos: [], neg: [] }, V: null, score: 7, banco: sec[0] === 'Financeiro', al: [] }; return opRow(o, 0); };
+    return { banco: fx(['Financeiro', '']), outro: fx(['Energia', '']) };
+  });
+  ok('linha de banco mostra "valuation de banco em breve"', /valuation de banco em breve/.test(B.banco) && /em breve<\/span>/.test(B.banco), B.banco);
+  ok('linha de empresa comum não mostra isso', !/em breve/.test(B.outro));
   ok('nenhum erro de JavaScript', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Ideias: ' + total + ' conferências ok');
