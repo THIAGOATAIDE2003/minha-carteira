@@ -60,7 +60,7 @@ function doc(roe, over, f) {
   ok('patrimônio negativo = plano estranho', !pn.ok && /patrimônio/.test(pn.motivo), pn);
   /* dado faltando */
   const sr = await C(doc(i => i < 6 ? null : 12));
-  ok('só 6 trimestres com ROE: histórico curto, sem faixa', !sr.ok && /poucos trimestres/.test(sr.motivo), sr);
+  ok('só 6 trimestres com ROE: histórico curto, sem faixa', !sr.ok && /histórico curto/.test(sr.motivo), sr);
   const sa = await C(doc(12), { Fu: { pvp: null, pl_r: null } });
   ok('sem número de ações: sem faixa', !sa.ok && /ações/.test(sa.motivo), sa);
   const dv = await C(doc(12), { Fu: { pl_r: 5000 } });
@@ -86,6 +86,33 @@ function doc(roe, over, f) {
   const s6 = await S(doc(12, null, (r, i) => { r.luc = 100 - (i > 8 ? (i - 8) * 5 : 0); }));
   const g6 = await p.evaluate((d) => { var f = bkCalc(d, 1, { cr5: 4 }, 'BANC4', { pvp: 0.5, pl_r: 1000, dy: 6, pl: 10 }); if (!f.ok) return 'sem faixa: ' + f.motivo; f.F = brl; var o = { fx: f, sd: bkSaude({ fx: f }) }; return String(opGate(o)); }, doc(12, null, (r, i) => { r.luc = 100 - (i > 8 ? (i - 8) * 5 : 0); }));
   ok('2 alertas (ROE baixo + queda) = Em verificação pelo opGate', /^saúde financeira: /.test(g6), g6);
+  /* custo de capital de médio prazo + matriz + trimestres que faltam */
+  const T = (focus, old) => p.evaluate(({ focus, old }) => {
+    MD.d.idx = { selic: { last: 13.75 } };
+    var y = +today().slice(0, 4), fim = {}; if (focus) { fim[y + 2] = focus[0]; fim[y + 3] = focus[1]; }
+    MD.d.macro = focus ? { regime: { r: 'caindo' }, selic: { meta: 13.75 }, coleta: today(), focus: { fim: fim } } : null;
+    BKOLD = !!old; var t = bkTaxa(); BKOLD = false; return t;
+  }, { focus, old });
+  const t1 = await T([11, 10.5]);
+  ok('taxa de médio prazo = (Selic 13,75 + média Focus 2028/29 de 10,75) ÷ 2 = 12,25; + 1 de prêmio = 13,25 → 13', t1.regra === 'medio' && Math.abs(t1.focus - 10.75) < 1e-9 && Math.abs(t1.medio - 12.25) < 1e-9 && t1.r === 13, t1);
+  const t2 = await T([11, 10.5], true);
+  ok('regra antiga (BKOLD): Selic de hoje + 1 = 14,75 → 15', t2.regra === 'selic' && t2.r === 15, t2);
+  const t3 = await T(null);
+  ok('sem Focus utilizável cai na regra simples (Selic + 1)', t3.regra === 'selic' && t3.r === 15, t3);
+  const t4 = await T([8, 7]);
+  ok('piso de 12%: Selic 13,75 e Focus 7,5 daria 10,6 + 1 = 12 (não passa de baixo do piso)', t4.r === 12, t4);
+  await T([11, 10.5]);
+  const nv = await C(doc(12));
+  ok('com a regra nova o custo de capital do central é 13% e o P/VP justo (12−4)÷(13−4) = 0,889', nv.pr[1].r === 13 && Math.abs(nv.pr[1].pvp - 8 / 9) < 1e-9, nv.pr);
+  ok('a matriz tem 3 ROEs × 3 custos: taxa−1, taxa, taxa+1', nv.mx.rs.join() === '12,13,14' && nv.mx.l.length === 3 && nv.mx.l.every(l => l.c.length === 3), nv.mx.rs);
+  ok('célula central da matriz = valor do central (sem armadilha)', Math.abs(nv.mx.l[1].c[1].v - nv.pr[1].v) < 1e-9 && Math.abs(nv.mx.l[0].c[1].v - nv.pr[0].v) < 1e-9);
+  ok('custo de capital menor dá preço justo maior em cada linha', nv.mx.l.every(l => l.c[0].v > l.c[1].v && l.c[1].v > l.c[2].v));
+  const html = await p.evaluate((o) => { var f = bkCalc(o.d, 10, { cr5: 4 }, 'BANC4', { pvp: 1, pl_r: 1000, dy: 6, pl: 10 }); f.F = brl; return bkPrem(f); }, { d: doc(12) });
+  ok('Premissas mostram a regra do custo de capital e a matriz', /média entre a Selic de hoje/.test(html) && /E se o custo de capital for outro/.test(html) && /\(usado\)/.test(html), html.slice(0, 200));
+  const fa = await C(doc(i => i < 7 ? null : 12));
+  ok('histórico curto diz quantos trimestres faltam', !fa.ok && fa.falta === 3 && fa.tem === 5 && /faltam 3/.test(fa.motivo), fa);
+  /* motivo chega ao Em verificação */
+  await p.evaluate(() => { MD.d.macro = null; });
   /* integração: fxFor com banco, confiança nunca Alta, linhas renderizam */
   const I = await p.evaluate(() => {
     var d = { v: 1, tk: 'BANC4', t: [], nr: [], cmp: {} }, a = 2023, q = 4;
