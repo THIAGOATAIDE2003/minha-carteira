@@ -43,7 +43,7 @@ function opData(){var f=MD.d&&MD.d.fund;if(!f||!f.d)return null;var R=compute(),
   var H=opSnap(W.concat(M,D,X));try{garRec(D)}catch(e){}
   var mk=function(o,m){if(!o.fx)o.fx=fxFor(o);if(!o.sd)o.sd=saudeFor(o);o.al=opAlerts(o,H,m);try{o.cf=opConf(o);opSanidade(o);if(o.fxDem){o.cf.fx=1;o.cf.w.unshift(o.fxDem)}}catch(e){}try{o.gq=opQual(o)}catch(e){}return o};W=W.map(function(o){return mk(o,!!mine[o.tk])});M=M.map(function(o){return mk(o,1)});D=D.map(function(o){return mk(o,0)});X=X.map(function(o){return mk(o,0)});
   var n=W.concat(M).reduce(function(s,o){return s+o.al.filter(function(a){return a[0]!=='at'||!mine[o.tk]}).length},0);
-  OPC={k:key,r:{W:W,M:M,D:D,X:X,n:n,cand:cand.length,skipC:skipC,skipV:skipV,skipF:skipF}};return OPC.r}
+  OPC={k:key,r:{W:W,M:M,D:D,X:X,n:n,cand:cand.length,skipC:skipC,skipV:skipV,skipF:skipF}};try{fotoSalvar(OPC.r)}catch(e){}return OPC.r}
 function opRow(o,add){var F=o.d.cur==='USD'?usd:brl,sc=o.score,cl=sc==null?'':sc>=7?'g':sc>=4.5?'m':'l',inW=wlist().indexOf(o.tk)>=0;
   return '<div class="opr"><button type="button" class="opt" data-stk="'+esc(o.tk)+'">'+tkLogo(o.tk,o.d.cur==='USD')+'<span><b>'+esc(o.tk)+'</b><small>'+F.format(o.d.price)+(o.banco?' · valuation de banco em breve':'')+(o.A.alr&&o.A.alr.length?' · ⚠ '+o.A.alr.length+(o.A.alr.length>1?' avisos':' aviso'):'')+(o.rara?' · ideia rara (quebra a regra de concentração)':'')+'</small></span></button>'+
     '<span class="opn '+cl+'">'+(sc!=null?num(sc,1):'—')+'</span>'+(o.fx&&o.fx.ok?'<span class="num opu '+(o.fx.espPct>=0?'gain':'loss')+'">'+(o.fx.espPct>=0?'+':'−')+pf.format(Math.abs(o.fx.espPct*100))+'%</span>':o.banco?'<span class="opu muted" style="font-size:11px;font-weight:500">em breve</span>':'<span class="opu muted">—</span>')+

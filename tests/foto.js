@@ -1,0 +1,51 @@
+/* Testes da foto diária das Ideias (js/foto.js): node tests/foto.js */
+const path = require('path');
+const { chromium } = require('playwright');
+const APP = 'file://' + path.resolve(__dirname, '..', 'index.html');
+let falhas = 0, total = 0;
+const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log('✗', nome, extra === undefined ? '' : JSON.stringify(extra)); } };
+(async () => {
+  const b = await chromium.launch(), p = await b.newPage(), erros = [];
+  p.on('pageerror', e => erros.push(e.message));
+  await p.goto(APP); await p.waitForTimeout(800);
+  const R = await p.evaluate(async () => {
+    const fx = (c) => ({ ok: true, cons: c, cen: c * 1.5, oti: c * 2.2222, esp: c * 1.55, ms: 0.123456, est: 'abaixo', trap: null });
+    const o = (tk, c, st) => ({ tk: tk, d: { cur: 'BRL', price: 10.126 }, fx: fx(c), score: 7.44, cf: { n: 'Alta', w: st ? ['preço velho'] : [], f: 1 }, sd: { mot: st ? ['dívida alta', 'caixa operacional negativo'] : [] } });
+    const full = { D: [o('AAAA3', 12)], X: [Object.assign(o('BBBB3', 9), { fx: fx(9) })], W: [], M: [] };
+    const pend = { D: [Object.assign(o('CCCC3', 5), { fx: { ok: false, pend: true } })], X: [] };
+    const out = {};
+    out.doc = fotoMontar(full, '2026-11-23'); out.pend = fotoMontar(pend, '2026-11-23'); out.vazio = fotoMontar({ D: [], X: [] }, '2026-11-23');
+    /* envio */
+    const calls = []; let status = 201; const oldFetch = window.fetch;
+    window.fetch = function (url, opt) { calls.push({ url: url, method: opt.method, auth: opt.headers.Authorization, body: JSON.parse(opt.body) }); return Promise.resolve({ ok: status < 300, status: status, json: function () { return Promise.resolve({}) } }); };
+    const espera = () => new Promise(r => setTimeout(r, 50));
+    S.keys.gh = ''; try { localStorage.removeItem(fotoKey()) } catch (e) { } FOTOQ = false; FOTOE = 0;
+    fotoSalvar(full); await espera(); out.semToken = calls.length;
+    S.keys.gh = 'tok'; fotoSalvar(pend); await espera(); out.pendente = calls.length;
+    status = 500; fotoSalvar(full); await espera(); out.erro = { n: calls.length, feita: fotoFeita(), cooldown: FOTOE > 0 };
+    fotoSalvar(full); await espera(); out.dentroDoCooldown = calls.length;
+    FOTOE = 0; status = 201; fotoSalvar(full); await espera(); out.ok = { n: calls.length, feita: fotoFeita(), dia: today() };
+    fotoSalvar(full); await espera(); out.depoisDeFeita = calls.length;
+    try { localStorage.removeItem(fotoKey()) } catch (e) { } status = 422; fotoSalvar(full); await espera(); out.existe = { n: calls.length, feita: fotoFeita() };
+    out.chamada = calls[calls.length - 2];
+    window.fetch = oldFetch; return out;
+  });
+  const L = R.doc.ideias;
+  ok('foto: tem versão, dia, regra e as 2 linhas', R.doc.v === 1 && R.doc.dia === '2026-11-23' && L.length === 2 && R.doc.regra.pesos.join() === '25,50,25' && /0.85/.test(R.doc.regra.conservador), R.doc);
+  ok('foto: ideia e verificação separadas', L[0].tk === 'AAAA3' && L[0].st === 'ideia' && L[1].tk === 'BBBB3' && L[1].st === 'verificacao');
+  ok('foto: preço e faixa arredondados em 2 casas', L[0].preco === 10.13 && L[0].cons === 12 && L[0].cen === 18 && L[0].oti === 26.67 && L[0].esp === 18.6 && L[0].ms === 12.35, L[0]);
+  ok('foto: confiança, nota e motivo', L[0].conf === 'Alta' && L[0].nota === 7.44 && L[0].motivo === null);
+  ok('foto: pendente (faixa calculando) não gera foto', R.pend === null);
+  ok('foto: lista vazia não gera foto', R.vazio === null);
+  ok('sem token do GitHub: não envia', R.semToken === 0);
+  ok('com faixa ainda calculando: não envia', R.pendente === 0);
+  ok('erro do GitHub: não marca como feito e espera 10 min', R.erro.n === 1 && R.erro.feita === null && R.erro.cooldown === true && R.dentroDoCooldown === 1, R.erro);
+  ok('sucesso: marca o dia como feito', R.ok.n === 2 && R.ok.feita === R.ok.dia, R.ok);
+  ok('depois de feito, não envia de novo no mesmo dia', R.depoisDeFeita === 2);
+  ok('arquivo já existe (422): marca como feito sem erro', R.existe.n === 3 && R.existe.feita !== null, R.existe);
+  ok('PUT no caminho dados/ideias/AAAA-MM-DD.json do repositório de dados, com token e conteúdo em base64', R.chamada.method === 'PUT' && /\/contents\/dados\/ideias\/\d{4}-\d{2}-\d{2}\.json$/.test(R.chamada.url) && R.chamada.auth === 'Bearer tok' && typeof R.chamada.body.content === 'string' && /^Foto das ideias/.test(R.chamada.body.message), R.chamada.url);
+  ok('nenhum erro de JavaScript', erros.length === 0, erros);
+  await b.close();
+  console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Foto: ' + total + ' conferências ok');
+  process.exit(falhas ? 1 : 0);
+})();

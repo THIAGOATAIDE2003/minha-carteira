@@ -18,5 +18,6 @@ jobs:
       - run: node tests/historico.js
       - run: node tests/faixa.js
       - run: node tests/saude.js
+      - run: node tests/foto.js
       - run: node tests/sethtml.js
       - run: node tests/erros.js
