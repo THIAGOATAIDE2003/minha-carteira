@@ -60,13 +60,25 @@ function doc(f, n) {
   ok('Q12 sem motivo: nenhuma frase', nada.length === 0, nada);
   const semNovo = await p.evaluate((o) => { o.novo = 0; return porqueRow(o); }, JSON.parse(JSON.stringify(base)));
   ok('Q12 só aparece para Ideias novas', semNovo === '');
-  const esc = await p.evaluate((o) => { o.tk = '<img src=x>'; return porqueRow(o); }, JSON.parse(JSON.stringify(base)));
-  ok('Q12 HTML escapado e com ⓘ', !esc.includes('<img') && esc.includes('Por que apareceu'));
-  /* risco */
-  const rk = await p.evaluate(() => { window.__fx0 = fxDoc; window.fxDoc = function () { return { t: [{}] }; }; const o = { tk: 'T3', fx: { ok: true }, ql: { tipo: 'nf', ap: 6, ps: 2, t: [], ress: null }, sd: { n: 0, m: {}, desc: [] } }; const r = [riscosFor(o, 1), riscosFor(o)]; window.fxDoc = window.__fx0; return r; });
-  ok('Q14 risco só quando ap>=5 e ps<=2 (e só na linha fechada)', rk[0].some(x => x.includes('2 de 6')) && !rk[1].some(x => x.includes('qualidade')), rk);
-  const rk4 = await p.evaluate(() => riscosFor({ tk: 'T3', fx: { ok: true }, ql: { tipo: 'nf', ap: 4, ps: 1, t: [] }, sd: { n: 0, m: {}, desc: [] } }, 1));
-  ok('Q14 ap=4 não gera risco', !rk4.some(x => x.includes('qualidade')), rk4);
+  const bl = await p.evaluate((o) => porqueRow(o), JSON.parse(JSON.stringify(base)));
+  ok('Q12 linha tem título e balão ⓘ', bl.includes('Por que apareceu') && bl.includes('bal'), bl);
+  /* risco: limites (ap>=5 e ps<=2), só na linha fechada, e só cita testes que FALHARAM */
+  const mk = (ap, ps) => ({ tk: 'T3', fx: { ok: true }, sd: { n: 0, m: {}, desc: [] }, ql: { tipo: 'nf', ap, ps, t: [0, 1, 2, 3, 4, 5].map(i => ({ n: ['Lucro', 'Caixa', 'Margem', 'Dívida', 'ROE', 'Receita'][i], r: i < ps ? true : i < ap ? false : null })) } });
+  const rr = await p.evaluate((casos) => { window.__fx0 = fxDoc; window.fxDoc = function () { return { t: [{}] }; }; const r = casos.map(c => { const o = { tk: 'T3', fx: { ok: true }, sd: { n: 0, m: {}, desc: [] }, ql: c }; return [c.ap + '/' + c.ps, riscosFor(o, 1).some(x => x.includes('qualidade do lucro')), riscosFor(o).some(x => x.includes('qualidade do lucro'))]; }); window.fxDoc = window.__fx0; return r; },
+    [[5, 2], [6, 0], [6, 2], [4, 1], [4, 2], [5, 3], [6, 3], [5, 5]].map(([ap, ps]) => mk(ap, ps).ql));
+  const deve = { '5/2': 1, '6/0': 1, '6/2': 1, '4/1': 0, '4/2': 0, '5/3': 0, '6/3': 0, '5/5': 0 };
+  rr.forEach(([k, linha, parecer]) => { ok('Q14 risco ' + k + (deve[k] ? ' aparece' : ' não aparece') + ' na linha fechada', linha === !!deve[k], [k, linha]); ok('Q14 risco ' + k + ' nunca no Parecer (sem 2º argumento)', parecer === false, k); });
+  /* texto do risco: só testes que não passaram (aqui Caixa e Lucro passaram) */
+  const txt = await p.evaluate((o) => { window.__fx0 = fxDoc; window.fxDoc = function () { return { t: [{}] }; }; const r = riscosFor(o, 1).filter(x => x.includes('qualidade do lucro'))[0]; window.fxDoc = window.__fx0; return r; }, (() => { const o = mk(6, 2); return o; })());
+  ok('Q14 texto lista só o que falhou (margem, dívida, roe, receita) e não cita caixa/lucro que passaram', txt && /margem, dívida, roe, receita/.test(txt) && !/caixa|lucro,/.test(txt.replace('qualidade do lucro', '')), txt);
+  /* "perto do cenário conservador" só com distância pequena; senão mostra o número real */
+  const ph = (ms) => p.evaluate((ms) => opPorque({ tk: 'X3', novo: 1, score: 5, fx: { ok: true, est: 'perto', ms }, sd: { n: 1, m: {}, desc: [] } }), ms);
+  const pp1 = await ph(-0.098), pp2 = await ph(-0.02);
+  ok('Q12 9,8% acima: mostra o número, sem "muito perto"', pp1[0] === 'a 9,8% do cenário conservador', pp1);
+  ok('Q12 2% acima: "muito perto"', pp2[0] === 'muito perto do cenário conservador', pp2);
+  /* HTML: tudo que entra na linha passa por esc() (num() devolve HTML de propósito) */
+  const esc2 = await p.evaluate((o) => { const n0 = window.num; window.num = () => '<i>x</i>'; const h = porqueRow(o); window.num = n0; return h; }, { tk: 'X3', novo: 1, score: 9, fx: { ok: true, est: 'acima', ms: -0.3 }, sd: { n: 1, m: {}, desc: [] } });
+  ok('Q12 esc(): "<i>" vira texto, não tag', esc2.includes('nota alta') && !esc2.includes('<i>') && esc2.includes('&lt;i&gt;'), esc2);
   /* Q15 arquivo pendente */
   const pend = await p.evaluate(() => { const o = { tk: 'ZZZZ3' }; try { return [qualFor(o), o.ql]; } catch (e) { return 'erro ' + e.message; } });
   ok('Q15 arquivo da CVM pendente: sem erro e sem cache', Array.isArray(pend) && pend[0] === null && pend[1] === undefined, pend);

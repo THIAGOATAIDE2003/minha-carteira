@@ -36,7 +36,7 @@ function riscosFor(o,qual){if(o&&o.fx&&o.fx.ok&&o.fx.bank)return bkRiscos(o);if(
   if(tr==='lucro')R.push([1.5,'o lucro caiu 3 trimestres seguidos']);
   var ult=D.t.slice(-4).map(hiQ),at=(D.nr||[]).filter(function(n){return n.tipo==='alto'&&ult.indexOf(n.q)>=0})[0];
   if(at)R.push([1.2,'o lucro recente tem um trimestre acima do normal ('+at.q+'), que pode não se repetir']);
-  var ql=qual?qualFor(o):null;if(ql&&ql.ap>=5&&ql.ps<=QLRISCO)R.push([1,'só '+ql.ps+' de '+ql.ap+' testes de qualidade do lucro passaram (caixa, margem, dívida, ROE ou receita pioraram)']);
+  var ql=qual?qualFor(o):null;if(ql&&ql.ap>=5&&ql.ps<=QLRISCO)R.push([1,'só '+ql.ps+' de '+ql.ap+' testes de qualidade do lucro passaram (não passaram: '+qlFalhas(ql).join(', ')+')']);
   var st=setorOf(o.tk);if(SDSELIC.test(st.s+' '+st.g))R.push([0.9,'setor sensível à Selic ('+st.k.toLowerCase()+'): juros altos pesam nas vendas e na dívida']);
   if(o.d&&o.d.k&&o.d.k.hi){var dd=o.d.price/o.d.k.hi-1;if(dd<=-0.15)R.push([Math.abs(dd)/0.3,'o preço já caiu '+Math.round(Math.abs(dd*100))+'% da máxima do ano: pode estar barato por um motivo'])}
   return R.filter(function(r){return r[0]>=0.5}).sort(function(a,b){return b[0]-a[0]}).slice(0,2).map(function(r){return r[1]})}

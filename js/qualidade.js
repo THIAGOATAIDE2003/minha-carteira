@@ -28,6 +28,7 @@ function qlCalc(D,tipo){var T=D&&D.t||[],n=T.length,pc=function(v){return pf.for
   var ap=R.filter(function(x){return x.r!==null}).length,ps=R.filter(function(x){return x.r===true}).length,
     ult=u4?u4.map(hiQ):[],at=u4?(D.nr||[]).filter(function(x){return x.tipo==='alto'&&ult.indexOf(x.q)>=0})[0]:null;
   return {tipo:tipo,t:R,ap:ap,ps:ps,ress:at?'o lucro de '+at.q+' ficou acima do normal e está nos 12 meses (pode não se repetir); o resultado dos testes não muda por causa disso':null}}
+function qlFalhas(q){return q&&q.t?q.t.filter(function(x){return x.r===false}).map(function(x){return x.n.toLowerCase()}):[]}
 /* o.ql é calculado uma vez por montagem da lista; arquivo ainda baixando = sem cálculo (a linha aparece quando chegar) */
 function qualFor(o){if(!o)return null;if(o.ql!==undefined)return o.ql;var D=fxDoc(o.tk);if(D===undefined)return null;if(!D||!D.t)return (o.ql=null);try{o.ql=qlCalc(D,qlTipo(o.tk))}catch(e){o.ql=null}return o.ql}
 /* bloco das Premissas: 6 itens com símbolo e cor (✓ passou, ✗ não passou, — não aplicável) */
@@ -38,7 +39,7 @@ function qlPrem(o){var q=qualFor(o);if(!q)return '';
   return '<ul class="rkl fqs"><li><b>Qualidade dos lucros (12 meses contra os 12 anteriores)'+pl+'</b> '+bal('Teste simples, ano contra ano, com dados da CVM. Não é nota nem recomendação. Empresa que investe muito pode reprovar em dívida; banco e seguradora têm menos testes porque caixa, dívida e receita não são comparáveis.')+'</li>'+it+(q.ress?'<li>'+rkLvl('at')+'<div><p style="margin:0;color:var(--fg)">⚠ '+esc(q.ress.charAt(0).toUpperCase()+q.ress.slice(1))+'.</p></div></li>':'')+'</ul>'}
 /* até 2 frases curtas, por regra, na ordem de prioridade; tudo vem de o.fx, o.sd, o.ql, o.A (sem IA, nada inventado) */
 function opPorque(o){var P=[],f=o&&o.fx,add=function(t){if(P.length<2)P.push(t)};if(!o||!f||!f.ok)return P;
-  if(f.est==='abaixo')add('abaixo do cenário conservador (margem de '+Math.round(Math.max(0,f.ms*100))+'%)');else if(f.est==='perto')add('muito perto do cenário conservador');
+  if(f.est==='abaixo')add('abaixo do cenário conservador (margem de '+Math.round(Math.max(0,f.ms*100))+'%)');else if(f.est==='perto'){var ds=Math.max(0,-f.ms*100);add(ds<=3?'muito perto do cenário conservador':'a '+num(ds,1)+'% do cenário conservador')}
   var sd=o.sd;if(sd&&!sd.bank&&!sd.seg&&sd.n===0&&sd.m){if(sd.m.caixa)add('mais caixa que dívida');else if(!(sd.desc||[]).length)add('3 testes de saúde financeira em dia')}
   var D=fxDoc(o.tk),y=D&&D.cmp&&D.cmp.yoy;if(y&&y.tend==='melhorando'){var ch=function(c){var x=(y.itens||[]).filter(function(i){return i.c===c})[0];return x&&x.ch}
     add(ch('luc')>0&&ch('ml')>0?'lucro e margem melhorando':'tendência do último ano melhorando')}
