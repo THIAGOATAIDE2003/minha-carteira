@@ -5,6 +5,9 @@
 var SDPL=1.5,SDLL=4,SDCOB=2,SDEB=4,SDEBL=5,SDMAXS=3,SDCX=1,
   SDSELIC=/construção|incorpora|imóveis|comércio|varejo|vestuário|domésticas|automóveis|viagens|aluguel de carros|educacion|shopping/i,
   SDESTR=/aluguel de carros|energia el|saneamento|^gás|rodovia|ferrovi|aeroport|portu|concess/i;
+/* mesmo formato do rkSect ([grupo, setor]), mas com o catálogo da B3 do robô: para as ações que o app não acompanha o rkSect devolvia "Outros" (1.68.0) */
+function setorRk(tk,us){if(us||(typeof FIIS!=='undefined'&&FIIS[tk]))return rkSect(tk,us);if(MD.d&&MD.d.sect&&MD.d.sect[tk])return rkSect(tk,false);
+  var st=setorOf(tk);if(!st.g||st.g==='Outros')return rkSect(tk,false);var g=Object.keys(RKSG).filter(function(k){return RKSG[k].indexOf(st.g)>=0})[0];return [g||st.g,st.g]}
 /* setor de uma ação: o catálogo da B3 do robô (MD.d.cat) cobre todas; sem ele, o setor que o app já conhecia (MD.d.sect). g = setor, s = subsetor */
 function setorOf(tk){var c=MD.d&&MD.d.cat,p=c&&c.a&&c.a[tk],g=p&&p[1]!=null&&c.n?(c.n[String(p[1])]||''):'',sb=p&&p[2]||'';
   if(!g&&!sb){var q=MD.d&&MD.d.sect&&MD.d.sect[tk];if(q){g=q[0]||'';sb=q[1]||''}}return {g:g,s:sb,k:sb||g}}

@@ -86,6 +86,14 @@ function doc(f, over) {
   ok('2 falhas continua indo para verificação', /saúde financeira: dívida alta, caixa operacional negativo/.test(G.dois), G.dois);
   ok('sem avaliação de saúde ou fora da regra de oportunidade: nada a barrar', G.semSd === null && G.naoOpp === null);
   ok('concentração: no máximo 3 por setor, mantém a ordem; outros setores livres', G.cap.join() === 'A1,B1,A2,A3,Z9' && G.skip === 2, G);
+  /* setorRk: mesmo formato do rkSect, mas pelo catálogo da B3 */
+  const K = await p.evaluate(() => {
+    MD.d = { sect: { ACOMP3: ['Água e Saneamento', 'Água e Saneamento', 2] }, cat: { n: { '10': 'Construção Civil', '28': 'Outros', '14': 'Energia Elétrica' }, a: { CYRE3: ['', 10, 'Incorporações'], OUTR3: ['', 28, ''], EQTL3: ['', 14, 'Energia Elétrica'] } } };
+    return { cat: setorRk('CYRE3'), ele: setorRk('EQTL3'), outros: setorRk('OUTR3'), semCat: setorRk('NADA3'), acomp: setorRk('ACOMP3'), us: setorRk('VT', true), velho: rkSect('CYRE3') };
+  });
+  ok('setorRk usa o catálogo: incorporadora vira [Consumo cíclico, Construção Civil] (o rkSect dava "Outros")', K.cat[1] === 'Construção Civil' && K.cat[0] === 'Consumo cíclico' && K.velho[0] === 'Outros', [K.cat, K.velho]);
+  ok('setorRk: elétrica é Utilidade pública; ação acompanhada continua igual ao rkSect; EUA igual', K.ele[0] === 'Utilidade pública' && K.acomp[0] === 'Utilidade pública' && K.us[0] === 'Ações do mundo (ETF)', K);
+  ok('setorRk: setor "Outros" ou sem catálogo cai no rkSect', K.outros[0] === 'Outros' && K.semCat[0] === 'Outros');
   ok('nenhum erro de JavaScript', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Saúde: ' + total + ' conferências ok');

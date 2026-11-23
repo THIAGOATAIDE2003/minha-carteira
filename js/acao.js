@@ -80,9 +80,9 @@ function anMom(tk,P){var h=MD.d&&MD.d.hist&&MD.d.hist[tk];if(!h||!P)return null;
 var GRPS={'Grupo Banco do Brasil':['BBAS3','BBSE3'],'Grupo Itaú':['ITUB3','ITUB4','ITSA3','ITSA4'],'Grupo Bradesco':['BBDC3','BBDC4'],'Grupo Santander':['SANB3','SANB4','SANB11'],'Petrobras':['PETR3','PETR4']};
 var DEPS={BBSE3:'BBAS3',ITSA3:'ITUB3',ITSA4:'ITUB4'},CONC={sec:40,grp:25};
 function grpOf(tk){for(var g in GRPS)if(GRPS[g].indexOf(tk)>=0)return g;return ''}
-function concFor(tk,R){R=R||compute();var T=R.tot,tot=T.value+(T.rfV||0);if(!tot)return null;
-  var sec={},grp={};R.held.forEach(function(x){var t=x.p.ticker,s=rkSect(t,x.p.market==='US')[0];(sec[s]=sec[s]||{v:0,t:[]}).v+=x.v;sec[s].t.push(t);var g=grpOf(t);if(g){(grp[g]=grp[g]||{v:0,t:[]}).v+=x.v;grp[g].t.push(t)}});
-  var s0=rkSect(tk,false)[0],a=sec[s0],g0=grpOf(tk),b=g0&&grp[g0],sp=a?a.v/tot*100:0,gp=b?b.v/tot*100:0,hs=sp>=CONC.sec,hg=gp>=CONC.grp;
+function concFor(tk,R,sf){R=R||compute();sf=sf||rkSect;var T=R.tot,tot=T.value+(T.rfV||0);if(!tot)return null;
+  var sec={},grp={};R.held.forEach(function(x){var t=x.p.ticker,s=sf(t,x.p.market==='US')[0];(sec[s]=sec[s]||{v:0,t:[]}).v+=x.v;sec[s].t.push(t);var g=grpOf(t);if(g){(grp[g]=grp[g]||{v:0,t:[]}).v+=x.v;grp[g].t.push(t)}});
+  var s0=sf(tk,false)[0],a=sec[s0],g0=grpOf(tk),b=g0&&grp[g0],sp=a?a.v/tot*100:0,gp=b?b.v/tot*100:0,hs=sp>=CONC.sec,hg=gp>=CONC.grp;
   var msg='';if(a&&sp>=1)msg='Você já tem <b>'+pf.format(sp)+'%</b> da carteira em '+esc(s0.toLowerCase())+' ('+a.t.map(esc).join(', ')+')';
   if(b&&gp>=1)msg+=(msg?' e ':'Você já tem ')+'<b>'+pf.format(gp)+'%</b> no '+esc(g0.replace('Grupo ','grupo '))+' ('+b.t.map(esc).join(', ')+')';
   return {sec:s0,sp:sp,gp:gp,grp:g0,alta:hs||hg,msg:msg}}
