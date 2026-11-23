@@ -60,6 +60,26 @@ function garHist(){var R=garRes(),h='<div class="panel"><h2>Esse método já ace
   if(!R.n)return h+'<p class="muted">Ainda sem histórico: '+(R.dias?'o app começou a guardar as ideias em '+esc(R.desde.split('-').reverse().join('/'))+' ('+R.dias+(R.dias>1?' dias':' dia')+'). ':'')+'É preciso pelo menos 30 dias para a primeira comparação. Até lá, trate as ideias como pontos para estudar, não como sinal.</p></div>';
   return h+'<p class="anv" style="margin:4px 0">Das <b>'+R.n+'</b> ideias com 30 dias ou mais (idade média '+R.age+' dias), <b>'+R.bat+'</b> subiram mais que o Ibovespa desde que apareceram. Diferença mediana: <b class="'+(R.med>=0?'gain':'loss')+'">'+csPc(R.med*100)+'</b>.</p>'+(R.n<10?'<p class="note">São poucos casos (menos de 10): ainda não prova nada, nem a favor nem contra.</p>':'')+'<p class="note">Preço de hoje contra o preço do dia em que a ideia apareceu, sem dividendos. Desde '+esc(R.desde.split('-').reverse().join('/'))+'.</p></div>'}
 /* qualidade do dado de uma ideia: balanço, preço e indicadores que faltam */
+/* ===== Confiança do dado das Ideias (1.62.0): separada da nota; a nota (stkAna) não muda ===== */
+var OPKS=['pl','pvp','roe','dy','ml','divpl','cr5'];
+function opBanco(o){var sc=o&&o.A&&o.A.sec;return !!(o&&o.banco)||!!(sc&&sc[0]==='Financeiro')}
+/* indicadores que deveriam existir: para banco/financeira, margem e dívida não se aplicam */
+function opKeys(o){var b=opBanco(o);return OPKS.filter(function(k){return !(b&&(k==='ml'||k==='divpl'))})}
+function opYmd(ms){return new Date(ms-3*36e5).toISOString().slice(0,10)}
+/* dias úteis da B3 entre o dia do preço e hoje: 0 = preço de hoje, 1 = do pregão anterior */
+function opDU(ms,now){if(!ms)return null;var a=opYmd(ms),b=opYmd(now||Date.now()),n=0,d=new Date(a+'T00:00:00Z');
+  for(var i=0;i<40&&opYmd(d.getTime()+3*36e5)<b;i++){d=new Date(d.getTime()+864e5);if(bDay(d))n++}return n}
+/* Alta / Média / Baixa. Baixa = não vira ideia (vai para Em verificação). `now` só existe para o teste. */
+function opConf(o,now){var tk=o.tk,N=o.A&&o.A.N||{},pts=0,w=[],blk=false,ks=opKeys(o),miss=ks.filter(function(k){return N[k]==null}).length;
+  if(miss>=3){pts+=3;w.push('faltam '+miss+' de '+ks.length+' indicadores')}else if(miss>0){pts+=1;w.push('faltam '+miss+' de '+ks.length+' indicadores')}
+  var lv=null;try{lv=livePx(tk)}catch(e){}
+  if(!lv||!lv.at){pts+=1;w.push('preço sem data')}
+  else{var du=opDU(lv.at,now);if(lv.sus){blk=true;w.push('preço duvidoso')}else if(du>1){blk=true;var dd=opYmd(lv.at).split('-');w.push('preço velho (de '+dd[2]+'/'+dd[1]+')')}}
+  var q=cvmQ(tk),l=q&&q.length?q[q.length-1]:null;
+  if(!l){pts+=3;w.push('sem balanço da CVM')}else{var vel=((now||Date.now())-Date.UTC(l[0],l[1]*3,0))/864e5;if(vel>400){pts+=3;w.push('balanço de mais de 1 ano')}else if(vel>240){pts+=1;w.push('balanço com mais de 8 meses')}}
+  var ev=((o.A&&o.A.pos)||[]).length+((o.A&&o.A.neg)||[]).length;if(ev<4){pts+=1;w.push('poucos sinais para a nota ('+ev+')')}
+  var n=blk||pts>=3?'Baixa':pts>=1?'Média':'Alta';
+  return {n:n,w:w,f:n==='Alta'?1:n==='Média'?0.8:0}}
 function opQual(o){var tk=o.tk,q=cvmQ(tk),l=q&&q.length?q[q.length-1]:null,w=[],N=o.A&&o.A.N||{},ks=['pl','pvp','roe','dy','ml','divpl','cr5'],miss=ks.filter(function(k){return N[k]==null}).length,lb;
   if(!l){lb='sem balanço da CVM';w.push('sem balanço')}else{lb='balanço do '+l[1]+'º tri de '+l[0];var fim=Date.UTC(l[0],l[1]*3,0),vel=(Date.now()-fim)/864e5;if(vel>240){w.push('balanço antigo')}}
   var lv=livePx(tk),pa=lv&&lv.at?Math.round((Date.now()-lv.at)/60000):null,pt=pa==null?'preço sem hora':pa<90?'preço de '+Math.max(1,pa)+' min atrás':pa<2880?'preço de '+Math.round(pa/60)+' h atrás':'preço de '+Math.round(pa/1440)+' dias atrás';
