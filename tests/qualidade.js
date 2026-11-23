@@ -86,7 +86,7 @@ function doc(f, n) {
   const ms = await p.evaluate((d) => { const t0 = performance.now(); for (let i = 0; i < 60; i++) qlCalc(d, 'nf'); return performance.now() - t0; }, doc());
   ok('Q16 60 cálculos em menos de 10 ms', ms < 10, ms);
   const prem = await p.evaluate((q) => qlPrem({ tk: 'T3', ql: q }), q1);
-  ok('Q13 Premissas: 6 itens com aria-label e símbolo', (prem.match(/aria-label=/g) || []).length === 6 && prem.includes('✓') && prem.includes('6 de 6'));
+  ok('Q13 Premissas: 6 itens com aria-label e símbolo', (prem.match(/<li aria-label=/g) || []).length === 6 && prem.includes('✓') && prem.includes('6 de 6'));
   ok('sem erros de JS', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ Qualidade: ' + falhas + ' falha(s) de ' + total : '✓ Qualidade: ' + total + ' conferências ok');
