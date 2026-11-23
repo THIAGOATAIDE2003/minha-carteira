@@ -44,8 +44,8 @@
 .mett{font-weight:700;font-size:15px}.mets{font-size:13px;color:var(--muted)}
 .metc{min-width:28px;min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:transform .15s}.metc.on{transform:rotate(180deg)}
 .metd{padding-top:6px;border-top:1px solid var(--line)}
-.metz{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0}
-.metzb{min-height:44px;min-width:44px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--fg);font:inherit;cursor:pointer}
+.metz{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.metzb{min-height:44px;min-width:44px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--fg);font:inherit;font-size:14px;cursor:pointer}
 .metzb[aria-pressed="true"]{border:2px solid var(--fg);font-weight:700}
 .metl{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:3px 0;font-size:14px}.metl>span{min-width:0}.metl>b,.metl>.muted{text-align:right}
 .metg{margin-top:8px;padding-top:6px;border-top:1px solid var(--line)}.metg>b{display:block;margin:6px 0 2px;font-size:13px;color:var(--muted)}
