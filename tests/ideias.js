@@ -48,7 +48,7 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   ok('sem balanço = Baixa', R.semBal.n === 'Baixa', R.semBal);
   ok('balanço de mais de 1 ano = Baixa', R.balVelho.n === 'Baixa', R.balVelho);
   ok('balanço de 9 meses = Média', R.bal9m.n === 'Média', R.bal9m);
-  ok('banco sem margem/dívida não é penalizado', R.banco.n === 'Alta', R.banco);
+  ok('banco sem margem/dívida não é penalizado por isso: só perde 1 ponto por inadimplência/Basileia/provisões não avaliadas', R.banco.n === 'Média' && R.banco.w.length === 1 && /não avaliadas/.test(R.banco.w[0]), R.banco);
   ok('mesma falta em não-banco é penalizada', R.naoBanco.n === 'Média', R.naoBanco);
   /* banco/financeira: sem preço justo, com o aviso na linha */
   const B = await p.evaluate(() => {

@@ -21,5 +21,6 @@ jobs:
       - run: node tests/foto.js
       - run: node tests/macro.js
       - run: node tests/parecer.js
+      - run: node tests/banco.js
       - run: node tests/sethtml.js
       - run: node tests/erros.js

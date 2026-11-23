@@ -24,10 +24,10 @@ function saudeCalc(D,ctx){if(!D||!D.t||D.t.length<4)return null;ctx=ctx||{};var 
   if(ebit!=null&&rf!=null&&rf<0&&(ebit<=0||cob<SDCOB))f.push('juros'),mot.push('cobertura de juros baixa');
   if(fco!=null&&fco<=0)f.push('caixa'),mot.push('caixa operacional negativo');
   return {m:m,f:f,mot:mot,n:f.length,desc:[dl==null||(dlpl==null&&dll==null)?'dívida':null,ebit==null||rf==null?'juros':null,fco==null?'caixa':null].filter(Boolean)}}
-function saudeFor(o){if(!o||opBanco(o))return null;var D=fxDoc(o.tk);if(!D)return null;
+function saudeFor(o){if(o&&opBanco(o))return bkSaude(o);if(!o)return null;var D=fxDoc(o.tk);if(!D)return null;
   try{var st=setorOf(o.tk),F=fundOf(o.tk),estr=SDESTR.test(st.s+' '+st.g);return saudeCalc(D,{estr:estr,k:F&&F.evebit>0&&F.evebitda>0?F.evebit/F.evebitda:null,lim:/aluguel de carros/i.test(st.s)?SDEBL:SDEB,setor:st.k})}catch(e){return null}}
 /* os 2 maiores riscos calculados (gravidade ≥ 0,5; 1 = risco claro) */
-function riscosFor(o){var D=o&&fxDoc(o.tk),R=[];if(!D||!D.t)return R;var sd=o.sd||saudeFor(o),m=sd&&sd.m,pr=function(v){return pf.format(Math.abs(v))};
+function riscosFor(o){if(o&&o.fx&&o.fx.bank&&o.fx.ok)return bkRiscos(o);var D=o&&fxDoc(o.tk),R=[];if(!D||!D.t)return R;var sd=o.sd||saudeFor(o),m=sd&&sd.m,pr=function(v){return pf.format(Math.abs(v))};
   if(m&&m.dl>0){if(m.regra==='ebitda'){var se=m.dleb!=null?m.dleb/m.lim:2;if(se>=0.5)R.push([se,m.dleb!=null?'dívida líquida de '+sdX(m.dleb)+' o EBITDA (limite do setor: '+sdX(m.lim)+')':'o EBITDA não cobre a dívida'])}
     else{var sv=Math.max(m.dlpl!=null?m.dlpl/SDPL:0,m.dll!=null?m.dll/SDLL:0);if(sv>=0.5)R.push([sv,'dívida líquida de '+(m.dlpl!=null?sdX(m.dlpl)+' o patrimônio':'')+(m.dlpl!=null&&m.dll!=null?' e ':'')+(m.dll!=null?sdX(m.dll)+' o lucro anual':'')])}}
   if(m&&m.cob!=null&&m.cob<3)R.push([3/Math.max(m.cob,0.3),'o lucro da operação cobre só '+sdX(m.cob)+' os juros'+(m.cob<SDCOB?' (abaixo de '+SDCOB+'×)':'')]);
@@ -40,12 +40,12 @@ function riscosFor(o){var D=o&&fxDoc(o.tk),R=[];if(!D||!D.t)return R;var sd=o.sd
   if(o.d&&o.d.k&&o.d.k.hi){var dd=o.d.price/o.d.k.hi-1;if(dd<=-0.15)R.push([Math.abs(dd)/0.3,'o preço já caiu '+Math.round(Math.abs(dd*100))+'% da máxima do ano: pode estar barato por um motivo'])}
   return R.filter(function(r){return r[0]>=0.5}).sort(function(a,b){return b[0]-a[0]}).slice(0,2).map(function(r){return r[1]})}
 /* linhas da ideia: aviso de saúde (se falhou em 1) e "O que pode dar errado" */
-function saudeRow(o){var h='';if(o.sd&&o.sd.n>=1)h+='<div class="fql"><b class="opw">⚠ Saúde financeira: '+esc(o.sd.mot.join(', '))+'</b> <small class="muted">('+o.sd.n+' de 3 testes'+(o.sd.n>=2?' — por isso está em verificação':'')+')</small></div>';
+function saudeRow(o){var h='';if(o.sd&&o.sd.bank)return bkSaudeRow(o);if(o.sd&&o.sd.n>=1)h+='<div class="fql"><b class="opw">⚠ Saúde financeira: '+esc(o.sd.mot.join(', '))+'</b> <small class="muted">('+o.sd.n+' de 3 testes'+(o.sd.n>=2?' — por isso está em verificação':'')+')</small></div>';
   if(o.sd&&o.sd.m.estr)h+='<div class="fql muted"><small>Regra de dívida: '+(o.sd.m.regra==='ebitda'?'dívida líquida ÷ EBITDA, limite '+sdX(o.sd.m.lim)+' (setor de dívida estrutural: '+esc(o.sd.m.setor)+')':'regra padrão (EBITDA indisponível para '+esc(o.tk)+')')+'.</small></div>';
   if(o.fx&&o.fx.ok){var r=riscosFor(o);h+='<div class="fql"><span><b>O que pode dar errado:</b> '+(r.length?esc(r.join('; '))+'.':'<span class="muted">nenhum risco forte nos números (confira as notícias).</span>')+'</span></div>'}
   return h}
 /* testes ao abrir as premissas */
-function saudePrem(o){var s=o.sd;if(!s)return '';var m=s.m,q=function(ok,t){return '<li>'+rkLvl(ok===null?'at':ok?'ok':'al')+'<div><p style="margin:0;color:var(--fg)">'+t+'</p></div></li>'};
+function saudePrem(o){var s=o.sd;if(!s)return '';if(s.bank)return bkSaudePrem(o);var m=s.m,q=function(ok,t){return '<li>'+rkLvl(ok===null?'at':ok?'ok':'al')+'<div><p style="margin:0;color:var(--fg)">'+t+'</p></div></li>'};
   var dv=m.dl==null?null:m.dl<=0?true:s.f.indexOf('divida')<0,jr=m.rf==null||m.ebit==null?null:m.rf>=0?true:s.f.indexOf('juros')<0,cx=m.fco==null?null:s.f.indexOf('caixa')<0;
   return '<ul class="rkl fqs"><li><b>Saúde financeira (últimos 12 meses)</b></li>'+
     q(dv,'Dívida: '+(m.dl==null?'sem dado':m.dl<=0?'caixa maior que a dívida':m.regra==='ebitda'?sdX(m.dleb)+' o EBITDA':(m.dlpl!=null?sdX(m.dlpl)+' o patrimônio':'')+(m.dll!=null?' · '+sdX(m.dll)+' o lucro anual':''))+(m.regra==='ebitda'?' (alta acima de '+sdX(m.lim)+' o EBITDA). Regra usada: dívida líquida ÷ EBITDA, porque '+esc(m.setor)+' é setor de dívida estrutural. EBITDA estimado: EBIT de 12 meses × (EV/EBIT ÷ EV/EBITDA).':' (alta acima de '+sdX(SDPL)+' o patrimônio ou '+sdX(SDLL)+' o lucro anual). Regra usada: dívida líquida ÷ patrimônio e ÷ lucro'+(m.estr?' (sem EBITDA disponível)':'')+'.'))+
