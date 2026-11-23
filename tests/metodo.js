@@ -17,11 +17,12 @@ const nuv = (o, g) => ({ v: 1, quando: 'x', versao: '1.80.0', opp: o, gar: g });
   const URLS = { estado: 'dados/metodo/estado.json' };
   /* servidor falso: arquivos em srv.files; modo por tipo (backup | estado | resultado) ou geral (all) */
   const srvNovo = (estado) => { const s = { files: {}, log: [], modo: {}, e409: 0, e422: 0, puts: [] }; if (estado !== undefined) s.files[URLS.estado] = { sha: 'e1', content: b64(estado) }; return s; };
-  async function novo(srv, seed, vp) {
+  let MUTFALHOU = 0;
+  async function novo(srv, seed, vp, mut) {
     const p = await b.newPage({ viewport: vp || { width: 400, height: 860 } });
     p.on('pageerror', e => er.push(e.message + ' @ ' + String(e.stack || '').split('\n')[1]));
     await p.route('**/*', async r => { const u = r.request().url(), m = r.request().method();
-      if (u.startsWith('file:')) return r.continue();
+      if (u.startsWith('file:')) { if (mut && /\/js\/metodo\.js$/.test(u)) { const orig = fs.readFileSync(path.join(ROOT, 'js', 'metodo.js'), 'utf8'), novoSrc = mut(orig); if (novoSrc === orig) MUTFALHOU++; return r.fulfill({ status: 200, contentType: 'application/javascript', body: novoSrc }); } return r.continue(); }
       if (!u.includes('api.github.com')) return r.abort();
       const pt = decodeURIComponent(u.split('/contents/')[1].split('?')[0]), kind = /backup-local/.test(pt) ? 'backup' : /estado\.json$/.test(pt) ? 'estado' : /resultado\.json$/.test(pt) ? 'resultado' : 'outro';
       if (kind === 'backup' || kind === 'estado') srv.log.push(m + ' ' + kind); const mo = srv.modo[kind] || srv.modo.all || 'ok';
@@ -135,6 +136,7 @@ const nuv = (o, g) => ({ v: 1, quando: 'x', versao: '1.80.0', opp: o, gar: g });
     const n = srv.log.length; await p.evaluate(async () => { await metCiclo(); await metCiclo(); }); await p.waitForTimeout(500);
     ok(srv.log.length === n, 'M6 [' + nome + ']: sem laço (repetir na hora não faz novos pedidos; espera 10 min)', [n, srv.log.length]);
     ok(esperaTxt.test(await p.evaluate(() => metTxt())), 'M6 [' + nome + ']: mensagem em Ajustes', await p.evaluate(() => metTxt()));
+    if (!/salvo na nuvem/.test(await p.evaluate(() => metTxt()))) ok(/O histórico continua no celular, nada foi perdido/.test(await p.evaluate(() => metTxt())), 'M6 [' + nome + ']: a falha diz que o histórico continua no celular');
     if (cfg.estado) { const l = await p.evaluate(() => metCnt(metLocal())), c0 = await cnt(p, { opp: JSON.parse(seed.opp), gar: JSON.parse(seed.gar) }); ok(l.l >= c0.l && l.i >= c0.i && l.a >= c0.a && l.d >= c0.d, 'M6 [' + nome + ']: aparelho nunca fica com menos do que tinha', [c0, l]); } else ok(await ls(p, 'opp') === seed.opp && await ls(p, 'gar') === seed.gar, 'M6 [' + nome + ']: originais do aparelho intactos');
     if (cfg.estado) { const cc = await cnt(p, estadoDe(srv)), c0 = await cnt(p, cfg.estado); ok(cc.l >= c0.l && cc.i >= c0.i && cc.a >= c0.a && cc.d >= c0.d, 'M6 [' + nome + ']: nuvem nunca fica menor', [c0, cc]); }
     if (esperaPuts !== undefined) ok(srv.puts.filter(x => x.kind === 'estado').length === esperaPuts, 'M6 [' + nome + ']: pedidos de gravação do estado = ' + esperaPuts, srv.puts.length);
@@ -166,24 +168,31 @@ const nuv = (o, g) => ({ v: 1, quando: 'x', versao: '1.80.0', opp: o, gar: g });
     const R = (n, extra) => Object.assign({ v: 1, gerado: '2027-03-01', nmin: 10, motor: 'faixa-unica', entradas: [{ tk: '<img src=x onerror=alert(1)>', dia: '2026-11-23' }, { tk: 'BBBB3' }], agg: { '90': { total: { n, bI: Math.min(n, 6), bC: Math.min(n, 5), bAmbos: 4, med: 0.042, medI: 0.011, medC: 0.029 }, conf: { Alta: { n: 12, bI: 8, bC: 7 }, 'Média': { n: 6, bI: 3, bC: 3 }, 'Verificação': { n: 5, bI: 2, bC: 1 } }, ms: { neg: { n: 7, bI: 3, bC: 3 }, '0-20': { n: 5, bI: 2, bC: 2 }, '20+': { n: 2, bI: 1, bC: 1 } }, fora: { semSaida: 2, split: 1, semDiv: 0, semFoto: 0 }, datas: 9, prox: '2027-02-23' }, '180': { total: { n: 0 } }, '365': { total: { n: 0 } } } }, extra || {});
     const h = await p.evaluate(({ r0, r1, r9, r10 }) => { const o = {}; METRT = Date.now() + 1e9; S.keys.gh = 'tok'; const g = r => { METR = r === 'sem' ? null : r === 'ilegivel' ? { ok: false, m: 'arquivo ilegível' } : { ok: true, r: r }; return metHtml(); };
       o.vazio = g('sem'); o.ilegivel = g('ilegivel'); o.n0 = g(r0); o.n1 = g(r1); o.n9 = g(r9); METOPEN = true; o.n9a = g(r9); o.n10 = g(r10); METH = 180; o.h180 = g(r10); METH = 90;
-      o.fechado = (METOPEN = false, g(r10)); o.mentira = g(Object.assign({}, r9, { agg: Object.assign({}, r9.agg, { '90': Object.assign({}, r9.agg['90'], { total: { n: 5, bI: 5, bC: 5, bAmbos: 5, concl: true } }) }) }));
+      o.fechado = (METOPEN = false, g(r10)); o.n30 = g(Object.assign({}, r10, { agg: Object.assign({}, r10.agg, { '90': Object.assign({}, r10.agg['90'], { total: { n: 30, bI: 18, bC: 15, bAmbos: 12, med: .05, medI: .01, medC: .03 } }) }) }));
+      o.nsg = g(Object.assign({}, r10, { agg: Object.assign({}, r10.agg, { '90': Object.assign({}, r10.agg['90'], { conf: { Alta: { n: 8, bI: 4, bC: 4 } }, ms: { neg: { n: 3, bI: 1, bC: 1 } } }) }) }));
+      localStorage.setItem(LS + '-met-st', JSON.stringify({ ok: false, dia: '2026-11-23', motivo: 'sem conexão' })); o.falhou = g(r10); localStorage.removeItem(LS + '-met-st'); o.palavras = (r10 && /data-bal="([^"]*)"/.exec(o.n10)[1]).split(/\s+/).length; o.mentira = g(Object.assign({}, r9, { agg: Object.assign({}, r9.agg, { '90': Object.assign({}, r9.agg['90'], { total: { n: 5, bI: 5, bC: 5, bAmbos: 5, concl: true } }) }) }));
       o.lixo = [{ ok: true, r: { v: 1, agg: { '90': { total: { n: NaN, bI: 'x', med: Infinity } } }, entradas: [] } }, { ok: true, r: { v: 1, agg: { '90': null }, entradas: [] } }, { ok: true, r: { v: 2 } }, { ok: true, r: null }].map(x => { METR = x; return metHtml(); }); return o; },
       { r0: R(0), r1: R(1), r9: R(9), r10: R(10) });
     const txt = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     ok(/Esse método já acertou\?/.test(h.fechado) && /aria-expanded="false"/.test(h.fechado) && /aria-controls="metd"/.test(h.fechado) && /id="metd" hidden/.test(h.fechado), 'M8: fechado por padrão (aria-expanded=false, aria-controls, área oculta)');
     ok(/aria-expanded="true"/.test(h.n9a) && !/id="metd" hidden/.test(h.n9a), 'M8: aberto (aria-expanded=true)');
     ok(/Histórico ainda não disponível/.test(h.vazio) && /Histórico ainda não disponível/.test(h.ilegivel), 'M8: sem resultado.json / ilegível ⇒ "Histórico ainda não disponível"');
-    for (const [k, v] of [['n0', h.n0], ['n1', h.n1], ['n9', h.n9a]]) ok(/Poucos dados para concluir/.test(v) && !/\(\d+%\)/.test(txt(v)) && !/Bateram/.test(txt(v)), 'M8: ' + k + ' ⇒ "poucos dados" e nenhum %', txt(v).slice(0, 200));
-    ok(/Poucos dados para concluir · 0 de 10/.test(h.n0) && /Primeira medição.*23\/02\/2027/.test(txt(h.n0)), 'M8: n=0 mostra "0 de 10" e a data da primeira medição');
+    for (const [k, v] of [['n0', h.n0], ['n1', h.n1], ['n9', h.n9a]]) ok(/Poucos dados/.test(v) && !/\(\d+%\)/.test(txt(v)) && !/Bateram/.test(txt(v)), 'M8: ' + k + ' ⇒ "poucos dados" e nenhum %', txt(v).slice(0, 200));
+    ok(/Poucos dados · 0\s+de\s+10\s+ideias/.test(txt(h.n0)) && /Primeira medição\s+23\/02\/2027/.test(txt(h.n0)) && /Já medidas em 3 meses\s+0 de 10/.test(txt(h.n0)), 'M8: n=0: "Poucos dados · 0 de 10 ideias", "0 de 10" e a data numa linha', txt(h.n0).slice(0, 300));
+    ok((txt(h.n0).match(/Poucos dados/g) || []).length === 1 && /0\u00a0de\u00a010\u00a0ideias/.test(h.n0), 'M8: frase "poucos dados" não se repete e "10" não cai sozinho (espaços não quebráveis)');
+    ok(!/guardado na nuvem|conta de/.test(h.n10) && !/Histórico só no celular/.test(h.n10), 'M8: o painel não repete o rodapé da nuvem (só Ajustes)');
+    ok(/Poucos casos: use como pista, não como prova/.test(txt(h.n10)) && !/Poucos casos/.test(txt(h.n30)), 'M8: n < 30 avisa "pista, não prova"; n ≥ 30 não');
+    ok(/Por confiança e por margem: poucos dados \(cada grupo precisa de 10\)/.test(txt(h.nsg)) && !/Por confiança\s+Alta/.test(txt(h.nsg)) && /Por confiança\s+Alta/.test(txt(h.n10)), 'M8: enquanto nenhum grupo tem 10, uma linha só; com um grupo ≥ 10, o bloco completo');
+    ok(/Histórico só no celular por enquanto/.test(h.falhou) && h.palavras <= 40, 'M8: aviso curto no painel só se o salvamento falhar; balão ⓘ com ' + h.palavras + ' palavras', h.palavras);
     ok(/Bateram o Ibovespa.*6 de 10 \(60%\)/.test(txt(h.n10)) && /Bateram o CDI.*5 de 10 \(50%\)/.test(txt(h.n10)) && /Bateram os dois.*4 de 10/.test(txt(h.n10)), 'M8: n=10 conclui (6 de 10 / 5 de 10 / 4 de 10)', txt(h.n10).slice(0, 400));
-    ok(/\+4,20%/.test(txt(h.n10)) && /com dividendos, antes de imposto/.test(txt(h.n10)), 'M8: mediana e rótulo "com dividendos, antes de imposto"');
-    ok(/Alta\s*12\s*8 de 12 bateram o Ibov · 7 de 12 o CDI/.test(txt(h.n10)) && /Média\s*6\s*poucos dados/.test(txt(h.n10)) && /Em verificação\s*5\s*poucos dados \(controle\)/.test(txt(h.n10)), 'M8: grupo só mostra "x de y" com n ≥ 10 dele mesmo; os demais "poucos dados" (total ≥ 10)', txt(h.n10).slice(0, 700));
+    ok(/\+4,2%/.test(txt(h.n10)) && !/4,20%/.test(txt(h.n10)) && /com dividendos, antes de imposto/.test(txt(h.n10)), 'M8: mediana e rótulo "com dividendos, antes de imposto"');
+    ok(/Alta\s*12\s*8 de 12 bateram o Ibov · 7 de 12 o CDI/.test(txt(h.n10)) && /Média\s*6\s*poucos dados/.test(txt(h.n10)) && /Em verificação \(controle\)\s*5\s*poucos dados/.test(txt(h.n10)), 'M8: grupo só mostra "x de y" com n ≥ 10 dele mesmo; os demais "poucos dados" (total ≥ 10)', txt(h.n10).slice(0, 700));
     ok(/Negativa\s*7\s*poucos dados/.test(txt(h.n10)) && /Fora da conta: 2 sem preço de saída, 1 desdobramento/.test(txt(h.n10)), 'M8: margem por grupo e "fora da conta"');
     ok(!/entraram em 9 datas|poucas datas/.test(txt(h.n10)) || /entraram em 9 datas/.test(txt(h.n10)), 'M8: datas distintas');
     ok(/poucas datas diferentes/.test(h.n10.replace(/entraram em 9/, '')) === false, 'M8: sem aviso de datas com 9 datas');
     ok(!/\(\d+%\)/.test(txt(h.mentira)) && !/Bateram/.test(txt(h.mentira)) && /Poucos dados/.test(h.mentira), 'M8: o app recalcula n ≥ 10 mesmo se o arquivo disser concl:true com n=5');
     ok(/aria-pressed="true"[^>]*>6 meses|data-methz="180"[^>]*aria-pressed="true"/.test(h.h180) || /data-methz="180" aria-pressed="true"/.test(h.h180), 'M8: troca de prazo marca 6 meses');
-    for (const k of ['vazio', 'ilegivel', 'n0', 'n1', 'n9', 'n9a', 'n10', 'h180', 'fechado', 'mentira']) ok(!/NaN|undefined|Infinity|\[object/.test(h[k]), 'M8: sem NaN/undefined em ' + k);
+    for (const k of ['vazio', 'ilegivel', 'n0', 'n1', 'n9', 'n9a', 'n10', 'n30', 'nsg', 'falhou', 'h180', 'fechado', 'mentira']) ok(!/NaN|undefined|Infinity|\[object/.test(h[k]), 'M8: sem NaN/undefined em ' + k);
     h.lixo.forEach((x, i) => ok(!/NaN|undefined|Infinity|\[object/.test(x) && /Esse método já acertou\?/.test(x), 'M8: resultado.json estragado #' + i + ' não quebra nem mostra NaN'));
     ok(!/<img/i.test(h.n10) && !/onerror/i.test(h.n10), 'M8: tk com <img onerror> nunca chega ao painel');
     ok(await p.evaluate(() => !window.__xss), 'M8: nada executou');
@@ -213,6 +222,37 @@ const nuv = (o, g) => ({ v: 1, quando: 'x', versao: '1.80.0', opp: o, gar: g });
       ok(tks.length > 3 && !tks.some(t => new RegExp('\\b' + t + '\\b').test(novos)), 'M12: nenhum ticker da carteira real nos arquivos novos (' + tks.length + ' conferidos)'); }
     else console.log('(M12 com dados reais pulado: repositório privado não está ao lado)'); }
 
+  /* ---------- Lacunas apontadas pelo Auditor: cada trava precisa FALHAR quando a correção é retirada (mutantes do próprio código) ---------- */
+  const rep = (a, b) => src => src.split(a).join(b);
+  const CHK = {
+    /* A: a trava "nuvem menor" — com a mescla forçada a dar menos que a nuvem, nada pode ser gravado em estado.json */
+    async nuvemMenor(mut) { const srv = srvNovo(nuv(NUV_OPP, NUV_GAR)), p = await novo(srv, { opp: OPPS, gar: GARS }, null, mut);
+      await p.evaluate(() => { const o = metMescla; metMescla = function (a, b, c) { return b && (Object.keys(b.opp || {}).length || Object.keys((b.gar || {}).r || {}).length) ? { opp: {}, gar: { r: {} }, x: 0 } : o(a, b, c); }; });
+      await ciclo(p); const r = !srv.puts.some(x => x.kind === 'estado') && /menor/.test(await p.evaluate(() => metTxt())); await p.close(); return r; },
+    /* B: nmin do arquivo nunca abaixo de 10 */
+    async nmin(mut) { const p = await novo(srvNovo(), null, null, mut);
+      const h = await p.evaluate(() => { S.keys.gh = 'tok'; METRT = Date.now() + 1e9; METOPEN = true; METH = 90; METR = { ok: true, r: { v: 1, nmin: 3, entradas: [], agg: { '90': { total: { n: 5, bI: 5, bC: 5, bAmbos: 5 }, conf: {}, ms: {}, fora: {}, datas: 5 }, '180': { total: { n: 0 } }, '365': { total: { n: 0 } } } } }; return metHtml(); });
+      await p.close(); const t = h.replace(/<[^>]+>/g, ' '); return !/\(\d+%\)/.test(t) && !/Bateram/.test(t); },
+    /* C: desempate na mesma data é determinístico e não depende da ordem */
+    async desempate(mut) { const p = await novo(srvNovo(), null, null, mut);
+      const r = await p.evaluate(() => { const A = { opp: { A: [['2026-01-01', 6, 6, 5]] }, gar: { r: { '2026-01-01': { i: 1, l: [['A', 1, 1, 1]] } } } }, B = { opp: { A: [['2026-01-01', 7, 7, 5]] }, gar: { r: { '2026-01-01': { i: 2, l: [['A', 1, 1, 1]] } } } },
+          C = { opp: { A: [['2026-01-01', 5, 5, 5]] } }, D = { opp: { A: [['2026-01-01', 7, null, 5]] } }; const x = metMescla(A, B), y = metMescla(B, A), u = metMescla(C, D), v = metMescla(D, C);
+        return metCan(x) === metCan(y) && x.opp.A[0][1] === 6 && x.gar.r['2026-01-01'].i === 1 && metCan(u) === metCan(v) && u.opp.A[0][1] === 5; }); await p.close(); return r; },
+    /* D: a trava de gravação do dado ruim não pode ser eterna */
+    async travaEterna(mut) { const srv = srvNovo(); srv.modo.all = '500'; const p = await novo(srv, { opp: 'lixo', gar: 'lixo' }, null, mut); await p.evaluate(() => { metParse('opp'); metParse('gar'); });
+      const antes = await p.evaluate(() => metGrava('opp', { Z: [['2026-01-01', 1, 1, 1]] })); await ciclo(p);
+      const depois = await p.evaluate(() => metGrava('opp', { Z: [['2026-01-01', 1, 1, 1]] })), cru = await ls(p, 'opp'); await p.close(); return antes === false && depois === true && /"Z"/.test(cru); }
+  };
+  const MUT = {
+    nuvemMenor: rep("if(mc.a<cc.a||mc.l<cc.l||mc.d<cc.d||mc.i<cc.i)return", "if(false)return"),
+    nmin: rep("Math.max(10,metI(R&&R.nmin))", "metI(R&&R.nmin)"),
+    desempate: rep("return JSON.stringify(a)<=JSON.stringify(b)?a:b", "return a"),
+    travaEterna: rep("return !!MTBAD[n]&&!MTREST", "return !!MTBAD[n]")
+  };
+  for (const k of Object.keys(CHK)) {
+    ok(await CHK[k](null) === true, 'Lacuna [' + k + ']: com o código correto, o teste passa');
+    ok(await CHK[k](MUT[k]) === false, 'Lacuna [' + k + ']: SEM a correção (mutante), o teste FALHA (pega o defeito)'); }
+  ok(MUTFALHOU === 0, 'Lacunas: todos os mutantes realmente alteraram o código', MUTFALHOU);
   ok(er.length === 0, 'nenhum erro de JavaScript (pageerror) em todos os cenários', er.slice(0, 3));
   await b.close(); console.log(falhas ? '✗ ' + falhas + ' falha(s) em ' + total + ' conferências' : '✓ Método: ' + total + ' conferências ok'); process.exit(falhas ? 1 : 0);
 })();

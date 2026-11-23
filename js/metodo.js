@@ -75,7 +75,7 @@ function metSync(n){var p=MTK+'estado.json';
 function metSt(ok,motivo){try{localStorage.setItem(metK('met-st'),JSON.stringify({ok:ok,dia:today(),motivo:motivo||'',bk:metRaw('met-mig')==='ok'}))}catch(e){}metMostra()}
 function metStLer(){try{return JSON.parse(metRaw('met-st')||'null')}catch(e){return null}}
 function metTxt(){var s=metStLer();if(!s)return 'Histórico do método: ainda não salvo na nuvem'+(S.keys&&S.keys.gh?'.':' (cole a chave do GitHub em Ajustes).');
-  return s.ok?'Histórico do método: salvo na nuvem '+fotoDmy(s.dia)+' ✓'+(s.bk?' · cópia de segurança feita ✓':''):'Histórico do método não salvo: '+s.motivo+' ('+fotoDmy(s.dia)+')'}
+  return s.ok?'Histórico do método: salvo na nuvem '+fotoDmy(s.dia)+' ✓'+(s.bk?' · cópia de segurança feita ✓':''):'Histórico do método não salvo: '+s.motivo+' ('+fotoDmy(s.dia)+'). O histórico continua no celular, nada foi perdido.'}
 function metMostra(){try{var e=document.getElementById('metst');if(e)e.textContent=metTxt()}catch(x){}}
 function metMarca(){return today()+'|'+(metRaw('opp')||'').length+'|'+(metRaw('gar')||'').length}
 function metCiclo(){if(MTQ||Date.now()-MTE<6e5||MTN>=6)return Promise.resolve();
@@ -100,32 +100,36 @@ function metLer(){if(METRQ)return;if(!(S.keys&&S.keys.gh)){if(!METR)METR={ok:fal
     else{try{r=JSON.parse(b64dec(x.j.content))}catch(e){r=null}METR=metValida(r)?{ok:true,r:r}:(METR&&METR.ok?METR:{ok:false,m:'arquivo ilegível'})}
     metRepinta()},function(){METRQ=false;if(!(METR&&METR.ok))METR={ok:false,m:'sem conexão'};metRepinta()})}
 function metI(x){return typeof x==='number'&&isFinite(x)&&x>=0?Math.floor(x):0}
-function metP(x){return typeof x==='number'&&isFinite(x)?csPc(x*100):'—'}
+function metP(x){if(typeof x!=='number'||!isFinite(x))return '—';var r=Math.round(x*1000)/10;return r===0?'0,0%':(r>0?'+':'−')+Math.abs(r).toFixed(1).replace('.',',')+'%'}
 function metDmy(d){return typeof d==='string'&&METD.test(d)?d.split('-').reverse().join('/'):''}
-function metGrupo(g,nm,ctl){var n=metI(g&&g.n),h;
-  if(n>=nm&&g&&metI(g.bI)<=n&&metI(g.bC)<=n)h='<b>'+metI(g.bI)+' de '+n+' bateram o Ibov · '+metI(g.bC)+' de '+n+' o CDI</b>';else h='<span class="muted">poucos dados'+(ctl?' (controle)':'')+'</span>';return h}
+function metGrupo(g,nm,ctl){var n=metI(g&&g.n);
+  if(n>=nm&&g&&metI(g.bI)<=n&&metI(g.bC)<=n)return '<b>'+metI(g.bI)+' de '+n+' bateram o Ibov · '+metI(g.bC)+' de '+n+' o CDI</b>';return '<span class="muted">poucos dados'+(ctl?' (controle)':'')+'</span>'}
+function metOk(g,nm){var n=metI(g&&g.n);return n>=nm&&metI(g.bI)<=n&&metI(g.bC)<=n}
 function metPainel(R){var NM=Math.max(10,metI(R&&R.nmin)),H=METH,A=R&&R.agg&&metPlain(R.agg[String(H)])?R.agg[String(H)]:{},T=metPlain(A.total)?A.total:{},n=metI(T.n),A0=R&&metPlain(R.agg&&R.agg['90'])?R.agg['90']:{},n0=metI(A0.total&&A0.total.n),
-    E=R&&Array.isArray(R.entradas)?R.entradas:[],ln=function(a,b){return '<div class="metl"><span>'+a+'</span>'+b+'</div>'},conc=n>=NM,sum,h='';
-  if(!R)sum='Histórico ainda não disponível';else if(n0>=NM)sum='3 meses: bateram o Ibovespa '+metI(A0.total.bI)+' de '+n0;else sum='Poucos dados para concluir · '+n0+' de '+NM;
+    E=R&&Array.isArray(R.entradas)?R.entradas:[],ln=function(a,b,st){return '<div class="metl'+(st?' st':'')+'"><span>'+a+'</span><span class="metv">'+b+'</span></div>'},conc=n>=NM,sum,h='',B=' ';
+  if(!R)sum='Histórico ainda não disponível';else if(n0>=NM)sum='3 meses: bateram o Ibovespa '+metI(A0.total.bI)+' de '+n0;else sum='Poucos dados · '+n0+B+'de'+B+NM+B+'ideias';
   if(!R){h+='<p class="muted">Histórico ainda não disponível: confira a chave do GitHub em Ajustes.</p>'+(METR&&METR.m?'<p class="note">'+esc(METR.m)+'</p>':'')}
   else{
     h+='<div class="metz" role="group" aria-label="Prazo">'+[90,180,365].map(function(z){return '<button type="button" class="metzb" data-methz="'+z+'" aria-pressed="'+(z===H?'true':'false')+'">'+Math.round(z/30)+' meses</button>'}).join('')+'</div>';
-    if(!conc){h+='<p class="anv" style="margin:6px 0"><b>Poucos dados para concluir.</b></p>'+ln('Ideias acompanhadas','<b>'+E.length+'</b>')+ln('Já medidas em '+Math.round(H/30)+' meses','<b>'+n+'</b> <span class="muted">(precisa de '+NM+')</span>')+
-      (metDmy(A.prox)?ln('Primeira medição','<b>a partir de '+metDmy(A.prox)+'</b>'):ln('Primeira medição','<span class="muted">ainda não há ideias do método atual</span>'))+'<p class="note">Até lá, são pontos para estudar, não sinal.</p>'}
+    if(!conc){h+=ln('Ideias acompanhadas','<b>'+E.length+'</b>')+ln('Já medidas em '+Math.round(H/30)+' meses','<b>'+n+'</b> de '+NM)+
+      (metDmy(A.prox)?ln('Primeira medição','<b>'+metDmy(A.prox)+'</b>'):ln('Primeira medição','<span class="muted">sem ideias do método atual</span>'))+'<p class="note">Até lá, são pontos para estudar, não sinal.</p>'}
     else{var pc=function(b){return Math.round(100*metI(b)/n)+'%'};
       h+='<p class="anv" style="margin:6px 0"><b>'+n+'</b> ideias medidas'+(metI(A.datas)?' (entraram em '+metI(A.datas)+' datas)':'')+'</p>'+ln('Bateram o Ibovespa','<b>'+metI(T.bI)+' de '+n+' ('+pc(T.bI)+')</b>')+ln('Bateram o CDI','<b>'+metI(T.bC)+' de '+n+' ('+pc(T.bC)+')</b>')+ln('Bateram os dois','<b>'+metI(T.bAmbos)+' de '+n+' ('+pc(T.bAmbos)+')</b>')+
-        ln('Retorno mediano','<b>'+metP(T.med)+'</b> <span class="muted">(Ibov '+metP(T.medI)+' · CDI '+metP(T.medC)+')</span>')+'<p class="note">com dividendos, antes de imposto</p>';
-      if(metI(A.datas)>0&&metI(A.datas)<5)h+='<p class="note">As ideias entraram em poucas datas diferentes: se parecem entre si, então '+n+' ideias valem menos do que '+n+' casos separados.</p>'}
-    if(conc){var C=metPlain(A.conf)?A.conf:{},M=metPlain(A.ms)?A.ms:{};
-    h+='<div class="metg"><b>Por confiança</b>'+[['Alta','Alta'],['Média','Média'],['Verificação','Em verificação']].map(function(k){var g=C[k[0]];return ln(k[1]+' <span class="muted">'+metI(g&&g.n)+'</span>',metGrupo(g,NM,k[0]==='Verificação'))}).join('')+
-      '<b>Por margem de segurança</b>'+[['neg','Negativa'],['0-20','0 a 20%'],['20+','20% ou mais']].map(function(k){var g=M[k[0]];return ln(k[1]+' <span class="muted">'+metI(g&&g.n)+'</span>',metGrupo(g,NM,0))}).join('')+'</div>';
-    var f=metPlain(A.fora)?A.fora:{},fp=[[f.semSaida,'sem preço de saída'],[f.split,'desdobramento'],[f.semDiv,'sem dividendos conferidos'],[f.semFoto,'sem foto']].filter(function(x){return metI(x[0])>0}).map(function(x){return metI(x[0])+' '+x[1]});
-    if(fp.length)h+='<p class="note">Fora da conta: '+fp.join(', ')+'.</p>'}
-    var s=metStLer();h+='<p class="note">'+esc(s&&s.ok?'Histórico guardado na nuvem ✓':metTxt())+(R.gerado?' · conta de '+esc(metDmy(String(R.gerado).slice(0,10))):'')+'</p>'}
+        ln('Retorno mediano','<b>'+metP(T.med)+'</b> <span class="muted">(Ibov '+metP(T.medI)+' · CDI '+metP(T.medC)+')</span>',1)+'<p class="note">com dividendos, antes de imposto</p>';
+      if(n<30)h+='<p class="note"><b>Poucos casos: use como pista, não como prova.</b></p>';
+      if(metI(A.datas)>0&&metI(A.datas)<5)h+='<p class="note">As ideias entraram em poucas datas diferentes: se parecem entre si, então '+n+' ideias valem menos do que '+n+' casos separados.</p>';
+      var C=metPlain(A.conf)?A.conf:{},M=metPlain(A.ms)?A.ms:{},kc=[['Alta','Alta'],['Média','Média'],['Verificação','Em verificação (controle)']],km=[['neg','Negativa'],['0-20','0 a 20%'],['20+','20% ou mais']];
+      if(kc.some(function(k){return metOk(C[k[0]],NM)})||km.some(function(k){return metOk(M[k[0]],NM)})){
+        h+='<div class="metg"><b>Por confiança</b>'+kc.map(function(k){var g=C[k[0]];return ln(k[1]+' <span class="muted">'+metI(g&&g.n)+'</span>',metGrupo(g,NM,k[0]==='Verificação'),metOk(g,NM))}).join('')+
+          '<b>Por margem de segurança</b>'+km.map(function(k){var g=M[k[0]];return ln(k[1]+' <span class="muted">'+metI(g&&g.n)+'</span>',metGrupo(g,NM,0),metOk(g,NM))}).join('')+'</div>'}
+      else h+='<p class="note">Por confiança e por margem: poucos dados (cada grupo precisa de '+NM+').</p>';
+      var f=metPlain(A.fora)?A.fora:{},fp=[[f.semSaida,'sem preço de saída'],[f.split,'desdobramento'],[f.semDiv,'sem dividendos conferidos'],[f.semFoto,'sem foto']].filter(function(x){return metI(x[0])>0}).map(function(x){return metI(x[0])+' '+x[1]});
+      if(fp.length)h+='<p class="note">Fora da conta: '+fp.join(', ')+'.</p>'}
+    var s=metStLer();if(s&&!s.ok)h+='<p class="note">Histórico só no celular por enquanto.</p>'}
   return {sum:sum,h:h}}
 function metHtml(){try{metLer()}catch(e){}var R=METR&&METR.ok?METR.r:null,P=metPainel(R);
   return '<div class="panel metp" id="metp"><div class="meth"><button type="button" class="metb" data-met="1" aria-expanded="'+(METOPEN?'true':'false')+'" aria-controls="metd"><span class="mett">Esse método já acertou?</span><span class="mets">'+esc(P.sum)+'</span></button>'+
-    bal('O app guarda as ideias que apontou e, depois de 3, 6 e 12 meses, compara o resultado (preço mais dividendos) com o Ibovespa e o CDI. Só mostra conclusão com 10 ou mais ideias. Não conta imposto nem custos. Ideias que entram no mesmo dia se parecem, então 10 ideias valem menos do que 10 casos separados. Não é promessa.',null,'Explicação: método')+
+    bal('Compara cada ideia (preço + dividendos) com o Ibovespa e o CDI após 3, 6 e 12 meses. Só conclui com 10 ou mais ideias; sem imposto nem custos. Ideias do mesmo dia se parecem. Não é promessa.',null,'Explicação: método')+
     '<span class="metc'+(METOPEN?' on':'')+'" data-met="1" aria-hidden="true">⌄</span></div><div class="metd" id="metd"'+(METOPEN?'':' hidden')+'>'+P.h+'</div></div>'}
 document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-met],[data-methz]'):null;if(!t)return;
   if(t.hasAttribute('data-methz')){var z=+t.getAttribute('data-methz');if(z===90||z===180||z===365){METH=z;metRepinta()}return}
