@@ -167,6 +167,54 @@ const TEMAS = ['atual', 'branco', 'preto'];
   /* T13 desempenho */
   const ms = await p.evaluate(() => { const L = []; for (let i = 0; i < 20; i++) L.push(__mk('T' + i)); const t0 = performance.now(); L.forEach(o => opCartao(o, 1)); return performance.now() - t0; });
   ok('T13 20 linhas em menos de 30 ms', ms < 30, ms);
+
+  /* T14 (pós-auditoria) o ⚠ fechado conta os riscos de "O que pode dar errado" e os alertas negativos; lista aberta e número batem */
+  const T14 = await p.evaluate(() => {
+    const ant = window.riscosFor, R = {};
+    const num = h => { const c = __host(h), w = c.querySelector('.opwn'); return { n: w ? +w.textContent.replace(/\D/g, '') : 0, li: c.querySelectorAll('.opav li').length, lb: (/(\d+) pontos? de atenção/.exec(c.querySelector('.opx').getAttribute('aria-label')) || [0, 0])[1] * 1, tits: [].map.call(c.querySelectorAll('.opav li b'), e => e.textContent.replace(/:$/, '')), fora: (c.querySelector('.opd').textContent.replace(c.querySelector('.opav') ? c.querySelector('.opav').textContent : '', '').match(/O que pode dar errado/g) || []).length, opal: c.querySelectorAll('.opal li').length, tx: c.querySelector('.opd').textContent }; };
+    try {
+      window.riscosFor = () => ['o lucro recente tem um trimestre acima do normal (3T26), que pode não se repetir', 'só 2 de 6 testes de qualidade do lucro passaram (não passaram: margem)'];
+      R.dois = num(opCartao(__mk('R3', { al: [['ok', 'Paga bons dividendos', 'DY de 8%.']] }), 1));
+      R.somado = num(opCartao(__mk('S3', { fx: { trap: 'lucro' }, cf: { n: 'Baixa', w: ['preço velho'], f: 1 }, A: { N: {}, alr: [['Preço em queda', 'x']] }, al: [['at', 'Subiu 12%', 'Era R$ 30,00 em 01/11.'], ['ok', 'A nota melhorou', 'De 8 para 9.']] }), 1));
+      window.riscosFor = () => ['o preço já caiu 29% da máxima do ano: pode estar barato por um motivo'];
+      R.dup = num(opCartao(__mk('D3', { al: [['at', 'Caiu 28,50% da máxima do ano', 'Vale entender o motivo antes de comprar.']] }), 1));
+      window.riscosFor = () => [];
+      R.zero = num(opCartao(__mk('Z3', { al: [['ok', 'Paga bons dividendos', 'DY']] }), 1));
+      R.semFx = num(opCartao(__mk('W3', { fx: { ok: false, motivo: 'histórico curto' }, al: [['at', 'Caiu 30% da máxima do ano', 'Vale entender.']] }), 1, 1));
+    } finally { window.riscosFor = ant; }
+    return R;
+  });
+  ok('T14 dois riscos: ⚠ 2 fechado = 2 itens "O que pode dar errado" no topo da parte aberta = "2 pontos de atenção" falado; a linha antiga não se repete', T14.dois.n === 2 && T14.dois.li === 2 && T14.dois.lb === 2 && T14.dois.tits.every(t => t === 'O que pode dar errado') && T14.dois.fora === 0 && T14.dois.opal === 1, T14.dois);
+  ok('T14 soma armadilha + confiança baixa + A.alr + 2 riscos + alerta negativo (o "ok" não conta): 6 e a lista bate', T14.somado.n === 6 && T14.somado.li === 6 && T14.somado.lb === 6 && T14.somado.tits[0] === 'Armadilha de valor' && T14.somado.opal === 1, T14.somado);
+  ok('T14 queda de preço que já é risco não conta em dobro', T14.dup.n === 1 && T14.dup.li === 1 && T14.dup.opal === 0, T14.dup);
+  ok('T14 sem riscos: nenhum ⚠; a frase "nenhum risco forte" continua na parte aberta', T14.zero.n === 0 && T14.zero.li === 0 && /nenhum risco forte/.test(T14.zero.tx), T14.zero);
+  ok('T14 em verificação (sem faixa): alerta negativo conta e aparece na lista', T14.semFx.n === 1 && T14.semFx.li === 1 && T14.semFx.lb === 1, T14.semFx);
+
+  /* T15 (pós-auditoria) regra do corte de confiança: só ≤ 340 px, só com "Armadilha de valor", nunca a 360, Baixa e confiança com ⚠ sempre visíveis */
+  const T15 = {};
+  for (const w of [360, 341, 340, 320]) {
+    await p.setViewportSize({ width: w, height: 740 });
+    T15[w] = await p.evaluate(() => { const vis = o => { const e = __host(opCartao(o, 1)).querySelector('.opcf'); return !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0; }; const T = { fx: { trap: 'lucro' } };
+      return { media: vis(__mk('A3', T)), alta: vis(__mk('E3', { fx: { trap: 'lucro' }, cf: { n: 'Alta', w: [], f: 1 } })), baixa: vis(__mk('B3', { fx: { trap: 'lucro' }, cf: { n: 'Baixa', w: ['preço velho'], f: 1 } })), aviso: vis(__mk('C3', { fx: { trap: 'lucro' }, cf: { n: 'Média', w: [], f: 1, ext: 1 } })), semTrap: vis(__mk('D3')), semTrapAlta: vis(__mk('F3', { cf: { n: 'Alta', w: [], f: 1 } })) }; });
+  }
+  await p.setViewportSize({ width: 360, height: 740 });
+  ok('T15 a 360 e 341 px a confiança aparece em todas as linhas, com ou sem armadilha', [360, 341].every(w => Object.values(T15[w]).every(v => v === true)), T15);
+  ok('T15 a 340 e 320 px some só a confiança Média/Alta de linha COM armadilha; Baixa, ⚠ e linhas sem armadilha continuam visíveis', [340, 320].every(w => T15[w].media === false && T15[w].alta === false && T15[w].baixa === true && T15[w].aviso === true && T15[w].semTrap === true && T15[w].semTrapAlta === true), T15);
+
+  /* T16 (pós-auditoria) nenhum número do cartão (nota, potencial, preço) é cortado por CSS: nem por overflow, nem por largura máxima, nem por reticências */
+  const T16 = [];
+  for (const [w, k] of [[320, 1], [320, 1.3], [360, 1], [360, 1.3]]) {
+    await p.setViewportSize({ width: w, height: 740 });
+    T16.push(...await p.evaluate(([w, k]) => { const R = [], L = [__mk('A3', { fx: { espPct: 1.214 } }), __mk('B3', { fx: { espPct: 12 } }), __mk('C3', { fx: { espPct: -1, trap: 'lucro' } }), __mk('D3', { d: { cur: 'BRL', price: 12345.67, k: {} }, fx: { cons: 1234.56, cen: 5000, oti: 9876.54 } })];
+      const h = __host(L.map(o => opCartao(o, 1)).join('')); if (k !== 1) __escala(k);
+      [].forEach.call(h.querySelectorAll('.opk'), c => { const cr = __r(c), tk = c.querySelector('.opt b').textContent; [].forEach.call(c.querySelectorAll('.opk1 *'), e => { if (e.closest('.sr') || __r(e).w === 0) return; const r = __r(e), cs = getComputedStyle(e);
+        if ((cs.overflowX !== 'visible' && e.scrollWidth > e.clientWidth + 1) || cs.textOverflow === 'ellipsis' || cs.webkitLineClamp > 0 && cs.webkitLineClamp !== 'none' || r.r > cr.r + 1 || r.l < cr.l - 1) R.push({ w, k, tk, el: e.tagName + '.' + e.className, txt: e.textContent.slice(0, 12), sw: e.scrollWidth, cw: e.clientWidth }); });
+        const at = [].slice.call(c.querySelectorAll('.opt b, .opt small, .opn > span:first-child, .opu > span:first-child, .opa')).map(e => ({ e, r: __r(e) })).filter(a => a.r.w > 0);
+        for (let x = 0; x < at.length; x++) for (let y = x + 1; y < at.length; y++) if (__cruza(at[x].r, at[y].r)) R.push({ w, k, tk, cruza: at[x].e.textContent.slice(0, 10) + ' × ' + at[y].e.textContent.slice(0, 10) }); });
+      return R; }, [w, k]));
+  }
+  await p.setViewportSize({ width: 360, height: 740 });
+  ok('T16 número cortado: nota, potencial (+121,4%, >999%, −100,0%) e preço de 5 dígitos inteiros a 320/360 px × 100/130%', T16.length === 0, T16.slice(0, 4));
   /* dados reais (se a pasta privada existir) */
   if (fs.existsSync(path.join(DADOS, 'mercado.json'))) {
     for (const tm of TEMAS) for (const [w, h] of [[320, 640], [360, 740]]) for (const k of [1, 1.3]) {
@@ -175,13 +223,19 @@ const TEMAS = ['atual', 'branco', 'preto'];
       const R = await pg.evaluate((k) => { showTab('mercado'); MKV = 'ana'; ANV = 'opp'; OPV = 'gar'; OPC = { k: '' }; renderMkt(); const pan = document.querySelector('.opp'); if (k !== 1) { [].slice.call(pan.querySelectorAll('*')).map(e => [e, parseFloat(getComputedStyle(e).fontSize)]).forEach(a => { a[0].style.fontSize = a[1] * k + 'px'; }); }
         const ks = [].slice.call(pan.querySelectorAll('.opk')), R = { n: ks.length, alt: ks.map(c => Math.round(c.getBoundingClientRect().height)), over: 0, tx: pan.textContent, ver: pan.querySelectorAll('.opk.ver').length, acima: 0 };
         ks.forEach(c => { if (c.scrollWidth > c.clientWidth + 1) R.over++; }); ks.forEach(c => c.querySelector('.opx').click()); R.sw = document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth + 1; R.overAb = ks.filter(c => c.scrollWidth > c.clientWidth + 1).length; R.overList = ks.filter(c => c.scrollWidth > c.clientWidth + 1).map(c => c.querySelector('.opt b').textContent);
-        R.acima = ks.filter(c => /Acima da faixa/.test(c.querySelector('.opx').textContent)).length; R.antigo = /Muito perto do cenário|Acima do cenário conservador/.test(pan.textContent); R.etq = ks.map(c => (c.querySelector('.opx').textContent.match(/Abaixo da faixa|Dentro da faixa|Acima da faixa|Faixa indisponível|Calculando/g) || []).length); R.todos = { ideias: ks.slice(0, 4).map(c => c.querySelector('.opt b').textContent.replace(' ›', '')).join(), dy: opFiltra(opData().D, 'div').length, mod: opFiltra(opData().D, 'risco').length }; return R; }, k);
+        R.acima = ks.filter(c => /Acima da faixa/.test(c.querySelector('.opx').textContent)).length; R.antigo = /Muito perto do cenário|Acima do cenário conservador/.test(pan.textContent); R.etq = ks.map(c => (c.querySelector('.opx').textContent.match(/Abaixo da faixa|Dentro da faixa|Acima da faixa|Faixa indisponível|Calculando/g) || []).length); R.todos = { ideias: ks.slice(0, 4).map(c => c.querySelector('.opt b').textContent.replace(/[\s\u00a0]*›/, '')).join(), dy: opFiltra(opData().D, 'div').length, mod: opFiltra(opData().D, 'risco').length }; R.cont = ks.map(c => { const wn = c.querySelector('.opwn'), m = /(\d+) pontos? de atenção/.exec(c.querySelector('.opx').getAttribute('aria-label')); return { tk: c.querySelector('.opt b').textContent.replace(/[\s\u00a0]*›/, ''), n: wn ? +wn.textContent.replace(/\D/g, '') : 0, li: c.querySelectorAll('.opav li').length, lb: m ? +m[1] : 0, h: (c.querySelector('.opav li b') || {}).textContent || '' }; }); R.seta = ks.map(c => { const bb = c.querySelector('.opt b'); return Math.round(bb.querySelector('i').getBoundingClientRect().top - bb.getBoundingClientRect().top); }); return R; }, k);
       const tag = 'REAL [' + tm + ' ' + w + 'px ×' + k + '] ';
       ok(tag + '11 linhas, sem rolagem horizontal (fechadas e abertas), uma etiqueta por linha, nenhum selo antigo', R.n === 11 && R.over === 0 && R.overAb === 0 && R.sw && R.etq.every(v => v === 1) && !R.antigo, { n: R.n, over: R.over, overAb: R.overList, sw: R.sw, etq: R.etq });
       ok(tag + 'fechada ≤ ' + (k === 1 ? 150 : 200) + ' px; nenhuma Ideia ou Em verificação "Acima da faixa"', R.alt.every(v => v <= (k === 1 ? 150 : 200)) && R.acima === 0, R.alt);
       if (tm === 'atual' && w === 360 && k === 1) ok('REAL Todas 4 · Dividendos 4 · Menor risco (Moderado) 4; Ideias na ordem de hoje', R.todos.ideias === 'TGMA3,FIQE3,PETR4,VLID3' && R.todos.dy === 4 && R.todos.mod === 4, R.todos);
+      ok(tag + '⚠ fechado = itens do bloco de avisos = número falado, nas 11 linhas', R.cont.every(x => x.n === x.li && x.li === x.lb), R.cont);
+      ok(tag + 'o "›" fica na linha do ticker (nunca sozinho na 2ª linha)', R.seta.every(v => v < 8), R.seta);
+      if (tm === 'atual' && w === 360 && k === 1) { const e = { TGMA3: 1, FIQE3: 1, PETR4: 2, VLID3: 1 }; ok('REAL Ideias de hoje: ⚠ 1, 1, 2, 1 e o risco de "O que pode dar errado" é o primeiro item da parte aberta', R.cont.slice(0, 4).every(x => x.n === e[x.tk] && x.h.replace(/:$/, '') === 'O que pode dar errado'), R.cont.slice(0, 4)); }
       ok(tag + 'sem erro de JS', pg.__erros.length === 0, pg.__erros); await pg.context().close();
     }
+    { const pg = await abrirReal(b, DADOS, { width: 360, height: 740 }, 'atual');
+      const A = await pg.evaluate(() => { showTab('mercado'); MKV = 'ana'; ANV = 'opp'; OPV = 'gar'; OPC = { k: '' }; window.opTipoPerfil = () => 'Conservador'; renderMkt(); const clica = v => { document.querySelector('[data-opf="' + v + '"]').click(); const s = document.getElementById('opstat'); return { txt: s && s.textContent, role: s && s.getAttribute('role'), live: s && s.getAttribute('aria-live'), n: document.querySelectorAll('.opp .opk:not(.ver)').length }; }; const R = {}; R.r = clica('risco'); R.d = clica('div'); R.t = clica('todas'); R.un = document.querySelectorAll('#opstat').length; return R; });
+      ok('REAL trocar o filtro atualiza o aviso de leitor de tela no DOM (role=status, aria-live): Menor risco 1 de 4, Dividendos 4 de 4, Todas 4 de 4', A.r.txt === 'Mostrando 1 de 4 ideias' && A.r.n === 1 && A.d.txt === 'Mostrando 4 de 4 ideias' && A.d.n === 4 && A.t.txt === 'Mostrando 4 de 4 ideias' && A.r.role === 'status' && A.r.live === 'polite' && A.un === 1, A); await pg.context().close(); }
   } else console.log('(pasta de dados reais não encontrada: parte REAL pulada)');
   ok('sem erros de JS', erros.length === 0, erros);
   await b.close();

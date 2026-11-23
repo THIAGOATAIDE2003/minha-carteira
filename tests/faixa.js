@@ -138,7 +138,7 @@ const val = (L0, fm, g, r, m) => { let e = L0 * fm, v = 0; for (let i = 1; i <= 
   ok('C3: fxSaida = parte do valor que vem da venda no ano 5 (confere com fxVal sem e com saída)', Math.abs(H.saiCalc - H.saiEsperada) < 1e-9 && H.sai0 > 0 && H.sai0 < 1, [H.saiCalc, H.saiEsperada, H.sai0]);
   ok('C3: balão de dependência aparece nas premissas com saída de 80%, com o percentual', /Dependência do preço de venda<\/b> <button[^>]*data-bal="80% do valor justo vem do preço de venda no ano 5, não dos dividendos\. Se o múltiplo cair, o valor cai junto\."/.test(H.s80), H.s80.slice(-600));
   ok('C3: sem balão com saída de 60% ou exatamente 75%, e nunca na linha fechada', !/Dependência do preço de venda/.test(H.s60) && !/Dependência do preço de venda/.test(H.s75) && !/Dependência do preço de venda/.test(H.fechada));
-  ok('armadilha de valor aparece na linha e nas premissas', /Possível armadilha de valor/.test(H.rt));
+  ok('armadilha de valor aparece na linha e no bloco de avisos, sem o selo repetido sob a margem', /<b>Armadilha de valor:<\/b>/.test(H.rt) && /<b class="opar">Armadilha de valor<\/b>/.test(H.rt) && !/⚠ Possível armadilha de valor<\/b>/.test(H.rt));
   ok('sem armadilha no caso normal', !/armadilha/.test(H.fechada));
   ok('alerta de ideia usa o conservador, não o preço justo único', H.ra.length >= 0 && !H.ra.some(a => /Abaixo do preço justo/.test(a[1])));
   ok('preço acima da faixa: etiqueta "Acima da faixa" (selo antigo saiu) e alerta de topo para quem tem', /Acima da faixa/.test(H.rcara) && !/Acima do cenário conservador/.test(H.rcara) && H.alc.some(a => /Acima do cenário otimista/.test(a[1])), H.alc);

@@ -4,7 +4,7 @@
 :root[data-theme="preto"]{--op-abaixo:#81c995;--op-dentro:#e8eaed;--op-acima:#f28b82}
 .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .opk{border-top:1px solid var(--line);padding:4px 0 2px}.opk1{display:grid;grid-template-columns:minmax(0,1fr) auto auto 40px;gap:8px;align-items:center}
-.opk .opt{min-height:44px}.opk .opt b{font-size:16px;font-weight:700}.opk .opt b i{font-style:normal;font-weight:400;color:var(--muted)}
+.opk .opt{min-height:44px}.opk .opt b{font-size:16px;font-weight:700}.opk .opt b{white-space:nowrap}.opk .opt b i{font-style:normal;font-weight:400;color:var(--muted)}
 .opk .opn,.opk .opu{background:none;border-radius:0;padding:0;min-width:0;text-align:center;font-size:inherit;color:var(--fg)}
 .opk .opn>span:first-child,.opk .opu>span:first-child{display:flex;flex-direction:column;align-items:center;line-height:1.2;white-space:nowrap}
 .opk .opn b,.opk .opu b{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--fg)}.opk .opn small,.opk .opu small{font-size:11px;color:var(--muted)}
@@ -30,10 +30,11 @@
 .opfb{min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--fg);font:600 14px var(--sans)}
 .opfb[aria-pressed="true"]{border:2px solid var(--fg)}
 .oplg{margin:2px 0 6px;font-size:13px;color:var(--muted)}.opfp{margin-left:6px}
-.opk.ver .opt b,.opk.ver .opn b,.opk.ver .opu b{font-weight:500}
+.opk.ver .opt b,.opk.ver .opu b{font-weight:500}.opk.ver .opn b{font-weight:400;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.opch{transition:none}}
 .opk.ver .opl{font-size:13px;gap:0 10px}.opk.ver .opx{padding:4px 0}
 .opd .bal{margin-left:-14px}.opd .opq2{display:block}.opd .fqb,.opd .opw{color:var(--fg)}
 .opl,.opbn,.opk1 small,.opn small,.opu small{line-height:1.2}.opbn>span{line-height:1.15}.opbb{height:14px;margin:3px 7px}.opx{padding:4px 0}.opx3{margin-top:1px}.opk{padding:3px 0 1px}
 @media (max-width:340px){.opar~.opcf:not(.warn){display:none}}
 .opbb{margin:2px 7px}.opx3{margin-top:0}.opx{padding:3px 0}
+.opk .opt small{white-space:normal;overflow:visible;text-overflow:clip}

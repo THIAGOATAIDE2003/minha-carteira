@@ -41,8 +41,8 @@ function riscosFor(o,qual){if(o&&o.fx&&o.fx.ok&&o.fx.bank)return bkRiscos(o);if(
   if(o.d&&o.d.k&&o.d.k.hi){var dd=o.d.price/o.d.k.hi-1;if(dd<=-0.15)R.push([Math.abs(dd)/0.3,'o preço já caiu '+Math.round(Math.abs(dd*100))+'% da máxima do ano: pode estar barato por um motivo'])}
   return R.filter(function(r){return r[0]>=0.5}).sort(function(a,b){return b[0]-a[0]}).slice(0,2).map(function(r){return r[1]})}
 /* linhas da ideia: aviso de saúde (se falhou em 1) e "O que pode dar errado" */
-function saudeRow(o){var h='';if(o.sd&&o.sd.bank)return bkSaudeRow(o);if(o.sd&&o.sd.seg)return sgSaudeRow(o);if(o.sd&&o.sd.n>=1)h+='<div class="fql"><b class="opw">⚠ Saúde financeira: '+esc(o.sd.mot.join(', '))+'</b> <small class="muted">('+o.sd.n+' de 3 testes'+(o.sd.n>=2?' — por isso está em verificação':'')+')</small></div>';
-  if(o.fx&&o.fx.ok){var r=riscosFor(o,1);h+='<div class="fql"><span><b>O que pode dar errado:</b> '+(r.length?esc(r.join('; '))+'.':'<span class="muted">nenhum risco forte nos números (confira as notícias).</span>')+'</span></div>'}
+function saudeRow(o,semR){var h='';if(o.sd&&o.sd.bank)return bkSaudeRow(o,semR);if(o.sd&&o.sd.seg)return sgSaudeRow(o,semR);if(o.sd&&o.sd.n>=1)h+='<div class="fql"><b class="opw">⚠ Saúde financeira: '+esc(o.sd.mot.join(', '))+'</b> <small class="muted">('+o.sd.n+' de 3 testes'+(o.sd.n>=2?' — por isso está em verificação':'')+')</small></div>';
+  if(o.fx&&o.fx.ok&&!semR){var r=riscosFor(o,1);h+='<div class="fql"><span><b>O que pode dar errado:</b> '+(r.length?esc(r.join('; '))+'.':'<span class="muted">nenhum risco forte nos números (confira as notícias).</span>')+'</span></div>'}
   return h}
 /* testes ao abrir as premissas */
 function saudePrem(o){var s=o.sd;if(!s)return '';if(s.bank)return bkSaudePrem(o);if(s.seg)return sgSaudePrem(o);var m=s.m,q=function(ok,t){return '<li>'+rkLvl(ok===null?'at':ok?'ok':'al')+'<div><p style="margin:0;color:var(--fg)">'+t+'</p></div></li>'};

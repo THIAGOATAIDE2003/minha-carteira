@@ -145,7 +145,7 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
     try { OPV = 'lst'; const a = oppHtml(); OPV = 'gar'; const b = oppHtml(); return { a: a, b: b }; } finally { opData = ant; OPV = v0; }
   });
   ok('E3 (C2): legenda da coluna diz potencial (nunca Esperado)', /<small>potencial<\/small>/.test(CAB.a) && !/Esperado/.test(CAB.a) && /<small>potencial<\/small>/.test(CAB.b), CAB.a.slice(0, 300));
-  ok('E3 (C2): nota explica Potencial sem prometer retorno e conta as ações acima da faixa', /A coluna Potencial mostra quanto o preço de hoje teria de subir/.test(CAB.b) && /Não é retorno anual nem promessa/.test(CAB.b) && /3 ficaram de fora por estarem acima disso/.test(CAB.b) && !/retorno esperado/i.test(CAB.b), CAB.b.slice(-900));
+  ok('E3 (C2): nota explica Potencial sem prometer retorno e conta as ações acima da faixa', /O potencial \(embaixo da nota\) mostra quanto o preço de hoje teria de subir/.test(CAB.b) && /Não é retorno anual nem promessa/.test(CAB.b) && /3 ficaram de fora por estarem acima disso/.test(CAB.b) && !/retorno esperado/i.test(CAB.b), CAB.b.slice(-900));
   /* E3 (g): contexto do assistente com o.V=null (banco) não quebra e mantém a linha ALERTAS */
   const AS = await p.evaluate(() => {
     const ant = opData, cf = { n: 'Média', w: [], f: 0.8 };
