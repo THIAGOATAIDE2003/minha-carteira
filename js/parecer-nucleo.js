@@ -20,13 +20,13 @@ function parIt(c,n){var l=(c&&c.itens||[]).filter(function(x){return x.item===n}
 /* ---------- 1) LEITURA POR REGRA ---------- */
 /* com cautela: qualquer trava forte (confiança baixa, dado faltando ou em verificação, 2+ testes de saúde reprovados, sem faixa) OU 2+ pontos de atenção.
    equilibrada: 1 ponto de atenção. a favor: nenhum. Pontos de atenção: preço acima do conservador, vento macro contrário, armadilha de valor,
-   1 teste de saúde reprovado, retorno esperado acima de 100%, lucro atípico nos últimos 4 trimestres, lucro ou margem do ano piorando. */
+   1 teste de saúde reprovado, potencial acima de 100%, lucro atípico nos últimos 4 trimestres, lucro ou margem do ano piorando. */
 function parAtencao(pk){var a=[],f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl=pk.tendencias&&pk.tendencias.ano_contra_ano;
   if(f&&f.margem_de_seguranca_pct<0)a.push('preço acima do cenário conservador');
   if(vm&&vm.resultado==='contrário')a.push('vento macro contrário');
   if(f&&f.armadilha_de_valor)a.push('possível armadilha de valor');
   if(sd&&sd.testes_reprovados_de_3===1)a.push('1 teste de saúde financeira reprovado');
-  if(f&&f.retorno_esperado_pct>100)a.push('retorno esperado acima de 100%');
+  if(f&&f.retorno_esperado_pct>100)a.push('potencial acima de 100%');
   if((pk.lucros_atipicos||[]).some(function(n){return n.recente}))a.push('lucro atípico nos últimos 4 trimestres');
   if(pk.nao_avaliado&&pk.nao_avaliado.length)a.push('dados específicos do setor não avaliados');
   var l=parIt(tl,'Lucro'),m=parIt(tl,'Margem líquida');if((l&&l.variacao_pct<0)||(m&&m.variacao_pp<=-1))a.push('lucro ou margem do ano piorando');

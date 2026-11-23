@@ -33,7 +33,7 @@ function opVerHtml(r,cab){if(!r.X||!r.X.length)return '';
 function opData(){var f=MD.d&&MD.d.fund;if(!f||!f.d)return null;var R=compute(),mine={};R.held.forEach(function(x){mine[x.p.ticker]=1});
   var key=MD.d.ts+'|'+wlist().join(',')+'|'+Object.keys(mine).join(',')+'|'+Math.floor(Date.now()/9e5)+'|'+(S.perfil&&S.perfil.obj||'')+'|'+FXV+'|'+macroKey();if(OPC.k===key)return OPC.r;
   var W=wlist().map(opEval).filter(Boolean),M=Object.keys(mine).filter(function(t){return R.held.some(function(x){return x.p.ticker===t&&x.p.market!=='US'})}).map(opEval).filter(Boolean);
-  /* garimpo (1.77.0, motor único): o portão de nota e qualidade vem primeiro e a faixa de preço justo decide quem entra e a ordem; o motor antigo (anValCalc) não decide mais nada */
+  /* garimpo (1.77.0, motor único): o portão de nota e qualidade vem primeiro e a faixa de preço justo decide quem entra e a ordem; o motor antigo (anValCalc) não decide quem entra; com a faixa na mão, o potencial dele também não entra na trava de sanidade */
   var seen={},cand=Object.keys(f.d).filter(function(tk){var F=fundOf(tk);return F&&F.liq2m>=2e6&&F.pl>2&&F.roe>0}).map(function(tk){var F=fundOf(tk);F.tk=tk;return F}).sort(function(a,b){return b.liq2m-a.liq2m});
   var P=[],D=[],X=[],skipC=0,skipV=0,skipF=0;cand.forEach(function(F){var b=F.tk.slice(0,4);if(seen[b]||mine[F.tk])return;seen[b]=1;var o=opEval(F.tk);if(!o||!opPorta(o))return;o.liq=F.liq2m;P.push(o)});
   P.sort(function(a,b){return b.score-a.score||b.liq-a.liq});P=P.slice(0,OPMAXF);var pfo=S.perfil&&S.perfil.obj;

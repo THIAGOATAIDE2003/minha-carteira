@@ -124,6 +124,19 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   ok('E3 (d): só 60 ações recebem faixa', E3.d === 60, E3.d);
   ok('E3 (e): faixa calculando fica em Ideias (não cai antes da hora)', E3.e.D.join() === 'PEND3' && E3.e.X.length === 0, E3.e);
   ok('E3 (f): exceção rara usa a margem da faixa (45% passa, 30% não)', E3.f.D.join() === 'RARA3' && E3.f.rara[0] === true && E3.f.skipC === 1, E3.f);
+  /* C5: banco com histórico curto e preço justo antigo "extremo" (caso BRSR6) mostra o motivo da faixa, não "potencial extremo" */
+  const BR = await p.evaluate(() => {
+    const salvo = { opEval: opEval, fxFor: fxFor, fundOf: fundOf, opConf: opConf, saudeFor: saudeFor, concFor: concFor, vtSetor: vtSetor, macroVento: macroVento, opQual: opQual, setorOf: setorOf, setorRk: setorRk, riscosFor: riscosFor };
+    const mot = 'histórico curto: 5 de 8 trimestres com ROE (faltam 3). Previsão: deve sair da verificação por volta de 14/08/2027';
+    const o = { tk: 'BRSR6', d: { cur: 'BRL', price: 10, k: {} }, A: { chips: [['Qualidade', 'Alta'], ['', '']], N: { dy: 5 }, sec: ['Outros', ''], alr: [], pos: [], neg: [] }, V: { up: 1.477, mg: 0.5, med: 25, ms: [1] }, score: 6, banco: false, al: [] };
+    opEval = tk => tk === 'BRSR6' ? o : null; fxFor = () => ({ ok: false, bank: true, motivo: mot }); fundOf = () => ({ liq2m: 9e6, pl: 8, roe: 15 }); saudeFor = () => ({ n: 0, mot: [], f: [], m: {} }); riscosFor = () => [];
+    opConf = () => ({ n: 'Média', w: ['inadimplência, Basileia e provisões não avaliadas'], f: 0.8 }); concFor = () => null; vtSetor = () => []; macroVento = () => null; opQual = () => ({ t: '', fraca: false, w: [] }); setorOf = tk => ({ k: tk }); setorRk = () => ['Outros', ''];
+    MD.d = { ts: 1, fund: { cols: [], d: { BRSR6: [0] } }, cat: {} }; OPC = { k: '', r: null }; FOTOQ = true;
+    try { const r = opData(), x = r.X[0], u = { cf: { n: 'Média', w: [] }, fx: { ok: false }, V: { up: 0.9 } }; opSanidade(u); return { X: r.X.map(y => y.tk), D: r.D.length, w: x.cf.w.join(' | '), ext: !!x.cf.ext, sanidadeSemFaixa: !!u.cf.ext }; }
+    finally { Object.assign(window, salvo); }
+  });
+  ok('C5 (BRSR6): fica em Em verificação com o motivo da faixa e a previsão de saída', BR.X.join() === 'BRSR6' && BR.D === 0 && /^faixa indisponível: histórico curto: 5 de 8.*Previsão: deve sair da verificação por volta de 14\/08\/2027/.test(BR.w), BR);
+  ok('C5 (BRSR6): não mostra "potencial extremo" (preço justo antigo não vale quando a faixa existe mas está indisponível)', !/potencial extremo/.test(BR.w) && !BR.ext && !BR.sanidadeSemFaixa, BR);
   ok('E3 (extra): sem faixa vai para Em verificação com o motivo', E3.g.D.length === 0 && E3.g.X.join() === 'SEMF3' && /faixa indisponível: sem histórico da CVM/.test(E3.g.w), E3.g);
   /* E3 (C2): cabeçalho e nota das Ideias dizem Potencial, não Esperado */
   const CAB = await p.evaluate(() => {
