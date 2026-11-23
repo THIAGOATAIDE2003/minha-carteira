@@ -20,13 +20,13 @@ function parIt(c,n){var l=(c&&c.itens||[]).filter(function(x){return x.item===n}
 /* ---------- 1) LEITURA POR REGRA ---------- */
 /* com cautela: qualquer trava forte (confiança baixa, dado faltando ou em verificação, 2+ testes de saúde reprovados, sem faixa) OU 2+ pontos de atenção.
    equilibrada: 1 ponto de atenção. a favor: nenhum. Pontos de atenção: preço acima do conservador, vento macro contrário, armadilha de valor,
-   1 teste de saúde reprovado, retorno esperado acima de 100%, lucro atípico nos últimos 4 trimestres, lucro ou margem do ano piorando. */
+   1 teste de saúde reprovado, potencial acima de 100%, lucro atípico nos últimos 4 trimestres, lucro ou margem do ano piorando. */
 function parAtencao(pk){var a=[],f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl=pk.tendencias&&pk.tendencias.ano_contra_ano;
   if(f&&f.margem_de_seguranca_pct<0)a.push('preço acima do cenário conservador');
   if(vm&&vm.resultado==='contrário')a.push('vento macro contrário');
   if(f&&f.armadilha_de_valor)a.push('possível armadilha de valor');
   if(sd&&sd.testes_reprovados_de_3===1)a.push('1 teste de saúde financeira reprovado');
-  if(f&&f.retorno_esperado_pct>100)a.push('retorno esperado acima de 100%');
+  if(f&&f.retorno_esperado_pct>100)a.push('potencial acima de 100%');
   if((pk.lucros_atipicos||[]).some(function(n){return n.recente}))a.push('lucro atípico nos últimos 4 trimestres');
   if(pk.nao_avaliado&&pk.nao_avaliado.length)a.push('dados específicos do setor não avaliados');
   var l=parIt(tl,'Lucro'),m=parIt(tl,'Margem líquida');if((l&&l.variacao_pct<0)||(m&&m.variacao_pp<=-1))a.push('lucro ou margem do ano piorando');
@@ -73,7 +73,7 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   if(vm&&vm.resultado==='favorável')add(fav,'Vento macro favorável: '+vm.razao);
   if(sd&&!pk.financeira&&sd.testes_reprovados_de_3===0){var sx=[];if(sd.caixa_maior_que_a_divida)sx.push('a empresa tem mais caixa do que dívida');else if(sd.divida_liquida_sobre_patrimonio!=null)sx.push('dívida líquida de '+parX(sd.divida_liquida_sobre_patrimonio)+'× o patrimônio');if(sd.cobertura_de_juros!=null)sx.push('o lucro da operação cobre '+parF(sd.cobertura_de_juros,1)+'× os juros');add(fav,'Os 3 testes de saúde financeira passaram'+(sx.length?': '+sx.join(' e ')+'.':'.'))}
   if(tl&&tl.tendencia==='melhorando'&&lucA&&mlA&&lucA.variacao_pct>PAREST&&mlA.variacao_pp>0)add(fav,'De '+tl.de+' para '+tl.para+', '+parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu')+' e '+parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu')+' (tendência: melhorando).');
-  if(f&&f.retorno_esperado_pct>PARRET&&f.retorno_esperado_pct<=100)add(fav,'O retorno esperado pelo modelo (média ponderada dos 3 cenários contra o preço de hoje) é de '+parF(f.retorno_esperado_pct,1)+'%.');
+  if(f&&f.retorno_esperado_pct>PARRET&&f.retorno_esperado_pct<=100)add(fav,'O potencial até o valor justo pelo modelo (média ponderada dos 3 cenários contra o preço de hoje; sem prazo, não é retorno anual) é de '+parF(f.retorno_esperado_pct,1)+'%.');
   if(cx!=null&&cx>0)add(fav,'O caixa operacional dos últimos 12 meses foi de '+parI(cx)+' milhões.');
   var fn=pk.financeira?parFinFatos(pk):null;if(fn)fn.fav.forEach(function(t){add(fav,t)});
   /* preocupam (os obrigatórios entram primeiro) */
@@ -86,7 +86,7 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   if(sd&&sd.motivos&&sd.motivos.indexOf('dívida alta')>=0){var dv=[];if(sd.divida_liquida_sobre_ebitda!=null)dv.push(parX(sd.divida_liquida_sobre_ebitda)+'× o EBITDA (limite do setor: '+parF(lim.divida_ebitda,1)+'×)');else{if(sd.divida_liquida_sobre_patrimonio!=null)dv.push(parX(sd.divida_liquida_sobre_patrimonio)+'× o patrimônio (limite: '+parF(lim.divida_patrimonio,1)+'×)');if(sd.divida_liquida_sobre_lucro_anual!=null)dv.push(parF(sd.divida_liquida_sobre_lucro_anual,1)+'× o lucro anual (limite: '+parF(lim.divida_lucro_anual,1)+'×)')}add(pre,'A dívida líquida está em '+dv.join(' e ')+'.',true)}
   if(sd&&sd.motivos&&sd.motivos.indexOf('cobertura de juros baixa')>=0&&sd.cobertura_de_juros!=null)add(pre,'O lucro da operação cobre só '+parF(sd.cobertura_de_juros,1)+'× os juros (mínimo desejado: '+parF(lim.cobertura_juros,1)+'×).',true);
   if(sd&&cx!=null&&cx<=0)add(pre,'O caixa operacional dos últimos 12 meses foi de '+parI(cx)+' milhões.',true);
-  if(f&&f.retorno_esperado_pct>100)add(pre,'O retorno esperado de '+parF(f.retorno_esperado_pct,1)+'% é muito alto: vale conferir com cuidado as premissas da faixa.');
+  if(f&&f.retorno_esperado_pct>100)add(pre,'O potencial até o valor justo de '+parF(f.retorno_esperado_pct,1)+'% é muito alto: vale conferir com cuidado as premissas da faixa.');
   if(fn)fn.pre.filter(function(x){return !x[1]}).forEach(function(x){add(pre,x[0])});
   (pk.lucros_atipicos||[]).filter(function(n){return n.recente}).slice(0,1).forEach(function(n){add(pre,'O lucro de '+n.trimestre+' ('+parI(n.lucro_milhoes)+' milhões) ficou '+(n.tipo==='lucro acima do normal'?'acima':'abaixo')+' do normal (mediana de '+parI(n.mediana_milhoes)+' milhões) e pode não se repetir.')});
   if(tl&&((lucA&&lucA.variacao_pct<0)||(mlA&&mlA.variacao_pp<=-1))){var pp=[];if(lucA&&lucA.variacao_pct!=null)pp.push(parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu'));if(mlA&&mlA.variacao_pp!=null)pp.push(parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu'));add(pre,'De '+tl.de+' para '+tl.para+', '+pp.join(' e ')+(/\.$/.test(pp[pp.length-1])?'':'.'))}

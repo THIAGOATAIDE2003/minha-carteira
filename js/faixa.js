@@ -1,7 +1,7 @@
 /* Aporte · js/faixa.js — Preço justo em FAIXA (1.64.0): 3 cenários feitos com o lucro normalizado do histórico da CVM.
    Só usado pelas Ideias (opData/opRow em mercado-oportunidades.js). Não mexe no stkAna nem no anValCalc.
    Tudo é conta feita por código com premissas simples e visíveis; nada vem de IA. */
-var FXV=0,FXL={},FXP=0,FXOPEN={},FXW=[25,50,25],FXTOL=0.10,FXPAY=0.5,FXN=8,FXMC=0.85,FXOLD=false;  /* FXOLD só serve para comparar com a regra antiga de 4 cortes (1.64.0) */
+var FXPOT='Quanto o preço de hoje teria de subir (ou cair) para chegar ao valor justo: média dos 3 cenários (pesos 25/50/25). Não tem prazo e não é retorno anual nem promessa.',FXV=0,FXL={},FXP=0,FXOPEN={},FXW=[25,50,25],FXTOL=0.10,FXPAY=0.5,FXN=8,FXMC=0.85,FXOLD=false,FXSAI=0.75;  /* FXOLD só serve para comparar com a regra antiga de 4 cortes (1.64.0) */
 /* mediana e percentil (interpolado) de uma lista de números */
 function fxPct(a,p){if(!a.length)return null;var s=a.slice().sort(function(x,y){return x-y}),i=(s.length-1)*p,lo=Math.floor(i),hi=Math.ceil(i);return s[lo]+(s[hi]-s[lo])*(i-lo)}
 /* arquivo do histórico (dados/cvm/<TICKER>.json): undefined = baixando, null = não existe/indisponível */
@@ -27,6 +27,8 @@ function fxTrap(D){var t=(D&&D.t||[]).slice(-4);if(t.length<4)return null;
   if(caiu('luc'))return 'lucro';if(caiu('ml'))return 'margem';return null}
 /* valor por ação de um cenário: lucro por ação normalizado × margem, crescendo g por 5 anos; distribui FXPAY do lucro; no ano 5 vende por múltiplo × lucro */
 function fxVal(L0,fm,g,r,m){var v=0,e=L0*fm,i;for(i=1;i<=5;i++){e*=1+g/100;v+=e*FXPAY/Math.pow(1+r/100,i)}return v+e*m/Math.pow(1+r/100,5)}
+/* parcela (0 a 1) do valor de um cenário que vem do preço de venda no ano 5; o resto são os dividendos distribuídos (mesma conta de fxVal, só separa as duas partes) */
+function fxSaida(L0,fm,g,r,m){var e=L0*fm,v=0,i;for(i=1;i<=5;i++){e*=1+g/100;v+=e*FXPAY/Math.pow(1+r/100,i)}var s=e*m/Math.pow(1+r/100,5);return s>0?s/(v+s):0}
 /* lucro por ação normalizado: preferência pelo número de ações (valor de mercado = P/VP × patrimônio ÷ preço); sem isso, lucro por ação de hoje (preço ÷ P/L) × (normalizado ÷ últimos 12 meses), com razão limitada */
 function fxCalc(D,P,N,pe,tk,Fu,old){var nm=fxNorm(D);if(!nm.ok)return nm;
   var sh=Fu&&Fu.pvp>0&&Fu.pl_r>0&&P>0?Fu.pvp*Fu.pl_r/P:null;
@@ -42,7 +44,7 @@ function fxCalc(D,P,N,pe,tk,Fu,old){var nm=fxNorm(D);if(!nm.ok)return nm;
   pr.forEach(function(c){c.v=fxVal(L0,c.fm,c.g,c.r,c.m)});
   var trap=fxTrap(D),cen=pr[1].v,cenRaw=cen;if(trap){cen=(pr[0].v+pr[1].v)/2;pr[1].v=cen}
   var w=FXW,esp=(w[0]*pr[0].v+w[1]*pr[1].v+w[2]*pr[2].v)/100,cons=pr[0].v,rel=P/cons-1;
-  return {ok:true,nm:nm,pr:pr,P:P,cons:cons,cen:cen,cenRaw:cenRaw,oti:pr[2].v,esp:esp,espPct:esp/P-1,ms:(cons-P)/cons,trap:trap,lim:lim,ratio:ratio,L0:L0,base:sh?'acoes':'pl',
+  return {ok:true,nm:nm,pr:pr,P:P,cons:cons,cen:cen,cenRaw:cenRaw,oti:pr[2].v,esp:esp,espPct:esp/P-1,ms:(cons-P)/cons,trap:trap,sai:fxSaida(L0,pr[1].fm,pr[1].g,pr[1].r,pr[1].m),lim:lim,ratio:ratio,L0:L0,base:sh?'acoes':'pl',
     est:rel<=0?'abaixo':rel<=FXTOL?'perto':'acima',opp:rel<=FXTOL}}
 /* calcula a faixa de uma ideia (o vem de opEval): bancos e seguradoras não têm faixa; sem arquivo = indisponível; baixando = pendente */
 function fxFor(o){if(!o)return null;var bk=false,sg=false;if(opBanco(o)){if(bkIs(o.tk))bk=true;else if(sgIs(o.tk))sg=true;else return {ok:false,banco:true,motivo:'valuation desta financeira em breve'}}
@@ -65,6 +67,7 @@ function fxPrem(f){if(f.bank)return bkPrem(f);if(f.seg)return sgPrem(f);var F=f.
     '<tr><td>Múltiplo de saída (P/L)</td>'+td(function(c){return num(c.m,1)+'×'})+'</tr>'+
     '<tr><td>Valor por ação</td>'+td(function(c){return '<b>'+F.format(c.v)+'</b>'})+'</tr></tbody></table></div>'+
     '<p class="note" style="margin:6px 0 0">Cada cenário projeta o lucro por ação normalizado ('+F.format(f.L0)+') por 5 anos, distribui '+Math.round(FXPAY*100)+'% dele e vende no ano 5 pelo múltiplo de saída, tudo trazido a valor de hoje pela taxa de desconto. O conservador muda só 2 coisas em relação ao central: margem de um trimestre fraco (percentil 25 do histórico) e múltiplo de saída 15% menor; crescimento e desconto são os mesmos do central. O otimista usa margem de um trimestre forte (percentil 75), mais crescimento, menos desconto e múltiplo maior.</p>'+
-    '<p class="anv" style="margin:8px 0 2px"><b>Retorno esperado</b>: média dos 3 cenários com pesos '+FXW.join('/')+' = <b class="num">'+F.format(f.esp)+'</b> (<b class="num '+(f.espPct>=0?'gain':'loss')+'">'+csPc(f.espPct*100)+'</b> sobre o preço de hoje, '+F.format(f.P)+').</p>'+
+    '<p class="anv" style="margin:8px 0 2px"><b>Potencial até o valor justo</b> '+bal(FXPOT)+': média dos 3 cenários com pesos '+FXW.join('/')+' = <b class="num">'+F.format(f.esp)+'</b> (<b class="num '+(f.espPct>=0?'gain':'loss')+'">'+csPc(f.espPct*100)+'</b> sobre o preço de hoje, '+F.format(f.P)+').</p>'+
+    (f.sai>FXSAI?'<p class="note" style="margin:0 0 6px"><b>Dependência do preço de venda</b> '+bal(Math.round(f.sai*100)+'% do valor justo vem do preço de venda no ano 5, não dos dividendos. Se o múltiplo cair, o valor cai junto.')+'</p>':'')+
     '<p class="note" style="margin:0">Vira ideia só se o preço estiver abaixo do conservador ou até '+Math.round(FXTOL*100)+'% acima dele. '+(f.trap?'<b class="hiw">Possível armadilha de valor: o '+f.trap+' caiu 3 trimestres seguidos, então o cenário central foi rebaixado (média entre conservador e central).</b> ':'')+'Mude crescimento e desconto na aba Valuation da ação, se quiser testar. É uma estimativa com premissas simples, não garantia.</p></div>'}
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-fxp]');if(!b)return;var t=b.getAttribute('data-fxp');FXOPEN[t]=!FXOPEN[t];try{renderMkt()}catch(x){}});

@@ -54,7 +54,7 @@ function saudePrem(o){var s=o.sd;if(!s)return '';if(s.bank)return bkSaudePrem(o)
 /* regras que tiram uma ideia da lista e mandam para Em verificação (devolvem o motivo) */
 function opGate(o){if(!o||!o.fx||!o.fx.ok||!o.fx.opp||!o.sd)return null;
   if(o.sd.n>=2)return 'saúde financeira: '+o.sd.mot.join(', ');
-  if(o.sd.f.indexOf('caixa')>=0&&o.fx.espPct>SDCX)return 'caixa operacional negativo nos últimos 12 meses e retorno esperado acima de '+Math.round(SDCX*100)+'%';
+  if(o.sd.f.indexOf('caixa')>=0&&o.fx.espPct>SDCX)return 'caixa operacional negativo nos últimos 12 meses e potencial acima de '+Math.round(SDCX*100)+'%';
   return null}
 /* trava de concentração: no máximo SDMAXS ideias por setor (subsetor da B3), as de melhor posição ficam */
 function opCapSetor(L){var c={},skip=0,D=L.filter(function(x){var k=setorOf(x.tk).k||x.tk;c[k]=(c[k]||0)+1;if(c[k]>SDMAXS){skip++;return false}return true});return {D:D,skip:skip}}

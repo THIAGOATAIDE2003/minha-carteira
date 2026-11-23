@@ -32,7 +32,7 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   l = await L("pk.faixa.margem_de_seguranca_pct=-5"); ok('só margem de segurança negativa = equilibrada', l.leitura === 'equilibrada', l);
   l = await L("pk.faixa.margem_de_seguranca_pct=-5;pk.vento_macro.resultado='contrário'"); ok('margem negativa + vento contrário = com cautela', l.leitura === 'com cautela' && l.regra === '2 ou mais pontos de atenção', l);
   l = await L("pk.saude_financeira.testes_reprovados_de_3=1"); ok('1 teste de saúde reprovado = equilibrada', l.leitura === 'equilibrada', l);
-  l = await L("pk.faixa.retorno_esperado_pct=130"); ok('retorno esperado acima de 100% = ponto de atenção', l.leitura === 'equilibrada', l);
+  l = await L("pk.faixa.retorno_esperado_pct=130"); ok('potencial acima de 100% = ponto de atenção, com o texto "potencial" (nunca "retorno esperado")', l.leitura === 'equilibrada' && l.motivos.join('|') === 'potencial acima de 100%', l);
   l = await L("pk.lucros_atipicos=[{trimestre:'1T26',recente:true,tipo:'lucro acima do normal',lucro_milhoes:300,mediana_milhoes:100}]"); ok('lucro atípico recente = ponto de atenção', l.leitura === 'equilibrada', l);
   l = await L("pk.tendencias.ano_contra_ano.itens[0].variacao_pct=-10"); ok('lucro do ano caindo = ponto de atenção', l.leitura === 'equilibrada', l);
   /* fatos */
@@ -55,11 +55,11 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   R = await fa("pk.saude_financeira=null;pk.tendencias.ano_contra_ano.itens[0].variacao_pct=0.5;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=1.5");
   ok('lucro estável (+0,5%) com margem maior: também não é "melhorando" (lucro precisa subir mais de 1%)', !R.fav.some(t => /melhorando/.test(t)), R);
   R = await fa("pk.saude_financeira=null;pk.faixa.retorno_esperado_pct=3.8");
-  ok('retorno esperado de 3,8% não entra em "a favor"', !R.fav.some(t => /retorno esperado/.test(t)), R);
+  ok('potencial de 3,8% não entra em "a favor"', !R.fav.some(t => /potencial até o valor justo/.test(t)), R);
   R = await fa("pk.saude_financeira=null;pk.faixa.retorno_esperado_pct=10");
-  ok('retorno esperado de exatamente 10% ainda não entra', !R.fav.some(t => /retorno esperado/.test(t)), R);
+  ok('potencial de exatamente 10% ainda não entra', !R.fav.some(t => /potencial até o valor justo/.test(t)), R);
   R = await fa("pk.saude_financeira=null;pk.vento_macro=null;pk.tendencias=null;pk.faixa.retorno_esperado_pct=10.1");
-  ok('retorno esperado de 10,1% entra em "a favor"', R.fav.some(t => /retorno esperado.*10,1%/.test(t)), R);
+  ok('potencial de 10,1% entra em "a favor"', R.fav.some(t => /potencial até o valor justo.*10,1%/.test(t)) && !R.fav.some(t => /retorno esperado/.test(t)), R);
 
   for (const g of ['', "pk.tendencias.ano_contra_ano.itens[0].variacao_pct=-34.6;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=-8.6", "pk.tendencias.ano_contra_ano.itens[0].variacao_pct=-34.6;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=0;pk.limitacoes=['a: b.']", "pk.faixa=null;pk.saude_financeira=null;pk.tendencias=null"]) { T = await tx(g); ok('nenhum fato tem ponto duplo ("p.p..")', !T.some(t => /[^.]\.\.(?!\.)/.test(t)), T); }
   ok('vento favorável SEMPRE em a favor, nunca em preocupam', f.fav.some(x => /^Vento macro favorável/.test(x.txt)) && !f.pre.some(x => /Vento macro/.test(x.txt)), f);

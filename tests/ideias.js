@@ -82,6 +82,78 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   ok('exatamente 50% não dispara', !X.d.ext && !X.d.aviso, X.d);
   ok('Baixa não ganha motivo extra', !X.e.ext && X.e.w.length === 1, X.e);
   ok('linha em verificação mostra ⚠ e o motivo', /⚠ potencial extremo, dados incompletos/.test(X.ra) && /opq fr/.test(X.ra), X.ra);
+  /* E3 (1.77.0): motor único. Mercado fictício: opEval/fxFor/fundOf trocados por versões controladas. */
+  const E3 = await p.evaluate(() => {
+    const fx = (est, ms, esp) => ({ ok: true, est: est, opp: est !== 'acima', ms: ms, espPct: esp == null ? 0.3 : esp, cons: 10, cen: 14, oti: 18, esp: 13, F: brl });
+    let EV = {}, FX = {}, FU = {};
+    const o = (tk, score, liq, extra) => { const x = Object.assign({ tk: tk, d: { cur: 'BRL', price: 10, k: {} }, A: { chips: [['Qualidade', 'Alta'], ['', '']], N: { dy: 5 }, sec: ['Setor' + tk, ''], alr: [], pos: [], neg: [] }, V: null, score: score, banco: false, al: [] }, extra || {}); EV[tk] = x; FU[tk] = { liq2m: liq, pl: 8, roe: 15 }; return x; };
+    const roda = () => { OPC = { k: '', r: null }; FOTOQ = true; return opData(); };
+    const salvo = { opEval: opEval, fxFor: fxFor, fundOf: fundOf, saudeFor: saudeFor, opConf: opConf, concFor: concFor, vtSetor: vtSetor, macroVento: macroVento, opQual: opQual, setorOf: setorOf, setorRk: setorRk, riscosFor: riscosFor };
+    opEval = tk => EV[tk] || null; fxFor = x => FX[x.tk]; fundOf = tk => FU[tk] || null; saudeFor = () => ({ n: 0, mot: [], f: [], m: {} }); riscosFor = () => []; opConf = () => ({ n: 'Alta', w: [], f: 1 });
+    concFor = () => null; vtSetor = () => []; macroVento = () => null; opQual = () => ({ t: '', fraca: false, w: [] }); setorOf = tk => ({ k: 'S' + tk }); setorRk = () => ['Setor', ''];
+    const out = {}, novo = () => { EV = {}; FX = {}; FU = {}; const d = {}; MD.d = { ts: 1, fund: { cols: [], d: d }, cat: {} }; return d; };
+    try {
+      /* (a) banco sem preço justo antigo (V=null) com faixa pronta entra em Ideias */
+      let d = novo(); o('BANC4', 8, 9e6, { banco: true }); FX.BANC4 = fx('abaixo', 0.2); Object.keys(EV).forEach(k => { d[k] = [0]; });
+      let r = roda(); out.a = r.D.map(x => x.tk);
+      /* (b) ordem pela nota e depois pela liquidez, não pelo preço justo antigo (V.up) */
+      d = novo(); o('AAAA3', 7, 5e6, { V: { up: 0.9, mg: 0.1, med: 19, ms: [1] } }); o('BBBB3', 9, 3e6, { V: { up: 0.2, mg: 0.1, med: 12, ms: [1] } }); o('CCCC3', 9, 8e6);
+      ['AAAA3', 'BBBB3', 'CCCC3'].forEach(k => { FX[k] = fx('abaixo', 0.2); d[k] = [0]; }); r = roda(); out.b = r.D.map(x => x.tk);
+      /* (c) nenhuma ação acima da faixa em Ideias ou Em verificação, mesmo com confiança baixa ou saúde ruim */
+      d = novo(); o('ACIM3', 9, 9e6); FX.ACIM3 = fx('acima', -0.3); o('ACI2', 9, 8e6, { }); FX.ACI2 = fx('acima', -0.1); o('OKOK3', 8, 7e6); FX.OKOK3 = fx('perto', -0.05);
+      Object.keys(EV).forEach(k => { d[k] = [0]; }); const cfOld = opConf; opConf = x => x.tk === 'ACI2' ? { n: 'Baixa', w: ['preço velho'], f: 0 } : { n: 'Alta', w: [], f: 1 };
+      r = roda(); opConf = cfOld; out.c = { D: r.D.map(x => x.tk), X: r.X.map(x => x.tk), acima: r.D.concat(r.X).filter(x => x.fx && x.fx.ok && x.fx.est === 'acima').length, skipF: r.skipF,
+        html: r.D.map(x => opRow(x, 1)).join('') };
+      /* (d) teto de 60 candidatas na faixa: 70 ações boas, só as 60 melhores (nota, depois liquidez) recebem faixa */
+      d = novo(); let chamadas = 0; for (let i = 0; i < 70; i++) { const tk = 'T' + String(i).padStart(3, '0') + '3'; o(tk, 6 + (i % 40) / 10, 1e7 - i); FX[tk] = fx('abaixo', 0.2); d[tk] = [0]; }
+      const fxOld = fxFor; fxFor = x => { chamadas++; return FX[x.tk]; }; roda(); fxFor = fxOld; out.d = chamadas;
+      /* (e) faixa ainda calculando (pend) não derruba o ticker nem o manda para verificação */
+      d = novo(); o('PEND3', 8, 9e6); FX.PEND3 = { ok: false, pend: true, motivo: 'calculando a faixa…' }; d.PEND3 = [0]; r = roda(); out.e = { D: r.D.map(x => x.tk), X: r.X.map(x => x.tk) };
+      /* (f) exceção "ideia rara" (concentração) usa a margem da faixa: 0,45 passa, 0,30 não */
+      d = novo(); o('RARA3', 8.5, 9e6); FX.RARA3 = fx('abaixo', 0.45); o('NAOR3', 8.5, 8e6); FX.NAOR3 = fx('abaixo', 0.3); d.RARA3 = [0]; d.NAOR3 = [0];
+      const ccOld = concFor; concFor = () => ({ alta: true }); r = roda(); concFor = ccOld; out.f = { D: r.D.map(x => x.tk), rara: r.D.map(x => !!x.rara), skipC: r.skipC };
+      /* (g) sem faixa (indisponível) vai para Em verificação com o motivo, nunca para Ideias */
+      d = novo(); o('SEMF3', 8, 9e6); FX.SEMF3 = { ok: false, motivo: 'sem histórico da CVM para esta empresa' }; d.SEMF3 = [0]; r = roda(); out.g = { D: r.D.map(x => x.tk), X: r.X.map(x => x.tk), w: r.X[0] && r.X[0].cf.w.join(';') };
+    } finally { Object.assign(window, salvo); }
+    return out;
+  });
+  ok('E3 (a): banco com V=null e faixa pronta entra em Ideias', E3.a.length === 1 && E3.a[0] === 'BANC4', E3.a);
+  ok('E3 (b): ordem por nota e depois liquidez (não por V.up)', E3.b.join() === 'CCCC3,BBBB3,AAAA3', E3.b);
+  ok('E3 (c): zero ação acima da faixa em Ideias ou Em verificação, nem com confiança baixa', E3.c.acima === 0 && E3.c.D.join() === 'OKOK3' && E3.c.X.length === 0 && E3.c.skipF === 2, E3.c);
+  ok('E3 (c): nenhuma linha de Ideias com "Acima do cenário conservador"', !/Acima do cenário conservador/.test(E3.c.html), E3.c.html.slice(0, 200));
+  ok('E3 (d): só 60 ações recebem faixa', E3.d === 60, E3.d);
+  ok('E3 (e): faixa calculando fica em Ideias (não cai antes da hora)', E3.e.D.join() === 'PEND3' && E3.e.X.length === 0, E3.e);
+  ok('E3 (f): exceção rara usa a margem da faixa (45% passa, 30% não)', E3.f.D.join() === 'RARA3' && E3.f.rara[0] === true && E3.f.skipC === 1, E3.f);
+  /* C5: banco com histórico curto e preço justo antigo "extremo" (caso BRSR6) mostra o motivo da faixa, não "potencial extremo" */
+  const BR = await p.evaluate(() => {
+    const salvo = { opEval: opEval, fxFor: fxFor, fundOf: fundOf, opConf: opConf, saudeFor: saudeFor, concFor: concFor, vtSetor: vtSetor, macroVento: macroVento, opQual: opQual, setorOf: setorOf, setorRk: setorRk, riscosFor: riscosFor };
+    const mot = 'histórico curto: 5 de 8 trimestres com ROE (faltam 3). Previsão: deve sair da verificação por volta de 14/08/2027';
+    const o = { tk: 'BRSR6', d: { cur: 'BRL', price: 10, k: {} }, A: { chips: [['Qualidade', 'Alta'], ['', '']], N: { dy: 5 }, sec: ['Outros', ''], alr: [], pos: [], neg: [] }, V: { up: 1.477, mg: 0.5, med: 25, ms: [1] }, score: 6, banco: false, al: [] };
+    opEval = tk => tk === 'BRSR6' ? o : null; fxFor = () => ({ ok: false, bank: true, motivo: mot }); fundOf = () => ({ liq2m: 9e6, pl: 8, roe: 15 }); saudeFor = () => ({ n: 0, mot: [], f: [], m: {} }); riscosFor = () => [];
+    opConf = () => ({ n: 'Média', w: ['inadimplência, Basileia e provisões não avaliadas'], f: 0.8 }); concFor = () => null; vtSetor = () => []; macroVento = () => null; opQual = () => ({ t: '', fraca: false, w: [] }); setorOf = tk => ({ k: tk }); setorRk = () => ['Outros', ''];
+    MD.d = { ts: 1, fund: { cols: [], d: { BRSR6: [0] } }, cat: {} }; OPC = { k: '', r: null }; FOTOQ = true;
+    try { const r = opData(), x = r.X[0], u = { cf: { n: 'Média', w: [] }, fx: { ok: false }, V: { up: 0.9 } }; opSanidade(u); return { X: r.X.map(y => y.tk), D: r.D.length, w: x.cf.w.join(' | '), ext: !!x.cf.ext, sanidadeSemFaixa: !!u.cf.ext }; }
+    finally { Object.assign(window, salvo); }
+  });
+  ok('C5 (BRSR6): fica em Em verificação com o motivo da faixa e a previsão de saída', BR.X.join() === 'BRSR6' && BR.D === 0 && /^faixa indisponível: histórico curto: 5 de 8.*Previsão: deve sair da verificação por volta de 14\/08\/2027/.test(BR.w), BR);
+  ok('C5 (BRSR6): não mostra "potencial extremo" (preço justo antigo não vale quando a faixa existe mas está indisponível)', !/potencial extremo/.test(BR.w) && !BR.ext && !BR.sanidadeSemFaixa, BR);
+  ok('E3 (extra): sem faixa vai para Em verificação com o motivo', E3.g.D.length === 0 && E3.g.X.join() === 'SEMF3' && /faixa indisponível: sem histórico da CVM/.test(E3.g.w), E3.g);
+  /* E3 (C2): cabeçalho e nota das Ideias dizem Potencial, não Esperado */
+  const CAB = await p.evaluate(() => {
+    const ant = opData, o = { tk: 'XXXX3', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: ['Energia', ''], alr: [], pos: [], neg: [] }, V: null, score: 7, al: [], cf: { n: 'Alta', w: [], f: 1 }, gq: { t: '', fraca: false, w: [] } };
+    opData = () => ({ W: [o], M: [], D: [o], X: [], n: 0, cand: 10, skipC: 0, skipV: 0, skipF: 3, skipS: 0 }); const v0 = OPV;
+    try { OPV = 'lst'; const a = oppHtml(); OPV = 'gar'; const b = oppHtml(); return { a: a, b: b }; } finally { opData = ant; OPV = v0; }
+  });
+  ok('E3 (C2): cabeçalho da lista diz Potencial (nunca Esperado)', /<span>Potencial<\/span>/.test(CAB.a) && !/<span>Esperado<\/span>/.test(CAB.a) && /<span>Potencial<\/span>/.test(CAB.b), CAB.a.slice(0, 300));
+  ok('E3 (C2): nota explica Potencial sem prometer retorno e conta as ações acima da faixa', /A coluna Potencial mostra quanto o preço de hoje teria de subir/.test(CAB.b) && /Não é retorno anual nem promessa/.test(CAB.b) && /3 ficaram de fora por estarem acima disso/.test(CAB.b) && !/retorno esperado/i.test(CAB.b), CAB.b.slice(-900));
+  /* E3 (g): contexto do assistente com o.V=null (banco) não quebra e mantém a linha ALERTAS */
+  const AS = await p.evaluate(() => {
+    const ant = opData, cf = { n: 'Média', w: [], f: 0.8 };
+    opData = () => ({ D: [{ tk: 'BANC4', score: 8.2, V: null, cf: cf, fx: { ok: true, espPct: 0.214, cons: 10, oti: 18, F: brl } }, { tk: 'PEND3', score: 7, V: null, fx: { ok: false, pend: true } }], W: [{ tk: 'XXXX3', al: [['ok', 'Abaixo do cenário conservador', 'x']] }], M: [], X: [] });
+    try { return asCtx('oi', { op: 1 }); } finally { opData = ant; }
+  });
+  ok('E3 (g): assistente lista IDEIAS NOVAS com potencial e faixa, sem quebrar com V=null', /IDEIAS NOVAS \(/.test(AS) && /BANC4 nota 8,2, potencial até o valor justo \+21%, faixa R\$\s?10,00 a R\$\s?18,00, confiança média/.test(AS) && !/GARIMPO/.test(AS) && !/PEND3/.test(AS), AS);
+  ok('E3 (g): linha ALERTAS continua no contexto', /ALERTAS: XXXX3: Abaixo do cenário conservador/.test(AS), AS);
   ok('nenhum erro de JavaScript', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Ideias: ' + total + ' conferências ok');
