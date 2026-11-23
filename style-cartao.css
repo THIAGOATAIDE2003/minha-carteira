@@ -28,9 +28,12 @@
 .opd .bal,.opf .bal{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin-top:-14px;margin-bottom:-14px;vertical-align:middle}
 .opf{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
 .opfb{min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--fg);font:600 14px var(--sans)}
-.opfb[aria-pressed="true"]{background:var(--tint);border:2px solid var(--fg)}
+.opfb[aria-pressed="true"]{border:2px solid var(--fg)}
 .oplg{margin:2px 0 6px;font-size:13px;color:var(--muted)}.opfp{margin-left:6px}
 .opk.ver .opt b,.opk.ver .opn b,.opk.ver .opu b{font-weight:500}
 @media (prefers-reduced-motion:reduce){.opch{transition:none}}
 .opk.ver .opl{font-size:13px;gap:0 10px}.opk.ver .opx{padding:4px 0}
-.opd .bal{margin-left:-14px;margin-right:-14px}.opd .opq2{display:block}.opd .fqb,.opd .opw{color:var(--fg)}
+.opd .bal{margin-left:-14px}.opd .opq2{display:block}.opd .fqb,.opd .opw{color:var(--fg)}
+.opl,.opbn,.opk1 small,.opn small,.opu small{line-height:1.2}.opbn>span{line-height:1.15}.opbb{height:14px;margin:3px 7px}.opx{padding:4px 0}.opx3{margin-top:1px}.opk{padding:3px 0 1px}
+@media (max-width:340px){.opar~.opcf:not(.warn){display:none}}
+.opbb{margin:2px 7px}.opx3{margin-top:0}.opx{padding:3px 0}

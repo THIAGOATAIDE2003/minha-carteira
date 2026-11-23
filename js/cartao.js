@@ -8,6 +8,7 @@ var OPOPEN={},OPF='todas',OPFN={todas:'Todas',div:'Dividendos',risco:'Menor risc
 try{OPF=localStorage.getItem(LS+'-opf')||'todas'}catch(e){}if(!OPFN[OPF])OPF='todas';
 function opOk(v){return typeof v==='number'&&isFinite(v)&&v>0}
 function opFin(o){return !!((o.sd&&(o.sd.bank||o.sd.seg))||(o.fx&&(o.fx.bank||o.fx.seg)))}
+function opMoeda(F,v){return typeof v==='number'&&isFinite(v)&&v>=0?F.format(v):'—'}
 function opId(tk){return 'opd-'+String(tk).replace(/[^A-Za-z0-9]/g,'')}
 /* uma etiqueta: preço de hoje contra [conservador, otimista] */
 function opEtiq(o){var f=o&&o.fx,px=o&&o.d&&o.d.price;if(f&&f.pend)return {t:'Calculando…',c:'nd'};
@@ -39,17 +40,17 @@ function opPot(o){var f=o.fx;return f&&f.ok&&typeof f.espPct==='number'&&isFinit
 function opPotTxt(p){if(p==null)return '—';var a=Math.abs(p);return a<0.05?'0,0%':a>999?(p>0?'>999%':'<−999%'):(p>0?'+':'−')+num(a,1)+'%'}
 function opCartao(o,add,ver){var cur=o.d.cur,F=cur==='USD'?usd:brl,sc=o.score,e=opEtiq(o),open=!!OPOPEN[o.tk],n=opAtencao(o),inW=wlist().indexOf(o.tk)>=0,f=o.fx,id=opId(o.tk),tk=esc(o.tk),
     pu=opPot(o),scT=sc!=null?num(sc,1):'—',cft=opConfTxt(o),nd=e.c==='nd',mot=nd&&e.t==='Faixa indisponível'?opMotivo(o):'',prev=nd?opPrev(o):'',bar=!ver&&!nd,tr=f&&f.ok&&f.trap,
-    lb=o.tk+', '+(nd?e.t.toLowerCase().replace('…',''):'preço '+e.r)+(mot?': '+mot:'')+'. '+(tr?'Armadilha de valor. ':'')+'Preço '+opSpeak(o.d.price,cur)+'. '+(!nd&&bar?'Faixa de '+num(f.cons,2)+' a '+num(f.oti,2)+(cur==='USD'?' dólares':' reais')+(opOk(f.cen)?', central '+num(f.cen,2):'')+'. ':'')+(cft?cft.replace(' ⚠','')+'. ':'')+(n?n+(n>1?' pontos':' ponto')+' de atenção. ':'')+'Toque duas vezes para '+(open?'fechar':'abrir')+' os detalhes.',
+    lb=o.tk+', '+(nd?e.t.toLowerCase().replace('…',''):'preço '+e.r)+(mot?': '+mot:'')+'. '+(tr?'Armadilha de valor. ':'')+(opOk(o.d.price)?'Preço '+opSpeak(o.d.price,cur)+'. ':'Preço indisponível. ')+(!nd&&bar?'Faixa de '+num(f.cons,2)+' a '+num(f.oti,2)+(cur==='USD'?' dólares':' reais')+(opOk(f.cen)?', central '+num(f.cen,2):'')+'. ':'')+(cft?cft.replace(' ⚠','')+'. ':'')+(n?n+(n>1?' pontos':' ponto')+' de atenção. ':'')+'Toque duas vezes para '+(open?'fechar':'abrir')+' os detalhes.',
     av=opAvisos(o),
     avH=av.length?'<div class="opav"><b>⚠ '+n+(n>1?' pontos':' ponto')+' de atenção</b><ul>'+av.map(function(a){return '<li><b>'+esc(a[0])+':</b> '+esc(a[1])+'</li>'}).join('')+'</ul></div>':'',
     cfH=o.cf?'<p class="fql opq2"><b>Confiança '+esc(o.cf.n.toLowerCase())+'</b>'+(o.cf.w.length?': '+esc(o.cf.w.join('; '))+'.':(o.gq?': '+esc(o.gq.t):''))+'</p>':'',
     alH=o.al&&o.al.length?'<ul class="opal">'+o.al.filter(function(a){return !(f&&f.ok&&/cenário conservador|cenário otimista/.test(a[1]))}).slice(0,3).map(function(a){return '<li>'+rkLvl(a[0])+'<span><b>'+a[1]+'</b> '+a[2]+'</span></li>'}).join('')+'</ul>':'';
-  return '<div class="opk'+(ver?' ver':'')+'"><div class="opk1"><button type="button" class="opt" data-stk="'+tk+'" aria-label="Abrir a página da ação '+tk+'">'+tkLogo(o.tk,cur==='USD')+'<span><b>'+tk+'<i aria-hidden="true"> ›</i></b><small>'+esc(F.format(o.d.price))+'</small></span></button>'+
+  return '<div class="opk'+(ver?' ver':'')+'"><div class="opk1"><button type="button" class="opt" data-stk="'+tk+'" aria-label="Abrir a página da ação '+tk+'">'+tkLogo(o.tk,cur==='USD')+'<span><b>'+tk+'<i aria-hidden="true"> ›</i></b><small>'+esc(opMoeda(F,o.d.price))+'</small></span></button>'+
     '<span class="opn"><span aria-hidden="true"><b>'+scT+'</b><small>nota</small></span><span class="sr">'+(sc!=null?'Nota '+scT+' de 10':'Nota indisponível')+'</span></span>'+
     '<span class="opu"><span aria-hidden="true"><b>'+opPotTxt(pu)+'</b><small>potencial</small></span><span class="sr">'+(pu==null?'Potencial indisponível':'Potencial de '+(pu<0?'baixa':'alta')+' de '+num(Math.abs(pu),1)+' por cento')+'</span></span>'+
     (add?'<button type="button" class="opa" data-wtog="'+tk+'" aria-label="'+(inW?'Parar de acompanhar ':'Acompanhar ')+tk+'">'+(inW?'★':'☆')+'</button>':'<span></span>')+'</div>'+
     '<button type="button" class="opx" data-opx="'+tk+'" aria-expanded="'+open+'" aria-controls="'+id+'" aria-label="'+esc(lb)+'">'+(bar?opBarraHtml(o):'')+
-    '<span class="opx3"><span class="opl"><span class="opet"><i class="opdt d-'+(e.c==='abaixo'||e.c==='acima'?e.c:'dentro')+'" aria-hidden="true"></i><b>'+esc(e.t)+'</b></span>'+(mot?'<span class="opmu">'+esc(mot)+'</span>':'')+(cft?'<span class="opmu">'+esc(cft)+'</span>':'')+(tr?'<b class="opar">Armadilha de valor</b>':'')+(prev?'<span class="opmu">'+esc(prev)+'</span>':'')+'</span>'+
+    '<span class="opx3"><span class="opl"><span class="opet"><i class="opdt d-'+(e.c==='abaixo'||e.c==='acima'?e.c:'dentro')+'" aria-hidden="true"></i><b>'+esc(e.t)+'</b></span>'+(mot?'<span class="opmu">'+esc(mot)+'</span>':'')+(tr?'<b class="opar">Armadilha de valor</b>':'')+(cft?'<span class="opmu opcf'+(o.cf&&(o.cf.n==='Baixa'||o.cf.ext||o.cf.fx)?' warn':'')+'">'+esc(cft)+'</span>':'')+(prev?'<span class="opmu">'+esc(prev)+'</span>':'')+'</span>'+
     '<span class="opend" aria-hidden="true">'+(n?'<span class="opwn">⚠ '+n+'</span>':'')+'<span class="opch">⌄</span></span></span></button>'+
     '<div class="opd" id="'+id+'"'+(open?'':' hidden')+'>'+avH+fxRow(o)+porqueRow(o)+saudeRow(o)+cfH+macroRow(o)+parRow(o)+alH+'</div></div>'}
 /* filtros: Todas · Dividendos · Menor risco (pelo perfil). Em verificação nunca é filtrada */
@@ -60,7 +61,7 @@ function opMenorRisco(o,tipo){tipo=tipo||'Moderado';var sd=o.sd,f=o.fx,cf=o.cf;i
   if(tipo==='Conservador')return n===0&&!(sd.desc&&sd.desc.length)&&(cx||(m.dlpl!=null&&m.dlpl<=0.5))&&!!q&&q.ap>=4&&q.ps>=4&&!f.trap&&!o.vento&&!(o.vm&&o.vm.v<0);
   if(tipo==='Moderado')return n===0&&(cx||(m.dlpl!=null&&m.dlpl<=1))&&!f.trap;
   return n<=1}
-function opTipoPerfil(){var t=null;try{if(pfOk())t=pfTipo()}catch(e){}return t}
+function opTipoPerfil(){var t=null;try{if(pfOk())t=pfTipo()}catch(e){}return t&&(t[0]||t)||null}
 function opFiltra(D,k){var t=opTipoPerfil()||'Moderado';return k==='div'?D.filter(opDividendos):k==='risco'?D.filter(function(o){return opMenorRisco(o,t)}):D}
 function opFiltroHtml(D){var t=opTipoPerfil(),tm=t||'Moderado',c={todas:D.length,div:D.filter(opDividendos).length,risco:D.filter(function(o){return opMenorRisco(o,tm)}).length},
   bt=function(k){return '<button type="button" class="opfb" data-opf="'+k+'" aria-pressed="'+(OPF===k)+'">'+OPFN[k]+' '+c[k]+'</button>'},

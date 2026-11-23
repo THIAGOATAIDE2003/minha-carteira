@@ -19,6 +19,7 @@ jobs:
       - run: node tests/faixa.js
       - run: node tests/saude.js
       - run: node tests/qualidade.js
+      - run: node tests/cartao.js
       - run: node tests/foto.js
       - run: node tests/macro.js
       - run: node tests/parecer.js
