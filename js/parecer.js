@@ -2,8 +2,8 @@
    A IA só recebe o pacote JSON de parPacote() (números que o app já calculou) e só interpreta. O texto passa por parValida() (js/parecer-nucleo.js):
    se algum número não existir no pacote, o parecer é descartado e aparece "Parecer indisponível". Cache por ação + data do último balanço + versão do modelo de valuation. */
 var PARTEMP=0.2,PARMS=15000,PAR={busy:null,err:{},open:{}};
-var PARON=false; /* o botão só aparece quando for true (ligado depois do teste de consistência) */
-var PARORD=null; /* 'gem' ou 'groq' força a ordem dos provedores; null = a escolha do app (S.asia) */
+var PARON=true; /* o botão só aparece quando for true (ligado depois do teste de consistência) */
+var PARORD='groq'; /* 'gem' ou 'groq' força a ordem dos provedores; null = a escolha do app (S.asia) */
 function parMod(){return 'fx:'+FXW.join('/')+':'+FXTOL+':'+FXMC+':'+FXPAY+':'+FXN+'|sd:'+[SDPL,SDLL,SDCOB,SDEB,SDEBL,SDMAXS].join('/')+'|p2'}
 function parKey(o,D){var u=D&&D.t&&D.t.length?D.t[D.t.length-1].ref:'sem-balanco';return o.tk+'|'+u+'|'+parMod()}
 function parLer(){try{return JSON.parse(localStorage.getItem(LS+'-parecer')||'{}')||{}}catch(e){return {}}}

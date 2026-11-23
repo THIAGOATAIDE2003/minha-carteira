@@ -150,3 +150,13 @@ Robô: `scripts/copom.py` (chamado na rodada completa de `mercado.py`, no máxim
 - **Ranking**: contrário tira `MCPEN` (12) pontos de `base` em `opData` (não elimina). `macroKey()` entra na chave do cache de `opData`.
 - **Aviso de concentração** (`macroConc`): em Ideias novas, se mais de 50% das ideias (mínimo 3) dependem da mesma variável (`macroDep`: queda da Selic, Selic alta, dólar alto, dólar baixo) mostra "Atenção: n de t ideias dependem de …".
 - Testes: `node tests/macro.js` (CI) e, no repo de dados, `python3 scripts/test_macro.py`.
+
+## Parecer da IA (js/parecer-nucleo.js + js/parecer.js, 1.71.0)
+- Botão "Ver parecer" em cada ideia (`opRow` → `parRow`), só sob demanda. `PARON` liga/desliga o botão; `PARORD` define o provedor que responde primeiro (hoje 'groq', o único testado a fundo); o outro entra de reserva.
+- **Pacote** (`parPacote(o)`): JSON só com números já calculados (faixa, margem, retorno esperado, lucro normalizado, atípicos, tendências ano×ano e tri×tri, saúde, riscos, vento macro, confiança, limitações), já arredondados na unidade que a IA deve usar (valores em milhões). Não leva chave, carteira nem posição do usuário.
+- **Pedido** (`PARSYS`): a IA só interpreta; estrutura fixa (Resumo + `Leitura:`, a favor, preocupa, me faria estar errado, acompanhar); se houver limitação ou confiança baixa, avisa no início e não conclui forte.
+- **Validador** (`parValida`, puro, roda igual no Node): extrai os números do texto (milhar com ponto ou espaço, vírgula decimal) e exige que cada um exista no pacote, com arredondamento; confere os 5 títulos na ordem, a linha `Leitura:`, ausência de "compre/venda", aviso inicial quando há limitação e Leitura não "a favor" com confiança baixa. Reprovou = descarta e mostra "Parecer indisponível". A frase final "Material para estudo, não é recomendação de compra." é acrescentada pelo código.
+- **Cache** por ação em localStorage `<LS>-parecer` (máx. 40), chave = ação + data do último balanço + versão do modelo (`parMod()`: pesos/margens da faixa, limites de saúde e versão do pedido `pN`). Reprovados e falhas não vão para o cache.
+- **Tempo**: aborta em `PARMS` (15 s) e mostra mensagem simples. `ASTEMP` (assistente-chat.js) deixa o parecer usar temperatura 0,2 sem mexer no resto.
+- **Teste de consistência**: `scripts/parecer_teste.js` + workflow `parecer-teste.yml` no repo de dados (chaves dos segredos do robô, mesmo pedido e mesmo validador); resultados em `testes/parecer-resultado*.json`.
+- Testes: `node tests/parecer.js` (IA simulada).
