@@ -24,6 +24,8 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   const pk = await E(() => parPacote(O));
   ok('pacote tem faixa, margem, retorno, balanço e limitações vazias', pk.faixa.conservador === 12.34 && pk.faixa.margem_de_seguranca_pct === 17.5 && pk.faixa.retorno_esperado_pct === 52.3 && pk.balanco.ultimo === '3T26' && pk.limitacoes.length === 0, pk);
   ok('pacote traz tendência e lucro atípico', pk.tendencias.ano_contra_ano.itens[0].variacao_pct === 28.6 && pk.lucros_atipicos[0].lucro_milhoes === 500, pk.tendencias);
+  const n2 = await E(() => parNums('R$ 1 585 milhões e 1.585 e 12 000 e 3 585 mil').map(x => x.v));
+  ok('milhar com espaço vira um número só', JSON.stringify(n2) === JSON.stringify([1585, 1585, 12000, 3585]), n2);
   const bom = '## Resumo\nA ação está abaixo do cenário conservador, com margem de segurança de 17,5%.\nLeitura: a favor\n## O que está a favor\n- Preço de 10,5 contra conservador de 12,34.\n- Retorno esperado de 52,3%.\n## O que preocupa\n- Margem líquida caiu 1,7 p.p. em um ano.\n- O balanço 3T26 tem lucro atípico de 500 milhões.\n## O que me faria estar errado\n- Se o lucro normalizado de 100 milhões por trimestre não se sustentar.\n## O que acompanhar no próximo balanço\n- Margem líquida e caixa operacional.\n';
   const V = (t, k) => p.evaluate(([t, k]) => { const x = parValida(t, k || window.PK); return { ok: x.ok, motivo: x.motivo, tem: x.texto ? x.texto.endsWith(PARFIM) : null }; }, [t, k]);
   await E((k) => { window.PK = k; }, pk);

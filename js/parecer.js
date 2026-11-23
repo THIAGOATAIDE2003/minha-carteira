@@ -4,7 +4,7 @@
 var PARTEMP=0.2,PARMS=15000,PAR={busy:null,err:{},open:{}};
 var PARON=false; /* o botão só aparece quando for true (ligado depois do teste de consistência) */
 var PARORD=null; /* 'gem' ou 'groq' força a ordem dos provedores; null = a escolha do app (S.asia) */
-function parMod(){return 'fx:'+FXW.join('/')+':'+FXTOL+':'+FXMC+':'+FXPAY+':'+FXN+'|sd:'+[SDPL,SDLL,SDCOB,SDEB,SDEBL,SDMAXS].join('/')+'|p1'}
+function parMod(){return 'fx:'+FXW.join('/')+':'+FXTOL+':'+FXMC+':'+FXPAY+':'+FXN+'|sd:'+[SDPL,SDLL,SDCOB,SDEB,SDEBL,SDMAXS].join('/')+'|p2'}
 function parKey(o,D){var u=D&&D.t&&D.t.length?D.t[D.t.length-1].ref:'sem-balanco';return o.tk+'|'+u+'|'+parMod()}
 function parLer(){try{return JSON.parse(localStorage.getItem(LS+'-parecer')||'{}')||{}}catch(e){return {}}}
 function parGravar(tk,k,v){var c=parLer();c[tk]=Object.assign({k:k},v);var ks=Object.keys(c);if(ks.length>40){ks.sort(function(a,b){return (c[a].at||0)-(c[b].at||0)}).slice(0,ks.length-40).forEach(function(x){delete c[x]})}try{localStorage.setItem(LS+'-parecer',JSON.stringify(c))}catch(e){}}
@@ -15,7 +15,7 @@ function parCmp(c){if(!c)return null;return {de:c.de,para:c.para,tendencia:c.ten
 /* o pacote: só números já calculados pelo app, já arredondados e na unidade que a IA deve usar */
 function parPacote(o){var D=fxDoc(o.tk),f=o.fx,sd=o.sd,m=sd&&sd.m,cf=o.cf,lim=[],last=D&&D.t&&D.t.length?D.t[D.t.length-1]:null,mo=o.d.cur==='USD'?'US$':'R$';
   var verif=!!(o.fxDem||(cf&&(cf.n==='Baixa'||cf.ext)));
-  var pk={ativo:o.tk,moeda:mo,preco:parR(o.d.price,2),setor:setorOf(o.tk).k||null,nota_de_0_a_10:parR(o.score,1),situacao:verif?'em verificação (ainda não é ideia)':'ideia',
+  var pk={ativo:o.tk,moeda:mo,preco:parR(o.d.price,2),setor:setorOf(o.tk).k||null,nota:{valor:parR(o.score,1),minimo:0,maximo:10},situacao:verif?'em verificação (ainda não é ideia)':'ideia',
     balanco:last?{ultimo:hiQ(last),data:parDmy(last.ref)}:null};
   if(o.fxDem)lim.push('em verificação: '+o.fxDem);
   if(f&&f.ok){var nm=f.nm;pk.faixa={conservador:parR(f.cons,2),central:parR(f.cen,2),otimista:parR(f.oti,2),preco_hoje_frente_ao_conservador:f.est==='abaixo'?'abaixo do conservador':f.est==='perto'?'muito perto do conservador':'acima do conservador',

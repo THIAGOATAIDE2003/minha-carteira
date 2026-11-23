@@ -12,6 +12,7 @@ var PARSYS='Você escreve um parecer curto e honesto sobre UMA ação brasileira
 '- Não preveja preço, não dê probabilidade e não diga para comprar ou vender.\n'+
 '- Se "limitacoes" tiver itens, ou a confiança for baixa, ou faltar dado, a PRIMEIRA frase do Resumo diz isso (por exemplo "A confiança nos dados é baixa: ...") e você não tira conclusão forte; a Leitura deve ser "equilibrada" ou "com cautela".\n'+
 '- Seja o advogado do diabo: em "O que preocupa", tente derrubar a tese com o que o próprio pacote mostra.\n'+
+'- Se o pacote tiver "vento_macro": favorável entra em "O que está a favor" e contrário entra em "O que preocupa", sempre com a razão que está no pacote.\n'+
 'FORMATO FIXO (exatamente estes 5 títulos, nesta ordem, cada um numa linha começando com ##):\n'+
 '## Resumo\n(2 linhas. Na última linha, escreva exatamente "Leitura: a favor", "Leitura: equilibrada" ou "Leitura: com cautela".)\n'+
 '## O que está a favor\n(2 a 3 itens curtos começando com "- ")\n'+
@@ -20,7 +21,7 @@ var PARSYS='Você escreve um parecer curto e honesto sobre UMA ação brasileira
 '## O que acompanhar no próximo balanço\n(2 a 3 itens curtos começando com "- ")\n'+
 'No máximo 230 palavras no total. Não escreva mais nada depois do último item (a frase final é acrescentada pelo app).';
 /* --- números --- */
-function parNums(txt){var s=String(txt==null?'':txt).replace(/[−–]/g,'-'),m=s.match(/\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?/g)||[];
+function parNums(txt){var s=String(txt==null?'':txt).replace(/[−–]/g,'-').replace(/(\d)[\u00a0\u202f\u2009 ](?=\d{3}(?!\d))/g,'$1.'),m=s.match(/\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?/g)||[];
   return m.map(function(x){var d=0,v;if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(x)){var p=x.split(',');d=p[1]?p[1].length:0;v=parseFloat(p[0].replace(/\./g,'')+(p[1]?'.'+p[1]:''))}
     else{var q=x.split(/[.,]/);d=q[1]?q[1].length:0;v=parseFloat(x.replace(',','.'))}return {v:v,d:d,s:x}})}
 /* todos os números do pacote: valores numéricos e números dentro dos textos */
