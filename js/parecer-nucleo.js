@@ -26,6 +26,7 @@ function parAtencao(pk){var a=[],f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_m
   if(sd&&sd.testes_reprovados_de_3===1)a.push('1 teste de saúde financeira reprovado');
   if(f&&f.retorno_esperado_pct>100)a.push('retorno esperado acima de 100%');
   if((pk.lucros_atipicos||[]).some(function(n){return n.recente}))a.push('lucro atípico nos últimos 4 trimestres');
+  if(pk.nao_avaliado&&pk.nao_avaliado.length)a.push('dados específicos do setor não avaliados');
   var l=parIt(tl,'Lucro'),m=parIt(tl,'Margem líquida');if((l&&l.variacao_pct<0)||(m&&m.variacao_pp<=-1))a.push('lucro ou margem do ano piorando');
   return a}
 function parLeitura(pk){var hard=[],sd=pk.saude_financeira,cf=pk.confianca;
@@ -35,6 +36,31 @@ function parLeitura(pk){var hard=[],sd=pk.saude_financeira,cf=pk.confianca;
   if(!pk.faixa)hard.push('sem faixa de preço justo');
   var at=parAtencao(pk),l=hard.length||at.length>=2?'com cautela':at.length===1?'equilibrada':'a favor';
   return {leitura:l,motivos:hard.concat(at),regra:l==='com cautela'?(hard.length?'trava forte':'2 ou mais pontos de atenção'):l==='equilibrada'?'1 ponto de atenção':'nenhum ponto de atenção'}}
+/* fatos próprios de bancos, seguradoras e bolsa (pk.financeira): tudo vem de números já calculados em banco.js e seguradora.js */
+function parFinFatos(pk){var F=pk.financeira,f=pk.faixa,fav=[],pre=[],err=[],ace=[],na=pk.nao_avaliado||[],pay=F.payout_pct,fj=function(a){return a.length>1?a.slice(0,-1).join(', ')+' e '+a[a.length-1]:a[0]||''};
+  if(F.tipo==='banco'){
+    if(F.roe_sustentavel_pct>F.custo_de_capital_pct)fav.push('O ROE sustentável de '+parF(F.roe_sustentavel_pct,1)+'% (mediana de '+F.trimestres_com_roe+' trimestres) está acima do custo de capital de '+parF(F.custo_de_capital_pct,0)+'%.');
+    else pre.push(['O ROE sustentável de '+parF(F.roe_sustentavel_pct,1)+'% está abaixo do custo de capital de '+parF(F.custo_de_capital_pct,0)+'%.',true]);
+    if(F.pvp_hoje<F.pvp_justo_central)fav.push('O P/VP de hoje ('+parF(F.pvp_hoje,2)+'×) está abaixo do P/VP justo do cenário central ('+parF(F.pvp_justo_central,2)+'×).');
+    else pre.push(['O P/VP de hoje ('+parF(F.pvp_hoje,2)+'×) está acima do P/VP justo do cenário central ('+parF(F.pvp_justo_central,2)+'×).']);
+    if(F.roe_ultimo_pct!=null&&F.roe_ultimo_pct<F.roe_conservador_pct)pre.push(['O ROE mais recente ('+parF(F.roe_ultimo_pct,1)+'%) está abaixo do ROE do cenário conservador ('+parF(F.roe_conservador_pct,1)+'%).']);
+    err.push('O custo de capital subir de '+parF(F.custo_de_capital_pct,0)+'% para '+parF(F.preco_justo_central_com_custo_maior.custo_pct,0)+'%: o preço justo central cairia para '+parP(pk,F.preco_justo_central_com_custo_maior.preco)+'.');
+    err.push('O ROE cair para o do cenário conservador ('+parF(F.roe_conservador_pct,1)+'%): o preço justo seria '+parP(pk,f.conservador)+'.');
+    ace.push('O ROE do próximo balanço contra o ROE sustentável de '+parF(F.roe_sustentavel_pct,1)+'%.');
+  }else{
+    var nome=F.tipo==='bolsa'?'da bolsa':'da seguradora';
+    if(F.pl_hoje!=null){if(F.pl_hoje<F.pl_alvo_central)fav.push('O P/L de hoje ('+parF(F.pl_hoje,1)+'×) está abaixo do P/L alvo central ('+parF(F.pl_alvo_central,1)+'×).');
+      else if(F.pl_hoje>F.pl_alvo_otimista)pre.push(['O P/L de hoje ('+parF(F.pl_hoje,1)+'×) está acima do P/L alvo do cenário otimista ('+parF(F.pl_alvo_otimista,1)+'×).',true]);
+      else if(F.pl_hoje>F.pl_alvo_central)pre.push(['O P/L de hoje ('+parF(F.pl_hoje,1)+'×) está acima do P/L alvo central ('+parF(F.pl_alvo_central,1)+'×).'])}
+    if(F.rendimento_sustentavel_pct!=null&&F.dividendo_sustentavel_por_acao!=null)fav.push('O dividendo sustentável é de '+parP(pk,F.dividendo_sustentavel_por_acao)+' por ação, '+parF(F.rendimento_sustentavel_pct,1)+'% do preço.');
+    err.push('O lucro por ação ficar no do cenário conservador ('+parP(pk,F.lucro_por_acao_conservador)+').');
+    err.push('O P/L cair para o do cenário conservador ('+parF(F.pl_alvo_conservador,1)+'×): o preço justo seria '+parP(pk,F.preco_justo_com_pl_conservador)+'.');
+    if(F.dividendo_por_acao!=null&&pay!=null)ace.push('O dividendo por ação ('+parP(pk,F.dividendo_por_acao)+') contra o lucro por ação normalizado do cenário central.')}
+  if(pay!=null){if(pay>100)pre.push(['O payout de '+parF(pay,0)+'% passa de 100% do lucro.',true]);else if(F.tipo==='banco')fav.push('Os dividendos pagos equivalem a '+parF(pay,0)+'% do lucro, abaixo de 100%.');}
+  if(pay!=null)ace.push('O payout (hoje: '+parF(pay,0)+'%).');
+  pre.unshift(['Não foram avaliados, por falta de dado no app: '+fj(na)+'.',true]);
+  ace.push('Nos relatórios da empresa: '+fj(na)+', que o app não avalia.');
+  return {fav:fav,pre:pre,err:err,ace:ace}}
 /* ---------- 2) FATOS E GATILHOS (frases curtas, com os números do pacote) ---------- */
 function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl=pk.tendencias&&pk.tendencias.ano_contra_ano,lim=sd&&sd.limites||{},
     fav=[],pre=[],err=[],ace=[],nm=f&&f.lucro_normalizado,cons=f&&f.premissas&&f.premissas[0],
@@ -43,13 +69,15 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   /* a favor */
   if(f&&f.margem_de_seguranca_pct>=0&&f.preco_hoje_frente_ao_conservador==='abaixo do conservador')add(fav,'O preço de '+parP(pk,pk.preco)+' está abaixo do cenário conservador de '+parP(pk,f.conservador)+' (margem de segurança de '+parF(f.margem_de_seguranca_pct,1)+'%).');
   if(vm&&vm.resultado==='favorável')add(fav,'Vento macro favorável: '+vm.razao);
-  if(sd&&sd.testes_reprovados_de_3===0){var sx=[];if(sd.caixa_maior_que_a_divida)sx.push('a empresa tem mais caixa do que dívida');else if(sd.divida_liquida_sobre_patrimonio!=null)sx.push('dívida líquida de '+parX(sd.divida_liquida_sobre_patrimonio)+'× o patrimônio');if(sd.cobertura_de_juros!=null)sx.push('o lucro da operação cobre '+parF(sd.cobertura_de_juros,1)+'× os juros');add(fav,'Os 3 testes de saúde financeira passaram'+(sx.length?': '+sx.join(' e ')+'.':'.'))}
+  if(sd&&!pk.financeira&&sd.testes_reprovados_de_3===0){var sx=[];if(sd.caixa_maior_que_a_divida)sx.push('a empresa tem mais caixa do que dívida');else if(sd.divida_liquida_sobre_patrimonio!=null)sx.push('dívida líquida de '+parX(sd.divida_liquida_sobre_patrimonio)+'× o patrimônio');if(sd.cobertura_de_juros!=null)sx.push('o lucro da operação cobre '+parF(sd.cobertura_de_juros,1)+'× os juros');add(fav,'Os 3 testes de saúde financeira passaram'+(sx.length?': '+sx.join(' e ')+'.':'.'))}
   if(tl&&tl.tendencia==='melhorando'&&lucA&&mlA&&lucA.variacao_pct!=null&&mlA.variacao_pp!=null)add(fav,'De '+tl.de+' para '+tl.para+', '+parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu')+' e '+parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu')+' (tendência: melhorando).');
   if(f&&f.retorno_esperado_pct>0&&f.retorno_esperado_pct<=100)add(fav,'O retorno esperado pelo modelo (média ponderada dos 3 cenários contra o preço de hoje) é de '+parF(f.retorno_esperado_pct,1)+'%.');
   if(cx!=null&&cx>0)add(fav,'O caixa operacional dos últimos 12 meses foi de '+parI(cx)+' milhões.');
+  var fn=pk.financeira?parFinFatos(pk):null;if(fn)fn.fav.forEach(function(t){add(fav,t)});
   /* preocupam (os obrigatórios entram primeiro) */
   var lm=(pk.limitacoes||[]).filter(function(x,i,a){return a.indexOf(x)===i});
   if(lm.length)add(pre,'Limitação nos dados: '+lm.join('; ')+'.',true);
+  if(fn)fn.pre.filter(function(x){return x[1]}).forEach(function(x){add(pre,x[0],true)});
   if(vm&&vm.resultado==='contrário')add(pre,'Vento macro contrário: '+vm.razao,true);
   if(f&&f.margem_de_seguranca_pct<0)add(pre,'O preço de '+parP(pk,pk.preco)+' está acima do cenário conservador de '+parP(pk,f.conservador)+' (margem de segurança de '+parF(f.margem_de_seguranca_pct,1)+'%).',true);
   if(f&&f.armadilha_de_valor)add(pre,'Possível armadilha de valor: '+f.armadilha_de_valor+'.',true);
@@ -57,11 +85,13 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   if(sd&&sd.motivos&&sd.motivos.indexOf('cobertura de juros baixa')>=0&&sd.cobertura_de_juros!=null)add(pre,'O lucro da operação cobre só '+parF(sd.cobertura_de_juros,1)+'× os juros (mínimo desejado: '+parF(lim.cobertura_juros,1)+'×).',true);
   if(sd&&cx!=null&&cx<=0)add(pre,'O caixa operacional dos últimos 12 meses foi de '+parI(cx)+' milhões.',true);
   if(f&&f.retorno_esperado_pct>100)add(pre,'O retorno esperado de '+parF(f.retorno_esperado_pct,1)+'% é muito alto: vale conferir com cuidado as premissas da faixa.');
+  if(fn)fn.pre.filter(function(x){return !x[1]}).forEach(function(x){add(pre,x[0])});
   (pk.lucros_atipicos||[]).filter(function(n){return n.recente}).slice(0,1).forEach(function(n){add(pre,'O lucro de '+n.trimestre+' ('+parI(n.lucro_milhoes)+' milhões) ficou '+(n.tipo==='lucro acima do normal'?'acima':'abaixo')+' do normal (mediana de '+parI(n.mediana_milhoes)+' milhões) e pode não se repetir.')});
   if(tl&&((lucA&&lucA.variacao_pct<0)||(mlA&&mlA.variacao_pp<=-1))){var pp=[];if(lucA&&lucA.variacao_pct!=null)pp.push(parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu'));if(mlA&&mlA.variacao_pp!=null)pp.push(parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu'));add(pre,'De '+tl.de+' para '+tl.para+', '+pp.join(' e ')+(/\.$/.test(pp[pp.length-1])?'':'.'))}
   pre=pre.filter(function(x){return x.obr}).concat(pre.filter(function(x){return !x.obr}));
   if(pre.length<2)add(pre,'Mesmo sem alertas fortes nos números, a faixa de preço justo é uma estimativa simples e pode estar errada.');
   /* o que me faria estar errado */
+  if(fn)fn.err.forEach(function(t){add(err,t)});
   if(f&&f.margem_de_seguranca_pct>=0&&cons&&cons.margem_liquida_pct!=null)add(err,'A margem líquida cair até '+parF(cons.margem_liquida_pct,1)+'% (a margem do cenário conservador).');
   if(f&&f.margem_de_seguranca_pct<0)add(err,'O preço cair para perto do cenário conservador de '+parP(pk,f.conservador)+'.');
   if(sd&&sd.cobertura_de_juros!=null)add(err,sd.cobertura_de_juros<lim.cobertura_juros?'A cobertura de juros continuar abaixo de '+parF(lim.cobertura_juros,1)+'× (hoje: '+parF(sd.cobertura_de_juros,1)+'×).':'A cobertura de juros cair abaixo de '+parF(lim.cobertura_juros,1)+'× (hoje: '+parF(sd.cobertura_de_juros,1)+'×).');
@@ -73,7 +103,7 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   var aSaude=[];if(sd&&sd.cobertura_de_juros!=null)aSaude.push('A cobertura de juros (hoje: '+parF(sd.cobertura_de_juros,1)+'×; mínimo desejado: '+parF(lim.cobertura_juros,1)+'×).');
   if(sd&&sd.divida_liquida_sobre_ebitda!=null)aSaude.push('A dívida líquida sobre o EBITDA (hoje: '+parX(sd.divida_liquida_sobre_ebitda)+'×; limite do setor: '+parF(lim.divida_ebitda,1)+'×).');else if(sd&&sd.divida_liquida_sobre_patrimonio!=null&&!sd.caixa_maior_que_a_divida)aSaude.push('A dívida líquida sobre o patrimônio (hoje: '+parX(sd.divida_liquida_sobre_patrimonio)+'×; limite: '+parF(lim.divida_patrimonio,1)+'×).');
   var aLuc=nm?['O lucro do próximo balanço contra a mediana normalizada de '+parI(nm.por_trimestre_milhoes)+' milhões por trimestre.']:[],aMl=mlA&&mlA.variacao_pp!=null?[parVb('A margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu')+' no último ano.']:[],aCx=cx!=null?['O caixa operacional de 12 meses (hoje: '+parI(cx)+' milhões).']:[];
-  (sdFalha?aSaude.concat(aLuc,aMl,aCx):aLuc.concat(aMl,aSaude,aCx)).forEach(function(t){add(ace,t)});
+  var aFin=fn?fn.ace:[];(sdFalha?aSaude.concat(aFin,aLuc,aMl,aCx):aFin.concat(aLuc,aMl,aSaude,aCx)).forEach(function(t){add(ace,t)});
   if(!ace.length)add(ace,'A chegada dos dados que hoje faltam.');
   var id=function(L,p,max){return L.slice(0,max).map(function(x,i){return {id:p+(i+1),txt:x.txt.replace(/\.{2}(?!\.)/g,'.'),obr:x.obr}})};
   return {fav:id(fav,'A',PARMAX.fav),pre:id(pre,'P',PARMAX.pre),err:id(err,'E',PARMAX.err),ace:id(ace,'G',PARMAX.ace)}}
