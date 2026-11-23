@@ -25,8 +25,8 @@ const val = (L0, fm, g, r, m) => { let e = L0 * fm, v = 0; for (let i = 1; i <= 
   const base = await calc(doc(), 10, 8);
   ok('base: lucro normalizado = mediana (100 por trimestre, 400 por ano)', base.ok && base.nm.med === 100 && base.nm.anual === 400 && base.nm.usados === 12 && base.nm.excl.length === 0, base.nm);
   ok('base: lucro por ação = 2 (10 / P/L 5)', perto(base.L0, 2), base.L0);
-  const eC = val(2, 1, 2, 16, 6), eM = val(2, 1, 6, 14, 8), eO = val(2, 1, 9, 13, 9.6);
-  ok('base: premissas dos 3 cenários (g 2/6/9, desconto 16/14/13, múltiplo 6/8/9,6)', base.pr.map(c => c.g).join() === '2,6,9' && base.pr.map(c => c.r).join() === '16,14,13' && base.pr.map(c => c.m).join() === '6,8,9.6', base.pr);
+  const eC = val(2, 1, 6, 14, 6.8), eM = val(2, 1, 6, 14, 8), eO = val(2, 1, 9, 13, 9.6);
+  ok('base: premissas dos 3 cenários (g 6/6/9, desconto 14/14/13, múltiplo 6,8/8/9,6)', base.pr.map(c => c.g).join() === '6,6,9' && base.pr.map(c => c.r).join() === '14,14,13' && base.pr.map(c => c.m).join() === '6.8,8,9.6', base.pr);
   ok('base: valores dos cenários batem com a conta à parte', perto(base.cons, eC) && perto(base.cen, eM) && perto(base.oti, eO), [base.cons, base.cen, base.oti, eC, eM, eO]);
   ok('conservador ≤ central ≤ otimista', base.cons < base.cen && base.cen < base.oti);
   ok('retorno esperado = 25% conservador + 50% central + 25% otimista', perto(base.esp, 0.25 * eC + 0.5 * eM + 0.25 * eO) && perto(base.espPct, base.esp / 10 - 1), base.esp);
@@ -52,11 +52,15 @@ const val = (L0, fm, g, r, m) => { let e = L0 * fm, v = 0; for (let i = 1; i <= 
   ok('com ações: lucro por ação = 800 (mediana 200 × 4) ÷ 100 ações, sem limitar a razão', Ac.ok && perto(Ac.L0, 8) && Ac.lim === false && Ac.base === 'acoes', [Ac.L0, Ac.lim, Ac.base]);
   ok('com ações: valor do central bate com a conta à parte', perto(Ac.cen, val(8, 1, 6, 14, 8)), Ac.cen);
   ok('sem ações usa o P/L e marca a base', base.base === 'pl');
+    /* 2c. regra antiga (4 cortes) continua disponível só para comparar */
+  const Old = await p.evaluate((d) => { MD.d = { idx: { selic: { last: 13 } } }; VALP = {}; return fxCalc(d, 10, { pl: 5, cr5: 6 }, 8, 'TEST3', null, true); }, doc());
+  ok('regra antiga: conservador com g−4, desconto+2 e múltiplo 0,75×, bem menor que o novo', perto(Old.cons, val(2, 1, 2, 16, 6)) && Old.cons < base.cons, [Old.cons, base.cons]);
+  ok('novo conservador só difere do central em margem e múltiplo', base.pr[0].g === base.pr[1].g && base.pr[0].r === base.pr[1].r && base.pr[0].m < base.pr[1].m);
   /* 3. margem: cenário conservador usa o percentil 25 e o otimista o 75 */
   const mg = doc((r, i) => { r.ml = [8, 10, 10, 10, 10, 10, 10, 10, 10, 12, 12, 12][i]; });
   const M1 = await calc(mg, 10, 8);
   ok('margem: conservador ≤ central ≤ otimista nos fatores', M1.ok && M1.pr[0].fm <= 1 && M1.pr[2].fm >= 1 && M1.pr[0].ml <= M1.pr[1].ml && M1.pr[1].ml <= M1.pr[2].ml, M1.pr.map(c => [c.fm, c.ml]));
-  ok('margem: valor do conservador usa o fator de margem', perto(M1.cons, val(M1.L0, M1.pr[0].fm, 2, 16, 6)), M1.cons);
+  ok('margem: valor do conservador usa o fator de margem', perto(M1.cons, val(M1.L0, M1.pr[0].fm, 6, 14, 6.8)), M1.cons);
 
   /* 4. armadilha de valor: lucro ou margem caindo 3 trimestres seguidos */
   const tl = doc((r, i) => { if (i >= 8) r.luc = [100, 95, 90, 85][i - 8]; });
