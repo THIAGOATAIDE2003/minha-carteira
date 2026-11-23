@@ -38,7 +38,7 @@ function qlPrem(o){var q=qualFor(o);if(!q)return '';
   return '<ul class="rkl fqs"><li><b>Qualidade dos lucros (12 meses contra os 12 anteriores)'+pl+'</b> '+bal('Teste simples, ano contra ano, com dados da CVM. Não é nota nem recomendação. Empresa que investe muito pode reprovar em dívida; banco e seguradora têm menos testes porque caixa, dívida e receita não são comparáveis.')+'</li>'+it+(q.ress?'<li>'+rkLvl('at')+'<div><p style="margin:0;color:var(--fg)">⚠ '+esc(q.ress.charAt(0).toUpperCase()+q.ress.slice(1))+'.</p></div></li>':'')+'</ul>'}
 /* até 2 frases curtas, por regra, na ordem de prioridade; tudo vem de o.fx, o.sd, o.ql, o.A (sem IA, nada inventado) */
 function opPorque(o){var P=[],f=o&&o.fx,add=function(t){if(P.length<2)P.push(t)};if(!o||!f||!f.ok)return P;
-  if(f.est==='abaixo')add('abaixo do cenário conservador (margem de '+pf.format(Math.max(0,f.ms*100))+'%)');else if(f.est==='perto')add('muito perto do cenário conservador');
+  if(f.est==='abaixo')add('abaixo do cenário conservador (margem de '+Math.round(Math.max(0,f.ms*100))+'%)');else if(f.est==='perto')add('muito perto do cenário conservador');
   var sd=o.sd;if(sd&&!sd.bank&&!sd.seg&&sd.n===0&&sd.m){if(sd.m.caixa)add('mais caixa que dívida');else if(!(sd.desc||[]).length)add('3 testes de saúde financeira em dia')}
   var D=fxDoc(o.tk),y=D&&D.cmp&&D.cmp.yoy;if(y&&y.tend==='melhorando'){var ch=function(c){var x=(y.itens||[]).filter(function(i){return i.c===c})[0];return x&&x.ch}
     add(ch('luc')>0&&ch('ml')>0?'lucro e margem melhorando':'tendência do último ano melhorando')}
