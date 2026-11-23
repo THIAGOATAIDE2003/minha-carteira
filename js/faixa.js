@@ -44,18 +44,18 @@ function fxCalc(D,P,N,pe,tk,Fu,old){var nm=fxNorm(D);if(!nm.ok)return nm;
   return {ok:true,nm:nm,pr:pr,P:P,cons:cons,cen:cen,cenRaw:cenRaw,oti:pr[2].v,esp:esp,espPct:esp/P-1,ms:(cons-P)/cons,trap:trap,lim:lim,ratio:ratio,L0:L0,base:sh?'acoes':'pl',
     est:rel<=0?'abaixo':rel<=FXTOL?'perto':'acima',opp:rel<=FXTOL}}
 /* calcula a faixa de uma ideia (o vem de opEval): bancos e seguradoras não têm faixa; sem arquivo = indisponível; baixando = pendente */
-function fxFor(o){if(!o)return null;var bk=false;if(opBanco(o)){if(!bkIs(o.tk))return {ok:false,banco:true,motivo:'valuation de banco em breve'};bk=true}
-  var D=fxDoc(o.tk);if(D===undefined)return {ok:false,pend:true,motivo:'calculando a faixa…'};if(D===null)return {ok:false,bank:bk,motivo:'sem histórico da CVM para esta empresa'};
-  try{var A=o.A;if(bk){var B=bkCalc(D,o.d.price,A.N||{},o.tk,fundOf(o.tk));if(B.ok)B.F=brl;else B.bank=true;return B}var F=fxCalc(D,o.d.price,A.N||{},A.pe&&A.pe.pl,o.tk,fundOf(o.tk),FXOLD);if(F.ok)F.F=o.d.cur==='USD'?usd:brl;return F}catch(e){return {ok:false,motivo:'não foi possível calcular a faixa'}}}
+function fxFor(o){if(!o)return null;var bk=false,sg=false;if(opBanco(o)){if(bkIs(o.tk))bk=true;else if(sgIs(o.tk))sg=true;else return {ok:false,banco:true,motivo:'valuation desta financeira em breve'}}
+  var D=fxDoc(o.tk);if(D===undefined)return {ok:false,pend:true,motivo:'calculando a faixa…'};if(D===null)return {ok:false,bank:bk,seg:sg,motivo:'sem histórico da CVM para esta empresa'};
+  try{var A=o.A;if(bk){var B=bkCalc(D,o.d.price,A.N||{},o.tk,fundOf(o.tk));if(B.ok)B.F=brl;else B.bank=true;return B}if(sg){var G=sgCalc(D,o.d.price,o.tk,fundOf(o.tk));if(G.ok)G.F=brl;else G.seg=true;return G}var F=fxCalc(D,o.d.price,A.N||{},A.pe&&A.pe.pl,o.tk,fundOf(o.tk),FXOLD);if(F.ok)F.F=o.d.cur==='USD'?usd:brl;return F}catch(e){return {ok:false,motivo:'não foi possível calcular a faixa'}}}
 function fxFaixa(f){return f.F.format(f.cons)+' a '+f.F.format(f.oti)}
 function fxEstado(f){return f.est==='abaixo'?['Abaixo do cenário conservador','g']:f.est==='perto'?['Muito perto do cenário conservador','g']:['Acima do cenário conservador','l']}
 /* linha da ideia: faixa, margem de segurança e botão para ver as premissas */
 function fxRow(o){var f=o.fx;if(!f)return '';
-  if(!f.ok)return '<div class="fql muted">'+(f.pend?'Faixa de preço justo: calculando…':f.banco?'Faixa de preço justo: valuation de banco em breve.':'Faixa de preço justo indisponível: '+esc(f.motivo)+'.')+'</div>';
+  if(!f.ok)return '<div class="fql muted">'+(f.pend?'Faixa de preço justo: calculando…':f.banco?'Faixa de preço justo: '+esc(f.motivo)+'.':'Faixa de preço justo indisponível: '+esc(f.motivo)+'.')+'</div>';
   var e=fxEstado(f),ab=!!FXOPEN[o.tk];
   return '<div class="fql"><span>Faixa <b class="num">'+esc(fxFaixa(f))+'</b> · central '+esc(f.F.format(f.cen))+'</span> <span>Margem de segurança <b class="num '+(f.ms>=0?'gain':'loss')+'">'+(f.ms>=0?'':'−')+pf.format(Math.abs(f.ms*100))+'%</b> <small class="muted">(sobre o conservador)</small></span> <b class="opc '+e[1]+'">'+e[0]+'</b>'+(f.trap?' <b class="opw">⚠ Possível armadilha de valor</b>':'')+
     ' <button type="button" class="fqb" data-fxp="'+esc(o.tk)+'" aria-expanded="'+ab+'">'+(ab?'Esconder premissas':'Premissas')+'</button></div>'+(ab?fxPrem(f)+(typeof saudePrem==='function'?saudePrem(o):''):'')}
-function fxPrem(f){if(f.bank)return bkPrem(f);var F=f.F,nm=f.nm,pr=f.pr,td=function(fn){return pr.map(function(c){return '<td class="num">'+fn(c)+'</td>'}).join('')},p1=function(v){return pf.format(v)+'%'};
+function fxPrem(f){if(f.bank)return bkPrem(f);if(f.seg)return sgPrem(f);var F=f.F,nm=f.nm,pr=f.pr,td=function(fn){return pr.map(function(c){return '<td class="num">'+fn(c)+'</td>'}).join('')},p1=function(v){return pf.format(v)+'%'};
   return '<div class="fqp"><p class="note" style="margin:0 0 6px"><b>Lucro normalizado</b>: mediana de '+nm.usados+' trimestres ('+nm.n+' no histórico, até '+esc(nm.ref)+')'+(nm.excl.length?', sem os atípicos ('+esc(nm.excl.join(', '))+')':'')+' = '+qfmt(nm.med)+' por trimestre, '+qfmt(nm.anual)+' por ano. Últimos 12 meses no balanço: '+qfmt(nm.last12)+'.'+(f.lim?' A diferença foi limitada para não distorcer a conta.':'')+'</p>'+
     '<div class="atsc"><table class="tb"><thead><tr><th></th>'+pr.map(function(c){return '<th>'+c.n+'</th>'}).join('')+'</tr></thead><tbody>'+
     '<tr><td>Crescimento do lucro (% a.a.)</td>'+td(function(c){return p1(c.g)})+'</tr>'+

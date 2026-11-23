@@ -62,7 +62,7 @@ function garHist(){var R=garRes(),h='<div class="panel"><h2>Esse método já ace
 /* qualidade do dado de uma ideia: balanço, preço e indicadores que faltam */
 /* ===== Confiança do dado das Ideias (1.62.0): separada da nota; a nota (stkAna) não muda ===== */
 var OPKS=['pl','pvp','roe','dy','ml','divpl','cr5'];
-function opBanco(o){var sc=o&&o.A&&o.A.sec;return !!(o&&o.banco)||!!(sc&&sc[0]==='Financeiro')||!!(o&&o.tk&&bkIs(o.tk))}
+function opBanco(o){var sc=o&&o.A&&o.A.sec;return !!(o&&o.banco)||!!(sc&&sc[0]==='Financeiro')||!!(o&&o.tk&&(bkIs(o.tk)||sgIs(o.tk)))}
 /* indicadores que deveriam existir: para banco/financeira, margem e dívida não se aplicam */
 function opKeys(o){var b=opBanco(o);return OPKS.filter(function(k){return !(b&&(k==='ml'||k==='divpl'))})}
 function opYmd(ms){return new Date(ms-3*36e5).toISOString().slice(0,10)}
@@ -78,7 +78,7 @@ function opSanidade(o){var cf=o&&o.cf,up=o&&o.fx&&o.fx.ok?o.fx.espPct:o&&o.V?o.V
   return o}
 function opConf(o,now){var tk=o.tk,N=o.A&&o.A.N||{},pts=0,w=[],blk=false,ks=opKeys(o),miss=ks.filter(function(k){return N[k]==null}).length;
   if(miss>=3){pts+=3;w.push('faltam '+miss+' de '+ks.length+' indicadores')}else if(miss>0){pts+=1;w.push('faltam '+miss+' de '+ks.length+' indicadores')}
-  if(opBanco(o)){pts+=1;w.push('inadimplência, Basileia e provisões não avaliadas')}
+  if(opBanco(o)){pts+=1;w.push(sgIs(tk)?'não avaliados: '+fjoin(finNao(tk)):'inadimplência, Basileia e provisões não avaliadas')}
   var lv=null;try{lv=livePx(tk)}catch(e){}
   if(!lv||!lv.at){pts+=1;w.push('preço sem data')}
   else{var du=opDU(lv.at,now);if(lv.sus){blk=true;w.push('preço duvidoso')}else if(du>1){blk=true;var dd=opYmd(lv.at).split('-');w.push('preço velho (de '+dd[2]+'/'+dd[1]+')')}}

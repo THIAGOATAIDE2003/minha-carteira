@@ -121,12 +121,12 @@ function doc(roe, over, f) {
     MD.d = MD.d || {}; MD.d.idx = { selic: { last: 13.75 } };
     MD.d.cat = { a: { BANC4: ['', 20, 'Bancos'], SEGU3: ['', 31, 'Seguradoras'] }, n: { 20: 'Intermediários Financeiros', 31: 'Previdência e Seguros' } };
     MD.d.fund = MD.d.fund || { d: {} }; var o = { tk: 'BANC4', d: { price: 8, cur: 'BRL' }, A: { N: { cr5: 4 }, sec: ['Outros'], chips: [], pos: [], neg: [] } };
-    var oo = { tk: 'SEGU3', d: { price: 8, cur: 'BRL' }, A: { N: {}, sec: ['Financeiro'], chips: [], pos: [], neg: [] } };
-    var r = { banco_detectado_so_pelo_setor: opBanco(o), seguradora_continua_em_breve: fxFor(oo) };
+    var oo = { tk: 'XYZ3', d: { price: 8, cur: 'BRL' }, A: { N: {}, sec: ['Financeiro'], chips: [], pos: [], neg: [] } };
+    var r = { banco_detectado_so_pelo_setor: opBanco(o), outra_continua_em_breve: fxFor(oo) };
     return r;
   });
   ok('banco é detectado pelo subsetor "Bancos" mesmo sem marca de Financeiro', I.banco_detectado_so_pelo_setor === true, I);
-  ok('seguradora continua "em breve" (parte B)', I.seguradora_continua_em_breve && I.seguradora_continua_em_breve.banco === true && !I.seguradora_continua_em_breve.ok, I);
+  ok('outra financeira (nem banco nem seguradora) continua "em breve"', I.outra_continua_em_breve && I.outra_continua_em_breve.banco === true && !I.outra_continua_em_breve.ok, I);
   ok('sem erros de página', erros.length === 0, erros);
   await b.close();
   if (falhas) { console.log('✗ Banco:', falhas, 'de', total, 'falharam'); process.exit(1); }

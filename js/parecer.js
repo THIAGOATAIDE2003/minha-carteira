@@ -35,7 +35,7 @@ function parPacote(o){var D=fxDoc(o.tk),f=o.fx,sd=o.sd,m=sd&&sd.m,cf=o.cf,lim=[]
   pk.limitacoes=lim;return pk}
 function parHtml(t){var h='',ul=false;String(t||'').split('\n').forEach(function(l){l=l.trim();if(!l){if(ul){h+='</ul>';ul=false}return}
   if(/^##\s/.test(l)){if(ul){h+='</ul>';ul=false}h+='<h4 class="parh">'+esc(l.replace(/^##\s*/,''))+'</h4>'}else if(/^[-•]\s/.test(l)){if(!ul){h+='<ul class="parl">';ul=true}h+='<li>'+esc(l.replace(/^[-•]\s*/,''))+'</li>'}else{if(ul){h+='</ul>';ul=false}h+='<p class="parp">'+esc(l)+'</p>'}});return h+(ul?'</ul>':'')}
-function parRow(o){if(!PARON||!o||!o.fx||o.fx.pend||o.fx.bank)return '';var D=fxDoc(o.tk),k=parKey(o,D),c=parLer()[o.tk],ok=c&&c.k===k,ab=!!PAR.open[o.tk],bz=PAR.busy===o.tk,er=PAR.err[o.tk];
+function parRow(o){if(!PARON||!o||!o.fx||o.fx.pend||o.fx.bank||o.fx.seg)return '';var D=fxDoc(o.tk),k=parKey(o,D),c=parLer()[o.tk],ok=c&&c.k===k,ab=!!PAR.open[o.tk],bz=PAR.busy===o.tk,er=PAR.err[o.tk];
   var bt='<button type="button" class="fqb" data-par="'+esc(o.tk)+'"'+(PAR.busy?' disabled':'')+'>'+(bz?'Gerando o parecer…':ab&&ok?'Esconder parecer':er?'Tentar de novo':'Ver parecer')+'</button>';
   var h='<div class="fql">'+bt+(er&&!bz?' <span class="opw">'+esc(er)+'</span>':'')+'</div>';
   if(ab&&ok)h+='<div class="fqp parbox">'+parHtml(c.t)+'<p class="note" style="margin:6px 0 0">'+(c.lei?'Leitura definida por regra do app ('+esc(c.reg||'')+(c.mot&&c.mot.length?': '+esc(c.mot.join('; ')):'')+'). ':'')+'Texto escrito pela IA ('+esc(c.mod||'IA')+') em '+rsWhen(c.at)+', com preço de '+esc(c.moeda)+' '+num(c.preco,2)+' e balanço '+esc(c.bal)+'. Só interpreta números do app; pode errar.</p></div>';

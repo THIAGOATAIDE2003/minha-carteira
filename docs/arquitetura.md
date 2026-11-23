@@ -172,3 +172,11 @@ Robô: `scripts/copom.py` (chamado na rodada completa de `mercado.py`, no máxim
 - Menos de 8 trimestres com ROE: sem faixa, motivo diz quantos faltam (`falta`), vai para Em verificação. O robô só guarda 12 trimestres das empresas da carteira/lista e 9 das demais, e o ROE de 12 meses precisa de 4 trimestres de lucro; por isso BRSR6, PINE4 e BMGB4 ficam com 5 a 6.
 - Dados: o FCA da CVM traz as units do BTG (BPAC11) com código '000000'; `UNITS_SEM_CODIGO` em `scripts/cvm.py` (repositório de dados) mapeia BPAC11 pelo CNPJ.
 - Testes: `node tests/banco.js` (47 conferências, no CI).
+
+## Valuation de seguradoras e bolsa (js/seguradora.js, 1.75.0, Etapa 6 parte B)
+- `sgKind(tk)`: 'seguradora' (subsetores Seguradoras e Corretoras de Seguros do catálogo) ou 'bolsa' (B3SA3); bancos ficam em `banco.js`. `opBanco` também as reconhece. Outra financeira continua "em breve".
+- Conta: valor por ação = lucro normalizado por ação × P/L alvo. Lucro normalizado = `fxNorm` (mediana dos trimestres normais × 4, sem atípicos). Ações = P/VP × patrimônio de mercado ÷ preço. Não usa P/VP nem ROE.
+- P/L alvo (`sgCalc`): percentil 25 (conservador, o único corte), mediana (central) e percentil 75 (otimista) do P/L histórico da própria ação (`sgPlHist`: preço semanal do fim de cada trimestre, até 10 dias antes, × ações ÷ lucro de 12 meses; precisa de `SGMIN` 6 pontos). Preço semanal vem de `MD.d.hist[tk].w` (carteira/lista) ou `MD.d.histx[tk].w` (robô: seguradoras e bolsa, lista `HISTX` em scripts/mercado.py). Sem histórico: P/L de hoje dos pares do mesmo subsetor (mínimo 4); sem pares: sem faixa. P/L alvo fora de 3× a 40×: sem faixa. Lucro da CVM fora de 0,5× a 2× o lucro implícito no P/L do mercado: sem faixa.
+- Dividendos sustentáveis: dividendo de hoje = DY × preço; payout = dividendo ÷ lucro normalizado por ação; sustentável = o menor entre os dois. Payout acima de 100% = alerta.
+- Saúde (`sgSaude`, mesmo formato `o.sd` com `seg:true`): payout, lucro caindo 3 trimestres (armadilha, central rebaixado), trimestre atípico alto recente. 2 alertas → Em verificação. Não avaliado (`finNao`): seguradora = sinistralidade, solvência, resultado financeiro; bolsa = volume negociado, receita por produto. `opConf` tira 1 ponto.
+- O parecer da IA fica escondido para bancos e seguradoras (`parRow`) até a parte C. Testes: `node tests/seguradora.js` (33, no CI).

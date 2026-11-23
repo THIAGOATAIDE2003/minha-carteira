@@ -17,6 +17,7 @@ function bkTaxa(){var sel=MD.d&&MD.d.idx&&MD.d.idx.selic&&MD.d.idx.selic.last,S0
   try{if(!BKOLD&&macroOk()){var m=macroGet(),F=m.focus&&m.focus.fim,y=+String(m.coleta||today()).slice(0,4),a=F&&F[String(y+2)],b=F&&F[String(y+3)];
     if(a!=null&&b!=null){out.focus=(a+b)/2;out.fa=[y+2,y+3,a,b];out.medio=(S0+out.focus)/2;out.regra='medio'}}}catch(e){}
   out.r=Math.max(BKPISO,Math.round((out.medio!=null?out.medio:S0)+BKPREM));return out}
+function fjoin(a){return a.length>1?a.slice(0,-1).join(', ')+' e '+a[a.length-1]:a[0]||''}
 function bkIs(tk){return setorOf(tk).s==='Bancos'}
 function bkTrap(D){var t=(D&&D.t||[]).slice(-4);if(t.length<4)return null;
   var caiu=function(k){return t.every(function(r){return r[k]!=null})&&t[0][k]>t[1][k]&&t[1][k]>t[2][k]&&t[2][k]>t[3][k]};
