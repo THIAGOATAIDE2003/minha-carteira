@@ -15,6 +15,9 @@ var MCTAB=[
   [/Serviços Educacionais/,1,0,'juro menor ajuda o financiamento e a dívida',''],
   [/Energia Elétrica|Água e Saneamento|Gás\|Gás|Exploração de Rodovias/,1,0,'setor de dívida alta e fluxo estável; juro menor alivia',''],
   [/Previdência e Seguros|Seguradoras/,-1,0,'seguradoras ganham mais com a Selic alta',''],
+  /* bancos: efeito misto, por isso neutro no ranking; o texto (6º e 7º itens) explica os dois lados */
+  [/Intermediários Financeiros|Bancos/,0,0,'','','favorece o crédito e reduz o custo de captação, mas pode comprimir a margem','o contrário: encarece o crédito e a captação, mas pode ampliar a margem'],
+  [/Serviços Financeiros Diversos/,1,0,'juro menor atrai investidores para a bolsa e aumenta o volume negociado',''],
   [/Mineração|Minerais Metálicos|Siderurgia|Papel e Celulose|Madeira/,0,1,'','vende em dólar e gasta em reais'],
   [/Petróleo, Gás|Exploração, Refino/,0,1,'','vende em dólar e gasta em reais'],
   [/Agropecuária|Agricultura|Carnes e Derivados|Açucar e Alcool/,0,1,'','exporta e recebe em dólar'],
@@ -27,7 +30,7 @@ function macroDias(d){if(!d)return 9999;var a=new Date(d+'T12:00:00Z').getTime()
 function macroGet(){var m=MD.d&&MD.d.macro;return m&&m.regime&&m.regime.r&&m.selic&&m.selic.meta!=null&&m.coleta?m:null}
 /* macro utilizável? precisa existir e ter sido coletado nos últimos MCDIAS dias */
 function macroOk(){var m=macroGet();return !!m&&macroDias(m.coleta)<=MCDIAS&&macroDias(m.coleta)>=-1}
-function macroSens(tk){var s=setorOf(tk),t=(s.g||'')+'|'+(s.s||'');for(var i=0;i<MCTAB.length;i++)if(MCTAB[i][0].test(t))return {selic:MCTAB[i][1],dolar:MCTAB[i][2],rs:MCTAB[i][3],rd:MCTAB[i][4],setor:s.k||s.g||''};return {selic:0,dolar:0,rs:'',rd:'',setor:s.k||s.g||''}}
+function macroSens(tk){var s=setorOf(tk),t=(s.g||'')+'|'+(s.s||'');for(var i=0;i<MCTAB.length;i++)if(MCTAB[i][0].test(t))return {selic:MCTAB[i][1],dolar:MCTAB[i][2],rs:MCTAB[i][3],rd:MCTAB[i][4],nq:MCTAB[i][5]||'',na:MCTAB[i][6]||'',setor:s.k||s.g||''};return {selic:0,dolar:0,rs:'',rd:'',setor:s.k||s.g||''}}
 /* dependências do setor: de que a Selic caia / o dólar suba ou caia */
 function macroDep(tk){var x=macroSens(tk),d=[];if(x.selic>0)d.push('selic-queda');if(x.selic<0)d.push('selic-alta');if(x.dolar>0)d.push('dolar-alto');if(x.dolar<0)d.push('dolar-baixo');return d}
 var MCDN={'selic-queda':'queda da Selic','selic-alta':'Selic alta','dolar-alto':'dólar alto','dolar-baixo':'dólar baixo'};
@@ -38,6 +41,7 @@ function macroVento(tk){if(!macroOk())return null;var m=macroGet(),x=macroSens(t
   var CT='o contrário de: ';
   if(es)p.push((r==='caindo'?'Selic em queda':'Selic em alta')+(es>0?' ajuda':' pesa')+': '+((x.selic>0?r==='caindo':r==='subindo')?'':CT)+x.rs);
   if(ed)p.push('dólar '+nv+(ed>0?' ajuda':' pesa')+': '+(nv==='alto'?'':CT)+x.rd);
+  if(!es&&(x.nq||x.na)&&(r==='caindo'||r==='subindo'))p.push((r==='caindo'?'Selic em queda tem efeito misto: ':'Selic em alta tem efeito misto: ')+(r==='caindo'?x.nq:x.na));
   if(!p.length)p.push(x.selic||x.dolar?'o cenário atual (Selic '+r.replace('estavel','estável')+', dólar '+(nv||'normal')+') não mexe com este setor':'setor sem sensibilidade clara à Selic ou ao dólar');
   return {v:v>0?1:v<0?-1:0,n:v>0?'favorável':v<0?'contrário':'neutro',w:p.join('; ')+'.',setor:x.setor}}
 function macroRow(o){var v=o&&o.tk?macroVento(o.tk):null;if(!v)return '';
