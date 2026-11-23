@@ -64,6 +64,13 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   ok('selo Alta aparece com a data do balanço', /Confiança alta/.test(S1.alta) && /balanço do 3º tri/.test(S1.alta), S1.alta);
   ok('selo Média mostra o motivo', /Confiança média/.test(S1.media) && /faltam 2 de 7 indicadores/.test(S1.media));
   ok('selo Baixa mostra o motivo em destaque', /Confiança baixa/.test(S1.baixa) && /⚠ preço velho \(de 09\/11\)/.test(S1.baixa) && /opq fr/.test(S1.baixa), S1.baixa);
+  const V = await p.evaluate(() => {
+    const mk = (tk) => ({ tk: tk, d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: ['Energia', ''], alr: [], pos: [], neg: [] }, V: null, score: 7, al: [], cf: { n: 'Baixa', w: ['preço velho (de 09/11)'], f: 0 } });
+    return { rank: [opRankV(100, { f: 1 }), opRankV(100, { f: 0.8 }), opRankV(100, null)], vazio: opVerHtml({ X: [] }, ''), cheio: opVerHtml({ X: [mk('PINE4')] }, '<div class="opr oph"></div>') };
+  });
+  ok('ranking: Alta vale 100%, Média 80%', V.rank[0] === 100 && Math.abs(V.rank[1] - 80) < 1e-9 && V.rank[2] === 100, V.rank);
+  ok('sem ações em verificação não mostra a seção', V.vazio === '');
+  ok('Em verificação mostra título, contagem, ação e motivo', /Em verificação \(1\)/.test(V.cheio) && /PINE4/.test(V.cheio) && /preço velho \(de 09\/11\)/.test(V.cheio), V.cheio);
   ok('nenhum erro de JavaScript', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Ideias: ' + total + ' conferências ok');
