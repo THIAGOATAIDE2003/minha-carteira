@@ -72,6 +72,8 @@ function doc(luc, f, over) {
   ok('lucro dos últimos 12 meses negativo: sem faixa', !ng.ok && /não positivo/.test(ng.motivo), ng);
   const ch = await C(doc(100), { Fu: { pl: 40 } });
   ok('lucro da CVM não bate com o P/L do mercado: sem faixa', !ch.ok && /não bate/.test(ch.motivo), ch);
+  const ch2 = await C(doc(100), { Fu: { pl: 6.25 } });
+  ok('lucro da CVM 1,6× o do mercado (como WIZC3 com minoritários): sem faixa', !ch2.ok && /não bate/.test(ch2.motivo), ch2);
   const sa2 = await C(doc(100), { Fu: { pvp: null, pl_r: null } });
   ok('sem número de ações: sem faixa', !sa2.ok && /ações/.test(sa2.motivo), sa2);
   const cu = await C(doc(100, (r, i) => { if (i > 5) r.luc = null; }));

@@ -37,10 +37,10 @@ function bkNorm(D){if(!D||!D.t||!D.t.length)return {ok:false,motivo:'sem histór
 function bkPvp(roe,g,r){return Math.max(0,(roe-g)/(r-g))}
 function bkCalc(D,P,N,tk,Fu){var nm=bkNorm(D);if(!nm.ok)return nm;
   var sh=Fu&&Fu.pvp>0&&Fu.pl_r>0&&P>0?Fu.pvp*Fu.pl_r/P:null;if(!sh)return {ok:false,motivo:'sem número de ações para calcular o patrimônio por ação'};
-  var rz=nm.pl/Fu.pl_r;if(!(rz>0.5&&rz<2))return {ok:false,motivo:'patrimônio da CVM não bate com o do mercado (plano de contas estranho)'};
+  var rz=nm.pl/Fu.pl_r;if(!(rz>0.5&&rz<2))return {ok:false,motivo:'patrimônio da CVM não bate com o do mercado (plano de contas estranho)'};  /* patrimônio por ação = o do mercado (preço ÷ P/VP, só dos controladores); o da CVM inclui minoritários e serve só para conferir */
   var cfg=VALP[tk]||{},tx=bkTaxa(),
     g0=cfg.g!=null?cfg.g:Math.max(0,Math.min(10,N&&N.cr5!=null?Math.round(N.cr5):5)),rb=cfg.r!=null?cfg.r:tx.r,
-    g=Math.min(g0,BKGMAX,rb-BKSPR),vpa=nm.pl/sh,
+    g=Math.min(g0,BKGMAX,rb-BKSPR),vpa=P/Fu.pvp,
     pr=[{n:'Conservador',roe:nm.p25,g:g,r:rb},{n:'Central',roe:nm.med,g:g,r:rb},{n:'Otimista',roe:nm.p75,g:g,r:Math.max(8,rb-1)}];
   pr.forEach(function(c){c.pvp=bkPvp(c.roe,c.g,c.r);c.v=c.pvp*vpa});
   /* matriz de sensibilidade: 3 ROEs × 3 custos de capital (taxa−1, taxa, taxa+1), com o g do central e sem o rebaixamento da armadilha */

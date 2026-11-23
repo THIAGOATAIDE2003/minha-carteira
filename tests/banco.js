@@ -58,6 +58,8 @@ function doc(roe, over, f) {
   ok('ROE sustentável negativo: sem faixa', !ng.ok && /não positivo/.test(ng.motivo), ng);
   const pn = await C(doc(12, null, (r, i) => { if (i === 11) r.pl = -5; }));
   ok('patrimônio negativo = plano estranho', !pn.ok && /patrimônio/.test(pn.motivo), pn);
+  const vm = await C(doc(12), { P: 10, Fu: { pvp: 1.25, pl_r: 800 } });
+  ok('patrimônio por ação vem do mercado (preço ÷ P/VP = 8), não do patrimônio da CVM com minoritários (10)', vm.ok && Math.abs(vm.vpa - 8) < 1e-9, vm.vpa);
   /* dado faltando */
   const sr = await C(doc(i => i < 6 ? null : 12));
   ok('só 6 trimestres com ROE: histórico curto, sem faixa', !sr.ok && /histórico curto/.test(sr.motivo), sr);

@@ -5,6 +5,7 @@
    Dividendos sustentáveis: o que o lucro normalizado paga; payout acima de 100% é alerta. Tudo conta feita por código; nada vem de IA. Não mexe no stkAna. */
 var SGMIN=6,        /* mínimo de pontos de P/L histórico (ou de pares) */
     SGPLMIN=3,SGPLMAX=40, /* P/L alvo fora disso = múltiplo implausível, sem faixa */
+    SGRZ=[0.75,1.35], /* lucro de 12 meses da CVM ÷ lucro implícito no P/L do mercado: fora disso o plano de contas não bate */
     SGPAY=1;        /* payout sobre o lucro normalizado acima de 100% = alerta */
 /* tipo da financeira: null = não é desta parte (banco ou outra financeira) */
 function sgKind(tk){if(bkIs(tk))return null;if(tk==='B3SA3')return 'bolsa';var s=setorOf(tk).s;return s==='Seguradoras'||s==='Corretoras de Seguros'?'seguradora':null}
@@ -25,7 +26,7 @@ function sgPares(tk){var c=MD.d&&MD.d.cat,p=c&&c.a&&c.a[tk],r=[];if(!p)return r;
   Object.keys(c.a).forEach(function(k){if(k===tk||c.a[k][1]!==p[1]||c.a[k][2]!==p[2])return;var F=fundOf(k);if(F&&F.pl>2&&F.pl<60)r.push([k,F.pl])});return r}
 function sgCalc(D,P,tk,Fu){var nm=fxNorm(D);if(!nm.ok)return nm;var kind=sgKind(tk);
   var sh=Fu&&Fu.pvp>0&&Fu.pl_r>0&&P>0?Fu.pvp*Fu.pl_r/P:null;if(!sh)return {ok:false,motivo:'sem número de ações para calcular o lucro por ação'};
-  if(Fu.pl>0){var lm=Fu.pvp*Fu.pl_r/Fu.pl,rz=nm.last12/lm;if(!(rz>0.5&&rz<2))return {ok:false,motivo:'lucro da CVM não bate com o P/L do mercado (plano de contas estranho)'}}
+  if(Fu.pl>0){var lm=Fu.pvp*Fu.pl_r/Fu.pl,rz=nm.last12/lm;if(!(rz>SGRZ[0]&&rz<SGRZ[1]))return {ok:false,motivo:'lucro da CVM não bate com o P/L do mercado (plano de contas estranho)'}}
   var L0=nm.anual/sh,ph=sgPlHist(D,sh,tk),fonte='historico',pares=null,mult;
   if(ph.length>=SGMIN)mult=[fxPct(ph,0.25),fxPct(ph,0.5),fxPct(ph,0.75)];
   else{pares=sgPares(tk);if(pares.length>=SGMIN-2){fonte='setor';var pv=pares.map(function(x){return x[1]});mult=[fxPct(pv,0.25),fxPct(pv,0.5),fxPct(pv,0.75)]}
