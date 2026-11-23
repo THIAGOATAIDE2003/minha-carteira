@@ -203,3 +203,10 @@ Robô: `scripts/copom.py` (chamado na rodada completa de `mercado.py`, no máxim
 - **Foto diária**: `regra.motor:'faixa-unica'` (leitores antigos ignoram).
 - **Testes**: casos E3 (a–g) em `tests/ideias.js`, `tests/faixa.js` (Potencial e `f.sai`), `tests/parecer.js`; `tests/snap-ideias.js` grava a lista antes/depois (dados do repositório privado) e `--comparar` mostra quem entrou, saiu e mudou.
 - **Reversão**: `git revert` do merge do PR (volta à 1.76.2 sem mexer em dados); tag `v1.76.2-pre-e3` (se criada) e branch `backup/1.76.2` guardam a versão anterior.
+
+## Por que apareceu e qualidade dos lucros (js/qualidade.js, 1.78.0, E5)
+- Só texto: não muda nota, lista, ordem nem ranking. Carregado logo depois de `saude.js`; só define funções.
+- `qlCalc(D,tipo)` (pura): 6 testes dos últimos 12 meses contra os 12 anteriores, com `D.t` da CVM (trimestres seguidos; faltou dado ou buraco = `null` "não aplicável", nunca "passou"). T1 lucro>0; T2 caixa≥lucro; T3 margem; T4 dívida líquida menor que 4 tri antes (igual reprova); T5 ROE=lucro12m÷patrimônio final; T6 receita. Banco: só T1 e T5; seguradora: só T1; B3SA3 e não financeiras: os 6. `QLMIN=4` (abaixo disso não mostra fração), `QLRISCO=2`.
+- `qualFor(o)` guarda em `o.ql` (arquivo ainda baixando = sem cálculo e sem cache). `qlPrem(o)` desenha o bloco nas Premissas (faixa.js `fxRow`). A "Regra de dívida" foi da linha fechada para o começo das Premissas (`saudePrem`), mantendo a linha fechada com o mesmo tamanho.
+- `riscosFor(o,1)` (só a linha fechada) soma o risco "só X de Y testes passaram" quando `ap>=5 && ps<=QLRISCO`. O Parecer chama `riscosFor(o)` sem o 2º argumento e não muda.
+- `opPorque(o)`/`porqueRow(o)`: até 2 frases por regra (faixa, saúde, tendência, qualidade, setor, dividendos, nota), só para Ideias novas (`o.novo=1` em `opData`). Foto (`foto.js`) ganhou `qual:{ap,ps}`; foto antiga sem `qual` continua lendo. Teste: `tests/qualidade.js`; snapshot: `tests/snap-ideias.js` (`qual`, `porque`).

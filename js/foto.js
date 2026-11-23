@@ -16,7 +16,7 @@ function fotoMarca(d){try{localStorage.setItem(fotoKey(),d)}catch(e){}}
 var fotoN=function(v){return v==null||!isFinite(v)?null:Math.round(v*100)/100};
 function fotoLinha(o,st){var f=o.fx;return {tk:o.tk,st:st,preco:fotoN(o.d.price),cons:fotoN(f.cons),cen:fotoN(f.cen),oti:fotoN(f.oti),esp:fotoN(f.esp),ms:fotoN(f.ms*100),est:f.est,armadilha:f.trap||null,tipo:f.bank?'banco':f.seg?f.kind:null,
   ref:f.bank?{roe:fotoN(f.nm.med),custo:f.r,pvp_hoje:fotoN(f.pvpHoje),pvp_justo:fotoN(f.pr[1].pvp)}:f.seg?{pl_alvo:fotoN(f.pr[1].pl),pl_hoje:f.plHoje!=null?fotoN(f.plHoje):null,payout:f.pay!=null?fotoN(f.pay*100):null}:null,
-  conf:o.cf?o.cf.n:null,nota:o.score!=null?fotoN(o.score):null,saude:o.sd?o.sd.mot:[],aviso:o.cf&&o.cf.aviso||null,motivo:st==='verificacao'&&o.cf?o.cf.w.slice(0,3):null}}
+  conf:o.cf?o.cf.n:null,qual:o.ql?{ap:o.ql.ap,ps:o.ql.ps}:null,nota:o.score!=null?fotoN(o.score):null,saude:o.sd?o.sd.mot:[],aviso:o.cf&&o.cf.aviso||null,motivo:st==='verificacao'&&o.cf?o.cf.w.slice(0,3):null}}
 /* r = resultado de opData(); só monta se nada está pendente */
 function fotoMontar(r,dia){if(!r||!r.D||!r.X)return null;
   var pend=r.D.concat(r.X).some(function(o){return o.fx&&o.fx.pend});if(pend)return null;

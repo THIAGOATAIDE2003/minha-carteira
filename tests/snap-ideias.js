@@ -57,7 +57,7 @@ const rd = f => JSON.parse(fs.readFileSync(f, 'utf8'));
     FOTOQ = true; /* não tenta gravar a foto diária */
     const R = compute(), mine = {}; R.held.forEach(x => { mine[x.p.ticker] = 1; });
     const r = opData(), NOVO = typeof opPorta === 'function', itens = {}, pf1 = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100;
-    const reg = (o, lista, pos) => { const f = o.fx; itens[o.tk] = { lista, pos, nota: pf1(o.score), potencial: f && f.ok ? pf1(f.espPct * 100) : null, ms: f && f.ok ? pf1(f.ms * 100) : null, est: f && f.ok ? f.est : null, conf: o.cf ? o.cf.n : null,
+    const reg = (o, lista, pos) => { const f = o.fx; itens[o.tk] = { lista, pos, nota: pf1(o.score), potencial: f && f.ok ? pf1(f.espPct * 100) : null, ms: f && f.ok ? pf1(f.ms * 100) : null, est: f && f.ok ? f.est : null, conf: o.cf ? o.cf.n : null, qual: o.ql ? { ap: o.ql.ap, ps: o.ql.ps } : null, porque: o.novo ? opPorque(o) : null,
       vup: o.V ? pf1(o.V.up * 100) : null, tipo: f && f.ok ? (f.bank ? 'banco' : f.seg ? 'seguradora' : 'comum') : (o.banco ? 'financeira' : 'comum'), setor: (o.A.sec && o.A.sec[0]) || null,
       motivo: lista === 'ideia' ? 'entrou: ' + (f && f.ok ? 'preço ' + (f.est === 'abaixo' ? 'abaixo' : 'perto') + ' do cenário conservador' : 'faixa calculando') : 'em verificação: ' + ((o.cf && o.cf.w && o.cf.w.join('; ')) || 'dado fraco') }; };
     r.D.forEach((o, i) => reg(o, 'ideia', i + 1)); r.X.forEach((o, i) => reg(o, 'verificacao', i + 1));
