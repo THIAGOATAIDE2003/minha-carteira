@@ -43,10 +43,10 @@ function doc(f, over) {
   const R = await p.evaluate((d) => {
     const mk = (tk, banco, hi) => ({ tk: tk, banco: banco, d: { cur: 'BRL', price: 10, k: { hi: hi || 11 } }, A: { N: {}, sec: banco ? ['Financeiro', ''] : ['Construção Civil', 'Construção Civil'], alr: [], pos: [], neg: [] }, V: null, score: 7, al: [], cf: { n: 'Alta', w: [], f: 1 } });
     FIN['cvm/RUIM3'] = { d: d.ruim, at: Date.now() }; FIN['cvm/BOM3'] = { d: d.bom, at: Date.now() }; FIN['cvm/UM3'] = { d: d.um, at: Date.now() };
-    const rs = rkSect; rkSect = function (t) { return t === 'BOM3' ? ['Energia', 'Energia Elétrica'] : ['Consumo cíclico', 'Construção Civil']; };
+    MD.d = { cat: { n: { '10': 'Construção Civil', '14': 'Energia Elétrica' }, a: { RUIM3: ['', 10, 'Incorporações'], UM3: ['', 10, 'Incorporações'], BOM3: ['', 14, 'Energia Elétrica'] } } };
     const o = {};
     ['RUIM3', 'BOM3', 'UM3'].forEach(function (tk) { const x = mk(tk); x.sd = saudeFor(x); x.fx = { ok: true }; o[tk] = { sd: x.sd, risc: riscosFor(x), row: saudeRow(x), prem: saudePrem(x) }; });
-    const cx = mk('BOM3', false, 16); cx.sd = saudeFor(cx); o.queda = riscosFor(cx); o.banco = saudeFor(mk('ITUB4', true)); o.sem = saudeFor(mk('NAOEXISTE3')); rkSect = rs; return o;
+    const cx = mk('BOM3', false, 16); cx.sd = saudeFor(cx); o.queda = riscosFor(cx); o.banco = saudeFor(mk('ITUB4', true)); o.sem = saudeFor(mk('NAOEXISTE3')); return o;
   }, {
     ruim: doc((r, i) => { if (i === 11) { r.dl = 4500; } if (i >= 8) r.fco = -50; }, { cmp: { yoy: { itens: [{ c: 'ml', ch: -3.0, s: -1 }] } }, nr: [{ q: '3T26', tipo: 'alto', luc: 900, med: 100 }] }),
     bom: doc(), um: doc((r, i) => { if (i === 11) r.dl = 2000; })
@@ -62,6 +62,30 @@ function doc(f, over) {
   ok('empresa saudável, setor não sensível e preço perto da máxima: nenhum risco forte', R.BOM3.risc.length === 0 && /nenhum risco forte/.test(R.BOM3.row), R.BOM3.risc);
   ok('preço 37,5% abaixo da máxima do ano vira risco', R.queda.length === 1 && /preço já caiu 38% da máxima/.test(R.queda[0]), R.queda);
   ok('premissas mostram os 3 testes de saúde', /Saúde financeira/.test(R.RUIM3.prem) && /Dívida:/.test(R.RUIM3.prem) && /Cobertura de juros:/.test(R.RUIM3.prem) && /Caixa operacional:/.test(R.RUIM3.prem));
+  /* setor de dívida estrutural: dívida líquida ÷ EBITDA */
+  const E = await p.evaluate((d) => {
+    const base = saudeCalc(d.alta), ctx = { estr: true, k: 1.5, lim: 4, setor: 'Energia Elétrica' };
+    return { padrao: base, alta: saudeCalc(d.alta, ctx), ok: saudeCalc(d.ok, ctx), semk: saudeCalc(d.ok, { estr: true, k: null, lim: 4, setor: 'Energia Elétrica' }), loc: saudeCalc(d.alta, { estr: true, k: 1.5, lim: 5, setor: 'Aluguel de carros' }),
+      setor: [setorOf('X1'), setorOf('X2'), setorOf('X3')] };
+  }, { alta: doc((r, i) => { if (i === 11) { r.dl = 1500; } }), ok: doc((r, i) => { if (i === 11) { r.dl = 1500; r.pl = 100; } }) });
+  /* alta: dl 1500, pl 1000, ebit 4×200=800 ×1,5 = EBITDA 1200 → 1,25× */
+  ok('regra padrão sem setor estrutural: 1,5× o patrimônio ainda não é alta (o limite é acima de 1,5×)', E.padrao.m.regra === 'padrao' && E.padrao.m.dlpl === 1.5 && !E.padrao.f.includes('divida'), E.padrao.m);
+  ok('elétrica/saneamento/locadora/concessão: mede por dívida líquida ÷ EBITDA e mostra a regra', E.alta.m.regra === 'ebitda' && Math.abs(E.alta.m.dleb - 1.25) < 1e-9 && E.alta.m.ebitda === 1200 && E.alta.m.lim === 4, E.alta.m);
+  ok('dívida/patrimônio altíssima mas EBITDA cobre: não falha na regra por EBITDA', E.ok.m.dlpl === 15 && E.ok.n === 0 && !E.ok.f.includes('divida'), E.ok);
+  ok('sem EBITDA disponível: volta para a regra padrão e diz isso', E.semk.m.regra === 'padrao' && E.semk.m.estr === true && E.semk.f.includes('divida'), E.semk.m);
+  ok('limite das locadoras é 5×', E.loc.m.lim === 5);
+  const G = await p.evaluate(() => {
+    const mk = (tk, esp, f, n) => ({ tk: tk, fx: { ok: true, opp: true, espPct: esp }, sd: { n: f.length, f: f, mot: f.map(x => x === 'caixa' ? 'caixa operacional negativo' : 'dívida alta') } });
+    MD.d = { cat: { n: { '10': 'Construção Civil', '14': 'Energia Elétrica' }, a: { A1: ['', 10, 'Incorporações'], A2: ['', 10, 'Incorporações'], A3: ['', 10, 'Incorporações'], A4: ['', 10, 'Incorporações'], B1: ['', 14, 'Energia Elétrica'], A5: ['', 10, 'Incorporações'] } } };
+    const cap = opCapSetor([{ tk: 'A1' }, { tk: 'B1' }, { tk: 'A2' }, { tk: 'A3' }, { tk: 'A4' }, { tk: 'A5' }, { tk: 'Z9' }]);
+    return { cx150: opGate(mk('P', 2.26, ['caixa'])), cx100: opGate(mk('P', 1.0, ['caixa'])), cx50: opGate(mk('P', 0.5, ['caixa'])), div150: opGate(mk('P', 2.26, ['divida'])), dois: opGate(mk('P', 0.3, ['divida', 'caixa'])), limpo: opGate(mk('P', 2.26, [])), semSd: opGate({ tk: 'P', fx: { ok: true, opp: true, espPct: 3 }, sd: null }), naoOpp: opGate({ tk: 'P', fx: { ok: true, opp: false, espPct: 3 }, sd: { n: 2, f: [], mot: [] } }), cap: cap.D.map(x => x.tk), skip: cap.skip };
+  });
+  ok('caixa operacional negativo + retorno esperado acima de 100% = verificação com motivo', /caixa operacional negativo nos últimos 12 meses e retorno esperado acima de 100%/.test(G.cx150), G.cx150);
+  ok('caixa negativo com retorno de 100% ou menos continua (só aviso)', G.cx100 === null && G.cx50 === null);
+  ok('retorno alto sem caixa negativo não é barrado por essa regra', G.div150 === null && G.limpo === null);
+  ok('2 falhas continua indo para verificação', /saúde financeira: dívida alta, caixa operacional negativo/.test(G.dois), G.dois);
+  ok('sem avaliação de saúde ou fora da regra de oportunidade: nada a barrar', G.semSd === null && G.naoOpp === null);
+  ok('concentração: no máximo 3 por setor, mantém a ordem; outros setores livres', G.cap.join() === 'A1,B1,A2,A3,Z9' && G.skip === 2, G);
   ok('nenhum erro de JavaScript', erros.length === 0, erros);
   await b.close();
   console.log(falhas ? '✗ ' + falhas + ' de ' + total + ' falharam' : '✓ Saúde: ' + total + ' conferências ok');
