@@ -4,7 +4,7 @@
 var PARTEMP=0.2,PARMS=25000,PAR={busy:null,err:{},open:{}};
 var PARON=true; /* o botão só aparece quando for true (ligado depois do teste de consistência) */
 var PARORD='groq'; /* 'gem' ou 'groq' força a ordem dos provedores; null = a escolha do app (S.asia) */
-function parMod(){return 'fx:'+FXW.join('/')+':'+FXTOL+':'+FXMC+':'+FXPAY+':'+FXN+'|sd:'+[SDPL,SDLL,SDCOB,SDEB,SDEBL,SDMAXS].join('/')+'|bk:'+[BKMIN,BKROEMAX,BKGMAX,BKPREM,BKPISO,SGMIN,SGPLMIN,SGPLMAX].join('/')+'|p5'}
+function parMod(){return 'fx:'+FXW.join('/')+':'+FXTOL+':'+FXMC+':'+FXPAY+':'+FXN+'|sd:'+[SDPL,SDLL,SDCOB,SDEB,SDEBL,SDMAXS].join('/')+'|bk:'+[BKMIN,BKROEMAX,BKGMAX,BKPREM,BKPISO,SGMIN,SGPLMIN,SGPLMAX].join('/')+'|p6'}
 function parKey(o,D){var u=D&&D.t&&D.t.length?D.t[D.t.length-1].ref:'sem-balanco';return o.tk+'|'+u+'|'+parMod()}
 function parLer(){try{return JSON.parse(localStorage.getItem(LS+'-parecer')||'{}')||{}}catch(e){return {}}}
 function parGravar(tk,k,v){var c=parLer();c[tk]=Object.assign({k:k},v);var ks=Object.keys(c);if(ks.length>40){ks.sort(function(a,b){return (c[a].at||0)-(c[b].at||0)}).slice(0,ks.length-40).forEach(function(x){delete c[x]})}try{localStorage.setItem(LS+'-parecer',JSON.stringify(c))}catch(e){}}

@@ -126,6 +126,7 @@ var PARSYS='Você reescreve, em português simples e curto, itens de um parecer 
 '- Cada frase reescrita tem no máximo cerca de 1,5 vezes o tamanho do fato.\n'+
 '- Resumo: 2 frases curtas, só com ideias e números que estejam nos fatos. Não escreva a palavra "leitura" nem diga se vale comprar. Se "avisar_no_inicio_do_resumo" começar com "sim", a PRIMEIRA frase do resumo avisa isso.\n'+
 '- Não dê recomendação de compra ou venda. Não use "prevê", "projeta", "garante" nem "indica melhora"; para falar do cálculo do app, use "o cálculo mostra" ou "o modelo calcula".\n'+
+'- Nunca explique causa com "porque", "pois", "já que" ou "uma vez que": copie a frase do fato como está, só dividindo em frases curtas.\n'+
 'RESPONDA SÓ COM JSON, sem texto fora dele, neste formato exato (todos os ids recebidos, nenhum a mais):\n'+
 '{"resumo":"...","a_favor":[{"id":"A1","texto":"..."}],"preocupam":[{"id":"P1","texto":"..."}],"errado_se":[{"id":"E1","texto":"..."}],"acompanhar":[{"id":"G1","texto":"..."}]}';
 /* ---------- 4) VALIDADOR ---------- */
