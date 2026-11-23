@@ -52,18 +52,18 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   ok('mesma falta em não-banco é penalizada', R.naoBanco.n === 'Média', R.naoBanco);
   /* banco/financeira: sem preço justo, com o aviso na linha */
   const B = await p.evaluate(() => {
-    const fx = (sec) => { const o = { tk: 'BANC4', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: sec, alr: [], pos: [], neg: [] }, V: null, score: 7, banco: sec[0] === 'Financeiro', al: [] }; return opRow(o, 0); };
+    const fx = (sec) => { const o = { tk: 'BANC4', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: sec, alr: [], pos: [], neg: [] }, V: null, score: 7, banco: sec[0] === 'Financeiro', al: [] }; if (o.banco) o.fx = { ok: false, banco: true, motivo: 'valuation desta financeira em breve' }; return opCartao(o, 0); };
     return { banco: fx(['Financeiro', '']), outro: fx(['Energia', '']) };
   });
-  ok('linha de banco mostra "valuation de banco em breve"', /valuation de banco em breve/.test(B.banco) && /em breve<\/span>/.test(B.banco), B.banco);
+  ok('linha de banco mostra "valuation de banco em breve"', /Faixa indisponível/.test(B.banco) && /valuation desta financeira em breve/.test(B.banco), B.banco);
   ok('linha de empresa comum não mostra isso', !/em breve/.test(B.outro));
   const S1 = await p.evaluate(() => {
     const mk = (n, w) => ({ tk: 'XXXX3', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: ['Energia', ''], alr: [], pos: [], neg: [] }, V: null, score: 7, al: [], cf: { n: n, w: w, f: 1 }, gq: { t: 'balanço do 3º tri de 2026 · preço de 1 h atrás', fraca: false, w: [] } });
-    return { alta: opRow(mk('Alta', []), 1), media: opRow(mk('Média', ['faltam 2 de 7 indicadores']), 1), baixa: opRow(mk('Baixa', ['preço velho (de 09/11)']), 1) };
+    return { alta: opCartao(mk('Alta', []), 1), media: opCartao(mk('Média', ['faltam 2 de 7 indicadores']), 1), baixa: opCartao(mk('Baixa', ['preço velho (de 09/11)']), 1) };
   });
   ok('selo Alta aparece com a data do balanço', /Confiança alta/.test(S1.alta) && /balanço do 3º tri/.test(S1.alta), S1.alta);
   ok('selo Média mostra o motivo', /Confiança média/.test(S1.media) && /faltam 2 de 7 indicadores/.test(S1.media));
-  ok('selo Baixa mostra o motivo em destaque', /Confiança baixa/.test(S1.baixa) && /⚠ preço velho \(de 09\/11\)/.test(S1.baixa) && /opq fr/.test(S1.baixa), S1.baixa);
+  ok('selo Baixa mostra o motivo em destaque', /Confiança baixa ⚠/.test(S1.baixa) && /preço velho \(de 09\/11\)/.test(S1.baixa) && /opq2/.test(S1.baixa), S1.baixa);
   const V = await p.evaluate(() => {
     const mk = (tk) => ({ tk: tk, d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: ['Energia', ''], alr: [], pos: [], neg: [] }, V: null, score: 7, al: [], cf: { n: 'Baixa', w: ['preço velho (de 09/11)'], f: 0 } });
     return { rank: [opRankV(100, { f: 1 }), opRankV(100, { f: 0.8 }), opRankV(100, null)], vazio: opVerHtml({ X: [] }, ''), cheio: opVerHtml({ X: [mk('PINE4')] }, '<div class="opr oph"></div>') };
@@ -74,14 +74,14 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   const X = await p.evaluate(() => {
     const mk = (n, w, up) => ({ tk: 'XXXX3', d: { cur: 'BRL', price: 10, k: {} }, A: { N: {}, sec: ['Energia', ''], alr: [], pos: [], neg: [] }, V: { med: 10 * (1 + up), up: up }, score: 7, al: [], cf: { n: n, w: w.slice(), f: n === 'Alta' ? 1 : 0.8 } });
     const a = opSanidade(mk('Média', ['faltam 2 de 7 indicadores'], 0.9)), b = opSanidade(mk('Alta', [], 0.9)), c = opSanidade(mk('Média', [], 0.4)), d = opSanidade(mk('Alta', [], 0.5)), e = opSanidade(mk('Baixa', ['preço velho'], 0.9));
-    return { a: a.cf, b: b.cf, c: c.cf, d: d.cf, e: e.cf, rb: opRow(b, 1), ra: opRow(a, 1) };
+    return { a: a.cf, b: b.cf, c: c.cf, d: d.cf, e: e.cf, rb: opCartao(b, 1), ra: opCartao(a, 1) };
   });
   ok('Média + potencial > 50% vai para verificação com o motivo', X.a.ext === true && X.a.w[0] === 'potencial extremo, dados incompletos' && X.a.w.length === 2, X.a);
   ok('Alta + potencial > 50% fica normal com aviso', !X.b.ext && X.b.aviso === 'potencial muito alto, confira' && /Potencial muito alto, confira/.test(X.rb), X.b);
   ok('Média com potencial de 40% não é mexida', !X.c.ext && !X.c.aviso && !X.c.w.length, X.c);
   ok('exatamente 50% não dispara', !X.d.ext && !X.d.aviso, X.d);
   ok('Baixa não ganha motivo extra', !X.e.ext && X.e.w.length === 1, X.e);
-  ok('linha em verificação mostra ⚠ e o motivo', /⚠ potencial extremo, dados incompletos/.test(X.ra) && /opq fr/.test(X.ra), X.ra);
+  ok('linha em verificação mostra ⚠ e o motivo', /potencial extremo, dados incompletos/.test(X.ra) && /Confiança média ⚠/.test(X.ra) && /opq2/.test(X.ra), X.ra);
   /* E3 (1.77.0): motor único. Mercado fictício: opEval/fxFor/fundOf trocados por versões controladas. */
   const E3 = await p.evaluate(() => {
     const fx = (est, ms, esp) => ({ ok: true, est: est, opp: est !== 'acima', ms: ms, espPct: esp == null ? 0.3 : esp, cons: 10, cen: 14, oti: 18, esp: 13, F: brl });
@@ -103,7 +103,7 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
       d = novo(); o('ACIM3', 9, 9e6); FX.ACIM3 = fx('acima', -0.3); o('ACI2', 9, 8e6, { }); FX.ACI2 = fx('acima', -0.1); o('OKOK3', 8, 7e6); FX.OKOK3 = fx('perto', -0.05);
       Object.keys(EV).forEach(k => { d[k] = [0]; }); const cfOld = opConf; opConf = x => x.tk === 'ACI2' ? { n: 'Baixa', w: ['preço velho'], f: 0 } : { n: 'Alta', w: [], f: 1 };
       r = roda(); opConf = cfOld; out.c = { D: r.D.map(x => x.tk), X: r.X.map(x => x.tk), acima: r.D.concat(r.X).filter(x => x.fx && x.fx.ok && x.fx.est === 'acima').length, skipF: r.skipF,
-        html: r.D.map(x => opRow(x, 1)).join('') };
+        html: r.D.map(x => opCartao(x, 1)).join('') };
       /* (d) teto de 60 candidatas na faixa: 70 ações boas, só as 60 melhores (nota, depois liquidez) recebem faixa */
       d = novo(); let chamadas = 0; for (let i = 0; i < 70; i++) { const tk = 'T' + String(i).padStart(3, '0') + '3'; o(tk, 6 + (i % 40) / 10, 1e7 - i); FX[tk] = fx('abaixo', 0.2); d[tk] = [0]; }
       const fxOld = fxFor; fxFor = x => { chamadas++; return FX[x.tk]; }; roda(); fxFor = fxOld; out.d = chamadas;
@@ -144,8 +144,8 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
     opData = () => ({ W: [o], M: [], D: [o], X: [], n: 0, cand: 10, skipC: 0, skipV: 0, skipF: 3, skipS: 0 }); const v0 = OPV;
     try { OPV = 'lst'; const a = oppHtml(); OPV = 'gar'; const b = oppHtml(); return { a: a, b: b }; } finally { opData = ant; OPV = v0; }
   });
-  ok('E3 (C2): cabeçalho da lista diz Potencial (nunca Esperado)', /<span>Potencial<\/span>/.test(CAB.a) && !/<span>Esperado<\/span>/.test(CAB.a) && /<span>Potencial<\/span>/.test(CAB.b), CAB.a.slice(0, 300));
-  ok('E3 (C2): nota explica Potencial sem prometer retorno e conta as ações acima da faixa', /A coluna Potencial mostra quanto o preço de hoje teria de subir/.test(CAB.b) && /Não é retorno anual nem promessa/.test(CAB.b) && /3 ficaram de fora por estarem acima disso/.test(CAB.b) && !/retorno esperado/i.test(CAB.b), CAB.b.slice(-900));
+  ok('E3 (C2): legenda da coluna diz potencial (nunca Esperado)', /<small>potencial<\/small>/.test(CAB.a) && !/Esperado/.test(CAB.a) && /<small>potencial<\/small>/.test(CAB.b), CAB.a.slice(0, 300));
+  ok('E3 (C2): nota explica Potencial sem prometer retorno e conta as ações acima da faixa', /O potencial \(embaixo da nota\) mostra quanto o preço de hoje teria de subir/.test(CAB.b) && /Não é retorno anual nem promessa/.test(CAB.b) && /3 ficaram de fora por estarem acima disso/.test(CAB.b) && !/retorno esperado/i.test(CAB.b), CAB.b.slice(-900));
   /* E3 (g): contexto do assistente com o.V=null (banco) não quebra e mantém a linha ALERTAS */
   const AS = await p.evaluate(() => {
     const ant = opData, cf = { n: 'Média', w: [], f: 0.8 };

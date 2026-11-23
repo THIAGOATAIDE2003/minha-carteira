@@ -70,10 +70,10 @@ function bkRiscos(o){var f=o.fx,r=[];if(!f||!f.ok)return r;var sd=o.sd||bkSaude(
   if(f.nm.ult!=null&&f.nm.ult<f.nm.p25)r.push('o ROE de agora ('+num(f.nm.ult,1)+'%) está abaixo do que o banco costuma entregar');
   if(o.d&&o.d.k&&o.d.k.hi){var dd=o.d.price/o.d.k.hi-1;if(dd<=-0.15)r.push('o preço já caiu '+Math.round(Math.abs(dd*100))+'% da máxima do ano: pode estar barato por um motivo')}
   r.push('inadimplência, Basileia e provisões não foram avaliadas (não temos esses dados)');return r.slice(0,3)}
-function bkSaudeRow(o){var s=o.sd,h='';
+function bkSaudeRow(o,semR){var s=o.sd,h='';
   if(s.n>=1)h+='<div class="fql"><b class="opw">⚠ Saúde do banco: '+esc(s.mot.join('; '))+'</b> <small class="muted">('+s.n+' alerta'+(s.n>1?'s':'')+(s.n>=2?' — por isso está em verificação':'')+')</small></div>';
   h+='<div class="fql muted"><small>Não avaliado: '+esc(s.desc.join(', '))+'. Por isso a confiança do dado nunca é alta.</small></div>';
-  if(o.fx&&o.fx.ok){var r=bkRiscos(o);h+='<div class="fql"><span><b>O que pode dar errado:</b> '+esc(r.join('; '))+'.</span></div>'}
+  if(o.fx&&o.fx.ok&&!semR){var r=bkRiscos(o);h+='<div class="fql"><span><b>O que pode dar errado:</b> '+esc(r.join('; '))+'.</span></div>'}
   return h}
 function bkSaudePrem(o){var s=o.sd,f=o.fx,nm=f.nm,q=function(ok,t){return '<li>'+rkLvl(ok===null?'at':ok?'ok':'al')+'<div><p style="margin:0;color:var(--fg)">'+t+'</p></div></li>'};
   return '<ul class="rkl fqs"><li><b>Saúde do banco (o que o app consegue calcular)</b></li>'+

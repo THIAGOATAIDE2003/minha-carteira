@@ -122,26 +122,26 @@ const val = (L0, fm, g, r, m) => { let e = L0 * fm, v = 0; for (let i = 1; i <= 
   const H = await p.evaluate((d) => {
     MD.d = { idx: { selic: { last: 13 } } }; VALP = {};
     const mk = (doc, P, pl) => { const A = { N: { pl: pl || 5, cr5: 6 }, pe: { pl: 8 }, sec: ['Energia', ''], alr: [], pos: [], neg: [] }; const o = { tk: 'TEST3', d: { cur: 'BRL', price: P, k: {} }, A: A, V: null, score: 7, al: [], cf: { n: 'Alta', w: [], f: 1 } }; FIN['cvm/TEST3'] = { d: doc, at: Date.now() }; o.fx = fxFor(o); return o; };
-    const o = mk(d.base, 10); FXOPEN = {}; const fechada = opRow(o, 1); FXOPEN.TEST3 = true; const aberta = opRow(o, 1); FXOPEN = {};
-    const t = mk(d.trap, 10); const ra = opAlerts(o, {}, false), rt = opRow(t, 1);
+    const o = mk(d.base, 10); FXOPEN = {}; const fechada = opCartao(o, 1); FXOPEN.TEST3 = true; const aberta = opCartao(o, 1); FXOPEN = {};
+    const t = mk(d.trap, 10); const ra = opAlerts(o, {}, false), rt = opCartao(t, 1);
     const cara = mk(d.base, 10, 200), alc = opAlerts(cara, {}, true), pv = fxFaixa(o.fx);
-    FXOPEN.TEST3 = true; const sai0 = o.fx.sai; o.fx.sai = 0.8; const s80 = opRow(o, 1); o.fx.sai = 0.6; const s60 = opRow(o, 1); o.fx.sai = 0.75; const s75 = opRow(o, 1); o.fx.sai = sai0; FXOPEN = {};
+    FXOPEN.TEST3 = true; const sai0 = o.fx.sai; o.fx.sai = 0.8; const s80 = opCartao(o, 1); o.fx.sai = 0.6; const s60 = opCartao(o, 1); o.fx.sai = 0.75; const s75 = opCartao(o, 1); o.fx.sai = sai0; FXOPEN = {};
     const soma = fxVal(10, 1, 5, 12, 10), div = fxVal(10, 1, 5, 12, 0);
-    return { fechada, aberta, rt, ra, rcara: opRow(cara, 1), alc, pv, esp: o.fx.espPct, s80, s60, s75, sai0, saiCalc: fxSaida(10, 1, 5, 12, 10), saiEsperada: (soma - div) / soma };
+    return { fechada, aberta, rt, ra, rcara: opCartao(cara, 1), alc, pv, esp: o.fx.espPct, s80, s60, s75, sai0, saiCalc: fxSaida(10, 1, 5, 12, 10), saiEsperada: (soma - div) / soma };
   }, { base: doc(), trap: doc((r, i) => { if (i >= 8) r.luc = [100, 95, 90, 85][i - 8]; }) });
-  ok('linha mostra a faixa (de conservador a otimista) e a central', /Faixa <b class="num">R\$\s[\d.,]+ a R\$\s[\d.,]+<\/b> · central R\$/.test(H.fechada), H.fechada.slice(-900));
-  ok('linha mostra margem de segurança sobre o conservador', /Margem de segurança <b class="num (gain|loss)">/.test(H.fechada) && /sobre o conservador/.test(H.fechada));
+  ok('linha mostra a faixa (de conservador a otimista) e a central', /Faixa <b class="num">R\$\s[\d.,]+ a R\$\s[\d.,]+<\/b> · central <b class="num">R\$/.test(H.fechada), H.fechada.slice(-900));
+  ok('linha mostra margem de segurança sobre o conservador', /Margem de segurança <b class="num">/.test(H.fechada) && /sobre o conservador/.test(H.fechada));
   ok('premissas escondidas até tocar; botão aparece', !/Lucro normalizado/.test(H.fechada) && /data-fxp="TEST3"/.test(H.fechada) && />Premissas</.test(H.fechada));
   ok('ao tocar mostra premissas: lucro normalizado, crescimento, margem, desconto, múltiplo e pesos', /Lucro normalizado/.test(H.aberta) && /Crescimento do lucro/.test(H.aberta) && /Margem líquida/.test(H.aberta) && /Desconto \(% a\.a\.\)/.test(H.aberta) && /Múltiplo de saída/.test(H.aberta) && /pesos 25\/50\/25/.test(H.aberta) && /Esconder premissas/.test(H.aberta));
-  ok('coluna Potencial mostra o potencial até o valor justo (não um número único de preço justo)', !/justo R\$/.test(H.fechada) && new RegExp('opu (gain|loss)">[+−]').test(H.fechada));
+  ok('coluna Potencial mostra o potencial até o valor justo (não um número único de preço justo)', !/justo R\$/.test(H.fechada) && /<span class="opu"><span aria-hidden="true"><b>[+−]/.test(H.fechada));
   ok('premissas dizem "Potencial até o valor justo" com balão e sem "Retorno esperado"', /Potencial até o valor justo<\/b> <button[^>]*data-bal="[^"]*não é retorno anual/.test(H.aberta) && !/Retorno esperado/i.test(H.aberta) && !/Retorno esperado/i.test(H.fechada), H.aberta.slice(-700));
   ok('C3: fxSaida = parte do valor que vem da venda no ano 5 (confere com fxVal sem e com saída)', Math.abs(H.saiCalc - H.saiEsperada) < 1e-9 && H.sai0 > 0 && H.sai0 < 1, [H.saiCalc, H.saiEsperada, H.sai0]);
   ok('C3: balão de dependência aparece nas premissas com saída de 80%, com o percentual', /Dependência do preço de venda<\/b> <button[^>]*data-bal="80% do valor justo vem do preço de venda no ano 5, não dos dividendos\. Se o múltiplo cair, o valor cai junto\."/.test(H.s80), H.s80.slice(-600));
   ok('C3: sem balão com saída de 60% ou exatamente 75%, e nunca na linha fechada', !/Dependência do preço de venda/.test(H.s60) && !/Dependência do preço de venda/.test(H.s75) && !/Dependência do preço de venda/.test(H.fechada));
-  ok('armadilha de valor aparece na linha e nas premissas', /Possível armadilha de valor/.test(H.rt));
+  ok('armadilha de valor aparece na linha e no bloco de avisos, sem o selo repetido sob a margem', /<b>Armadilha de valor:<\/b>/.test(H.rt) && /<b class="opar">Armadilha de valor<\/b>/.test(H.rt) && !/⚠ Possível armadilha de valor<\/b>/.test(H.rt));
   ok('sem armadilha no caso normal', !/armadilha/.test(H.fechada));
   ok('alerta de ideia usa o conservador, não o preço justo único', H.ra.length >= 0 && !H.ra.some(a => /Abaixo do preço justo/.test(a[1])));
-  ok('preço acima da faixa: "Acima do cenário conservador" e alerta de topo para quem tem', /Acima do cenário conservador/.test(H.rcara) && H.alc.some(a => /Acima do cenário otimista/.test(a[1])), H.alc);
+  ok('preço acima da faixa: etiqueta "Acima da faixa" (selo antigo saiu) e alerta de topo para quem tem', /Acima da faixa/.test(H.rcara) && !/Acima do cenário conservador/.test(H.rcara) && H.alc.some(a => /Acima do cenário otimista/.test(a[1])), H.alc);
   ok('faixa em texto: "R$ x a R$ y"', /^R\$\s[\d.,]+ a R\$\s[\d.,]+$/.test(H.pv.replace(/ /g, ' ')), H.pv);
   /* trava de sanidade (1.62.3) passa a olhar o retorno esperado da faixa */
   const Z = await p.evaluate(() => {
