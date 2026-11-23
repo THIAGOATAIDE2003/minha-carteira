@@ -23,10 +23,15 @@ function bkTrap(D){var t=(D&&D.t||[]).slice(-4);if(t.length<4)return null;
   var caiu=function(k){return t.every(function(r){return r[k]!=null})&&t[0][k]>t[1][k]&&t[1][k]>t[2][k]&&t[2][k]>t[3][k]};
   if(caiu('luc'))return 'lucro';if(caiu('roe'))return 'ROE';return null}
 /* ROE sustentável: mediana do ROE (12m) dos últimos 12 trimestres, sem os atípicos marcados pelo robô; p25 e p75 para os outros cenários */
+/* quando deve sair da verificação: o k-ésimo balanço depois do último que temos, pelo prazo legal da CVM (ITR 45 dias após o trimestre, DFP 90 dias após o ano) */
+function fxQuando(D,falta){var t=D&&D.t&&D.t.length?D.t[D.t.length-1]:null;if(!t||!(falta>0))return '';var a=t.a,q=t.t,prazo=null,lab='';
+  for(var i=0;i<falta;i++){q++;if(q===5){a++;q=1}prazo=new Date(Date.UTC(a,q*3,0)+(q===4?90:45)*864e5);lab=q+'T'+String(a).slice(2)}
+  var d=prazo.toISOString().slice(0,10),pass=d<today(),dm=d.split('-').reverse().join('/');
+  return pass?'o balanço do '+lab+' já deveria estar disponível (prazo legal da CVM: '+dm+'); sai da verificação assim que o robô ler o balanço':'deve sair da verificação por volta de '+dm+' (prazo legal da CVM do balanço do '+lab+')'}
 function bkNorm(D){if(!D||!D.t||!D.t.length)return {ok:false,motivo:'sem histórico da CVM'};
   var t=D.t.slice(-12),nr={};(D.nr||[]).forEach(function(n){nr[n.q]=1});
   var inc=t.filter(function(r){return r.roe!=null&&isFinite(r.roe)&&!nr[hiQ(r)]}),excl=t.filter(function(r){return nr[hiQ(r)]}).map(hiQ);
-  if(t.length<BKMIN||inc.length<BKMIN)return {ok:false,falta:Math.max(1,BKMIN-inc.length),tem:inc.length,motivo:'histórico curto: '+inc.length+' de '+BKMIN+' trimestres com ROE (faltam '+Math.max(1,BKMIN-inc.length)+'; cada balanço novo da CVM soma 1)'};
+  if(t.length<BKMIN||inc.length<BKMIN)return {ok:false,falta:Math.max(1,BKMIN-inc.length),tem:inc.length,motivo:'histórico curto: '+inc.length+' de '+BKMIN+' trimestres com ROE (faltam '+Math.max(1,BKMIN-inc.length)+'; cada balanço novo da CVM soma 1). Previsão: '+fxQuando(D,Math.max(1,BKMIN-inc.length))};
   var u=t[t.length-1];if(!(u.pl>0))return {ok:false,motivo:'patrimônio do último balanço não positivo (plano de contas estranho)'};
   var v=inc.map(function(r){return r.roe}),mx=Math.max.apply(null,v),mn=Math.min.apply(null,v),p25=fxPct(v,0.25),med=fxPct(v,0.5),p75=fxPct(v,0.75);
   if(!(med>0))return {ok:false,motivo:'ROE sustentável não positivo ('+num(med,1)+'%)'};
