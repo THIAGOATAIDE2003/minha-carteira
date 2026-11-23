@@ -19,7 +19,8 @@ function fxNorm(D){if(!D||!D.t||!D.t.length)return {ok:false,motivo:'sem histór
   if(!(last12>0))return {ok:false,motivo:'lucro dos últimos 12 meses não positivo'};
   var ml=inc.filter(function(r){return r.ml!=null}).map(function(r){return r.ml}),mm=ml.length>=6?{p25:fxPct(ml,0.25),med:fxPct(ml,0.5),p75:fxPct(ml,0.75)}:null;
   if(mm&&!(mm.med>0))mm=null;
-  return {ok:true,n:t.length,usados:inc.length,excl:excl,med:med,anual:med*4,last12:last12,ml:mm,ref:hiQ(t[t.length-1])}}
+  var lv=inc.map(function(r){return r.luc});
+  return {ok:true,n:t.length,usados:inc.length,excl:excl,med:med,p25q:fxPct(lv,0.25),p75q:fxPct(lv,0.75),anual:med*4,last12:last12,ml:mm,ref:hiQ(t[t.length-1])}}
 /* tendência: lucro ou margem caindo 3 trimestres seguidos (4 pontos, cada um menor que o anterior) */
 function fxTrap(D){var t=(D&&D.t||[]).slice(-4);if(t.length<4)return null;
   var caiu=function(k){return t.every(function(r){return r[k]!=null})&&t[0][k]>t[1][k]&&t[1][k]>t[2][k]&&t[2][k]>t[3][k]};

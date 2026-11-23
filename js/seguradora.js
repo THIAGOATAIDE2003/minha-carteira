@@ -6,7 +6,8 @@
 var SGMIN=6,        /* mínimo de pontos de P/L histórico (ou de pares) */
     SGPLMIN=3,SGPLMAX=40, /* P/L alvo fora disso = múltiplo implausível, sem faixa */
     SGRZ=[0.75,1.35], /* lucro de 12 meses da CVM ÷ lucro implícito no P/L do mercado: fora disso o plano de contas não bate */
-    SGPAY=1;        /* payout sobre o lucro normalizado acima de 100% = alerta */
+    SGPAY=1,
+    SGOLD=false;    /* só para comparar com a versão anterior (lucro igual nos 3 cenários) */        /* payout sobre o lucro normalizado acima de 100% = alerta */
 /* tipo da financeira: null = não é desta parte (banco ou outra financeira) */
 function sgKind(tk){if(bkIs(tk))return null;if(tk==='B3SA3')return 'bolsa';var s=setorOf(tk).s;return s==='Seguradoras'||s==='Corretoras de Seguros'?'seguradora':null}
 function sgIs(tk){return !!sgKind(tk)}
@@ -32,11 +33,13 @@ function sgCalc(D,P,tk,Fu){var nm=fxNorm(D);if(!nm.ok)return nm;var kind=sgKind(
   else{pares=sgPares(tk);if(pares.length>=SGMIN-2){fonte='setor';var pv=pares.map(function(x){return x[1]});mult=[fxPct(pv,0.25),fxPct(pv,0.5),fxPct(pv,0.75)]}
     else return {ok:false,motivo:'sem histórico de preço ('+ph.length+' de '+SGMIN+' trimestres) e sem pares suficientes no setor ('+pares.length+' de '+(SGMIN-2)+')'}}
   if(!(mult[0]>=SGPLMIN&&mult[2]<=SGPLMAX))return {ok:false,motivo:'P/L alvo implausível ('+num(mult[0],1)+'× a '+num(mult[2],1)+'×; aceito de '+SGPLMIN+'× a '+SGPLMAX+'×)'};
-  var pr=[{n:'Conservador',pl:mult[0]},{n:'Central',pl:mult[1]},{n:'Otimista',pl:mult[2]}];pr.forEach(function(c){c.v=c.pl*L0});
-  var trap=fxTrap(D),trap2=trap==='lucro'?'lucro':null,cen=pr[1].v;if(trap2){cen=(pr[0].v+pr[1].v)/2;pr[1].v=cen}
+  /* lucro por ação dos cenários: percentil 25, mediana e percentil 75 dos trimestres normais, anualizados (×4); o conservador tem 2 cortes (lucro e P/L) */
+  var Ls=SGOLD?[L0,L0,L0]:[nm.p25q*4/sh,L0,nm.p75q*4/sh],pr=[{n:'Conservador',pl:mult[0],L:Ls[0]},{n:'Central',pl:mult[1],L:Ls[1]},{n:'Otimista',pl:mult[2],L:Ls[2]}];pr.forEach(function(c){c.v=c.pl*c.L});
+  var mx={pls:mult,l:pr.map(function(c){return {n:c.n,L:c.L,c:mult.map(function(m){return {pl:m,v:m*c.L}})}})};
+  var trap=fxTrap(D),trap2=trap==='lucro'?'lucro':null,cen=pr[1].v;if(trap2){cen=(pr[0].v+pr[1].v)/2;pr[1].v=cen}if(!(pr[0].v>0))return {ok:false,motivo:'cenário conservador sem valor (lucro do percentil 25 não positivo)'};
   var w=FXW,esp=(w[0]*pr[0].v+w[1]*pr[1].v+w[2]*pr[2].v)/100,cons=pr[0].v,rel=P/cons-1,
     dps=Fu.dy>0?Fu.dy*P/100:null,pay=dps!=null&&L0>0?dps/L0:null,ds=dps!=null?Math.min(dps,L0):null;
-  return {ok:true,seg:true,kind:kind,nm:nm,pr:pr,P:P,L0:L0,cons:cons,cen:cen,oti:pr[2].v,esp:esp,espPct:esp/P-1,ms:(cons-P)/cons,trap:trap2,fonte:fonte,pts:ph.length,pares:pares&&pares.slice(0,8),
+  return {ok:true,seg:true,kind:kind,nm:nm,pr:pr,mx:mx,P:P,L0:L0,cons:cons,cen:cen,oti:pr[2].v,esp:esp,espPct:esp/P-1,ms:(cons-P)/cons,trap:trap2,fonte:fonte,pts:ph.length,pares:pares&&pares.slice(0,8),
     plHoje:Fu.pl>0?Fu.pl:null,dps:dps,pay:pay,divSust:ds,ySust:ds!=null?ds/P:null,
     est:rel<=0?'abaixo':rel<=FXTOL?'perto':'acima',opp:rel<=FXTOL}}
 function sgSaude(o){var f=o&&o.fx;if(!f||!f.ok||!f.seg)return null;var fl=[],mot=[],D=fxDoc(o.tk);
@@ -66,9 +69,14 @@ function sgSaudePrem(o){var s=o.sd,f=o.fx,q=function(ok,t){return '<li>'+rkLvl(o
 function sgPrem(f){var F=f.F,nm=f.nm,pr=f.pr,td=function(fn){return pr.map(function(c){return '<td class="num">'+fn(c)+'</td>'}).join('')};
   return '<div class="fqp"><p class="note" style="margin:0 0 6px"><b>Lucro normalizado</b>: mediana de '+nm.usados+' trimestres ('+nm.n+' no histórico, até '+esc(nm.ref)+')'+(nm.excl.length?', sem os atípicos ('+esc(nm.excl.join(', '))+')':'')+' = '+qfmt(nm.med)+' por trimestre, '+qfmt(nm.anual)+' por ano = <b>'+F.format(f.L0)+'</b> por ação. Últimos 12 meses no balanço: '+qfmt(nm.last12)+'.</p>'+
     '<div class="atsc"><table class="tb"><thead><tr><th></th>'+pr.map(function(c){return '<th>'+c.n+'</th>'}).join('')+'</tr></thead><tbody>'+
+    '<tr><td>Lucro por ação (normalizado)</td>'+td(function(c){return F.format(c.L)})+'</tr>'+
     '<tr><td>P/L alvo</td>'+td(function(c){return num(c.pl,1)+'×'})+'</tr>'+
     '<tr><td>Valor por ação</td>'+td(function(c){return '<b>'+F.format(c.v)+'</b>'})+'</tr></tbody></table></div>'+
-    '<p class="note" style="margin:6px 0 0">Valor por ação = lucro normalizado por ação × P/L alvo. '+(f.fonte==='historico'?'O P/L alvo vem do P/L histórico da própria ação ('+f.pts+' fins de trimestre: preço do dia ÷ lucro de 12 meses por ação): conservador = percentil 25, central = mediana, otimista = percentil 75.':'Sem histórico de preço suficiente, o P/L alvo vem do P/L de hoje dos pares do mesmo subsetor ('+f.pares.map(function(x){return esc(x[0])+' '+num(x[1],1)+'×'}).join(', ')+'): percentil 25, mediana e percentil 75.')+' O conservador muda só 1 coisa em relação ao central: o P/L (percentil 25); o lucro é o mesmo nos três. P/L de hoje: '+(f.plHoje!=null?num(f.plHoje,1)+'×':'sem dado')+'.</p>'+
-    '<p class="note" style="margin:6px 0 0"><b>Dividendos</b>: hoje '+(f.dps!=null?F.format(f.dps)+' por ação nos últimos 12 meses ('+Math.round(f.dps/f.P*1000)/10+'% do preço)':'sem dado')+(f.pay!=null?', ou '+Math.round(f.pay*100)+'% do lucro normalizado por ação. Sustentável (no máximo o que o lucro normalizado paga): '+F.format(f.divSust)+' por ação, '+num(f.ySust*100,1)+'% do preço.':'.')+'</p>'+
+    '<p class="note" style="margin:6px 0 0">Valor por ação = lucro normalizado por ação × P/L alvo. '+(f.fonte==='historico'?'O P/L alvo vem do P/L histórico da própria ação ('+f.pts+' fins de trimestre: preço do dia ÷ lucro de 12 meses por ação): conservador = percentil 25, central = mediana, otimista = percentil 75.':'Sem histórico de preço suficiente, o P/L alvo vem do P/L de hoje dos pares do mesmo subsetor ('+f.pares.map(function(x){return esc(x[0])+' '+num(x[1],1)+'×'}).join(', ')+'): percentil 25, mediana e percentil 75.')+' Lucro por ação: conservador = percentil 25 dos trimestres normais ×4, central = mediana ×4, otimista = percentil 75 ×4. O conservador tem 2 cortes (lucro e P/L, ambos no percentil 25), nada além disso. P/L de hoje: '+(f.plHoje!=null?num(f.plHoje,1)+'×':'sem dado')+'.</p>'+
+    sgMxHtml(f)+'<p class="note" style="margin:6px 0 0"><b>Dividendos</b>: hoje '+(f.dps!=null?F.format(f.dps)+' por ação nos últimos 12 meses ('+Math.round(f.dps/f.P*1000)/10+'% do preço)':'sem dado')+(f.pay!=null?', ou '+Math.round(f.pay*100)+'% do lucro normalizado por ação. Sustentável (no máximo o que o lucro normalizado paga): '+F.format(f.divSust)+' por ação, '+num(f.ySust*100,1)+'% do preço.':'.')+'</p>'+
     '<p class="anv" style="margin:8px 0 2px"><b>Retorno esperado</b>: média dos 3 cenários com pesos '+FXW.join('/')+' = <b class="num">'+F.format(f.esp)+'</b> (<b class="num '+(f.espPct>=0?'gain':'loss')+'">'+csPc(f.espPct*100)+'</b> sobre o preço de hoje, '+F.format(f.P)+').</p>'+
     '<p class="note" style="margin:0">Vira ideia só se o preço estiver abaixo do conservador ou até '+Math.round(FXTOL*100)+'% acima dele. '+(f.trap?'<b class="hiw">Possível armadilha de valor: o lucro caiu 3 trimestres seguidos, então o cenário central foi rebaixado (média entre conservador e central).</b> ':'')+esc(finNaoK(f.kind).join(', '))+' não entram na conta. É uma estimativa com premissas simples, não garantia.</p></div>'}
+function sgMxHtml(f){var F=f.F,mx=f.mx;if(!mx)return '';
+  return '<p class="note" style="margin:8px 0 2px"><b>E se o P/L ou o lucro forem outros?</b> Valor por ação para cada lucro por ação × cada P/L alvo:</p>'+
+    '<div class="atsc"><table class="tb"><thead><tr><th>Lucro ↓ · P/L →</th>'+mx.pls.map(function(m,i){return '<th>'+num(m,1)+'×'+(i===1?' (mediana)':'')+'</th>'}).join('')+'</tr></thead><tbody>'+
+    mx.l.map(function(l){return '<tr><td>'+l.n+' ('+F.format(l.L)+')</td>'+l.c.map(function(c){return '<td class="num">'+F.format(c.v)+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>'}

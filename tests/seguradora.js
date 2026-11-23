@@ -53,6 +53,18 @@ function doc(luc, f, over) {
   /* tendência */
   const tr = await C(doc(i => i < 9 ? 100 : 100 - (i - 8) * 10));
   ok('lucro caindo 3 trimestres seguidos = armadilha; central vira média entre conservador e central', tr.ok && tr.trap === 'lucro' && Math.abs(tr.cen - (tr.pr[0].v + tr.pr[1].pl * tr.L0) / 2) < 1e-9, [tr.trap, tr.cen, tr.pr]);
+  /* lucro varia entre os cenários: p25, mediana e p75 dos trimestres normais, anualizados */
+  const lv = await C(doc(i => 100 + (i % 3) * 10));
+  ok('lucro por ação: conservador = p25×4÷ações (1,00), central = mediana (1,10), otimista = p75 (1,20)', lv.ok && Math.abs(lv.pr[0].L - 1) < 1e-9 && Math.abs(lv.pr[1].L - 1.1) < 1e-9 && Math.abs(lv.pr[2].L - 1.2) < 1e-9, lv.pr);
+  ok('valor = lucro do cenário × P/L do cenário', lv.pr.every(c => Math.abs(c.v - c.L * c.pl) < 1e-9 || c.n === 'Central'));
+  ok('conservador tem exatamente 2 cortes: lucro p25 e P/L p25 (valor = 1,00 × P/L p25)', Math.abs(lv.cons - lv.pr[0].pl * 1) < 1e-9, lv.cons);
+  ok('matriz P/L × lucro: 3 × 3, a diagonal bate com os cenários', lv.mx.l.length === 3 && lv.mx.pls.length === 3 && lv.mx.l.every((l, i) => Math.abs(l.c[i].v - (i === 1 ? lv.pr[1].v : lv.pr[i].v)) < 1e-9), lv.mx);
+  ok('lucro constante: os 3 lucros por ação são iguais (só o P/L varia)', n.pr[0].L === n.pr[1].L && n.pr[1].L === n.pr[2].L);
+  const old = await p.evaluate(() => { SGOLD = true; return null; });
+  const lo2 = await C(doc(i => 100 + (i % 3) * 10)); await p.evaluate(() => { SGOLD = false; });
+  ok('SGOLD (comparação): lucro igual nos 3 cenários', lo2.pr.every(c => Math.abs(c.L - 1.1) < 1e-9), lo2.pr);
+  const hh = await p.evaluate((x) => { x.F = brl; return sgPrem(x); }, lv);
+  ok('Premissas mostram lucro por ação por cenário e a matriz P/L × lucro', /Lucro por ação \(normalizado\)/.test(hh) && /E se o P\/L ou o lucro/.test(hh) && /2 cortes/.test(hh));
   /* bolsa */
   const bo = await C(doc(100), { tk: 'B3SA3' });
   ok('B3SA3 é "bolsa", não usa ROE nem P/VP', bo.ok && bo.kind === 'bolsa' && bo.pr[0].pvp === undefined, bo.kind);
