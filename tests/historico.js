@@ -34,6 +34,18 @@ const DOC = {
   ok('conta com base negativa diz melhorou/piorou', />melhorou</.test(R.item));
   ok('margem mostra pontos percentuais', /−1,20 p\.p\./.test(R.ml));
   ok('item sem dado some', R.sem === '');
+  /* ROE: acima de 50% ou seguradora = indisponível */
+  const E = await p.evaluate((doc) => {
+    var d2 = JSON.parse(JSON.stringify(doc)); d2.t.forEach(function (r) { if (r.roe != null) r.roe = 68.2 });
+    FIN['cvm/ALTO3'] = { d: d2, at: Date.now() }; HIL.ALTO3 = 1;
+    var d3 = JSON.parse(JSON.stringify(doc)); FIN['cvm/SEG3'] = { d: d3, at: Date.now() }; HIL.SEG3 = 1;
+    var rs = rkSect; rkSect = function (t) { return t === 'SEG3' ? ['Financeiro', 'Previdência e Seguros'] : rs(t) };
+    var o = { alto: hiHtml('ALTO3'), seg: hiHtml('SEG3'), normal: hiHtml('TEST3'), nd: hiRoeNd('X3', 50.1), nd2: hiRoeNd('X3', 50), nd3: hiRoeNd('X3', null) }; rkSect = rs; return o;
+  }, DOC);
+  ok('ROE acima de 50% vira "indisponível para este setor"', /indisp\./.test(E.alto) && /indisponível para este setor/.test(E.alto) && !/68,20%/.test(E.alto));
+  ok('seguradora: ROE indisponível mesmo abaixo de 50%', /indisp\./.test(E.seg) && !/40,00%/.test(E.seg));
+  ok('empresa normal continua mostrando o ROE', /40,00%/.test(E.normal) && !/indisponível para este setor/.test(E.normal));
+  ok('limite: 50 mostra, 50,1 não', E.nd === true && E.nd2 === false && E.nd3 === false, [E.nd, E.nd2, E.nd3]);
   /* carregando (ainda sem cache) */
   const L = await p.evaluate(() => { delete FIN['cvm/NOVO3']; HIL.NOVO3 = 1; return hiHtml('NOVO3'); });
   ok('enquanto baixa mostra "Carregando"', /Carregando o histórico/.test(L), L);

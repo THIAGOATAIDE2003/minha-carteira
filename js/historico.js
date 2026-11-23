@@ -4,6 +4,8 @@ var HIL={};
 function hiDoc(tk){var c=FIN['cvm/'+tk];if(c&&c.d!==undefined&&!c.p)return c.d;
   if(!HIL[tk]){HIL[tk]=1;finGet('cvm',tk).then(function(){try{if(STK.tk===tk&&STV==='tri')stkRender()}catch(e){}})}
   return undefined}
+/* ROE acima de 50% ou de seguradora/previdência não é confiável com as contas da CVM (1.63.2): mostra "indisponível para este setor" em vez de número */
+function hiRoeNd(tk,v){if(v==null)return false;if(Math.abs(v)>50)return true;try{var s=rkSect(tk);return !!(s&&s[0]==='Financeiro'&&/seguro|previd/i.test(s[1]||''))}catch(e){return false}}
 function hiQ(r){return r.t+'T'+String(r.a).slice(2)}
 function hiPp(v){return (v>0?'+':v<0?'−':'')+pf.format(Math.abs(v))+' p.p.'}
 var HIN={rec:'Receita',luc:'Lucro',ml:'Margem líquida',fco:'Caixa operacional',dl:'Dívida líquida'};
@@ -18,9 +20,9 @@ function hiNr(D){var ult=(D.t||[]).slice(-8).map(hiQ);
 function hiHtml(tk){var D=hiDoc(tk),tt='Histórico de trimestres '+bal('Até 12 trimestres da empresa, vindos dos balanços entregues à CVM (ITR e DFP). Receita, lucro, caixa e dívida são do balanço; margem, dívida líquida (dívida menos caixa), ROE dos últimos 12 meses e as comparações são calculadas por regras, não por IA. A tendência olha receita, lucro, margem, caixa operacional e dívida líquida: melhorando, estável ou piorando.');
   if(D===undefined)return '<div class="panel"><h2>'+tt+'</h2><p class="muted">Carregando o histórico…</p></div>';
   if(!D||!D.t||!D.t.length)return '';
-  var rows=D.t.slice(-8).reverse().map(function(r){var m=function(v){return v==null?'<span class="muted">—</span>':qfmt(v)};
-    return '<tr><td>'+hiQ(r)+'</td><td class="num">'+m(r.rec)+'</td><td class="num">'+m(r.luc)+'</td><td class="num">'+(r.ml==null?'<span class="muted">—</span>':pf.format(r.ml)+'%')+'</td><td class="num">'+m(r.dl)+'</td><td class="num">'+(r.roe==null?'<span class="muted">—</span>':pf.format(r.roe)+'%')+'</td><td class="num">'+m(r.fco)+'</td></tr>'}).join('');
+  var nd=0,rows=D.t.slice(-8).reverse().map(function(r){var m=function(v){return v==null?'<span class="muted">—</span>':qfmt(v)};
+    return '<tr><td>'+hiQ(r)+'</td><td class="num">'+m(r.rec)+'</td><td class="num">'+m(r.luc)+'</td><td class="num">'+(r.ml==null?'<span class="muted">—</span>':pf.format(r.ml)+'%')+'</td><td class="num">'+m(r.dl)+'</td><td class="num">'+(r.roe==null?'<span class="muted">—</span>':hiRoeNd(tk,r.roe)?(nd=1,'<span class="muted">indisp.</span>'):pf.format(r.roe)+'%')+'</td><td class="num">'+m(r.fco)+'</td></tr>'}).join('');
   var C=D.cmp||{};
   return '<div class="panel"><h2>'+tt+'</h2>'+hiCmp(C.yoy,'(mesmo trimestre do ano passado)')+hiCmp(C.qoq,'(trimestre anterior)')+hiNr(D)+
     '<div class="atsc"><table class="tb"><thead><tr><th>Tri</th><th>Receita</th><th>Lucro</th><th>Margem</th><th>Dív. líq.</th><th>ROE 12m</th><th>Caixa op.</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '<p class="note">Fonte: '+esc(D.fonte||'CVM')+'. Referência: '+esc(fmtDate(D.ref))+' · coletado em '+esc(fmtDate(D.coleta))+'. Dívida líquida = empréstimos e financiamentos menos caixa e aplicações (não se aplica a bancos). Caixa op. = caixa das atividades operacionais. A comparação com o mesmo trimestre do ano passado é a mais justa, porque tira a sazonalidade.</p></div>'}
+    (nd?'<p class="note">ROE: indisponível para este setor (seguradora, ou valor acima de 50% que as contas da CVM não explicam bem).</p>':'')+'<p class="note">Fonte: '+esc(D.fonte||'CVM')+'. Referência: '+esc(fmtDate(D.ref))+' · coletado em '+esc(fmtDate(D.coleta))+'. Dívida líquida = empréstimos e financiamentos menos caixa e aplicações (não se aplica a bancos). Caixa op. = caixa das atividades operacionais. A comparação com o mesmo trimestre do ano passado é a mais justa, porque tira a sazonalidade.</p></div>'}
