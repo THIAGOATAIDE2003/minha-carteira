@@ -38,6 +38,15 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   /* fatos */
   const F = (f) => p.evaluate((f) => { const pk = PKB(); eval(f); return parFatos(pk); }, f);
   let f = await F('');
+  const tx = (g) => p.evaluate((g) => { const pk = PKB(); eval(g); const x = parFatos(pk); return [].concat(x.fav, x.pre, x.err, x.ace).map(y => y.txt); }, g);
+  let T = await tx("pk.tendencias.ano_contra_ano.itens[0].variacao_pct=-34.6;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=-8.6;pk.tendencias.ano_contra_ano.tendencia='piorando'");
+  ok('verbo já indica o sentido: "lucro caiu 34,6%" e "margem líquida reduziu 8,6 p.p." (sem sinal)', T.some(t => /o lucro caiu 34,6% e a margem líquida reduziu 8,6 p\.p\.$/.test(t)) && !T.some(t => /(caiu|reduziu|subiu|aumentou) [−+]/.test(t)), T);
+  ok('acompanhar usa verbo e valor sem sinal', T.some(t => /^A margem líquida reduziu 8,6 p\.p\. no último ano\.$/.test(t)), T);
+  T = await tx('pk.saude_financeira=null');
+  ok('tendência melhorando: "subiu" e "aumentou", valores sem sinal', T.some(t => /o lucro subiu 28,6% e a margem líquida aumentou 1,2 p\.p\. \(tendência: melhorando\)/.test(t)) && T.some(t => /^A margem líquida aumentou 1,2 p\.p\. no último ano\.$/.test(t)), T);
+  T = await tx("pk.saude_financeira=null;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=0;pk.tendencias.ano_contra_ano.itens[0].variacao_pct=0");
+  ok('variação zero vira "ficou estável" (sem "0,0")', T.some(t => /o lucro ficou estável e a margem líquida ficou estável/.test(t)) && !T.some(t => /ficou estável [\d]|0,0 p\.p/.test(t)), T);
+  for (const g of ['', "pk.tendencias.ano_contra_ano.itens[0].variacao_pct=-34.6;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=-8.6", "pk.tendencias.ano_contra_ano.itens[0].variacao_pct=-34.6;pk.tendencias.ano_contra_ano.itens[1].variacao_pp=0;pk.limitacoes=['a: b.']", "pk.faixa=null;pk.saude_financeira=null;pk.tendencias=null"]) { T = await tx(g); ok('nenhum fato tem ponto duplo ("p.p..")', !T.some(t => /[^.]\.\.(?!\.)/.test(t)), T); }
   ok('vento favorável SEMPRE em a favor, nunca em preocupam', f.fav.some(x => /^Vento macro favorável/.test(x.txt)) && !f.pre.some(x => /Vento macro/.test(x.txt)), f);
   f = await F("pk.vento_macro.resultado='contrário';pk.vento_macro.razao='dólar alto pesa: custos em dólar.'");
   ok('vento contrário SEMPRE em preocupam (obrigatório), nunca em a favor', f.pre[0].txt.startsWith('Vento macro contrário') && f.pre[0].obr && !f.fav.some(x => /Vento macro/.test(x.txt)), f);

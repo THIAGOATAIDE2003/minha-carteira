@@ -10,6 +10,8 @@ var PARMAX={fav:3,pre:4,err:2,ace:3};
 function parF(v,d){return (v<0?'−':'')+Math.abs(+v).toFixed(d).replace('.',',')}
 function parI(v){return (v<0?'−':'')+String(Math.round(Math.abs(v))).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
 function parX(v){return parF(v,Math.abs(v)<1?2:1)}
+/* o verbo já diz o sentido (subiu/caiu, aumentou/reduziu): o valor sai sem sinal; zero vira "ficou estável" */
+function parVb(nome,v,u,up,dn){return v>0?nome+' '+up+' '+parF(Math.abs(v),1)+u:v<0?nome+' '+dn+' '+parF(Math.abs(v),1)+u:nome+' ficou estável'}
 function parSg(v,d,u){return (v>0?'+':v<0?'−':'')+Math.abs(+v).toFixed(d).replace('.',',')+u}
 function parP(pk,v){return pk.moeda+' '+parF(v,2)}
 function parIt(c,n){var l=(c&&c.itens||[]).filter(function(x){return x.item===n})[0];return l||null}
@@ -42,7 +44,7 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   if(f&&f.margem_de_seguranca_pct>=0&&f.preco_hoje_frente_ao_conservador==='abaixo do conservador')add(fav,'O preço de '+parP(pk,pk.preco)+' está abaixo do cenário conservador de '+parP(pk,f.conservador)+' (margem de segurança de '+parF(f.margem_de_seguranca_pct,1)+'%).');
   if(vm&&vm.resultado==='favorável')add(fav,'Vento macro favorável: '+vm.razao);
   if(sd&&sd.testes_reprovados_de_3===0){var sx=[];if(sd.caixa_maior_que_a_divida)sx.push('a empresa tem mais caixa do que dívida');else if(sd.divida_liquida_sobre_patrimonio!=null)sx.push('dívida líquida de '+parX(sd.divida_liquida_sobre_patrimonio)+'× o patrimônio');if(sd.cobertura_de_juros!=null)sx.push('o lucro da operação cobre '+parF(sd.cobertura_de_juros,1)+'× os juros');add(fav,'Os 3 testes de saúde financeira passaram'+(sx.length?': '+sx.join(' e ')+'.':'.'))}
-  if(tl&&tl.tendencia==='melhorando'&&lucA&&mlA&&lucA.variacao_pct!=null&&mlA.variacao_pp!=null)add(fav,'De '+tl.de+' para '+tl.para+', o lucro variou '+parSg(lucA.variacao_pct,1,'%')+' e a margem líquida variou '+parSg(mlA.variacao_pp,1,' p.p.')+' (tendência: melhorando).');
+  if(tl&&tl.tendencia==='melhorando'&&lucA&&mlA&&lucA.variacao_pct!=null&&mlA.variacao_pp!=null)add(fav,'De '+tl.de+' para '+tl.para+', '+parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu')+' e '+parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu')+' (tendência: melhorando).');
   if(f&&f.retorno_esperado_pct>0&&f.retorno_esperado_pct<=100)add(fav,'O retorno esperado pelo modelo (média ponderada dos 3 cenários contra o preço de hoje) é de '+parF(f.retorno_esperado_pct,1)+'%.');
   if(cx!=null&&cx>0)add(fav,'O caixa operacional dos últimos 12 meses foi de '+parI(cx)+' milhões.');
   /* preocupam (os obrigatórios entram primeiro) */
@@ -56,7 +58,7 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   if(sd&&cx!=null&&cx<=0)add(pre,'O caixa operacional dos últimos 12 meses foi de '+parI(cx)+' milhões.',true);
   if(f&&f.retorno_esperado_pct>100)add(pre,'O retorno esperado de '+parF(f.retorno_esperado_pct,1)+'% é muito alto: vale conferir com cuidado as premissas da faixa.');
   (pk.lucros_atipicos||[]).filter(function(n){return n.recente}).slice(0,1).forEach(function(n){add(pre,'O lucro de '+n.trimestre+' ('+parI(n.lucro_milhoes)+' milhões) ficou '+(n.tipo==='lucro acima do normal'?'acima':'abaixo')+' do normal (mediana de '+parI(n.mediana_milhoes)+' milhões) e pode não se repetir.')});
-  if(tl&&((lucA&&lucA.variacao_pct<0)||(mlA&&mlA.variacao_pp<=-1))){var pp=[];if(lucA&&lucA.variacao_pct!=null)pp.push('o lucro variou '+parSg(lucA.variacao_pct,1,'%'));if(mlA&&mlA.variacao_pp!=null)pp.push('a margem líquida variou '+parSg(mlA.variacao_pp,1,' p.p.'));add(pre,'De '+tl.de+' para '+tl.para+', '+pp.join(' e ')+(/\.$/.test(pp[pp.length-1])?'':'.'))}
+  if(tl&&((lucA&&lucA.variacao_pct<0)||(mlA&&mlA.variacao_pp<=-1))){var pp=[];if(lucA&&lucA.variacao_pct!=null)pp.push(parVb('o lucro',lucA.variacao_pct,'%','subiu','caiu'));if(mlA&&mlA.variacao_pp!=null)pp.push(parVb('a margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu'));add(pre,'De '+tl.de+' para '+tl.para+', '+pp.join(' e ')+(/\.$/.test(pp[pp.length-1])?'':'.'))}
   pre=pre.filter(function(x){return x.obr}).concat(pre.filter(function(x){return !x.obr}));
   if(pre.length<2)add(pre,'Mesmo sem alertas fortes nos números, a faixa de preço justo é uma estimativa simples e pode estar errada.');
   /* o que me faria estar errado */
@@ -70,10 +72,10 @@ function parFatos(pk){var f=pk.faixa,sd=pk.saude_financeira,vm=pk.vento_macro,tl
   var sdFalha=sd&&sd.testes_reprovados_de_3>=1;
   var aSaude=[];if(sd&&sd.cobertura_de_juros!=null)aSaude.push('A cobertura de juros (hoje: '+parF(sd.cobertura_de_juros,1)+'×; mínimo desejado: '+parF(lim.cobertura_juros,1)+'×).');
   if(sd&&sd.divida_liquida_sobre_ebitda!=null)aSaude.push('A dívida líquida sobre o EBITDA (hoje: '+parX(sd.divida_liquida_sobre_ebitda)+'×; limite do setor: '+parF(lim.divida_ebitda,1)+'×).');else if(sd&&sd.divida_liquida_sobre_patrimonio!=null&&!sd.caixa_maior_que_a_divida)aSaude.push('A dívida líquida sobre o patrimônio (hoje: '+parX(sd.divida_liquida_sobre_patrimonio)+'×; limite: '+parF(lim.divida_patrimonio,1)+'×).');
-  var aLuc=nm?['O lucro do próximo balanço contra a mediana normalizada de '+parI(nm.por_trimestre_milhoes)+' milhões por trimestre.']:[],aMl=mlA&&mlA.variacao_pp!=null?['A margem líquida (variação no último ano: '+parSg(mlA.variacao_pp,1,' p.p.')+').']:[],aCx=cx!=null?['O caixa operacional de 12 meses (hoje: '+parI(cx)+' milhões).']:[];
+  var aLuc=nm?['O lucro do próximo balanço contra a mediana normalizada de '+parI(nm.por_trimestre_milhoes)+' milhões por trimestre.']:[],aMl=mlA&&mlA.variacao_pp!=null?[parVb('A margem líquida',mlA.variacao_pp,' p.p.','aumentou','reduziu')+' no último ano.']:[],aCx=cx!=null?['O caixa operacional de 12 meses (hoje: '+parI(cx)+' milhões).']:[];
   (sdFalha?aSaude.concat(aLuc,aMl,aCx):aLuc.concat(aMl,aSaude,aCx)).forEach(function(t){add(ace,t)});
   if(!ace.length)add(ace,'A chegada dos dados que hoje faltam.');
-  var id=function(L,p,max){return L.slice(0,max).map(function(x,i){return {id:p+(i+1),txt:x.txt,obr:x.obr}})};
+  var id=function(L,p,max){return L.slice(0,max).map(function(x,i){return {id:p+(i+1),txt:x.txt.replace(/\.{2}(?!\.)/g,'.'),obr:x.obr}})};
   return {fav:id(fav,'A',PARMAX.fav),pre:id(pre,'P',PARMAX.pre),err:id(err,'E',PARMAX.err),ace:id(ace,'G',PARMAX.ace)}}
 /* a entrada completa: o que a IA recebe + o que o validador usa */
 function parEntrada(pk){var L=parLeitura(pk),F=parFatos(pk),lim=(pk.limitacoes&&pk.limitacoes.length)||(pk.confianca&&pk.confianca.nivel==='Baixa');
