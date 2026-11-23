@@ -72,7 +72,7 @@ function opDU(ms,now){if(!ms)return null;var a=opYmd(ms),b=opYmd(now||Date.now()
 /* Alta / Média / Baixa. Baixa = não vira ideia (vai para Em verificação). `now` só existe para o teste. */
 /* trava de sanidade (1.62.3): potencial acima de 50% com dado só médio = Em verificação; com dado alto, mostra normal com aviso */
 var OPEXT=0.5;
-function opSanidade(o){var cf=o&&o.cf;if(!cf||!o.V||!(o.V.up>OPEXT))return o;
+function opSanidade(o){var cf=o&&o.cf,up=o&&o.fx&&o.fx.ok?o.fx.espPct:o&&o.V?o.V.up:null;if(!cf||up==null||!(up>OPEXT))return o;
   if(cf.n==='Média'){cf.ext=true;if(cf.w.indexOf('potencial extremo, dados incompletos')<0)cf.w.unshift('potencial extremo, dados incompletos')}
   else if(cf.n==='Alta')cf.aviso='potencial muito alto, confira';
   return o}
