@@ -242,6 +242,12 @@ function renderIR(){
       '<details><summary>Ver cada venda</summary><ul class="calc small" style="margin-top:12px">'+D.rows.slice().reverse().map(function(r){return r.acao.it.concat(r.fii.it).map(function(x){return '<li><span><b>'+esc(x.tk)+'</b> <span class="muted">'+fmtDate(x.d)+', '+num(x.q)+' un., '+brl.format(x.v)+'</span></span><span class="num '+cls(x.g)+'">'+sgn(x.g)+'</span></li>'}).join('')}).join('')+'</ul></details></div>';
   }
   var ys={};S.trades.forEach(function(t){ys[t.date.slice(0,4)]=1});var years=Object.keys(ys).sort();if(!IRY||!ys[IRY])IRY=years[years.length-1]||today().slice(0,4);
+  var pgIof=0,pgIofN=0,pgExt=0;(S.cambio||[]).forEach(function(c){if(String(c[0]).slice(0,4)===IRY&&c[4]>0){pgIof+=c[4];pgIofN++}});
+  S.trades.forEach(function(t){if(t.side==='div'&&t.market==='US'&&t.date.slice(0,4)===IRY)pgExt+=(t.irExt||0)*(t.fx||0)});
+  if(pgIof>0||pgExt>0)h+='<div class="panel"><div class="grp"><h2>Impostos pagos em '+IRY+'</h2><span class="det">já descontados do que você recebeu</span></div><ul class="calc">'+
+    (pgIof>0?'<li><span>IOF na compra de dólar<br><span class="muted small">'+pgIofN+(pgIofN>1?' operações':' operação')+' de câmbio, valor exato do comprovante</span></span><span class="num loss">'+brl.format(pgIof)+'</span></li>':'')+
+    (pgExt>0?'<li><span>IR retido nos EUA<br><span class="muted small">sobre dividendos do exterior</span></span><span class="num loss">'+brl.format(pgExt)+'</span></li>':'')+
+    '<li class="tot"><span>Total pago</span><span class="num loss">'+brl.format(pgIof+pgExt)+'</span></li></ul></div>';
   var Y=+IRY,end=IRY+'-12-31',prev=(Y-1)+'-12-31',b1=bensEm(end),b0=bensEm(prev),b0m={};b0.forEach(function(p){b0m[p.tk]=p});
   var dv=S.trades.filter(function(t){return t.side==='div'&&t.date.slice(0,4)===IRY}),byT={};
   dv.forEach(function(t){var k=t.market==='US'?'ext':(t.tipo==='JCP'||/JCP/.test(t.note||''))?'jcp':'div';var o=(byT[k]=byT[k]||{});var r=o[t.ticker]||(o[t.ticker]={v:0,b:0,ir:0});r.v+=t.price*(t.market==='US'?t.fx:1);r.b+=(t.bruto||t.price)*(t.market==='US'?t.fx:1);r.ir+=(t.irExt||0)*(t.market==='US'?t.fx:1)});
