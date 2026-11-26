@@ -22,6 +22,7 @@ jobs:
       - run: node tests/cartao.js
       - run: node tests/foto.js
       - run: node tests/metodo.js
+      - run: node tests/avisos.js
       - run: node tests/macro.js
       - run: node tests/parecer.js
       - run: node tests/banco.js
