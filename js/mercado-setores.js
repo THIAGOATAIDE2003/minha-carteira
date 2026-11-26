@@ -58,8 +58,8 @@ function renderMkt(){
 function renderMkt0(){
   var el=$('mkttab');if(!el)return;var I=MKT.idx,f0=fxToday(),fxp=S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null;
   var q0=$('mk-q')?$('mk-q').value:'',sel=idxSel();
-  var on=0;try{var od=opData();on=od?od.n:0}catch(e){}
-  var h='<div class="seg" id="mkseg">'+[['min','Acompanhando'],['idx','Índices'],['bc','BC'],['ana','Análise'+(on?' <i class="mkb">'+on+'</i>':'')]].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
+  try{opData()}catch(e){}/* o número vermelho saiu (E8); o cálculo e o registro diário das ideias continuam como antes */
+  var h='<div class="seg" id="mkseg">'+[['min','Acompanhando'],['idx','Índices'],['bc','BC'],['ana','Análise']].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
   if(MKV!=='bc')h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice, moeda ou ação':MKV==='ana'?'Buscar ação (sigla ou nome)':'Buscar ação: sigla ou nome (ex.: magalu)')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
   h+='<div class="seg" id="ixseg">'+[['lista','Índices'],['fg','Medo e Ganância']].map(function(v){return '<button type="button" data-ixv="'+v[0]+'" aria-pressed="'+(IXV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
