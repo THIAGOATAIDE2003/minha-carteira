@@ -32,8 +32,14 @@ const MUTANTES = {
   'acao-fech-ant-do-arquivo': ['js/acao-pagina.js', "['Fech. ant.',vd?f0(vd.ant):f0(st&&st.prev!=null?st.prev:prv)]", "['Fech. ant.',f0(st&&st.prev!=null?st.prev:prv)]"],
   'acao-sem-ligacao': ['js/acao-pagina.js', 'var vd=vdPagAcao(tk,STK.rng,fv,fo,d.price);if(vd){', 'var vd=null;if(vd){'],
   'indice-sem-ligacao': ['js/mercado-setores.js', 'var vd=vdPagIdx(rg,rate,same,sym,fv,fo,x,last,D,dp);if(vd){', 'var vd=null;if(vd){'],
-  'sem-aviso-de-indisponivel': ['js/variacao.js', "return vd&&vd.pct==null?'<p", "return ''&&vd&&vd.pct==null?'<p"],
+  'sem-aviso-de-indisponivel': ['js/variacao.js', "var n=vd&&vd.pct==null?'<p", "var n=''&&vd&&vd.pct==null?'<p"],
   'indice-usa-livePx-errado': ['js/variacao.js', 'function vdIdx(x,sym,fv,fo,preco,D){var o=idxVal(x),b;', 'function vdIdx(x,sym,fv,fo,preco,D){var o=null,b;'],
+  'aviso-aparece-mesmo-com-base': ['js/variacao.js', 'var n=vd&&vd.pct==null?', 'var n=vd?'],
+  'aviso-fora-do-lugar': ['js/variacao.js', 'return n&&i>=0?h.slice(0,i+6)+n+h.slice(i+6):h}', 'return n&&i>=0?n+h:h}'],
+  'sem-limite-de-idade-da-barra': ['js/variacao.js', 'bd>=0&&dia-bd<=VDIDADE&&bv>0', 'bd>=0&&bv>0'],
+  'pula-fechamento-invalido': ['js/variacao.js', 'r&&r[0]<dia&&r[0]>bd)', 'r&&r[0]<dia&&r[0]>bd&&r[ci]>0)'],
+  'legenda-antiga-nas-paginas': ['js/grafico.js', "(o.fa?'fechamento anterior: ':'antes do fechamento: ')", "'antes do fechamento: '"],
+  'i-sozinho-na-linha': ['js/grafico.js', "return esc(w.slice(0,i))+'<span class=\"gwx\" style=\"white-space:nowrap\">'+esc(w.slice(i))+x+'</span>'}", "return esc(w)+x}"],
   'arquivo-fora-do-sw': ['sw.js', "'js/variacao.js',", ''],
   'arquivo-fora-do-index': ['index.html', '<script src="js/variacao.js"></script>\n', '']
 };
@@ -62,7 +68,9 @@ async function novo(b, quando, dia) {
 const sec = async (n, f) => { try { await f(); } catch (e) { ok('Bloco "' + n + '" não rodou: ' + String(e.message).split('\n')[0].slice(0, 140), false); } };
 
 /* ---------------- parte principal ---------------- */
-const FIXOS = ['finView', 'finStat', 'finBase', 'finLast', 'finTail', 'finGet', 'heroIntra', 'livePx', 'pxPick', 'tapeItems', 'tapeIdx', 'idxVal', 'idxVal0', 'compute', 'opData', 'dzero', 'pxIdxPick', 'lineChart', 'gHead', 'gStats'];
+const FIXOS = ['finView', 'finStat', 'finBase', 'finLast', 'finTail', 'finGet', 'heroIntra', 'livePx', 'pxPick', 'tapeItems', 'tapeIdx', 'idxVal', 'idxVal0', 'compute', 'opData', 'dzero', 'pxIdxPick', 'gStats'];
+/* gHead e lineChart mudam DE PROPÓSITO na 1.83.3 (só texto/posição: legenda "fechamento anterior", ⓘ colado à última palavra). Que nada além disso mudou é provado pelas páginas abaixo, comparadas com a 1.83.1 depois de desfazer só essas duas trocas (NORM). */
+const NORM = h => h.replace(/fechamento anterior: /g, 'antes do fechamento: ').replace(/<span class="gwx"[^>]*>([^<]*)(<button[^>]*>.*?<\/button>)<\/span>/g, '$1$2');
 async function ptsIdx(p, dia, hh, n, v0, v1) { return await p.evaluate(a => __pts(a[0], a[1], a[2], a[3], a[4]), [dia || '2026-11-27', hh || '13:00', n || 18, v0 || 177500, v1 || 181443.75]); }
 const TAB = (tk, v, prev) => [tk, v, prev, 'BRL', 's', ''];
 async function principal(b, snap) {
@@ -77,7 +85,7 @@ async function principal(b, snap) {
     }, [T1425, pts]);
     ok('V1 cabeçalho do Ibovespa em 1D = +4.643,75 (2,63%), igual à faixa e ao cartão (antes: +7.627,69 (4,39%))', /\+4\.643,75 \(2,63%\)/.test(r.gdl || '') && r.faixa === 2.63 && r.card === 2.63, r);
     ok('V2 "Fech. ant." do Ibovespa = 176.800,00 (antes: 173.816,06)', r.ant === '176.800,00' && !/173\.816/.test(r.txt), r);
-    ok('V2 a linha pontilhada e a legenda usam o mesmo fechamento (176.800), não o último ponto de 5 min', /antes do fechamento: 176\.800/.test(r.txt) && !/173\.816/.test(r.txt), r.txt.slice(0, 300));
+    ok('V2 a linha pontilhada e a legenda usam o mesmo fechamento (176.800), não o último ponto de 5 min', /fechamento anterior: 176\.800/.test(r.txt) && !/173\.816/.test(r.txt), r.txt.slice(0, 300));
     ok('V4 a base do app (176.800,00) difere da implícita no Google (176.799,84) em menos de 0,5 ponto', r.base && Math.abs(r.base.base - 176799.84) < 0.5, r.base);
   });
   /* ----- V3 ações (sintéticas, com os números de BBAS3, B3SA3 e PETR4 de 27/11) ----- */
@@ -90,7 +98,7 @@ async function principal(b, snap) {
         return { gdl: __gdl(), ant: __st('Fech. ant.'), faixa: f && Math.round(f.p * 100) / 100, lista: lv && Math.round(lv.pct * 100) / 100, txt: __txt() };
       }, [c, T1425, pts]);
       ok('V3 ' + c[0] + ' em 1D mostra ' + c[4] + ' (antes pegava o último ponto de 5 min de ontem), igual à faixa e à lista', (r.gdl || '').indexOf(c[4]) === 0 && r.faixa === r.lista && Math.abs(r.faixa - parseFloat(c[4].match(/\(([\d,]+)%/)[1].replace(',', '.'))) < 0.006, r);
-      ok('V3 ' + c[0] + ': "Fech. ant." = ' + c[5] + ' (o fechamento diário, não ' + String(c[3]).replace('.', ',') + ')', r.ant === c[5] && r.txt.indexOf('antes do fechamento: ' + String(c[3]).replace('.', ',')) < 0, r);
+      ok('V3 ' + c[0] + ': "Fech. ant." = ' + c[5] + ' (o fechamento diário, não ' + String(c[3]).replace('.', ',') + ')', r.ant === c[5] && r.txt.indexOf("fechamento anterior: " + String(c[3]).replace('.', ',')) < 0, r);
     }
   });
   /* ----- V5 antes da abertura / fim de semana: a faixa está zerada e a página mostra o mesmo 0,00% ----- */
@@ -113,9 +121,47 @@ async function principal(b, snap) {
       __abrirIdx('ibov', '1d'); var i = { gdl: __gdl(), ant: __st('Fech. ant.'), txt: __txt() }; __abrirAcao('ALFA3', 17.82, null, '1d'); return { i: i, a: { gdl: __gdl(), ant: __st('Fech. ant.'), txt: __txt() } };
     }, [T1425, pts, pts.map(q => [q[0], 17.82 * (q[1] / 181443.75)])]);
     for (const [n, x] of [['Ibovespa', r.i], ['ação', r.a]]) {
-      ok('V6 ' + n + ' sem base: só o preço, sem variação, e a linha "Variação do dia indisponível"', x.gdl === null && /Variação do dia indisponível/.test(x.txt), x);
-      ok('V6 ' + n + ' sem base: sem linha pontilhada nem legenda, sem "Fech. ant." e sem NaN/undefined/null na tela', !/antes do fechamento/.test(x.txt) && x.ant === null && !/NaN|undefined|null/.test(x.txt), x);
+      ok('V6 ' + n + ' sem base: só o preço, sem variação, e a linha "Variação de hoje indisponível"', x.gdl === null && /Variação de hoje indisponível/.test(x.txt), x);
+      ok('V6 ' + n + ' sem base: sem linha pontilhada nem legenda, sem "Fech. ant." e sem NaN/undefined/null na tela', !/fechamento anterior/.test(x.txt) && x.ant === null && !/NaN|undefined|null/.test(x.txt), x);
     }
+  });
+  /* ----- V6b o aviso "indisponível" só aparece quando NÃO há base válida (barra válida → sem aviso; fechamento zero, vazio ou velho demais → aviso, sem pular para barra mais antiga) ----- */
+  await sec('V6b aviso só sem base', async () => {
+    const r = await p.evaluate(([ts, pts, pts2]) => {
+      var out = {}, bar = function (d, c) { return [d, c, c, c, c, 1]; };
+      function acao(nome, rows) { __R([], ts); __intra('ALFA3.SA', pts2, 15.77); FIN['dia/ALFA3.SA'] = { d: { d: rows }, at: Date.now() }; __abrirAcao('ALFA3', 17.82, null, '1d'); out[nome] = { gdl: __gdl(), ant: __st('Fech. ant.'), txt: __txt() }; }
+      function ibov(nome, rows) { __R([], ts); MD.d.idx.ibov = { d: rows, name: 'IBOVESPA', cur: 'BRL', last: 176800, sym: '^BVSP' }; __intra('^BVSP', pts, 173816.06); __abrirIdx('ibov', '1d'); out[nome] = { gdl: __gdl(), ant: __st('Fech. ant.'), txt: __txt() }; }
+      acao('a-valida', [bar(20782, 16.1), bar(20783, 16.54), bar(20784, 17.5)]);
+      acao('a-zero', [bar(20782, 16.1), bar(20783, 0), bar(20784, 17.5)]);
+      acao('a-vazia', [bar(20782, 16.1), bar(20783, null), bar(20784, 17.5)]);
+      acao('a-5dias', [bar(20779, 16.54), bar(20784, 17.5)]);
+      acao('a-6dias', [bar(20778, 16.54), bar(20784, 17.5)]);
+      ibov('i-valida', [[20782, 170000], [20783, 176800], [20784, 181000]]);
+      ibov('i-zero', [[20782, 170000], [20783, 0], [20784, 181000]]);
+      ibov('i-velha', [[20770, 176800], [20784, 181000]]);
+      return out;
+    }, [T1425, pts, pts.map(q => [q[0], 17.82 * (q[1] / 181443.75)])]);
+    const AVISO = /Variação de hoje indisponível/;
+    for (const n of ['a-valida', 'i-valida']) ok('V6b base válida (' + n + '): variação aparece e o aviso "indisponível" NÃO aparece', r[n].gdl !== null && !AVISO.test(r[n].txt), r[n]);
+    for (const n of ['a-zero', 'a-vazia', 'i-zero']) ok('V6b último fechamento inválido (' + n + '): aviso aparece, sem variação, e NÃO pula para a barra anterior a ela', r[n].gdl === null && r[n].ant === null && AVISO.test(r[n].txt) && !/NaN|undefined|null/.test(r[n].txt), r[n]);
+    ok('V6b barra 5 dias corridos antes do pregão ainda vale (16,54)', r['a-5dias'].ant === '16,54' && !AVISO.test(r['a-5dias'].txt), r['a-5dias']);
+    for (const n of ['a-6dias', 'i-velha']) ok('V6b barra velha demais (' + n + ', mais de 5 dias antes do pregão): aviso, sem variação', r[n].gdl === null && r[n].ant === null && AVISO.test(r[n].txt), r[n]);
+  });
+  /* ----- V17 texto e posição: aviso logo abaixo do preço; ⓘ colado à última palavra da linha de hora; legenda "fechamento anterior" ----- */
+  await sec('V17 aparência', async () => {
+    const r = await p.evaluate(([ts, pts2]) => {
+      __R([], ts); __intra('ALFA3.SA', pts2, 15.77); FIN['dia/ALFA3.SA'] = { d: { d: [[20783, 16.3, 16.8, 16.2, 16.54, 1000], [20784, 17.2, 17.9, 17.1, 17.5, 0]] }, at: Date.now() };
+      __abrirAcao('ALFA3', 17.82, null, '1d'); var ok1 = document.getElementById('stk-b').innerHTML, ok1t = __txt();
+      FIN['dia/ALFA3.SA'].d.d = [[20784, 17.2, 17.9, 17.1, 17.5, 0]]; __abrirAcao('ALFA3', 17.82, null, '1d'); var sem = document.getElementById('stk-b').innerHTML;
+      var h = gHead('Empresa', '', 'R$ 1,00', null, null, '1d', '', 'Atrasado: preço de 26/11, 17:55 · Finnhub', bal('x', null, 'De onde')), q = document.createElement('div'); setHtml(q, h);
+      var gx = q.querySelector('.gwx'), wh = q.querySelector('.gwh');
+      return { ok1: ok1, ok1t: ok1t, sem: sem, gx: gx && gx.textContent, gxBal: !!(gx && gx.querySelector('.bal')), balNaLinha: !!(wh && wh.querySelector('.bal')), semX: (function () { var z = document.createElement('div'); setHtml(z, gHead('E', '', 'R$ 1', null, null, '1d', '', 'só texto', '')); return !!z.querySelector('.gwx') })() };
+    }, [T1425, pts.map(q => [q[0], 17.82 * (q[1] / 181443.75)])]);
+    const pos = (h, a, b) => h.indexOf(a) >= 0 && h.indexOf(b) > h.indexOf(a);
+    ok('V17 aviso "Variação de hoje indisponível" vem logo abaixo do preço e antes da linha de hora', pos(r.sem, 'class="gh"', 'Variação de hoje indisponível') && pos(r.sem, 'Variação de hoje indisponível', 'gwh'), r.sem.slice(0, 600));
+    ok('V17 com base válida a página mostra "fechamento anterior: 16,54" na legenda e nenhum aviso', /fechamento anterior: (R\$\s*)?16,54/.test(r.ok1t) && !/indisponível/.test(r.ok1) && !/antes do fechamento/.test(r.ok1), r.ok1t.slice(0, 300));
+    ok('V17 ⓘ colado à última palavra da linha de hora (mesmo bloco sem quebra)', /^Finnhub/.test(r.gx || '') && r.gxBal && r.balNaLinha, r);
+    ok('V17 linha de hora sem ⓘ continua como antes (sem bloco extra)', r.semX === false, r);
   });
   /* ----- V7 barra anterior (sem faixa) · V8 arquivo de 5 min de 2 pregões atrás · V9 EUA ----- */
   await sec('V7 V8 V9', async () => {
@@ -151,7 +197,7 @@ async function principal(b, snap) {
     const r2 = await p.evaluate(([ts, pts]) => {
       __R([], ts); __idxf(); MD.d.idx.ibov.sym = 'SPY'; __intra('SPY', pts.map(q => [q[0], q[1] / 258]), 680); __abrirIdx('ibov', '1d'); return { gdl: __gdl(), txt: __txt() };
     }, [T1425, pts]);
-    ok('V10 gráfico de outro símbolo e sem faixa: NÃO calcula a variação com barras de outro ativo (mostra "indisponível")', r2.gdl === null && /Variação do dia indisponível/.test(r2.txt), r2);
+    ok('V10 gráfico de outro símbolo e sem faixa: NÃO calcula a variação com barras de outro ativo (mostra "indisponível")', r2.gdl === null && /Variação de hoje indisponível/.test(r2.txt), r2);
     const c = await p.evaluate(() => { var a = { prev: 1, intra: 1 }, n = vdFo(a, 2), m = vdFo(a, null); return { a: a.prev, n: n.prev, m: m.prev, m2: 'prev' in m, nova: n !== a, intra: n.intra }; });
     ok('V16 vdFo devolve cópia (o original não muda), troca o prev e o apaga quando não há base', c.a === 1 && c.n === 2 && c.nova && c.intra === 1 && !c.m2, c);
   });
@@ -173,12 +219,13 @@ async function principal(b, snap) {
     o.compute = JSON.stringify(compute()); $('stk').hidden = true; render(); o.inicio = document.querySelector('[data-tab="resumo"]').innerHTML;
     return o;
   }, [FIXOS, T1425, pts]);
-  const res = { fn: {}, pag: {}, per: {}, compute: sha(col.compute), inicio: sha(col.inicio) };
-  Object.keys(col.fn).forEach(k => res.fn[k] = sha(col.fn[k])); Object.keys(col.pag).forEach(k => res.pag[k] = sha(col.pag[k])); Object.keys(col.per).forEach(k => res.per[k] = sha(col.per[k]));
+  const res = { fn: {}, pag: {}, per: {}, compute: sha(col.compute), inicio: sha(NORM(col.inicio)) };
+  Object.keys(col.fn).forEach(k => res.fn[k] = sha(col.fn[k])); Object.keys(col.pag).forEach(k => res.pag[k] = sha(NORM(col.pag[k]))); Object.keys(col.per).forEach(k => res.per[k] = sha(NORM(col.per[k])));
   if (GRAVAR) { fs.writeFileSync(ESP, JSON.stringify(res, null, 1) + '\n'); console.log('gravado', ESP); }
   else if (fs.existsSync(ESP)) {
     const esp = JSON.parse(fs.readFileSync(ESP, 'utf8'));
-    ['fn', 'pag', 'per'].forEach(g => Object.keys(esp[g]).forEach(k => ok('V' + { fn: '13 texto idêntico à 1.83.1: ', pag: '11 página fora do escopo idêntica à 1.83.1: ', per: '12 outros períodos idênticos à 1.83.1: ' }[g] + k, res[g][k] === esp[g][k], [k, res[g][k], esp[g][k]])));
+    ['fn', 'pag', 'per'].forEach(g => Object.keys(res[g]).forEach(k => ok('V' + { fn: '13 texto idêntico à 1.83.1: ', pag: '11 página fora do escopo idêntica à 1.83.1: ', per: '12 outros períodos idênticos à 1.83.1: ' }[g] + k, res[g][k] === esp[g][k], [k, res[g][k], esp[g][k]])));
+    ok('V11b páginas fora do escopo (dólar, euro, bitcoin, brent, 10 anos) continuam com a legenda antiga "antes do fechamento" (o número delas não mudou, então o texto também não)', Object.keys(col.pag).length >= 5 && Object.keys(col.pag).every(k => !/fechamento anterior/.test(col.pag[k])), Object.keys(col.pag));
     ok('V14 compute() da carteira idêntico à 1.83.1', res.compute === esp.compute, [res.compute, esp.compute]);
     ok('V14 tela do Início idêntica à 1.83.1', res.inicio === esp.inicio, [res.inicio, esp.inicio]);
   } else ok('snapshot tests/esperado-variacao.json existe', false);
