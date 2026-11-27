@@ -14,16 +14,23 @@ function fotoSt(ok,motivo,dia){var ant=fotoStLer();if(ok&&ant&&ant.ok&&ant.dia==
 function fotoFeita(){try{return localStorage.getItem(fotoKey())}catch(e){return null}}
 function fotoMarca(d){try{localStorage.setItem(fotoKey(),d)}catch(e){}}
 var fotoN=function(v){return v==null||!isFinite(v)?null:Math.round(v*100)/100};
-function fotoLinha(o,st){var f=o.fx;return {tk:o.tk,st:st,preco:fotoN(o.d.price),cons:fotoN(f.cons),cen:fotoN(f.cen),oti:fotoN(f.oti),esp:fotoN(f.esp),ms:fotoN(f.ms*100),est:f.est,armadilha:f.trap||null,tipo:f.bank?'banco':f.seg?f.kind:null,
+/* 1.83.0: a foto só sai com o dado do robô já lido (ou sem erro) e nunca guarda preço velho com a data de hoje */
+function fotoGate(){return !!(AV.md&&MD.d&&!MD.err)}
+/* preço da foto: o do app se for de agora (ao vivo, fechamento ou atrasado de hoje); senão o último fechamento do robô com a data dele (até 5 dias); senão nada. pd = dia do preço */
+function fotoPx(tk){var lv=livePx(tk),ld=lv&&lv.at?new Date(lv.at-3*36e5).toISOString().slice(0,10):'';if(lv&&lv.p>0&&(lv.fase==='ao-vivo'||lv.fase==='fechamento'||(lv.fase==='atrasado'&&ld>=today())))return {p:lv.p,pd:ld};
+  var h=MD.d&&MD.d.hist&&MD.d.hist[tk],a=h&&h.d,b=a&&a.length?a[a.length-1]:null;
+  if(b&&b[1]>0){var pd=new Date(b[0]*864e5).toISOString().slice(0,10);if((Date.parse(today())-Date.parse(pd))/864e5<=5)return {p:b[1],pd:pd}}
+  return null}
+function fotoLinha(o,st){var f=o.fx,px=fotoPx(o.tk);if(!px)return null;return {tk:o.tk,st:st,preco:fotoN(px.p),pd:px.pd,pm:Math.abs(px.p/o.d.price-1)>1e-9?fotoN(o.d.price):undefined,cons:fotoN(f.cons),cen:fotoN(f.cen),oti:fotoN(f.oti),esp:fotoN(f.esp),ms:fotoN(f.ms*100),est:f.est,armadilha:f.trap||null,tipo:f.bank?'banco':f.seg?f.kind:null,
   ref:f.bank?{roe:fotoN(f.nm.med),custo:f.r,pvp_hoje:fotoN(f.pvpHoje),pvp_justo:fotoN(f.pr[1].pvp)}:f.seg?{pl_alvo:fotoN(f.pr[1].pl),pl_hoje:f.plHoje!=null?fotoN(f.plHoje):null,payout:f.pay!=null?fotoN(f.pay*100):null}:null,
   conf:o.cf?o.cf.n:null,qual:o.ql?{ap:o.ql.ap,ps:o.ql.ps}:null,nota:o.score!=null?fotoN(o.score):null,saude:o.sd?o.sd.mot:[],aviso:o.cf&&o.cf.aviso||null,motivo:st==='verificacao'&&o.cf?o.cf.w.slice(0,3):null}}
 /* r = resultado de opData(); só monta se nada está pendente */
-function fotoMontar(r,dia){if(!r||!r.D||!r.X)return null;
+function fotoMontar(r,dia){var ib;if(!r||!r.D||!r.X)return null;
   var pend=r.D.concat(r.X).some(function(o){return o.fx&&o.fx.pend});if(pend)return null;
-  var L=r.D.filter(function(o){return o.fx&&o.fx.ok}).map(function(o){return fotoLinha(o,'ideia')}).concat(r.X.filter(function(o){return o.fx&&o.fx.ok}).map(function(o){return fotoLinha(o,'verificacao')}));
+  var L=r.D.filter(function(o){return o.fx&&o.fx.ok}).map(function(o){return fotoLinha(o,'ideia')}).concat(r.X.filter(function(o){return o.fx&&o.fx.ok}).map(function(o){return fotoLinha(o,'verificacao')})).filter(Boolean);
   if(!L.length)return null;
-  return {v:1,dia:dia,versao:VERSAO,gravado:new Date().toISOString(),ibov:garIbov(),regra:{motor:'faixa-unica',conservador:'margem p25 + múltiplo '+FXMC+'×',pesos:FXW,tolerancia:FXTOL,banco:'ROE p25; P/VP justo = (ROE − g) ÷ (custo − g); custo = média(Selic, Focus 2-3 anos) + '+BKPREM,seguradora:'lucro p25 × P/L p25 (histórico da ação)'},ideias:L}}
-function fotoSalvar(r){var dia=today();if(FOTOQ||fotoFeita()===dia||Date.now()-FOTOE<6e5)return;
+  return {v:1,dia:dia,versao:VERSAO,gravado:new Date().toISOString(),ibov:(ib=garIbovInfo())?ib.v:null,ibovAt:ib&&ib.at?new Date(ib.at).toISOString():null,tapeTs:MD.d&&MD.d.tape&&MD.d.tape.ts?new Date(MD.d.tape.ts*1000).toISOString():null,regra:{motor:'faixa-unica',conservador:'margem p25 + múltiplo '+FXMC+'×',pesos:FXW,tolerancia:FXTOL,banco:'ROE p25; P/VP justo = (ROE − g) ÷ (custo − g); custo = média(Selic, Focus 2-3 anos) + '+BKPREM,seguradora:'lucro p25 × P/L p25 (histórico da ação)'},ideias:L}}
+function fotoSalvar(r){var dia=today();if(FOTOQ||fotoFeita()===dia||Date.now()-FOTOE<6e5||!fotoGate())return;
   var doc=fotoMontar(r,dia);if(!doc){if(r&&r.D&&r.X&&!r.D.concat(r.X).some(function(o){return o.fx&&o.fx.pend})){var st=fotoStLer();if(!st||st.dia!==dia)fotoSt(false,'não há ideias com faixa calculada hoje',dia)}return}
   if(!S.keys.gh){fotoSt(false,'sem token do GitHub (cole em Ajustes, na nuvem)',dia);return}
   FOTOQ=true;

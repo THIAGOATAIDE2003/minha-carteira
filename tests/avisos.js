@@ -12,7 +12,7 @@ const TEM_DADOS = fs.existsSync(path.join(DADOS, 'mercado.json')) && !arg.includ
 const MUT = val('--mut') || process.env.APORTE_MUT || null;
 let falhas = 0, total = 0;
 const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log('✗', nome, extra === undefined ? '' : JSON.stringify(extra).slice(0, 500)); } };
-const HASH_FN = { dvAlerts: 'e2df4c2ccf1c09f2', riAlerts: '31be22f65b7a6546', whyMine: 'ff753988b427f5ec', opData: '9e54e5e4be571bf9', opEtiq: 'baf53c913be31cc4', entInfo: '1e7d5f30aebd52f6', anValCalc: 'ba2abc34a0281f23', stkAna: '8dc074ca12f0b91b', fxFor: '8bf7d1a7fc14eb1c', opCartao: '4e2bc98059316d05', opAlerts: 'd46569394ffefbda', opPorta: 'f72720cc15b96dcb', garRec: 'c84e7de865a96320', opSnap: 'e33216c8d28f2ed3', opCapSetor: '05766c260c419a8b', opGate: 'c4d830e6195b3481', opConf: '324a54e04845441d', saudeFor: '2bc4b3e438cd0756', opSanidade: 'e20703bbfac25ef5', metCiclo: '7dca9a882b796106' };
+const HASH_FN = { dvAlerts: 'e2df4c2ccf1c09f2', riAlerts: '31be22f65b7a6546', whyMine: 'ff753988b427f5ec', opData: '9e54e5e4be571bf9', opEtiq: 'baf53c913be31cc4', entInfo: '1e7d5f30aebd52f6', anValCalc: 'ba2abc34a0281f23', stkAna: '8dc074ca12f0b91b', fxFor: '8bf7d1a7fc14eb1c', opCartao: '4e2bc98059316d05', opAlerts: 'd46569394ffefbda', opPorta: 'f72720cc15b96dcb', garRec: '5362e84c936e3e40', opSnap: 'e33216c8d28f2ed3', opCapSetor: '05766c260c419a8b', opGate: 'c4d830e6195b3481', opConf: '324a54e04845441d', saudeFor: '2bc4b3e438cd0756', opSanidade: 'e20703bbfac25ef5', metCiclo: '7dca9a882b796106' };
 const HASH_OPDATA = '9e54e5e4be571bf93998d65f91eede584276a34b77bd0e6887b78b80e246138a';
 /* defeitos de propósito: [arquivo, trecho certo, trecho com defeito] */
 const MUTANTES = {
@@ -260,6 +260,8 @@ async function sintetico(b) {
   ok('A12 desempenho: avCalc com 40 ações < 5 ms; avAlertas (rodado a cada minuto pelo sininho) < 2 ms', A15.calc < 5 && A15.alertas < 2, A15);
   const novos = rede.filter(u => !/^https:\/\/(fonts\.googleapis\.com|economia\.awesomeapi\.com\.br|icons\.brapi\.dev|api\.bcb\.gov\.br|query1\.finance\.yahoo\.com|brapi\.dev|finnhub\.io)\//.test(u)), av = fs.readFileSync(path.join(RAIZ, 'js/avisos.js'), 'utf8');
   ok('A12 nenhuma chamada de rede nova (avisos.js não tem fetch/XHR/beacon e a página só pediu o que já pedia) e nenhum erro de JavaScript na parte sintética', novos.length === 0 && !/\bfetch\(|XMLHttpRequest|sendBeacon|WebSocket|EventSource/.test(av) && erros.length === 0, { rede: novos.slice(0, 3), erros: erros.slice(0, 3) });
+  const hs0 = await E(async (nomes) => { const o = {}; for (const n of nomes) { const f = window[n]; if (typeof f !== 'function') { o[n] = null; continue; } const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(f.toString())); o[n] = [...new Uint8Array(h)].map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 16); } return o; }, Object.keys(HASH_FN));
+  ok('A11 (também sem a pasta de dados, como no CI) as funções protegidas têm o texto esperado; garRec = a da E2 (1.83.0), as outras = as da 1.80.0', Object.keys(HASH_FN).every(k => hs0[k] === HASH_FN[k]), Object.keys(HASH_FN).filter(k => hs0[k] !== HASH_FN[k]));
   await ctx.close();
 }
 
@@ -270,7 +272,7 @@ async function real(b) {
   await E(PRE); await E(() => { AV.md = 1; });
   /* A11 regressão: o código protegido não mudou */
   const hs = await E(async (nomes) => { const o = {}; for (const n of nomes) { const f = window[n]; if (typeof f !== 'function') { o[n] = null; continue; } const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(f.toString())); o[n] = [...new Uint8Array(h)].map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 16); } return o; }, Object.keys(HASH_FN));
-  ok('A11 as 20 funções protegidas (opData, opEtiq, anValCalc, stkAna, fxFor, opCartao, dvAlerts, riAlerts, whyMine, garRec…) são idênticas às da 1.80.0', Object.keys(HASH_FN).every(k => hs[k] === HASH_FN[k]), Object.keys(HASH_FN).filter(k => hs[k] !== HASH_FN[k]));
+  ok('A11 as 20 funções protegidas (opData, opEtiq, anValCalc, stkAna, fxFor, opCartao, dvAlerts, riAlerts, whyMine, garRec…) têm o texto esperado (a garRec é a da E2, 1.83.0; as outras, as da 1.80.0)', Object.keys(HASH_FN).every(k => hs[k] === HASH_FN[k]), Object.keys(HASH_FN).filter(k => hs[k] !== HASH_FN[k]));
   const src = fs.readFileSync(path.join(RAIZ, 'js/mercado-oportunidades.js'), 'utf8'), m = /function opData\(\)\{[\s\S]*?return OPC\.r\}/.exec(src);
   ok('A11 hash do opData igual ao da 1.80.0', m && crypto.createHash('sha256').update(m[0]).digest('hex') === HASH_OPDATA, null);
   /* ciclo real: semente, depois segunda rodada sem avisos */

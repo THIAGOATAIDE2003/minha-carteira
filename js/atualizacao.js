@@ -98,7 +98,7 @@ function tapeItems(){
   t.forEach(function(x){var l=x[0],v=x[1],p=x[2],c=x[3],fs='';
     if(l==='DÓLAR'&&S.fx&&S.fx.src==='auto'&&S.fx.prev){v=S.fx.rate;p=S.fx.prev}
     var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);fs=lv&&lv.fase||'';if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if(TPIX[l]&&dzero(l!=='IBOV',tat))p=v
-    var ik=l==='IBOV'?'ibov':l==='EURO'?'eur':'',mi=ik&&MKT.idx[ik];if(mi&&mi.v>0&&mi.p!=null&&MKT.at>MD.d.tape.ts*1000){v=mi.v;p=mi.v/(1+mi.p/100)}
+    var ik=l==='IBOV'?'ibov':l==='EURO'?'eur':'',pk=ik&&pxIdxPick(ik,l);if(pk&&pk.ap&&pk.p!=null&&pk.at>tat){v=pk.v;p=pk.v/(1+pk.p/100)}
     var dk=x[5]||(l==='DÓLAR'?'usd':l==='EURO'?'eur':''),dd=dk&&idxDef(dk);if(dd&&idxFechado(dd))p=v;
     add(l,v,p,c,st,x[5],fs)});
   try{R=compute()}catch(e){}
@@ -176,7 +176,7 @@ function usRefresh(R){if(!S.keys.finnhub)return Promise.resolve();USR.at=Date.no
     return ex.reduce(function(pr,o,i){return pr.then(function(){return i&&ex.length>40?new Promise(function(r){setTimeout(r,1100)}):null}).then(function(){
       return getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(o.tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(!d||!(d.c>0))return;
         var pc=d.dp!=null?d.dp:(d.pc>0?(d.c/d.pc-1)*100:null),now=Date.now();
-        if(o.ik){MKT.idx[o.ik]={v:d.c,p:pc};return}
+        if(o.ik){pxIdxPut(o.ik,d.c,pc,d.t>0?d.t*1000:now);return}
         var m0=MKT.q[o.tk];pxPut(o.tk,'M',{price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now},'finnhub',d.t>0&&d.t*1000<=now?d.t*1000:now,!(d.t>0))}).catch(function(){})})},Promise.resolve());
   }}
 function doRefresh(silent){

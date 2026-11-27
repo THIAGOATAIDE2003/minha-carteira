@@ -46,9 +46,10 @@ function resHtml(tk,d){var us=d.cur==='USD',C=csD(tk),h=us?'':trHtml(tk)+hiHtml(
 /* ===== Ideias para estudar (antigo Garimpo): qualidade do dado e histórico do que o app já apontou ===== */
 var GHK=LS+'-gar';
 function garLoad(){return metParse('gar').d}
-function garIbov(){try{var x=IDX.filter(function(i){return i.k==='ibov'})[0],r=x&&idxVal0(x);if(r&&r.v>0)return r.v}catch(e){}var D=MD.d&&MD.d.idx&&MD.d.idx.ibov;return D&&D.d&&D.d.length?D.d[D.d.length-1][1]:null}
+function garIbovInfo(){try{var x=IDX.filter(function(i){return i.k==='ibov'})[0],r=x&&idxVal0(x);if(r&&r.v>0)return {v:r.v,at:r.at||0}}catch(e){}var D=MD.d&&MD.d.idx&&MD.d.idx.ibov;return D&&D.d&&D.d.length?{v:D.d[D.d.length-1][1],at:D.d[D.d.length-1][0]*864e5}:null}
+function garIbov(){var r=garIbovInfo();return r?r.v:null}
 /* uma foto por dia das ideias novas: ação, preço, nota e preço justo; o Ibovespa do dia serve de régua */
-function garRec(D){try{metCiclo()}catch(e){}if(!D||!D.length)return;var g=garLoad(),td=today();if(g.r[td])return;g.r[td]={i:garIbov(),l:D.map(function(o){return [o.tk,Math.round(o.d.price*100)/100,o.score,o.V?Math.round(o.V.med*100)/100:null]})};
+function garRec(D){try{metCiclo()}catch(e){}if(!D||!D.length||!fotoGate())return;var g=garLoad(),td=today();if(g.r[td])return;var l=[];D.forEach(function(o){var px=fotoPx(o.tk);if(px)l.push([o.tk,Math.round(px.p*100)/100,o.score,o.V?Math.round(o.V.med*100)/100:null])});if(!l.length)return;g.r[td]={i:garIbov(),l:l};
   var ks=Object.keys(g.r).sort();while(ks.length>420)delete g.r[ks.shift()];metGrava('gar',g)}
 function garDias(a,b){return Math.round((Date.parse(b)-Date.parse(a))/864e5)}
 /* cada ação conta uma vez, a partir do dia em que apareceu; só entra quem tem ao menos 30 dias de vida */
