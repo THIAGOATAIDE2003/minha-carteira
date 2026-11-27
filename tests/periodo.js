@@ -39,7 +39,7 @@ async function novo(b, quando, dia) {
 }
 const sec = async (n, f) => { try { await f(); } catch (e) { ok('Bloco "' + n + '" não rodou: ' + String(e.message).split('\n')[0].slice(0, 160), false); } };
 const T1130 = T('11:30'), DIAS = (a, b) => { var o = []; for (var d = a; d <= b; d++) o.push([d, 100 + (d % 7)]); return o; };
-const FIXOS = ['finView', 'finStat', 'finBase', 'finLast', 'finTail', 'finGet', 'compute', 'livePx', 'idxVal', 'heroCam', 'vdAtivo', 'vdIdx', 'vdFo', 'rgEff', 'rngBar', 'lineChart', 'gStats'];
+const FIXOS = ['finView', 'finStat', 'finBase', 'finLast', 'finTail', 'finGet', 'compute', 'livePx', 'idxVal', 'vdAtivo', 'vdIdx', 'vdFo', 'rgEff', 'rngBar', 'lineChart', 'gStats'];
 
 const MUTANTES = {
   'acao-abre-em-1A-de-novo': ['js/mercado-setores.js', "STK={tk:tk,rng:'1d',d:null,busy:false", "STK={tk:tk,rng:STK.rng||'1y',d:null,busy:false"],
@@ -86,7 +86,7 @@ async function principal(b) {
   await sec('P3 índices', async () => {
     const lista = [['ibov', '^BVSP'], ['SPY', '^GSPC'], ['QQQ', '^IXIC'], ['DIA', '^DJI'], ['ACWI', 'ACWI'], ['EEM', 'EEM'], ['GLD', 'GC=F'], ['usd', 'BRL=X'], ['eur', 'EURBRL=X'], ['btc', 'BTC-USD'], ['brent', 'BZ=F'], ['tnx', '^TNX'], ['ifix', 'XFIX11.SA']];
     const r = await p.evaluate(([ts, pts, lista, D]) => {
-      __R(ts); var o = {}; lista.forEach(function (c) { __intra(c[1], pts, 17); __idxOpen(c[0], D, c[1]); o[c[0]] = { rng: STK.rng, on: __on(), svg: __svg(), btns: __btns().split(',').slice(0, 2).join(','), hoje: /hoje/.test(__gdl() || '') }; });
+      __R(ts); var o = {}; lista.forEach(function (c) { __intra(c[1], pts, 17); if (/=X$/.test(c[1])) FIN['intra/' + c[1]].d.p.unshift([Date.parse('2026-11-26T17:00:00-03:00') / 1000, 17.5]); __idxOpen(c[0], D, c[1]); o[c[0]] = { rng: STK.rng, on: __on(), svg: __svg(), btns: __btns().split(',').slice(0, 2).join(','), hoje: /hoje/.test(__gdl() || '') }; });
       return o;
     }, [T1130, pts, lista, D]);
     lista.forEach(c => { const x = r[c[0]]; ok('P3 ' + c[0] + ' (' + c[1] + ') abre no 1D, com os botões 1D/5D e os pontos do dia desenhados', x.rng === '1d' && x.on === '1d' && x.svg === 1 && x.btns === '1d,5d' && x.hoje, x); });

@@ -93,20 +93,21 @@ var TPK='';
 var TPIX={IBOV:1,'S&P 500':1,NASDAQ:1,DOW:1};
 function tpStk(x){return x[4]?x[4]==='s':/^[A-Z0-9]{2,6}$/.test(x[0])&&!TPIX[x[0]]}
 function tapeItems(){
-  var it=[],seen={},R=null,add=function(l,v,p,c,st,ik,fs){if(!(v>0)||!(p>0)||seen[l])return;seen[l]=1;it.push({l:l,v:v,p:(v/p-1)*100,c:c,st:st,ik:ik||'',fs:fs||''})};
+  var it=[],seen={},R=null,add=function(l,v,p,c,st,ik,fs){if(!(v>0)||(p!==null&&!(p>0))||seen[l])return;seen[l]=1;it.push({l:l,v:v,p:p===null?null:(v/p-1)*100,c:c,st:st,ik:ik||'',fs:fs||''})};
   var t=MD.d&&MD.d.tape&&MD.d.tape.it||[];
   t.forEach(function(x){var l=x[0],v=x[1],p=x[2],c=x[3],fs='';
     if(l==='DÓLAR'&&S.fx&&S.fx.src==='auto'&&S.fx.prev){v=S.fx.rate;p=S.fx.prev}
     var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);fs=lv&&lv.fase||'';if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if(TPIX[l]&&dzero(l!=='IBOV',tat))p=v
     var ik=l==='IBOV'?'ibov':l==='EURO'?'eur':'',pk=ik&&pxIdxPick(ik,l);if(pk&&pk.ap&&pk.p!=null&&pk.at>tat){v=pk.v;p=pk.v/(1+pk.p/100)}
     var dk=x[5]||(l==='DÓLAR'?'usd':l==='EURO'?'eur':''),dd=dk&&idxDef(dk);if(dd&&idxFechado(dd))p=v;
+    if(cxK(l))p=cxTape(l,v);
     add(l,v,p,c,st,x[5],fs)});
   try{R=compute()}catch(e){}
   if(R)R.held.forEach(function(x){var tk=x.p.ticker,lv=livePx(tk);if(lv&&lv.pct!=null)add(tk,lv.p,lv.p/(1+lv.pct/100),x.p.market==='US'?'USD':'BRL',1,'',lv.fase)});
-  if(!seen['DÓLAR']&&S.fx&&S.fx.prev)add('DÓLAR',S.fx.rate,fxParado()?S.fx.rate:S.fx.prev,'BRL',0,'usd');
+  if(!seen['DÓLAR']&&S.fx&&S.fx.prev)add('DÓLAR',S.fx.rate,cxTape('DÓLAR',S.fx.rate),'BRL',0,'usd');
   return it}
 function tapeVal(x){if(/^JUROS/.test(x.l))return pf.format(x.v)+'%';if(TPIX[x.l])return num(x.v,x.v>=1000?0:2);if(x.l==='DÓLAR'||x.l==='EURO')return 'R$ '+num(x.v,4);if(x.c==='USD')return x.v>=1000?'US$ '+num(x.v,0):usd.format(x.v);return brl.format(x.v)}
-function tapeIn(x){var c=Math.abs(x.p)<0.005?'z':x.p>0?'g':'l';return [tapeVal(x),c,(c==='z'?'':x.p>0?'▲ ':'▼ ')+pf.format(Math.abs(x.p))+'%']}
+function tapeIn(x){if(x.p===null)return [tapeVal(x),'z',''];var c=Math.abs(x.p)<0.005?'z':x.p>0?'g':'l';return [tapeVal(x),c,(c==='z'?'':x.p>0?'▲ ':'▼ ')+pf.format(Math.abs(x.p))+'%']}
 /* Faixa personalizável: o usuário escolhe o que aparece (guardado no aparelho); por padrão fora as commodities menores (prata, soja, café) */
 var TPOFFK=LS+'-tapeoff',TPOFF=['PRATA','SOJA','CAFÉ'];
 try{var tf0=JSON.parse(localStorage.getItem(TPOFFK)||'null');if(Array.isArray(tf0))TPOFF=tf0}catch(e){}
@@ -142,7 +143,7 @@ function tapeStart(){var el=$('tape');if(!el||!window.requestAnimationFrame)retu
 function tapePlain(r){return String(r[0])+', '+String(r[2]).replace(/<[^>]*>/g,'').replace(/&minus;/g,'−').replace(/&[a-z#0-9]+;/g,' ')}
 function tapeAttr(x,r){var nt=x.fs==='atrasado'||x.fs==='velho'?pxNota(x.l):'';return nt?' aria-label="'+esc(x.l+' '+tapePlain(r)+', '+nt)+'" title="'+esc(nt)+'"':''}
 function tapeNota(n,x,r){var nt=x.fs==='atrasado'||x.fs==='velho'?pxNota(x.l):'';if(nt){n.setAttribute('aria-label',x.l+' '+tapePlain(r)+', '+nt);n.setAttribute('title',nt)}else{n.removeAttribute('aria-label');n.removeAttribute('title')}}
-function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems().filter(function(x){return TPOFF.indexOf(x.l)<0});if(it.length<3){el.hidden=true;return}el.hidden=false;
+function renderTape(){var el=$('tape');if(!el)return;cxPrefetch();var it=tapeItems().filter(function(x){return TPOFF.indexOf(x.l)<0});if(it.length<3){el.hidden=true;return}el.hidden=false;
   var key=it.map(function(x){return x.l}).join('|');
   if(key===TPK&&el.firstChild){it.forEach(function(x){var r=tapeIn(x);[].forEach.call(el.querySelectorAll('[data-tp="'+x.l.replace(/"/g,'')+'"]'),function(n){n.querySelector('span').textContent=r[0];var e=n.querySelector('em');e.className=r[1];e.textContent=r[2];n.classList.toggle('old',x.fs==='atrasado'||x.fs==='velho');tapeNota(n,x,r)})});return}
   TPK=key;var one=it.map(function(x){var r=tapeIn(x),at=x.st?' data-stk="'+esc(x.l)+'"':x.ik&&idxDef(x.ik)?' data-idxo="'+esc(x.ik)+'"':'';

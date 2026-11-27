@@ -154,8 +154,8 @@ function heroCam(b){
   if(rg==='1d'||rg==='5d'){
     var v=finView('BRL=X',rg);
     if(!v||v.st!=='ok')msg=(v&&v.msg)||'';
-    else{var prev=rg==='1d'&&v.o&&v.o.prev?v.o.prev:v.hist[0].c;
-      hist=cv==='usd'?v.hist.slice():v.hist.map(function(p){return {t:p.t,c:P.u*p.c-P.b+off}});ref=cv==='usd'?prev:P.u*prev-P.b+off;o={intra:1,d1:rg==='1d',prev:rg==='1d'?ref:null}}
+    else{var prev=rg==='1d'?cxBase('BRL=X'):v.hist[0].c;
+      hist=cv==='usd'?v.hist.slice():v.hist.map(function(p){return {t:p.t,c:P.u*p.c-P.b+off}});ref=!(prev>0)?null:cv==='usd'?prev:P.u*prev-P.b+off;o={intra:1,d1:rg==='1d',prev:rg==='1d'?ref:null}}
   }else{
     var days={'1mo':31,'3mo':93,'6mo':183,'1y':366,'ytd':366,'2y':731}[rg],t0=days?Date.now()-days*864e5:0,all=cv==='usd'?fxDaily():cambioHist();
     hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);ref=hist.length?hist[0].c:null}
