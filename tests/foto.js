@@ -11,6 +11,7 @@ const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log(
   const R = await p.evaluate(async () => {
     const fx = (c) => ({ ok: true, cons: c, cen: c * 1.5, oti: c * 2.2222, esp: c * 1.55, ms: 0.123456, est: 'abaixo', trap: null });
     const o = (tk, c, st) => ({ tk: tk, d: { cur: 'BRL', price: 10.126 }, fx: fx(c), score: 7.44, cf: { n: 'Alta', w: st ? ['preço velho'] : [], f: 1 }, sd: { mot: st ? ['dívida alta', 'caixa operacional negativo'] : [] } });
+    const dn = Math.floor(Date.now() / 864e5); AV.md = 1; MD.err = ''; MD.d = { ts: dn * 86400, hist: { AAAA3: { d: [[dn, 10.126]] }, BBBB3: { d: [[dn, 10.126]] }, CCCC3: { d: [[dn, 10.126]] } } };
     const full = { D: [o('AAAA3', 12)], X: [Object.assign(o('BBBB3', 9), { fx: fx(9) })], W: [], M: [] };
     const pend = { D: [Object.assign(o('CCCC3', 5), { fx: { ok: false, pend: true } })], X: [] };
     const out = {};

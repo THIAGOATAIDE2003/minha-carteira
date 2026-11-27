@@ -56,3 +56,13 @@ function pxLinha(r){if(!r||!r.at)return '';var f=r.fase,v=PXVIA[r.via]?PXVIA[r.v
   return dh+' · atualizado há '+(m<1?'menos de 1':m)+' min'+fo}
 /* aviso da faixa preta para leitor de tela e toque longo: o que quer dizer o item apagado */
 function pxNota(tk){var r=livePx(tk);return !r?'':r.fase==='atrasado'?'preço atrasado':r.fase==='velho'?'último preço de '+pxDia(r.at):''}
+
+/* ===== E2 (1.83.0): índices com hora própria ===== */
+/* hora de mercado de cada índice guardado em MKT.idx (só na memória: ao recarregar o app não se sabe a hora do valor guardado, e então a faixa do robô vale mais) */
+var PXI={};
+function pxIdxPut(k,v,p,t){if(!(v>0))return false;MKT.idx[k]={v:v,p:p};PXI[k]={v:v,t:t>0&&t<=Date.now()?t:Date.now()};return true}
+/* Ibovespa e Euro: o valor guardado só vale mais que o da faixa do robô se tem hora de mercado mais nova; devolve {v,p,at,ap} (ap=1: veio do app) */
+function pxIdxPick(k,lbl){var tv=tapeIdx(lbl),mi=MKT.idx[k],pi=PXI[k],ok=!!(mi&&mi.v>0&&mi.p!=null&&isFinite(mi.p)&&pi&&pi.v===mi.v);
+  if(ok&&(!tv||pi.t>tv.at))return {v:mi.v,p:mi.p,at:pi.t,ap:1};
+  if(tv)return {v:tv.v,p:tv.p,at:tv.at};
+  return mi&&mi.v>0?{v:mi.v,p:mi.p,at:ok?pi.t:0,ap:1}:null}

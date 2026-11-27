@@ -37,7 +37,7 @@ setTimeout(function(){doRefresh(true)},600);
 setTimeout(function(){loadCDI()},900);
 setTimeout(function(){loadDivs()},2500);
 setTimeout(function(){loadDivsUS()},4200);
-try{tapeStart()}catch(e){}setTimeout(function(){loadMD().then(function(){AV.md=1;try{avCiclo()}catch(e){}})},700);setTimeout(function(){loadNews()},1500);setInterval(function(){if(!document.hidden)loadNews()},10*60000);setTimeout(ntBadge,1700);setInterval(ntBadge,60000);setInterval(function(){if(!document.hidden)loadMD()},60*60000);setInterval(function(){var b=brt();if(!document.hidden&&bDay(b.d)&&b.min>=540&&b.min<1380)loadMD(true)},5*60000);
+try{tapeStart()}catch(e){}setTimeout(function(){loadMD().then(function(){AV.md=1;try{avCiclo()}catch(e){}try{if(OPC&&OPC.r){garRec(OPC.r.D);fotoSalvar(OPC.r)}}catch(e){}})},700);setTimeout(function(){loadNews()},1500);setInterval(function(){if(!document.hidden)loadNews()},10*60000);setTimeout(ntBadge,1700);setInterval(ntBadge,60000);setInterval(function(){if(!document.hidden)loadMD()},60*60000);setInterval(function(){var b=brt();if(!document.hidden&&bDay(b.d)&&b.min>=540&&b.min<1380)loadMD(true)},5*60000);
 setTimeout(function(){loadHist()},5000);
 setTimeout(function(){loadBench()},3500);
 setInterval(function(){if(!document.hidden){loadDivs();loadDivsUS()}},60*60000);

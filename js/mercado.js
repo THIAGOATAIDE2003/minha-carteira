@@ -63,8 +63,8 @@ function loadMkt(force){
   MKT.busy=true;MKT.err='';renderMkt();var jobs=[],sel=idxSel().map(idxDef);
   var fx=sel.filter(function(x){return x.src==='fx'});
   if(fx.length)jobs.push(getJSON('https://economia.awesomeapi.com.br/json/last/'+fx.map(function(x){return x.s}).join(',')).then(function(d){
-    fx.forEach(function(x){var o=d[x.s.replace('-','')];if(o)MKT.idx[x.k]={v:parseFloat(o.bid),p:parseFloat(o.pctChange)}})}).catch(function(){}));
-  if(S.keys.finnhub)sel.filter(function(x){return x.src==='us'}).forEach(function(x){jobs.push(usQuote(x.s).then(function(q){MKT.idx[x.k]={v:q.price,p:q.pct}}).catch(function(){}))});
+    fx.forEach(function(x){var o=d[x.s.replace('-','')];if(o)pxIdxPut(x.k,parseFloat(o.bid),parseFloat(o.pctChange),(parseInt(o.timestamp,10)||0)*1000)})}).catch(function(){}));
+  if(S.keys.finnhub)sel.filter(function(x){return x.src==='us'}).forEach(function(x){jobs.push(usQuote(x.s).then(function(q){pxIdxPut(x.k,q.price,q.pct,q.at)}).catch(function(){}))});
   if(sel.some(function(x){return x.src==='selic'}))jobs.push(getJSON('https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json').then(function(a){if(Array.isArray(a)&&a.length){var v=parseFloat(String(a[a.length-1].valor).replace(',','.'));if(v>0)MKT.idx.selic={v:v,m:a[a.length-1].data}}}).catch(function(){}));
   if(sel.some(function(x){return x.src==='ipca'}))jobs.push(getJSON('https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/12?formato=json').then(function(a){
     if(Array.isArray(a)&&a.length){var f=a.reduce(function(m,r){return m*(1+parseFloat(String(r.valor).replace(',','.'))/100)},1);MKT.idx.ipca={v:(f-1)*100,m:a[a.length-1].data}}}).catch(function(){}));
@@ -72,14 +72,14 @@ function loadMkt(force){
   var p=Promise.resolve();
   seq.forEach(function(it,i){p=p.then(function(){return i?wait(350):null}).then(function(){
     var f=isBR(it.tk)||it.tk.charAt(0)==='^'?(S.keys.brapi?brQuote(it.tk):Promise.reject(new Error('br'))):usQuote(it.tk);
-    return f.then(function(q){if(it.k)MKT.idx[it.k]={v:q.price,p:q.pct};else pxPut(it.tk,'M',q,q.via,q.at)}).catch(function(e){if(it.w)MKT.err='Não consegui o preço de '+it.tk+(isBR(it.tk)?'':' (ação dos EUA precisa da chave Finnhub)')+'.'})})});
+    return f.then(function(q){if(it.k)pxIdxPut(it.k,q.price,q.pct,q.at);else pxPut(it.tk,'M',q,q.via,q.at)}).catch(function(e){if(it.w)MKT.err='Não consegui o preço de '+it.tk+(isBR(it.tk)?'':' (ação dos EUA precisa da chave Finnhub)')+'.'})})});
   jobs.push(p);
   Promise.all(jobs).then(function(){MKT.at=Date.now();MKT.busy=false;mktSave();renderMkt()});
 }
 var IDZ={ibov:0,XFIX11:0,SMAL11:0,DIVO11:0,SPY:1,QQQ:1,DIA:1,ACWI:1,EEM:1};
 function idxVal(x){var r=idxVal0(x);if(r&&r.p!=null&&idxFechado(x))return {v:r.v,p:0,sub:r.sub};if(r&&r.p!=null&&IDZ[x.k]!=null&&dzero(!!IDZ[x.k],MKT.at))return {v:r.v,p:0,sub:r.sub};return r}
 function idxVal0(x){var I=MKT.idx;
-  if(x.k==='ibov'||x.k==='eur'){var tv=tapeIdx(x.k==='ibov'?'IBOV':'EURO');if(tv&&(!I[x.k]||MKT.at<tv.at))return {v:tv.v,p:tv.p}}
+  if(x.k==='ibov'||x.k==='eur'){var pk=pxIdxPick(x.k,x.k==='ibov'?'IBOV':'EURO');if(pk)return pk.at>0?{v:pk.v,p:pk.p,at:pk.at}:{v:pk.v,p:pk.p}}
   if(x.src==='cmd'){var tv=x.tp&&tapeIdx(x.tp),D0=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(tv)return {v:tv.v,p:tv.p,sub:'robô, a cada 15 min no pregão'};if(D0&&D0.d&&D0.d.length>1){var l0=D0.d[D0.d.length-1][1],l1=D0.d[D0.d.length-2][1];return {v:l0,p:(l0/l1-1)*100,sub:'último fechamento'}}return null}
   if(x.src==='fut'){var q=FUT.d&&FUT.d[x.s];if(q&&q.p>0)return {v:q.p,p:q.prev>0?(q.p/q.prev-1)*100:null,sub:futEstado(q)};var D1=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(D1&&D1.d&&D1.d.length>1){var m0=D1.d[D1.d.length-1][1],m1=D1.d[D1.d.length-2][1];return {v:m0,p:(m0/m1-1)*100,sub:'último fechamento'}}return null}
   if(x.src==='usd'){var f0=fxToday();return f0?{v:f0.rate,p:S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null}:null}
