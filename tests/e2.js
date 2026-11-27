@@ -29,6 +29,7 @@ const MUTANTES = {
   'registro-preco-do-motor': ['js/resultados.js', 'var px=fotoPx(o.tk);if(px)l.push([o.tk,Math.round(px.p*100)/100', 'var px={p:o.d.price};if(px)l.push([o.tk,Math.round(px.p*100)/100'],
   'registro-grava-vazio': ['js/resultados.js', 'if(!l.length)return;g.r[td]', 'g.r[td]'],
   'formato-do-registro-muda': ['js/resultados.js', 'l.push([o.tk,Math.round(px.p*100)/100,o.score,o.V?Math.round(o.V.med*100)/100:null])', 'l.push([o.tk,Math.round(px.p*100)/100,o.score,o.V?Math.round(o.V.med*100)/100:null,px.pd])'],
+  'robo-304-nao-limpa-erro': ['js/mercado-setores.js', "MD.at=Date.now();if(MD.d)MD.err='';return null", 'MD.at=Date.now();return null'],
   'arquivo-novo-sem-cache': ['sw.js', "'js/precos.js',", '']
 };
 const ideia = (tk, price) => ({ tk: tk, d: { cur: 'BRL', price: price }, fx: { ok: true, cons: 12, cen: 18, oti: 26, esp: 18.6, ms: 0.12, est: 'abaixo', trap: null }, score: 7, cf: { n: 'Alta', w: [], f: 1 }, sd: { mot: [] }, V: { med: 18 } });
@@ -202,6 +203,21 @@ async function bolinha(b) {
   await p.context().close();
 }
 
+async function brecha304(b) {
+  /* T2.8 (auditoria M1): leitura do robô falha, a seguinte volta "sem novidade" (304): o erro some e a foto pode sair */
+  const p = await novo(b, '14:30');
+  const R = await p.evaluate(async () => {
+    S.keys.gh = 'tok'; MD.d = { ts: Date.now() / 1000, at: Date.now(), tape: { ts: Date.now() / 1000, it: [] }, hist: {}, prov: {} }; MD.etag = 'W/"x"'; MD.at = 0; MD.err = ''; AV.md = 1;
+    var f0 = window.fetch, modo = 'erro'; window.fetch = function () { return modo === 'erro' ? Promise.reject(new Error('sem rede')) : Promise.resolve({ status: 304, ok: false, headers: { get: function () { return ''; } } }); };
+    await loadMD(true); var depoisErro = { err: MD.err, gate: fotoGate() };
+    modo = '304'; await loadMD(true); var depois304 = { err: MD.err, gate: fotoGate() };
+    window.fetch = f0; return { depoisErro: depoisErro, depois304: depois304 };
+  });
+  ok('T2.8 com a leitura do robô falhando, o portão da foto fecha (erro registrado)', R.depoisErro.err !== '' && R.depoisErro.gate === false, R);
+  ok('T2.8 a resposta seguinte "sem novidade" (304) limpa o erro e abre o portão da foto', R.depois304.err === '' && R.depois304.gate === true, R);
+  await p.context().close();
+}
+
 (async () => {
   if (arg.includes('--mutantes')) {
     let fraco = 0; const nomes = Object.keys(MUTANTES);
@@ -216,7 +232,7 @@ async function bolinha(b) {
     console.log(fraco ? '✗ ' + fraco + ' defeito(s) escaparam dos testes' : '✓ Todos os ' + nomes.length + ' defeitos inseridos foram pegos pelos testes'); process.exit(fraco ? 1 : 0);
   }
   const b = await chromium.launch();
-  try { await indices(b); await foto(b); await bolinha(b); } catch (e) { falhas++; console.log('✗ erro no teste:', e.message); }
+  try { await indices(b); await foto(b); await bolinha(b); await brecha304(b); } catch (e) { falhas++; console.log('✗ erro no teste:', e.message); }
   await b.close();
   console.log(falhas ? '✗ E2: ' + falhas + ' falha(s) de ' + total : '✓ E2: ' + total + ' conferências ok'); process.exit(falhas ? 1 : 0);
 })();

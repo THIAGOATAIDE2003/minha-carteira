@@ -87,7 +87,7 @@ function loadMD(force){
   if(!S.keys.gh||MD.busy)return Promise.resolve();if(!force&&Date.now()-MD.at<30*60000&&MD.d&&MD.d.prov)return Promise.resolve();
   MD.busy=true;var c=new AbortController(),to=setTimeout(function(){c.abort()},15000),h={'Authorization':'Bearer '+S.keys.gh,'Accept':'application/vnd.github.raw'};if(MD.etag&&MD.d)h['If-None-Match']=MD.etag;
   return fetch('https://api.github.com/repos/'+ghRepo()+'/contents/mercado.json?ref=main',{headers:h,signal:c.signal,cache:'no-store'}).then(function(r){clearTimeout(to);
-    if(r.status===304){MD.at=Date.now();return null}if(r.status===404){MD.err='O robô ainda não rodou.';return null}if(!r.ok)throw new Error(r.status);
+    if(r.status===304){MD.at=Date.now();if(MD.d)MD.err='';return null}if(r.status===404){MD.err='O robô ainda não rodou.';return null}if(!r.ok)throw new Error(r.status);
     var et=r.headers.get('ETag')||'';return r.json().then(function(j){MD.d=j;MD.etag=et;MD.at=Date.now();MD.err='';STKC={};try{provMD()}catch(e){}if(!USR.tape||Date.now()-USR.at>4*60000)usRefresh().then(function(){render()});try{localStorage.setItem(LS+'-md',JSON.stringify({d:j,etag:et,at:MD.at}))}catch(e){}render();if(!$('stk').hidden&&(STK.tk||STK.idx))stkLoad()})})
     .catch(function(e){MD.err='Não consegui ler os dados do robô agora'+(e&&e.message&&e.message!=='The user aborted a request.'?' ('+e.message+')':'')+'.'}).then(function(){MD.busy=false;MD.at=MD.at||Date.now()});
 }
