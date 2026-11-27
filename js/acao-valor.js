@@ -99,11 +99,11 @@ function stkLoad(){
   if(fast){STK.d=fast;STK.busy=false;STK.err='';stkRender();
     if(fast.cur==='USD'&&S.keys.finnhub&&!STKC['m|'+tk])getJSON('https://finnhub.io/api/v1/stock/metric?symbol='+encodeURIComponent(tk)+'&metric=all&token='+encodeURIComponent(S.keys.finnhub)).then(function(m){var x=m&&m.metric||{};STKC['m|'+tk]={d:x,at:Date.now()};stkUSk(tk,x)}).catch(function(){});
     else if(STKC['m|'+tk])stkUSk(tk,STKC['m|'+tk].d);
-    var lv=livePx(tk);if(!lv||Date.now()-lv.at>15*60000)(isBR(tk)?(S.keys.brapi||pxBase()?brQuote(tk):Promise.reject()):usQuote(tk)).then(function(q){MKT.q[tk]=q;try{renderTape()}catch(e){}if(STK.tk===tk){var f2=mdStk(tk,rgEff());if(f2){if(STK.d&&STK.d.k&&STK.d.cur==='USD')f2.k=STK.d.k;STK.d=f2;stkRender()}}}).catch(function(){});
+    var lv=livePx(tk);if(!lv||Date.now()-lv.at>15*60000)(isBR(tk)?(S.keys.brapi||pxBase()?brQuote(tk):Promise.reject()):usQuote(tk)).then(function(q){pxPut(tk,'M',q,q.via,q.at);try{renderTape()}catch(e){}if(STK.tk===tk){var f2=mdStk(tk,rgEff());if(f2){if(STK.d&&STK.d.k&&STK.d.cur==='USD')f2.k=STK.d.k;STK.d=f2;stkRender()}}}).catch(function(){});
     return}
   if(STKC[key]&&Date.now()-STKC[key].at<30*60000){STK.d=STKC[key].d;stkRender();return}
   STK.busy=true;STK.err='';stkRender();
-  var done=function(d){d.at=Date.now();if(d.price>0&&!/^\^/.test(tk)){var m0=MKT.q[tk];if(!m0)MKT.q[tk]={price:d.price,pct:d.pct,cur:d.cur,name:d.name||(m0&&m0.name)||'',at:d.at};try{renderTape()}catch(e){}}STKC[key]={d:d,at:Date.now()};if(STK.tk!==tk||STK.rng!==rg)return;STK.d=d;STK.busy=false;stkRender()};
+  var done=function(d){d.at=d.t>0&&d.t<=Date.now()?d.t:Date.now();if(d.price>0&&!/^\^/.test(tk)){var m0=MKT.q[tk];pxPut(tk,'M',{price:d.price,pct:d.pct,cur:d.cur,name:d.name||(m0&&m0.name)||'',at:d.at},d.via||'app',d.at,!(d.t>0));try{renderTape()}catch(e){}}STKC[key]={d:d,at:Date.now()};if(STK.tk!==tk||STK.rng!==rg)return;STK.d=d;STK.busy=false;stkRender()};
   var fail=function(msg){if(STK.tk!==tk)return;STK.busy=false;STK.err=msg;stkRender()};
   if(isBR(tk)||tk.charAt(0)==='^'){
     if(!S.keys.brapi)return fail('Falta o token do brapi em Ajustes.');
@@ -112,7 +112,7 @@ function stkLoad(){
       var ks=x.defaultKeyStatistics||{},fd=x.financialData||{},pr=x.summaryProfile||{},dv=(x.dividendsData&&x.dividendsData.cashDividends)||[];
       var yr=Date.now()-365*864e5,d12=dv.filter(function(c){var t=Date.parse(c.paymentDate||c.lastDatePrior||'');return t>yr&&t<=Date.now()+90*864e5}).reduce(function(a,c){return a+(+c.rate||0)},0);
       var Fd=fundOf(tk);
-      return {cur:'BRL',name:x.longName||x.shortName||'',price:x.regularMarketPrice,pct:x.regularMarketChangePercent,o:x.regularMarketOpen>0?x.regularMarketOpen:null,h:x.regularMarketDayHigh>0?x.regularMarketDayHigh:null,l:x.regularMarketDayLow>0?x.regularMarketDayLow:null,hist:hp,sector:pr.sector||pr.industry||'',mods:mods,
+      return {cur:'BRL',name:x.longName||x.shortName||'',price:x.regularMarketPrice,pct:x.regularMarketChangePercent,t:Date.parse(x.regularMarketTime)||0,via:'brapi',o:x.regularMarketOpen>0?x.regularMarketOpen:null,h:x.regularMarketDayHigh>0?x.regularMarketDayHigh:null,l:x.regularMarketDayLow>0?x.regularMarketDayLow:null,hist:hp,sector:pr.sector||pr.industry||'',mods:mods,
         k:{pl:pickNum(x,['priceEarnings']),lpa:pickNum(x,['earningsPerShare']),hi:pickNum(x,['fiftyTwoWeekHigh']),lo:pickNum(x,['fiftyTwoWeekLow']),mc:pickNum(x,['marketCap']),
           pvp:pickNum(ks,['priceToBook']),vpa:pickNum(ks,['bookValue']),dy:pickNum(ks,['dividendYield','trailingAnnualDividendYield']),roe:pickNum(fd,['returnOnEquity']),ml:pickNum(fd,['profitMargins']),
           div:pickNum(fd,['debtToEquity']),evebitda:pickNum(ks,['enterpriseToEbitda']),d12:d12},divs:dv.slice(0,12)}};
@@ -134,7 +134,7 @@ function stkLoad(){
   }else{
     if(!S.keys.finnhub)return fail('Falta a chave Finnhub em Ajustes para ações dos EUA.');
     var fh='&token='+encodeURIComponent(S.keys.finnhub),d={cur:'USD',name:'',hist:[],k:{},divs:[],mods:true};
-    Promise.all([usQuote(tk).then(function(q){d.price=q.price;d.pct=q.pct}),
+    Promise.all([usQuote(tk).then(function(q){d.price=q.price;d.pct=q.pct;d.t=q.at;d.via=q.via}),
       getJSON('https://finnhub.io/api/v1/stock/profile2?symbol='+encodeURIComponent(tk)+fh).then(function(p){d.name=p.name||'';d.sector=p.finnhubIndustry||''}).catch(function(){}),
       getJSON('https://finnhub.io/api/v1/stock/metric?symbol='+encodeURIComponent(tk)+'&metric=all'+fh).then(function(m){var x=m&&m.metric||{};
         d.k={pl:pickNum(x,['peTTM','peBasicExclExtraTTM']),lpa:pickNum(x,['epsTTM','epsBasicExclExtraItemsTTM']),hi:pickNum(x,['52WeekHigh']),lo:pickNum(x,['52WeekLow']),mc:x.marketCapitalization?x.marketCapitalization*1e6:null,

@@ -93,16 +93,16 @@ var TPK='';
 var TPIX={IBOV:1,'S&P 500':1,NASDAQ:1,DOW:1};
 function tpStk(x){return x[4]?x[4]==='s':/^[A-Z0-9]{2,6}$/.test(x[0])&&!TPIX[x[0]]}
 function tapeItems(){
-  var it=[],seen={},R=null,add=function(l,v,p,c,st,ik){if(!(v>0)||!(p>0)||seen[l])return;seen[l]=1;it.push({l:l,v:v,p:(v/p-1)*100,c:c,st:st,ik:ik||''})};
+  var it=[],seen={},R=null,add=function(l,v,p,c,st,ik,fs){if(!(v>0)||!(p>0)||seen[l])return;seen[l]=1;it.push({l:l,v:v,p:(v/p-1)*100,c:c,st:st,ik:ik||'',fs:fs||''})};
   var t=MD.d&&MD.d.tape&&MD.d.tape.it||[];
-  t.forEach(function(x){var l=x[0],v=x[1],p=x[2],c=x[3];
+  t.forEach(function(x){var l=x[0],v=x[1],p=x[2],c=x[3],fs='';
     if(l==='DÓLAR'&&S.fx&&S.fx.src==='auto'&&S.fx.prev){v=S.fx.rate;p=S.fx.prev}
-    var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if(TPIX[l]&&dzero(l!=='IBOV',tat))p=v
+    var st=tpStk(x),tat=(MD.d.tape.ts||0)*1000;if(st){var lv=livePx(l);fs=lv&&lv.fase||'';if(lv&&lv.pct!=null){v=lv.p;p=lv.p/(1+lv.pct/100)}else if(dzero(!isBR(l),tat))p=v}else if(TPIX[l]&&dzero(l!=='IBOV',tat))p=v
     var ik=l==='IBOV'?'ibov':l==='EURO'?'eur':'',mi=ik&&MKT.idx[ik];if(mi&&mi.v>0&&mi.p!=null&&MKT.at>MD.d.tape.ts*1000){v=mi.v;p=mi.v/(1+mi.p/100)}
     var dk=x[5]||(l==='DÓLAR'?'usd':l==='EURO'?'eur':''),dd=dk&&idxDef(dk);if(dd&&idxFechado(dd))p=v;
-    add(l,v,p,c,st,x[5])});
+    add(l,v,p,c,st,x[5],fs)});
   try{R=compute()}catch(e){}
-  if(R)R.held.forEach(function(x){var tk=x.p.ticker,lv=livePx(tk);if(lv&&lv.pct!=null)add(tk,lv.p,lv.p/(1+lv.pct/100),x.p.market==='US'?'USD':'BRL',1)});
+  if(R)R.held.forEach(function(x){var tk=x.p.ticker,lv=livePx(tk);if(lv&&lv.pct!=null)add(tk,lv.p,lv.p/(1+lv.pct/100),x.p.market==='US'?'USD':'BRL',1,'',lv.fase)});
   if(!seen['DÓLAR']&&S.fx&&S.fx.prev)add('DÓLAR',S.fx.rate,fxParado()?S.fx.rate:S.fx.prev,'BRL',0,'usd');
   return it}
 function tapeVal(x){if(/^JUROS/.test(x.l))return pf.format(x.v)+'%';if(TPIX[x.l])return num(x.v,x.v>=1000?0:2);if(x.l==='DÓLAR'||x.l==='EURO')return 'R$ '+num(x.v,4);if(x.c==='USD')return x.v>=1000?'US$ '+num(x.v,0):usd.format(x.v);return brl.format(x.v)}
@@ -138,11 +138,15 @@ function tapeStart(){var el=$('tape');if(!el||!window.requestAnimationFrame)retu
   el.addEventListener('pointerup',fim);el.addEventListener('pointercancel',fim);el.addEventListener('pointerleave',fim);
   el.addEventListener('click',function(e){if(TPA.moved>8){e.stopPropagation();e.preventDefault();TPA.moved=0}},true);
   requestAnimationFrame(tpLoop)}
+/* faixa (1.82.2): item apagado diz por quê, para leitor de tela e toque longo */
+function tapePlain(r){return String(r[0])+', '+String(r[2]).replace(/<[^>]*>/g,'').replace(/&minus;/g,'−').replace(/&[a-z#0-9]+;/g,' ')}
+function tapeAttr(x,r){var nt=x.fs==='atrasado'||x.fs==='velho'?pxNota(x.l):'';return nt?' aria-label="'+esc(x.l+' '+tapePlain(r)+', '+nt)+'" title="'+esc(nt)+'"':''}
+function tapeNota(n,x,r){var nt=x.fs==='atrasado'||x.fs==='velho'?pxNota(x.l):'';if(nt){n.setAttribute('aria-label',x.l+' '+tapePlain(r)+', '+nt);n.setAttribute('title',nt)}else{n.removeAttribute('aria-label');n.removeAttribute('title')}}
 function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems().filter(function(x){return TPOFF.indexOf(x.l)<0});if(it.length<3){el.hidden=true;return}el.hidden=false;
   var key=it.map(function(x){return x.l}).join('|');
-  if(key===TPK&&el.firstChild){it.forEach(function(x){var r=tapeIn(x);[].forEach.call(el.querySelectorAll('[data-tp="'+x.l.replace(/"/g,'')+'"]'),function(n){n.querySelector('span').textContent=r[0];var e=n.querySelector('em');e.className=r[1];e.textContent=r[2]})});return}
+  if(key===TPK&&el.firstChild){it.forEach(function(x){var r=tapeIn(x);[].forEach.call(el.querySelectorAll('[data-tp="'+x.l.replace(/"/g,'')+'"]'),function(n){n.querySelector('span').textContent=r[0];var e=n.querySelector('em');e.className=r[1];e.textContent=r[2];n.classList.toggle('old',x.fs==='atrasado'||x.fs==='velho');tapeNota(n,x,r)})});return}
   TPK=key;var one=it.map(function(x){var r=tapeIn(x),at=x.st?' data-stk="'+esc(x.l)+'"':x.ik&&idxDef(x.ik)?' data-idxo="'+esc(x.ik)+'"':'';
-    return '<'+(at?'button type="button"'+at:'span')+' class="tpi" data-tp="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(at?'button':'span')+'>'}).join('');
+    return '<'+(at?'button type="button"'+at:'span')+' class="tpi'+(x.fs==='atrasado'||x.fs==='velho'?' old':'')+'" data-tp="'+esc(x.l)+'"'+tapeAttr(x,r)+'><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(at?'button':'span')+'>'}).join('');
   setHtml(el,'<div class="tptr">'+one+one+'</div>')}
 
 /* variação do dia zerada fora do pregão (nos EUA também a partir da meia-noite de Brasília, como o usuário pediu): antes da abertura (ou fim de semana/feriado) até chegar a primeira cotação do dia */
@@ -173,7 +177,7 @@ function usRefresh(R){if(!S.keys.finnhub)return Promise.resolve();USR.at=Date.no
       return getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(o.tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(!d||!(d.c>0))return;
         var pc=d.dp!=null?d.dp:(d.pc>0?(d.c/d.pc-1)*100:null),now=Date.now();
         if(o.ik){MKT.idx[o.ik]={v:d.c,p:pc};return}
-        var m0=MKT.q[o.tk];MKT.q[o.tk]={price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now}}).catch(function(){})})},Promise.resolve());
+        var m0=MKT.q[o.tk];pxPut(o.tk,'M',{price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now},'finnhub',d.t>0&&d.t*1000<=now?d.t*1000:now,!(d.t>0))}).catch(function(){})})},Promise.resolve());
   }}
 function doRefresh(silent){
   var st=$('status'),R=compute();
@@ -188,7 +192,7 @@ function doRefresh(silent){
     var tk=x.p.ticker;if(got[tk])return;
     if(x.p.market==='US'){
       if(!S.keys.finnhub){fails.push(tk+' (falta a chave Finnhub)');return}
-      jobs.push(getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(d&&d.c>0){S.quotes[tk]={price:d.c,prev:d.pc>0?d.pc:null,at:Date.now(),src:'auto'};okc++}else fails.push(tk)}).catch(function(){fails.push(tk)}));
+      jobs.push(getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(d&&d.c>0){pxPut(tk,'S',{price:d.c,prev:d.pc,at:Date.now()},'finnhub',d.t>0&&d.t*1000<=Date.now()?d.t*1000:Date.now(),!(d.t>0));okc++}else fails.push(tk)}).catch(function(){fails.push(tk)}));
     }else br.push(tk);
   });
   jobs.push(usRefresh(R));
@@ -196,7 +200,7 @@ function doRefresh(silent){
   if(br.length&&!S.keys.brapi){br.forEach(function(tk){fails.push(tk+' (falta o token brapi)')});br=[]}
   var wait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
   var one=function(tk,tries){
-    return getJSON('https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?token='+encodeURIComponent(S.keys.brapi)).then(function(d){var q=d&&d.results&&d.results[0];if(q&&q.regularMarketPrice>0){S.quotes[tk]={price:q.regularMarketPrice,prev:q.regularMarketPreviousClose>0?q.regularMarketPreviousClose:null,at:Date.now(),src:'auto'};okc++}else throw 0})
+    return getJSON('https://brapi.dev/api/quote/'+encodeURIComponent(tk)+'?token='+encodeURIComponent(S.keys.brapi)).then(function(d){var q=d&&d.results&&d.results[0];if(q&&q.regularMarketPrice>0){var tb=Date.parse(q.regularMarketTime)||0;pxPut(tk,'S',{price:q.regularMarketPrice,prev:q.regularMarketPreviousClose,at:Date.now()},'brapi',tb>0&&tb<=Date.now()?tb:Date.now(),!(tb>0));okc++}else throw 0})
       .catch(function(){if(tries>0)return wait(1500).then(function(){return one(tk,tries-1)});fails.push(tk)});
   };
   jobs.push(br.reduce(function(p,tk,i){return p.then(function(){return i?wait(700):null}).then(function(){return one(tk,2)})},Promise.resolve()));
@@ -222,6 +226,6 @@ function extOf(tk){var c=EXT[tk],px=pxBase();if(isBR(tk)||tk.charAt(0)==='^'||!p
 function extHtml(tk){var x=extOf(tk);if(!x||!(x.ref>0))return '';var pc=(x.p/x.ref-1)*100,ab=x.p-x.ref;
   return '<p class="small gext"><span class="muted">'+(x.fase==='pre'?'Pré-mercado':'Após o fechamento')+'</span> <b class="num">'+usd.format(x.p)+'</b> <span class="num '+cls(pc)+'">'+sg0(ab)+usd.format(Math.abs(ab)).replace('US$','').trim()+' ('+sg0(pc)+pf.format(Math.abs(pc))+'%)</span></p>'}
 function pxQuotes(tks){var u=pxBase();if(!u||!tks.length)return Promise.resolve({});
-  return getJSON(u+'/q?s='+encodeURIComponent(tks.map(ySym).join(','))).then(function(j){var got={};tks.forEach(function(tk){var q=j&&j[ySym(tk)];if(q&&q.p>0){S.quotes[tk]={price:q.p,prev:q.prev>0?q.prev:null,at:Math.min(Date.now(),(q.t||0)*1000)||Date.now(),src:'auto'};got[tk]=1}});return got}).catch(function(){return {}})}
+  return getJSON(u+'/q?s='+encodeURIComponent(tks.map(ySym).join(','))).then(function(j){var got={};tks.forEach(function(tk){var q=j&&j[ySym(tk)];if(q&&q.p>0){var tw=Math.min(Date.now(),(q.t||0)*1000)||Date.now();pxPut(tk,'S',{price:q.p,prev:q.prev,at:tw},'worker',tw);got[tk]=1}});return got}).catch(function(){return {}})}
 try{var fh=JSON.parse(localStorage.getItem(LS+'-fxh')||'null');if(fh&&fh.ser)ingestFx({series:fh.ser,source:'AwesomeAPI'});if(!fh||Date.now()-fh.at>6*3600000)loadFxHistory().then(function(){render()})}catch(e){loadFxHistory()}
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-RF.last>5*60000)doRefresh(true);if(!document.hidden&&Date.now()-MD.at>5*60000)loadMD(true)});
