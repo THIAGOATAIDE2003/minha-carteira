@@ -84,7 +84,7 @@ document.addEventListener('scroll',function(e){var hc=e.target;if(!hc||hc.id!=='
 
 /* toque nos números do Início: gráfico com períodos (evolução mensal) */
 var HERON={luc:'Lucro total',inv:'Valor investido',cam:'Câmbio',pat:'Patrimônio total',val:'Valorização (ganho de capital)',dia:'Variação de hoje'};
-function heroOpen(k){STK={tk:'',hero:k,rng:k==='dia'?'1d':'1y',d:null,cv:'luc'};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=HERON[k]||'';heroRender()}
+function heroOpen(k){STK={tk:'',hero:k,rng:k==='cam'?'1y':'1d',d:null,cv:'luc'};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=HERON[k]||'';heroRender()}
 function heroRender(){
   var b=$('stk-b'),k=STK.hero;if(!b)return;
   if(k==='cam'){heroCam(b);return}
@@ -95,7 +95,7 @@ function heroRender(){
   var Rn=compute(),ctn=0;Rn.held.forEach(function(x){ctn+=x.p.market==='US'?x.p.cN*T.fxNow:x.p.cB});ctn+=T.rfC;var now=k==='pat'?T.value+T.cash:k==='inv'?ctn:k==='luc'?T.gain:all.length?all[all.length-1].c:0;if(all.length)all[all.length-1]={t:Date.now(),c:k==='pat'||k==='inv'||k==='luc'?now:all[all.length-1].c};
   var hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);
   var ch=hist.length>1?hist[hist.length-1].c-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=ch!=null&&base>0&&(k==='pat'||k==='inv')?ch/base*100:null,last=hist.length?hist[hist.length-1].c:0;
-  setHtml(b,gHead(HERON[k],'',brl.format(last),ch,pc,rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,['yr'])+lineChart(hist,'BRL',null)+
+  setHtml(b,gHead(HERON[k],'',brl.format(last),ch,pc,rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,['yr'])+pdNota()+lineChart(hist,'BRL',null)+
     (k==='luc'?'<p class="note">Quanto você ganhou ou perdeu no total, em fim de mês (o último é hoje): patrimônio menos tudo que você colocou, juntando preço, dólar, vendas e proventos. Se ele cai, veja o que mudou: toque em Preço ou em Dólar na lista.</p>':k==='inv'?'<p class="note">Quanto você pagou pelo que tem hoje, em fim de mês (o último é hoje). Sobe quando você aporta e também quando o dólar sobe, porque o custo do VT é contado pelo dólar da data. Por isso ele mexe sem você ter comprado nada.</p>':'<p class="note">Pontos de fim de mês (o último é hoje), pela mesma conta da Evolução. Só preço: sem câmbio de vendas e sem proventos.</p>'));
 }
 
@@ -104,25 +104,28 @@ function heroRender(){
 function heroInv(b){
   var rg=STK.rng,R=compute(),T=R.tot,U=0,ctn=T.rfC;R.held.forEach(function(x){if(x.p.market==='US'){U+=x.p.cN;ctn+=x.p.cN*T.fxNow}else ctn+=x.p.cB});
   var fixo=ctn-U*T.fxNow,v=finView('BRL=X',rg);
+  if(v&&v.st==='none'&&pdAutoH('inv'))return heroRender();
   if(!v||v.st!=='ok'){setHtml(b,rngBar(rg,['yr'])+'<p class="muted small" style="margin:12px 0">'+esc((v&&v.st==='load')?'Carregando os pontos do dia...':(v&&v.msg)||'Ainda não há pontos de 5 minutos do dólar. O robô os grava durante o pregão; volte depois da abertura.')+'</p>');return}
   var hist=v.hist.map(function(p){return {t:p.t,c:fixo+U*p.c}}),prev=rg==='1d'&&v.o&&v.o.prev?fixo+U*v.o.prev:hist[0].c,last=hist[hist.length-1].c,ch=last-prev;
-  setHtml(b,gHead(HERON.inv,'',brl.format(last),ch,prev>0?ch/prev*100:null,rg,(ch>=0?'+':'−')+brl.format(Math.abs(ch)),gWhen(Date.now()))+rngBar(rg,['yr'])+
+  setHtml(b,gHead(HERON.inv,'',brl.format(last),ch,prev>0?ch/prev*100:null,pdRg(rg,v,rg),(ch>=0?'+':'−')+brl.format(Math.abs(ch)),gWhen(Date.now()))+rngBar(rg,['yr'])+
     lineChart(hist,'BRL',null,null,{intra:1,d1:rg==='1d',prev:rg==='1d'?prev:null})+
     '<p class="note">No dia, só o custo do VT se mexe, porque ele é contado pelo dólar. O que você pagou em reais nas ações do Brasil e na renda fixa fica parado. Pontos de 5 minutos do dólar.</p>')}
 function heroIntra(b,k){
-  var R=compute(),T=R.tot,rg=STK.rng,hs=R.held.filter(function(x){return x.p.qty>0}),lista=[],falta=0,sem=0;
-  hs.forEach(function(x){var c=FIN['intra/'+ySym(x.p.ticker)],v=finView(ySym(x.p.ticker),rg==='5d'?'5d':'1d');if(v&&v.st==='load')falta++;else if(!v||v.st!=='ok')sem++;else lista.push({q:x.p.qty,f:x.p.market==='US'?T.fxNow:1,h:v.hist,prev:(v.o&&v.o.prev)||v.hist[0].c})});
+  var R=compute(),T=R.tot,rg=STK.rng,hs=R.held.filter(function(x){return x.p.qty>0}),lista=[],falta=0,sem=0,nb=0,C=rg==='1d'?vdCart(hs,T.fxNow):null,vr=null;
+  hs.forEach(function(x){var tk=x.p.ticker,c=FIN['intra/'+ySym(tk)],v=finView(ySym(tk),rg==='5d'?'5d':'1d'),ci=C&&C[tk],f=x.p.market==='US'?T.fxNow:1;if(v&&v.st==='load')falta++;else if(!v||v.st!=='ok')sem++;else if(C&&!ci)nb++;
+    else{lista.push({q:x.p.qty,f:f,h:v.hist,prev:ci?ci.c/(x.p.qty*f):(v.o&&v.o.prev)||v.hist[0].c,pz:ci&&ci.pz,at:ci&&ci.at});if(!vr||v.hist[v.hist.length-1].t>vr.hist[vr.hist.length-1].t)vr=v}});
   var head=function(){return rngBar(rg,k==='dia'?['yr','max','ytd','3mo','1y','5y','1mo','6mo']:['yr'])};
   if(falta&&!lista.length){setHtml(b,head()+'<p class="muted small" style="margin:12px 0">Carregando os pontos do dia...</p>');return}
-  if(!lista.length){setHtml(b,head()+'<p class="muted small" style="margin:12px 0">Ainda não há pontos de 5 minutos das suas ações. O robô os grava durante o pregão (a cada 30 min); volte depois da abertura.</p>');return}
+  if(!lista.length){if(pdAutoH(k))return heroRender();setHtml(b,head()+'<p class="muted small" style="margin:12px 0">'+(nb&&!sem&&!falta?'Falta o fechamento de ontem das suas ações para mostrar a variação de hoje.':'Ainda não há pontos de 5 minutos das suas ações. O robô os grava durante o pregão (a cada 30 min); volte depois da abertura.')+'</p>');return}
   var ts={};lista.forEach(function(a){a.h.forEach(function(p){ts[p.t]=1})});var tt=Object.keys(ts).map(Number).sort(function(a,c){return a-c}),idx=lista.map(function(){return 0}),px=lista.map(function(a){return a.prev}),pts=[],base=0;
   lista.forEach(function(a){base+=a.q*a.f*a.prev});
   tt.forEach(function(t){var v=0;lista.forEach(function(a,i){while(idx[i]<a.h.length&&a.h[idx[i]].t<=t){px[i]=a.h[idx[i]].c;idx[i]++}v+=a.q*a.f*px[i]});pts.push({t:t,c:v})});
+  if(C){var te=tt[tt.length-1],v2=0;lista.forEach(function(a){if(a.at>te)te=a.at;v2+=a.q*a.f*a.pz});if(te===tt[tt.length-1])pts[pts.length-1].c=v2;else pts.push({t:te,c:v2})}
   var ref=rg==='1d'?base:pts[0].c,vl=pts[pts.length-1].c,d=vl-ref,lv=k==='pat'?T.value+T.cash:k==='val'?valoriz(R).g:k==='luc'?T.gain:null,out=pts;
   if(lv!=null)out=pts.map(function(p){return {t:p.t,c:lv+(p.c-vl)}});
-  setHtml(b,gHead(HERON[k],'',brl.format(k==='dia'?d:out[out.length-1].c),d,ref>0?d/ref*100:null,rg,(d>=0?'+':'−')+brl.format(Math.abs(d)),gWhen(Date.now()))+head()+
+  setHtml(b,gHead(HERON[k],'',brl.format(k==='dia'?d:out[out.length-1].c),d,ref>0?d/ref*100:null,pdRg(rg,vr,rg),(d>=0?'+':'−')+brl.format(Math.abs(d)),gWhen(Date.now()))+head()+
     lineChart(k==='dia'?out.map(function(p,i){return {t:p.t,c:pts[i].c-ref}}):out,'BRL',null,null,{intra:1,d1:rg==='1d',prev:k==='dia'&&rg==='1d'?0:null})+
-    '<p class="note">Soma, ponto a ponto, quantidade × preço de cada ação (pontos de 5 minutos do robô). Renda fixa e caixa ficam parados; o VT entra pelo dólar de hoje.'+(falta||sem?' Ações sem pontos hoje: '+(falta+sem)+'.':'')+'</p>');
+    '<p class="note">Soma, ponto a ponto, quantidade × preço de cada ação (pontos de 5 minutos do robô). Renda fixa e caixa ficam parados; o VT entra pelo dólar de hoje.'+(rg==='1d'?' A variação de hoje é a mesma do cartão "Variação de hoje" do Início.':'')+(falta||sem?' Ações sem pontos hoje: '+(falta+sem)+'.':'')+(nb?' Ações sem fechamento de ontem: '+nb+'.':'')+'</p>');
 }
 
 /* Câmbio: seu lucro (custo em dólar × dólar do dia − reais que você pagou) dia a dia e, no 1D/5D, ponto a ponto com o dólar de 5 minutos */

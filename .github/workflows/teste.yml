@@ -28,6 +28,7 @@ jobs:
       - run: node tests/variacao.js --sem-dados
       - run: node tests/linha-hora.js
       - run: node tests/periodo.js
+      - run: node tests/grafico-inicio.js
       - run: node tests/macro.js
       - run: node tests/parecer.js
       - run: node tests/banco.js

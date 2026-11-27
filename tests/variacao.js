@@ -23,7 +23,6 @@ const MUTANTES = {
   'dolar-no-escopo': ['js/variacao.js', "return typeof sym==='string'&&(", "return typeof sym==='string'&&(/=X$/.test(sym)||"],
   'esquece-os-eua': ['js/variacao.js', "||/^[A-Z][A-Z0-9]{0,4}([.-][A-Z])?$/.test(sym))}", ')}'],
   'mexe-no-finView': ['js/grafico.js', "{prev:d.prev,intra:1,d1:1", "{prev:d.prev+0.01,intra:1,d1:1"],
-  'mexe-no-heroIntra': ['js/inicio.js', 'function heroIntra(b,k){', 'function heroIntra(b,k){k=k;'],
   'vdFo-altera-o-objeto-do-FIN': ['js/variacao.js', 'function vdFo(fo,b){var n={},k;', 'function vdFo(fo,b){var n=fo,k;'],
   'sem-fallback-vira-NaN': ['js/variacao.js', 'b=vdBase(sym,tk,vdDiaSessao(fv,fo),0);return b>0&&preco>0?', 'b=vdBase(sym,tk,vdDiaSessao(fv,fo),0);return true?'],
   'sinal-do-absoluto-trocado': ['js/variacao.js', 'abs:lv.pr!=null?0:lv.p-b', 'abs:lv.pr!=null?0:b-lv.p'],
@@ -68,7 +67,7 @@ async function novo(b, quando, dia) {
 const sec = async (n, f) => { try { await f(); } catch (e) { ok('Bloco "' + n + '" não rodou: ' + String(e.message).split('\n')[0].slice(0, 140), false); } };
 
 /* ---------------- parte principal ---------------- */
-const FIXOS = ['finView', 'finStat', 'finBase', 'finLast', 'finTail', 'finGet', 'heroIntra', 'livePx', 'pxPick', 'tapeItems', 'tapeIdx', 'idxVal', 'idxVal0', 'compute', 'opData', 'dzero', 'pxIdxPick', 'gStats'];
+const FIXOS = ['finView', 'finStat', 'finBase', 'finLast', 'finTail', 'finGet', 'livePx', 'pxPick', 'tapeItems', 'tapeIdx', 'idxVal', 'idxVal0', 'compute', 'opData', 'dzero', 'pxIdxPick', 'gStats'];
 /* gHead e lineChart mudam DE PROPÓSITO na 1.83.3 (só texto/posição: legenda "fechamento anterior", ⓘ colado à última palavra). Que nada além disso mudou é provado pelas páginas abaixo, comparadas com a 1.83.1 depois de desfazer só essas duas trocas (NORM). */
 const NORM = h => h.replace(/fechamento anterior: /g, 'antes do fechamento: ').replace(/<span class="gwx"[^>]*>([^<]*)(<button[^>]*>.*?<\/button>)<\/span>/g, '$1$2');
 async function ptsIdx(p, dia, hh, n, v0, v1) { return await p.evaluate(a => __pts(a[0], a[1], a[2], a[3], a[4]), [dia || '2026-11-27', hh || '13:00', n || 18, v0 || 177500, v1 || 181443.75]); }

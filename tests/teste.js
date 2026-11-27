@@ -468,7 +468,7 @@ function contasAMao(F, P) {
       var mk = function (prev) { return { d: { cur: 'BRL', off: -10800, at: now, prev: prev, p: p5 }, at: Date.now() }; };
       FIN['intra/TEST3.SA'] = mk(19.5); stkOpen('TEST3'); document.querySelector('[data-rng="1d"]').click(); var r = { um: document.querySelectorAll('#stk-b .gch svg').length, prev: /fechamento anterior/.test(document.getElementById('stk-b').textContent) };
       document.querySelector('[data-rng="5d"]').click(); r.cinco = document.querySelectorAll('#stk-b .gch svg').length; stkClose();
-      compute().held.forEach(function (x) { FIN['intra/' + ySym(x.p.ticker)] = mk(19.5); }); heroOpen('dia'); r.dia = document.querySelectorAll('#stk-b .gch svg').length; stkClose();
+      var sq = JSON.stringify(S.quotes); compute().held.forEach(function (x) { FIN['intra/' + ySym(x.p.ticker)] = mk(19.5); S.quotes[x.p.ticker] = { price: 20.5, prev: 19.5, at: Date.now(), src: 'auto' }; }); heroOpen('dia'); r.dia = document.querySelectorAll('#stk-b .gch svg').length; stkClose(); S.quotes = JSON.parse(sq);
       FIN['intra/TEST3.SA'] = { d: null, at: Date.now() }; stkOpen('TEST3'); document.querySelector('[data-rng="1d"]').click(); r.sem = /Ainda não há pontos/.test(document.getElementById('stk-b').textContent); stkClose(); return r; });
     confere('gráfico de 1 dia e 5 dias, linha do fechamento anterior, carteira no dia e aviso sem dados', [g2.um, g2.prev, g2.cinco, g2.dia, g2.sem], [1, true, 1, 1, true]);
     if (erros.length) { falhas += erros.length; erros.forEach(e => console.log('  ✗ erro na página: ' + e)); }

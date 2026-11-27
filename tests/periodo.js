@@ -39,7 +39,7 @@ async function novo(b, quando, dia) {
 }
 const sec = async (n, f) => { try { await f(); } catch (e) { ok('Bloco "' + n + '" não rodou: ' + String(e.message).split('\n')[0].slice(0, 160), false); } };
 const T1130 = T('11:30'), DIAS = (a, b) => { var o = []; for (var d = a; d <= b; d++) o.push([d, 100 + (d % 7)]); return o; };
-const FIXOS = ['finView', 'finStat', 'finBase', 'finLast', 'finTail', 'finGet', 'compute', 'livePx', 'idxVal', 'heroIntra', 'heroInv', 'heroCam', 'heroOpen', 'vdAtivo', 'vdIdx', 'vdFo', 'rgEff', 'rngBar', 'lineChart', 'gStats'];
+const FIXOS = ['finView', 'finStat', 'finBase', 'finLast', 'finTail', 'finGet', 'compute', 'livePx', 'idxVal', 'heroCam', 'vdAtivo', 'vdIdx', 'vdFo', 'rgEff', 'rngBar', 'lineChart', 'gStats'];
 
 const MUTANTES = {
   'acao-abre-em-1A-de-novo': ['js/mercado-setores.js', "STK={tk:tk,rng:'1d',d:null,busy:false", "STK={tk:tk,rng:STK.rng||'1y',d:null,busy:false"],
@@ -173,7 +173,7 @@ async function principal(b) {
   if (GRAVAR) { fs.writeFileSync(ESP, JSON.stringify(res, null, 1) + '\n'); console.log('gravado', ESP); }
   else if (fs.existsSync(ESP)) {
     const esp = JSON.parse(fs.readFileSync(ESP, 'utf8'));
-    Object.keys(esp.fn).forEach(k => ok('P10 texto idêntico à 1.83.3: ' + k, res.fn[k] === esp.fn[k], [k, res.fn[k], esp.fn[k]]));
+    Object.keys(res.fn).forEach(k => ok('P10 texto idêntico à 1.83.3: ' + k, res.fn[k] === esp.fn[k], [k, res.fn[k], esp.fn[k]]));
     Object.keys(esp.per).forEach(k => ok('P8 página (' + k + ') idêntica à 1.83.3', res.per[k] === esp.per[k], [k, res.per[k], esp.per[k]]));
     ok('P11 compute() da carteira idêntico à 1.83.3', res.compute === esp.compute, 1); ok('P11 tela do Início idêntica à 1.83.3', res.inicio === esp.inicio, 1);
   } else ok('snapshot tests/esperado-periodo.json existe', false);

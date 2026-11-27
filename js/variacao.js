@@ -37,3 +37,7 @@ function vdPagIdx(rg,rate,same,sym,fv,fo,x,last,D,dp){if(rg!=='1d'||rate||!fv||f
 function vdPon(vd,h){var n=vd&&vd.pct==null?'<p class="muted small" style="margin:2px 0 6px">Variação de hoje indisponível</p>':'',i=h.indexOf('</div>');return n&&i>=0?h.slice(0,i+6)+n+h.slice(i+6):h}
 /* "Fech. ant." das estatísticas: o fechamento certo (vd) ou, fora do escopo, o do arquivo de 5 min como antes */
 function vdAnt(vd,st){return vd?(vd.ant>0?pf.format(vd.ant):null):st&&st.prev!=null?pf.format(st.prev):null}
+/* base do dia da carteira (G2): por papel, a MESMA conta do cartão "Variação de hoje" do Início (S.quotes: preço e fechamento anterior; fora do pregão a base é o próprio preço, como no cartão).
+   Papel sem preço ou sem fechamento anterior da faixa fica de fora (não aparece no resultado). c = base em R$, a = valor de agora em R$, pz = preço, at = hora do preço. */
+function vdCart(hs,fx){var o={};hs.forEach(function(x){var tk=x.p.ticker,q=S.quotes[tk],us=x.p.market==='US',F=us?fx:1,a;
+  if(!q||!(q.prev>0)||q.src!=='auto'||!(q.price>0))return;a=x.p.qty*q.price*F;o[tk]={c:dzero(us,q.at)?a:x.p.qty*q.prev*F,a:a,pz:q.price,at:q.at||0}});return o}
