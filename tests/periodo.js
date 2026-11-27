@@ -58,6 +58,7 @@ const MUTANTES = {
   'tentar-de-novo-volta-ao-1A': ['js/acao-pagina.js', "data-rng=\"'+STK.rng+'\">Tentar de novo", "data-rng=\"1y\">Tentar de novo"],
   'sem-a-linha-de-aviso': ['js/periodo.js', "return STK.auto&&STK.rng==='1mo'?", "return ''&&STK.auto&&STK.rng==='1mo'?"],
   'sem-reserva-de-espaco': ['js/periodo.js', "return fv&&fv.st==='load'?';min-height:190px':''", "return ''"],
+  'carga-da-acao-no-1D-fica-presa': ['js/acao-valor.js', 'if(STK.tk!==tk||rgEff()!==rg)return;', 'if(STK.tk!==tk||STK.rng!==rg)return;'],
   'arquivo-fora-do-sw': ['sw.js', "'js/periodo.js',", ''],
   'arquivo-fora-do-index': ['index.html', '<script src="js/periodo.js"></script>\n', '']
 };
@@ -143,6 +144,16 @@ async function principal(b) {
       return { hd: /Empresa ALFA3/.test(hd) && /17,80/.test(hd) && /Carregando/.test(hd), hm: hm, hg: hg };
     }, [T1130, pts]);
     ok('P9 carregando: o cabeçalho (nome e preço) já aparece e o espaço reservado tem a altura do gráfico (±30 px)', r.hd && r.hm > 150 && Math.abs(r.hm - r.hg) <= 30, r);
+  });
+  /* P13: ação que o robô não tem (carga pelo brapi) abre no 1D e mostra os dados (o 1D pede "1mo" ao brapi; a resposta não pode ser descartada por "o período mudou") */
+  await sec('P13 carga pelo brapi', async () => {
+    const p2 = await novo(b, '11:30');
+    const r = await p2.evaluate(async ts => {
+      __R(ts); S.keys.brapi = 'k'; var antes = window.getJSON; window.getJSON = function () { return Promise.resolve({ results: [{ regularMarketPrice: 21.5, regularMarketPreviousClose: 20, regularMarketChangePercent: 7.5, regularMarketTime: '2026-11-27T11:20:00-03:00', longName: 'Empresa NOVA3', historicalDataPrice: [{ date: 1730000000, close: 20 }, { date: 1732000000, close: 21.5 }] }] }); };
+      FIN['intra/NOVA3.SA'] = { d: null, at: Date.now() }; stkOpen('NOVA3'); for (var i = 0; i < 40 && !STK.d; i++) await new Promise(function (r) { setTimeout(r, 25); });
+      var o = { rng: STK.rng, d: !!STK.d, preco: STK.d && STK.d.price, txt: __txt().slice(0, 80) }; window.getJSON = antes; return o;
+    }, T1130); await p2.context().close();
+    ok('P13 ação sem histórico do robô abre no 1D e mostra os dados vindos do brapi (não fica em "Carregando")', r.d && r.preco === 21.5 && !/Carregando NOVA3/.test(r.txt), r);
   });
   /* P8/P10/P11: o que não pode mudar (outros períodos, texto das funções, compute() e Início) comparado com o retrato da 1.83.3 */
   const col = await p.evaluate(([FIX, ts, pts]) => {
