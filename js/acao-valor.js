@@ -103,7 +103,7 @@ function stkLoad(){
     return}
   if(STKC[key]&&Date.now()-STKC[key].at<30*60000){STK.d=STKC[key].d;stkRender();return}
   STK.busy=true;STK.err='';stkRender();
-  var done=function(d){d.at=d.t>0&&d.t<=Date.now()?d.t:Date.now();if(d.price>0&&!/^\^/.test(tk)){var m0=MKT.q[tk];pxPut(tk,'M',{price:d.price,pct:d.pct,cur:d.cur,name:d.name||(m0&&m0.name)||'',at:d.at},d.via||'app',d.at,!(d.t>0));try{renderTape()}catch(e){}}STKC[key]={d:d,at:Date.now()};if(STK.tk!==tk||STK.rng!==rg)return;STK.d=d;STK.busy=false;stkRender()};
+  var done=function(d){d.at=d.t>0&&d.t<=Date.now()?d.t:Date.now();if(d.price>0&&!/^\^/.test(tk)){var m0=MKT.q[tk];pxPut(tk,'M',{price:d.price,pct:d.pct,cur:d.cur,name:d.name||(m0&&m0.name)||'',at:d.at},d.via||'app',d.at,!(d.t>0));try{renderTape()}catch(e){}}STKC[key]={d:d,at:Date.now()};if(STK.tk!==tk||rgEff()!==rg)return;STK.d=d;STK.busy=false;stkRender()};
   var fail=function(msg){if(STK.tk!==tk)return;STK.busy=false;STK.err=msg;stkRender()};
   if(isBR(tk)||tk.charAt(0)==='^'){
     if(!S.keys.brapi)return fail('Falta o token do brapi em Ajustes.');
