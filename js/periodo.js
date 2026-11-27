@@ -7,6 +7,8 @@ function pdSkip(x,rate){return (rate?['yr','max']:[]).concat(pdSemIntra(x)?['noi
 /* "ainda não há pontos de 5 minutos": troca UMA vez do 1D para o 1M (a marca STK.auto impede de voltar sozinho); true = trocou, a página se desenha de novo */
 function pdAuto(fv,rg){if(rg==='1d'&&fv&&fv.st==='none'&&/^Ainda não há pontos/.test(fv.msg||'')&&!STK.auto){STK.auto=1;STK.rng='1mo';return true}return false}
 function pdNota(){return STK.auto&&STK.rng==='1mo'?'<p class="muted small" style="margin:8px 0">Ainda sem negociações hoje; mostrando o último mês.</p>':''}
+/* Início/Patrimônio (G2): sem pontos do dia nos gráficos de 1D, troca UMA vez para o 1M (mesma marca STK.auto e mesma linha) */
+function pdAutoH(k){if(STK.rng==='1d'&&k!=='dia'&&!STK.auto){STK.auto=1;STK.rng='1mo';return true}return false}
 /* enquanto o arquivo do dia carrega, o espaço do gráfico fica reservado (a tela não pula quando ele chega) */
 function pdMin(fv){return fv&&fv.st==='load'?';min-height:190px':''}
 /* fora do pregão o 1D mostra o último pregão: o rótulo vira "último pregão, DD/MM" (dia do último ponto, no fuso do próprio mercado) em vez de "hoje" */
