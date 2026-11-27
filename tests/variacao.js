@@ -202,15 +202,15 @@ async function principal(b, snap) {
   });
   /* ----- V11 escopo: dólar, euro, commodities, bitcoin, juros e outros índices ficam de fora ----- */
   await sec('V11 escopo', async () => {
-    const r = await p.evaluate(() => ['BRL=X', 'EURBRL=X', 'GC=F', 'BZ=F', 'BTC-USD', '^TNX', '^GSPC', '', null].map(function (s) { return vdEscopo(s); }).concat(['PETR4.SA', '^BVSP', 'SPY', 'BRK-B', 'USAX'].map(function (s) { return vdEscopo(s); })));
-    ok('V11 fora do escopo: dólar, euro, ouro, Brent, bitcoin, ^TNX, outros índices; dentro: B3, ^BVSP e EUA', r.slice(0, 9).every(v => v === false) && r.slice(9).every(v => v === true), r);
+    const r = await p.evaluate(() => ['BRL=X', 'EURBRL=X', 'BTC-USD', '^TNX', '^GSPC', '', null].map(function (s) { return vdEscopo(s); }).concat(['PETR4.SA', '^BVSP', 'SPY', 'BRK-B', 'USAX', 'GC=F', 'BZ=F', 'SI=F', 'TIO=F'].map(function (s) { return vdEscopo(s); })));
+    ok('V11 fora do escopo: dólar, euro, bitcoin, ^TNX, outros índices; dentro: B3, ^BVSP, EUA e (1.83.8) commodities XX=F', r.slice(0, 7).every(v => v === false) && r.slice(7).every(v => v === true), r);
   });
   /* ----- V13/V12/V14: o que não pode mudar (texto das funções, páginas fora do escopo, outros períodos, carteira e Início) ----- */
   const col = await p.evaluate(([FIX, ts, pts]) => {
     var o = { fn: {}, pag: {}, per: {} };
     FIX.forEach(function (n) { try { o.fn[n] = eval(n).toString(); } catch (e) { o.fn[n] = 'ausente'; } });
     __R([['IBOV', 181443.75, 176800, 'BRL', 'i', 'ibov'], ['ALFA3', 17.82, 16.54, 'BRL', 's', '']], ts); __idxf(); tapeMerge();
-    var d4 = [[20781, 5.3], [20782, 5.4], [20783, 5.38], [20784, 5.35]], outros = { usd: 'BRL=X', eur: 'EURBRL=X', btc: 'BTC-USD', brent: 'BZ=F', tnx: '^TNX' };
+    var d4 = [[20781, 5.3], [20782, 5.4], [20783, 5.38], [20784, 5.35]], outros = { usd: 'BRL=X', eur: 'EURBRL=X', btc: 'BTC-USD', tnx: '^TNX' };
     Object.keys(outros).forEach(function (k) { MD.d.idx[k] = { d: d4, w: d4, name: k, cur: 'BRL', last: 5.35, sym: outros[k] }; __intra(outros[k], pts.map(function (q) { return [q[0], 5 + q[1] / 1e6]; }), 5.31); __abrirIdx(k, '1d'); o.pag[k] = __txt(); });
     __intra('^BVSP', pts, 173816.06); __intra('ALFA3.SA', pts.map(function (q) { return [q[0], 17.82 * (q[1] / 181443.75)]; }), 15.77);
     ['5d', '1mo', '6mo', 'ytd', '1y', '5y', 'max', 'yr'].forEach(function (rg) { __abrirIdx('ibov', rg); o.per['ibov ' + rg] = document.getElementById('stk-b').innerHTML.replace(/skg\d+/g, 'skg'); __abrirAcao('ALFA3', 17.82, 7.74, rg); o.per['alfa ' + rg] = document.getElementById('stk-b').innerHTML.replace(/skg\d+/g, 'skg'); });
@@ -225,7 +225,7 @@ async function principal(b, snap) {
     const esp = JSON.parse(fs.readFileSync(ESP, 'utf8'));
     const CX = ['tapeItems', 'idxVal0', 'usd', 'eur']; /* dólar e euro mudaram de propósito na 1.83.6 (tests/cambio.js) */
     ['fn', 'pag', 'per'].forEach(g => Object.keys(res[g]).filter(k => !CX.includes(k)).forEach(k => ok('V' + { fn: '13 texto idêntico à 1.83.1: ', pag: '11 página fora do escopo idêntica à 1.83.1: ', per: '12 outros períodos idênticos à 1.83.1: ' }[g] + k, res[g][k] === esp[g][k], [k, res[g][k], esp[g][k]])));
-    ok('V11b páginas fora do escopo (dólar, euro, bitcoin, brent, 10 anos) continuam com a legenda antiga "antes do fechamento" (o número delas não mudou, então o texto também não)', Object.keys(col.pag).length >= 5 && Object.keys(col.pag).every(k => !/fechamento anterior/.test(col.pag[k])), Object.keys(col.pag));
+    ok('V11b páginas fora do escopo (dólar, euro, bitcoin, 10 anos) continuam com a legenda antiga "antes do fechamento" (o número delas não mudou, então o texto também não)', Object.keys(col.pag).length >= 4 && Object.keys(col.pag).every(k => !/fechamento anterior/.test(col.pag[k])), Object.keys(col.pag));
     ok('V14 compute() da carteira idêntico à 1.83.1', res.compute === esp.compute, [res.compute, esp.compute]);
     ok('V14 tela do Início idêntica à 1.83.1', res.inicio === esp.inicio, [res.inicio, esp.inicio]);
   } else ok('snapshot tests/esperado-variacao.json existe', false);
