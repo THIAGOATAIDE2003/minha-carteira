@@ -149,7 +149,7 @@ function idxRender(){
   hist=rgCut(hist,STK.rng);ch=hist.length>1?(rate?hist[hist.length-1].c-hist[0].c:finLast(hist)/((fo&&fo.prev)||finBase(hist))-1):null;
   var pAbs=ch==null?null:rate?ch:finLast(hist)-((fo&&fo.prev)||finBase(hist)),pPct=ch==null?null:rate?(hist[0].c?ch/hist[0].c*100:null):ch*100,per=rg==='yr'||ch==null?'1d':rg;
   if(ch==null||rg==='yr'){pPct=dp;pAbs=dp!=null&&last!=null?last-last/(1+dp/100):null}
-  var vd=vdPagIdx(rg,rate,same,sym,fv,fo,x,last,D,dp);if(vd){pAbs=vd.abs;pPct=vd.pct;fo=vd.fo}
+  var vd=vdPagIdx(rg,rate,same,sym,fv,fo,x,last,D,dp)||cxPagIdx(rg,rate,x,fv,fo,last);if(vd){pAbs=vd.abs;pPct=vd.pct;fo=vd.fo}
   var st=finStat(rate?'':sym),h='<div class="gcard">'+vdPon(vd,gHead(x.t,'',last!=null?fmt(last):'—',pAbs,pPct,pdRg(per,fv,rg),'',o&&o.at?gWhen(o.at):(MD.d&&MD.d.at?gWhen(MD.d.at):'')))+whyHtml(k,dp,x.n)+
     rngBar(rg,pdSkip(x,rate))+pdNota()+((rg==='yr'&&!rate)?annHtml(annRets(hist,null)):(fmsg?'<p class="muted small" style="margin:12px 0'+pdMin(fv)+'">'+esc(fmsg)+(rg==='5d'?' Por enquanto, os fechamentos dos últimos dias.':'')+'</p>':'')+(fmsg&&rg!=='5d'?'':lineChart(hist,'BRL',null,fmt,fo)))+(rate?'':gStats([['Abertura',st&&st.o!=null?pf.format(st.o):null],['Alta',st&&st.h!=null?pf.format(st.h):null],['Baixa',st&&st.l!=null?pf.format(st.l):null],['Fech. ant.',vdAnt(vd,st)],['Alt 52 sem',pf.format(hi)],['Bai 52 sem',pf.format(lo)]]))+'</div>';
   var rows=rate?[['Agora',last!=null?fmt(last):'—'],['Há 1 ano',v1!=null?fmt(v1):'—'],['Há 5 anos',v5!=null?fmt(v5):'—'],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)]]

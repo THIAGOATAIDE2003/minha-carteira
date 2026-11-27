@@ -79,10 +79,10 @@ function loadMkt(force){
 var IDZ={ibov:0,XFIX11:0,SMAL11:0,DIVO11:0,SPY:1,QQQ:1,DIA:1,ACWI:1,EEM:1};
 function idxVal(x){var r=idxVal0(x);if(r&&r.p!=null&&idxFechado(x))return {v:r.v,p:0,sub:r.sub};if(r&&r.p!=null&&IDZ[x.k]!=null&&dzero(!!IDZ[x.k],MKT.at))return {v:r.v,p:0,sub:r.sub};return r}
 function idxVal0(x){var I=MKT.idx;
-  if(x.k==='ibov'||x.k==='eur'){var pk=pxIdxPick(x.k,x.k==='ibov'?'IBOV':'EURO');if(pk)return pk.at>0?{v:pk.v,p:pk.p,at:pk.at}:{v:pk.v,p:pk.p}}
+  if(x.k==='ibov'||x.k==='eur'){var pk=pxIdxPick(x.k,x.k==='ibov'?'IBOV':'EURO'),ce=x.k==='eur'&&pk&&cxVar('eur',pk.v);if(ce)pk={v:pk.v,p:ce.pct,at:pk.at};if(pk)return pk.at>0?{v:pk.v,p:pk.p,at:pk.at}:{v:pk.v,p:pk.p}}
   if(x.src==='cmd'){var tv=x.tp&&tapeIdx(x.tp),D0=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(tv)return {v:tv.v,p:tv.p,sub:'robô, a cada 15 min no pregão'};if(D0&&D0.d&&D0.d.length>1){var l0=D0.d[D0.d.length-1][1],l1=D0.d[D0.d.length-2][1];return {v:l0,p:(l0/l1-1)*100,sub:'último fechamento'}}return null}
   if(x.src==='fut'){var q=FUT.d&&FUT.d[x.s];if(q&&q.p>0)return {v:q.p,p:q.prev>0?(q.p/q.prev-1)*100:null,sub:futEstado(q)};var D1=MD.d&&MD.d.idx&&MD.d.idx[x.k];if(D1&&D1.d&&D1.d.length>1){var m0=D1.d[D1.d.length-1][1],m1=D1.d[D1.d.length-2][1];return {v:m0,p:(m0/m1-1)*100,sub:'último fechamento'}}return null}
-  if(x.src==='usd'){var f0=fxToday();return f0?{v:f0.rate,p:S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null}:null}
+  if(x.src==='usd'){var f0=fxToday();return f0?{v:f0.rate,p:(cxVar('usd',f0.rate)||{}).pct}:null}
   if(x.src==='cdi')return CDI.dates.length?{v:(Math.pow(1+CDI.s[CDI.dates[CDI.dates.length-1]]/100,252)-1)*100,sub:'Banco Central'}:null;
   if(x.src==='selic'){if(I.selic)return {v:I.selic.v,sub:'Copom'};var Ds=MD.d&&MD.d.idx&&MD.d.idx.selic;return Ds&&Ds.last?{v:Ds.last,sub:'Copom'}:null}
   if(x.src==='ipca')return I.ipca?{v:I.ipca.v,sub:'até '+String(I.ipca.m||'').slice(3)}:null;

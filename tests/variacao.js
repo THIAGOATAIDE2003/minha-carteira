@@ -223,7 +223,8 @@ async function principal(b, snap) {
   if (GRAVAR) { fs.writeFileSync(ESP, JSON.stringify(res, null, 1) + '\n'); console.log('gravado', ESP); }
   else if (fs.existsSync(ESP)) {
     const esp = JSON.parse(fs.readFileSync(ESP, 'utf8'));
-    ['fn', 'pag', 'per'].forEach(g => Object.keys(res[g]).forEach(k => ok('V' + { fn: '13 texto idêntico à 1.83.1: ', pag: '11 página fora do escopo idêntica à 1.83.1: ', per: '12 outros períodos idênticos à 1.83.1: ' }[g] + k, res[g][k] === esp[g][k], [k, res[g][k], esp[g][k]])));
+    const CX = ['tapeItems', 'idxVal0', 'usd', 'eur']; /* dólar e euro mudaram de propósito na 1.83.6 (tests/cambio.js) */
+    ['fn', 'pag', 'per'].forEach(g => Object.keys(res[g]).filter(k => !CX.includes(k)).forEach(k => ok('V' + { fn: '13 texto idêntico à 1.83.1: ', pag: '11 página fora do escopo idêntica à 1.83.1: ', per: '12 outros períodos idênticos à 1.83.1: ' }[g] + k, res[g][k] === esp[g][k], [k, res[g][k], esp[g][k]])));
     ok('V11b páginas fora do escopo (dólar, euro, bitcoin, brent, 10 anos) continuam com a legenda antiga "antes do fechamento" (o número delas não mudou, então o texto também não)', Object.keys(col.pag).length >= 5 && Object.keys(col.pag).every(k => !/fechamento anterior/.test(col.pag[k])), Object.keys(col.pag));
     ok('V14 compute() da carteira idêntico à 1.83.1', res.compute === esp.compute, [res.compute, esp.compute]);
     ok('V14 tela do Início idêntica à 1.83.1', res.inicio === esp.inicio, [res.inicio, esp.inicio]);
