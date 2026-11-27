@@ -29,11 +29,21 @@ const MUTANTES = {
   'mais-velho-sobrescreve-no-mercado': ['js/precos.js', 'if(cur&&cur.price>0&&pxEff(pxInfo(tk,cur.price,cur.at))>pxEff(ni))return false;', ''],
   'carteira-nao-acompanha': ['js/precos.js', "var s=S.quotes[tk];if(s&&s.src==='auto'", "var s=S.quotes[tk];if(0&&s&&s.src==='auto'"],
   'robo-compara-hora-da-busca': ['js/mercado-setores.js', "if(pxEff(pxInfo(l,q.price,q.at))<=at-PXEST){pxPut", "if((q.at||0)<at){pxPut"],
-  'pagina-sem-fonte-e-hora': ['js/precos.js', "return (v?' · '+v:'')+(f==='fechamento'", "return (f==='fechamento'"],
-  'pagina-sem-icone-de-explicacao': ['js/acao-pagina.js', "(lv1&&lv1.at?'<p class=\"small\" style=\"margin:-4px 0 6px\">'+bal(", "(0?'<p class=\"small\" style=\"margin:-4px 0 6px\">'+bal("],
+  'pagina-sem-fonte-e-hora': ['js/precos.js', "fo=v?' · '+v:''", "fo=''"],
+  'pagina-sem-icone-de-explicacao': ['js/acao-pagina.js', "lv1&&lv1.at?bal(pxWhy(lv1),null,'De onde vem este preço'):'')+", "'')+"],
   'formato-guardado-muda': ['js/precos.js', "MKT.q[tk]={price:pr,pct:q.pct,cur:q.cur,name:q.name||'',at:q.at||t||Date.now()};", "MKT.q[tk]={price:pr,pct:q.pct,cur:q.cur,name:q.name||'',at:q.at||t||Date.now(),via:via};"],
   'arquivo-fora-do-cache': ['sw.js', "'js/precos.js',", ''],
   'finnhub-fora-da-carteira-grava-direto': ['js/atualizacao.js', "pxPut(o.tk,'M',{price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now},'finnhub',d.t>0&&d.t*1000<=now?d.t*1000:now,!(d.t>0))}", "MKT.q[o.tk]={price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now}}"],
+  'ux-bal-sem-area-de-toque': ['style.css', 'min-width:44px;min-height:44px;margin:-14px -10px -14px -6px', 'min-width:0;min-height:0;margin:0'],
+  'ux-bal-pequeno': ['style.css', '.gwh .bal .bi{width:19px;height:19px', '.gwh .bal .bi{width:15px;height:15px'],
+  'ux-branco-amarelo-fraco': ['style.css', ':root[data-theme="branco"] .gwh.stale{color:#7a4e00}', ''],
+  'ux-fechamento-atualizado-ha': ['js/precos.js', "if(f==='fechamento')return 'Fechamento de '+dh+fo;", "if(f==='fechamento')return 'Fechamento de '+dh+fo+' · atualizado há '+m+' min';"],
+  'ux-velho-sem-nota': ['js/precos.js', " (não é de agora)'", "'"],
+  'ux-atrasado-sempre-em-horas': ['js/precos.js', 'm>=1440?', 'm>=99999999?'],
+  'ux-faixa-apagada-demais': ['style.css', '.tpi.old b,.tpi.old span,.tpi.old em{opacity:.7}', '.tpi.old b,.tpi.old span,.tpi.old em{opacity:.55}'],
+  'ux-faixa-sem-aviso': ['js/atualizacao.js', "function tapeAttr(x,r){var nt=", "function tapeAttr(x,r){return '';var nt="],
+  'ux-bal-numa-linha-so-dele': ['js/acao-pagina.js', "(lv1&&lv1.at?pxLinha(lv1):gWhen(fat||d.at,tk)),lv1&&lv1.at?bal(pxWhy(lv1),null,'De onde vem este preço'):'')+", "(lv1&&lv1.at?pxLinha(lv1):gWhen(fat||d.at,tk)),'')+(lv1&&lv1.at?'<p class=\"small\">'+bal(pxWhy(lv1),null,'De onde vem este preço')+'</p>':'')+"],
+  'ux-why-tecnico': ['js/precos.js', "'. É a hora em que a ação foi negociada, não a hora em que o app buscou.'", "' (hora do mercado, rodada do negócio).'"],
   'sem-aviso-duas-fontes': ['js/precos.js', "Math.abs(a.p/b.p-1)>.05&&Math.abs(a.at-b.at)<30*60000", 'false']
 };
 const PRE = () => {
@@ -132,6 +142,43 @@ async function sintetico(b) {
     ok('T1.15 Finnhub com negócio das 14:03 buscado às 14:30 NÃO passa por cima do robô das 14:22 (ficam 100,50 na página e na faixa)', F.a === 100.5 && F.fa === 100.5, F);
     ok('T1.15 Finnhub com negócio das 14:28 passa o robô (101,90, fonte finnhub) e o formato guardado não muda', F.b === 101.9 && F.via === 'finnhub' && F.ks === 'at,cur,name,pct,price', F);
   });
+  await sec('T1.16 textos e aparência dos ajustes de UX (1.82.2)', async () => {
+    const Lx = async (agora, dia, at, atd, via, est, fase) => { await p.clock.setFixedTime(new Date(T(agora, dia))); return E(([a, v, e]) => { __R([IT('UXAB3', 10, 9)], a); PXM = {}; S.quotes.UXAB3 = { price: 10, prev: 9, at: a, src: 'auto' }; PXM.UXAB3 = { p: 10, t: a, via: v, est: e }; var r = livePx('UXAB3'); return { fase: r.fase, linha: pxLinha(r), why: pxWhy(r) }; }, [T(at, atd), via, est]); };
+    const r1 = await Lx('14:30', '2026-11-26', '14:27', '2026-11-26', 'worker', false);
+    ok('T1.16 recente: "26/11, 14:27 · atualizado há 3 min · servidor de cotações"', r1.fase === 'ao-vivo' && r1.linha === '26/11, 14:27 · atualizado há 3 min · servidor de cotações', r1);
+    const r2 = await Lx('14:30', '2026-11-26', '14:03', '2026-11-26', 'brapi', false);
+    ok('T1.16 atrasado (até 24 h): "Atrasado (27 min) · preço das 14:03 · brapi"', r2.fase === 'atrasado' && r2.linha === 'Atrasado (27 min) · preço das 14:03 · brapi' && /Atrasado: o mercado está aberto e este preço tem mais de 20 min/.test(r2.why), r2);
+    const r3 = await Lx('10:30', '2026-11-30', '17:50', '2026-11-27', 'brapi', false);
+    ok('T1.16 atrasado há mais de 24 h mostra a data, não horas: "Atrasado: preço de 27/11, 17:50 · brapi"', r3.fase === 'atrasado' && r3.linha === 'Atrasado: preço de 27/11, 17:50 · brapi' && !/\d+ h\)/.test(r3.linha), r3);
+    const r4 = await Lx('20:00', '2026-11-26', '18:00', '2026-11-26', 'brapi', false);
+    ok('T1.16 depois do fechamento: "Fechamento de 26/11, 18:00 · brapi" e nunca "atualizado há"', r4.fase === 'fechamento' && r4.linha === 'Fechamento de 26/11, 18:00 · brapi' && !/atualizado/.test(r4.linha) && /preço de fechamento do último pregão/.test(r4.why), r4);
+    const r5 = await Lx('08:55', '2026-11-27', '15:10', '2026-11-25', 'robo', true);
+    ok('T1.16 preço velho: "Último preço de 25/11, 15:10 · robô (não é de agora)", a data aparece uma vez só', r5.fase === 'velho' && r5.linha === 'Último preço de 25/11, 15:10 · robô (não é de agora)' && (r5.linha.match(/25\/11/g) || []).length === 1 && /pode ter até 15 min/.test(r5.why) && /não é o preço de agora/.test(r5.why), r5);
+    ok('T1.16 nenhuma linha diz "ao vivo"', [r1, r2, r3, r4, r5].every(r => !/ao vivo/i.test(r.linha + r.why)), [r1.linha]);
+  });
+  await sec('T1.16b aparência dos ajustes de UX (1.82.2)', async () => {
+    /* aparência: ⓘ no fim da linha, 44 px, âmbar legível no Branco, faixa a 70% com aviso */
+    await p.clock.setFixedTime(new Date(T('14:30', '2026-11-26')));
+    const V = await E(async ([ts]) => {
+      __R([['IBOV', 176000, 170000, 'BRL', 'i', 'ibov'], IT('KAPA3', 12, 11.5), IT('LAMB3', 8, 7.9), IT('MIKR3', 5, 4.9)], ts); __B({ 'brapi.dev': __brapi(12.02, 11.5, '2026-11-26T14:05:00-03:00', 4.5) }); S.keys.brapi = 'k';
+      await __pag('KAPA3'); var gc = document.querySelector('#stk-b .gcard'), wp = gc && gc.querySelector('p.gwh'), bl = wp && wp.querySelector('.bal'), bi = bl && bl.querySelector('.bi'), rb = bl && bl.getBoundingClientRect(), ri = bi && bi.getBoundingClientRect(), sozinho = gc ? [].filter.call(gc.querySelectorAll(':scope > p'), function (n) { return !n.classList.contains('gwh') && n.querySelector('.bal'); }).length : -1;
+      var lum = function (c) { var m = c.match(/[\d.]+/g).map(Number).slice(0, 3).map(function (v) { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * m[0] + .7152 * m[1] + .0722 * m[2]; };
+      var cont = function (el) { var fg = getComputedStyle(el).color, n = el, bg = 'rgba(0, 0, 0, 0)'; while (n) { var b = getComputedStyle(n).backgroundColor; if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) { bg = b; break; } n = n.parentElement; } var a = lum(fg), c = lum(bg); return (Math.max(a, c) + .05) / (Math.min(a, c) + .05); };
+      var amb = {}; var tmp = document.createElement('p'); tmp.className = 'small gwh stale'; tmp.textContent = 'Atrasado (27 min)'; gc.appendChild(tmp);
+      ['branco', 'preto', 'cinza'].forEach(function (th) { document.documentElement.setAttribute('data-theme', th); amb[th] = Math.round(cont(tmp) * 100) / 100; });
+      document.documentElement.setAttribute('data-theme', 'branco'); var corBranco = getComputedStyle(tmp).color; document.documentElement.removeAttribute('data-theme'); tmp.remove();
+      return { temBal: !!bl, w: rb && Math.round(rb.width), h: rb && Math.round(rb.height), iw: ri && Math.round(ri.width), sozinho: sozinho, amb: amb, corBranco: corBranco };
+    }, [T('14:22')]);
+    ok('T1.16 ⓘ no fim da linha da hora (não numa linha só dele), área de toque de 44 px e ícone de 19 px', V.temBal && V.sozinho === 0 && V.w >= 44 && V.h >= 44 && V.iw >= 19, V);
+    ok('T1.16 "atrasado" no tema Branco com contraste mínimo de 4,5:1 (âmbar escuro #7a4e00); os outros temas seguem sem mexer', V.amb.branco >= 4.5 && V.corBranco === 'rgb(122, 78, 0)', V);
+    const Fx = await E(async ([ts, tq]) => {
+      __R([['IBOV', 176000, 170000, 'BRL', 'i', 'ibov'], IT('KAPA3', 12, 11.5), IT('LAMB3', 8, 7.9), IT('MIKR3', 5, 4.9), IT('NOVO3', 6, 5.9)], ts); S.quotes.LAMB3 = { price: 8.3, prev: 7.9, at: tq, src: 'auto' }; PXM = {}; PXM.LAMB3 = { p: 8.3, t: tq, via: 'brapi', est: false }; TPK = ''; renderTape(); var a = document.querySelector('#tape .tptr > .tpi[data-tp="LAMB3"]'), b = document.querySelector('#tape .tptr > .tpi[data-tp="MIKR3"]');
+      var res = { op: a && getComputedStyle(a.querySelector('span')).opacity, opb: b && getComputedStyle(b.querySelector('span')).opacity, al: a && a.getAttribute('aria-label'), ti: a && a.getAttribute('title'), alb: b && b.getAttribute('aria-label') };
+      renderTape(); a = document.querySelector('#tape .tptr > .tpi[data-tp="LAMB3"]'); res.al2 = a && a.getAttribute('aria-label');
+      S.quotes.LAMB3 = { price: 8.35, prev: 7.9, at: Date.now(), src: 'auto' }; PXM.LAMB3 = { p: 8.35, t: Date.now(), via: 'brapi', est: false }; renderTape(); a = document.querySelector('#tape .tptr > .tpi[data-tp="LAMB3"]'); res.al3 = a && a.getAttribute('aria-label'); res.ti3 = a && a.getAttribute('title'); return res; }, [T('14:22'), T('14:00')]);
+    ok('T1.16 faixa: item atrasado a 70% de opacidade, os demais a 100%', Fx.op === '0.7' && Fx.opb === '1', Fx);
+    ok('T1.16 faixa: item atrasado tem aviso ("... preço atrasado") para leitor de tela e toque longo; item normal não; some quando o preço volta', /^LAMB3 .*, preço atrasado$/.test(Fx.al || '') && Fx.ti === 'preço atrasado' && !Fx.alb && /preço atrasado$/.test(Fx.al2 || '') && !Fx.al3 && !Fx.ti3, Fx);
+  });
   /* ---------- hora no futuro, variação do dia zerada, preço velho, fonte etiquetada ---------- */
   await sec('hora no futuro, variação do dia zerada, preço velho, fonte e', async () => {
   await p.clock.setFixedTime(new Date(T('14:30')));
@@ -155,8 +202,8 @@ async function sintetico(b) {
       __B({ 'brapi.dev': __brapi(12.02, 11.5, '2026-11-26T14:25:00-03:00', 4.5) }); S.keys.brapi = 'k'; const pg = await __pag('KAPA3'); const gc = document.querySelector('#stk-b .gcard'), when = gc && gc.querySelector('.gwh'), bal = gc && gc.querySelector('.bal');
       return { dim, when: when && when.textContent, bal: bal && bal.getAttribute('data-bal'), pg: pg.preco }; }, [T('14:22'), T('14:00')]);
   ok('T1.12 faixa: papel atrasado (30 min com o pregão aberto) fica apagado; os demais não', U.dim.length === 1 && U.dim[0] === 'LAMB3', U);
-  ok('T1.12 página: a linha de hora mostra a hora do mercado e a fonte', U.when && /14:2[0-9]/.test(U.when) && /robô|brapi|Yahoo/.test(U.when), U);
-  ok('T1.12 página: o ⓘ explica a hora e a fonte do preço', U.bal && /hora do mercado/.test(U.bal) && /fonte:/.test(U.bal), U);
+  ok('T1.12 página: a linha de hora mostra a hora do mercado e a fonte, sem "BRT"', U.when && /26\/11, 14:2[0-9] · atualizado há \d+ min · brapi/.test(U.when) && !/BRT/.test(U.when), U);
+  ok('T1.12 página: o ⓘ explica a hora e a fonte do preço, em português simples (sem "rodada", "negócio", "segunda fonte")', U.bal && /Preço das 14:2\d de 26\/11\. Fonte: brapi\./.test(U.bal) && /hora em que a ação foi negociada/.test(U.bal) && !/rodada|negócio|segunda fonte|hora do mercado/.test(U.bal) && U.bal.length < 330, U);
   });
   /* ---------- formato guardado ---------- */
   await sec('formato guardado', async () => {

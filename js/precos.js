@@ -44,7 +44,15 @@ function pxDia(at){return new Date(at).toLocaleDateString('pt-BR',{day:'2-digit'
 /* complemento da linha de hora na página da ação: fonte e situação do preço */
 function pxTag(r){if(!r||!r.at)return '';var f=r.fase,v=PXVIA[r.via]?PXVIA[r.via].replace(/ \(.*/,''):'';
   return (v?' · '+v:'')+(f==='fechamento'?' · fechamento':f==='velho'?' · último preço de '+pxDia(r.at):'')}
-/* texto do ⓘ: de onde vem o preço e a hora do mercado */
+/* texto do ⓘ (1.82.2): curto, em português simples; cada frase só aparece quando vale */
 function pxWhy(r){if(!r||!r.at)return '';var f=r.fase;
-  return 'Preço das '+pxHora(r.at)+' de '+pxDia(r.at)+' (hora do mercado, não a hora em que o app buscou), fonte: '+(PXVIA[r.via]||PXVIA.app)+'.'+(r.est?' A hora do robô é a da rodada, então o negócio pode ser até 15 min mais antigo.':'')+
-    (f==='atrasado'?' Está atrasado: o pregão está aberto e a cotação tem mais de 20 min.':f==='velho'?' É de um pregão que já passou: não é o preço de agora.':f==='fechamento'?' É o fechamento do último pregão.':'')+' Ainda sem conferência com uma segunda fonte.'}
+  return 'Preço das '+pxHora(r.at)+' de '+pxDia(r.at)+'. Fonte: '+(PXVIA[r.via]||PXVIA.app)+'. É a hora em que a ação foi negociada, não a hora em que o app buscou.'+(r.est?' A atualização automática vem a cada 15 min: o preço pode ter até 15 min.':'')+
+    (f==='atrasado'?' Atrasado: o mercado está aberto e este preço tem mais de 20 min.':f==='velho'?' É de um pregão que já passou, não é o preço de agora.':f==='fechamento'?' É o preço de fechamento do último pregão.':'')+' Ainda não conferido com outra fonte.'}
+/* linha de hora da página da ação (1.82.2): nunca diz "ao vivo"; depois do fechamento nunca diz "atualizado há"; acima de 24 h mostra a data em vez de horas */
+function pxLinha(r){if(!r||!r.at)return '';var f=r.fase,v=PXVIA[r.via]?PXVIA[r.via].replace(/ \(.*/,''):'',m=Math.max(0,Math.round((Date.now()-r.at)/60000)),dh=pxDia(r.at)+', '+pxHora(r.at),fo=v?' · '+v:'';
+  if(f==='fechamento')return 'Fechamento de '+dh+fo;
+  if(f==='velho')return 'Último preço de '+dh+fo+' (não é de agora)';
+  if(f==='atrasado')return m>=1440?'Atrasado: preço de '+dh+fo:'Atrasado ('+(m>=120?Math.round(m/60)+' h':m+' min')+') · preço das '+pxHora(r.at)+fo;
+  return dh+' · atualizado há '+(m<1?'menos de 1':m)+' min'+fo}
+/* aviso da faixa preta para leitor de tela e toque longo: o que quer dizer o item apagado */
+function pxNota(tk){var r=livePx(tk);return !r?'':r.fase==='atrasado'?'preço atrasado':r.fase==='velho'?'último preço de '+pxDia(r.at):''}

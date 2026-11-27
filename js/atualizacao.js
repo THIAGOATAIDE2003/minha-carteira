@@ -138,11 +138,15 @@ function tapeStart(){var el=$('tape');if(!el||!window.requestAnimationFrame)retu
   el.addEventListener('pointerup',fim);el.addEventListener('pointercancel',fim);el.addEventListener('pointerleave',fim);
   el.addEventListener('click',function(e){if(TPA.moved>8){e.stopPropagation();e.preventDefault();TPA.moved=0}},true);
   requestAnimationFrame(tpLoop)}
+/* faixa (1.82.2): item apagado diz por quê, para leitor de tela e toque longo */
+function tapePlain(r){return String(r[0])+', '+String(r[2]).replace(/<[^>]*>/g,'').replace(/&minus;/g,'−').replace(/&[a-z#0-9]+;/g,' ')}
+function tapeAttr(x,r){var nt=x.fs==='atrasado'||x.fs==='velho'?pxNota(x.l):'';return nt?' aria-label="'+esc(x.l+' '+tapePlain(r)+', '+nt)+'" title="'+esc(nt)+'"':''}
+function tapeNota(n,x,r){var nt=x.fs==='atrasado'||x.fs==='velho'?pxNota(x.l):'';if(nt){n.setAttribute('aria-label',x.l+' '+tapePlain(r)+', '+nt);n.setAttribute('title',nt)}else{n.removeAttribute('aria-label');n.removeAttribute('title')}}
 function renderTape(){var el=$('tape');if(!el)return;var it=tapeItems().filter(function(x){return TPOFF.indexOf(x.l)<0});if(it.length<3){el.hidden=true;return}el.hidden=false;
   var key=it.map(function(x){return x.l}).join('|');
-  if(key===TPK&&el.firstChild){it.forEach(function(x){var r=tapeIn(x);[].forEach.call(el.querySelectorAll('[data-tp="'+x.l.replace(/"/g,'')+'"]'),function(n){n.querySelector('span').textContent=r[0];var e=n.querySelector('em');e.className=r[1];e.textContent=r[2];n.classList.toggle('old',x.fs==='atrasado'||x.fs==='velho')})});return}
+  if(key===TPK&&el.firstChild){it.forEach(function(x){var r=tapeIn(x);[].forEach.call(el.querySelectorAll('[data-tp="'+x.l.replace(/"/g,'')+'"]'),function(n){n.querySelector('span').textContent=r[0];var e=n.querySelector('em');e.className=r[1];e.textContent=r[2];n.classList.toggle('old',x.fs==='atrasado'||x.fs==='velho');tapeNota(n,x,r)})});return}
   TPK=key;var one=it.map(function(x){var r=tapeIn(x),at=x.st?' data-stk="'+esc(x.l)+'"':x.ik&&idxDef(x.ik)?' data-idxo="'+esc(x.ik)+'"':'';
-    return '<'+(at?'button type="button"'+at:'span')+' class="tpi'+(x.fs==='atrasado'||x.fs==='velho'?' old':'')+'" data-tp="'+esc(x.l)+'"><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(at?'button':'span')+'>'}).join('');
+    return '<'+(at?'button type="button"'+at:'span')+' class="tpi'+(x.fs==='atrasado'||x.fs==='velho'?' old':'')+'" data-tp="'+esc(x.l)+'"'+tapeAttr(x,r)+'><b>'+esc(x.l)+'</b><span>'+r[0]+'</span><em class="'+r[1]+'">'+r[2]+'</em></'+(at?'button':'span')+'>'}).join('');
   setHtml(el,'<div class="tptr">'+one+one+'</div>')}
 
 /* variação do dia zerada fora do pregão (nos EUA também a partir da meia-noite de Brasília, como o usuário pediu): antes da abertura (ou fim de semana/feriado) até chegar a primeira cotação do dia */
