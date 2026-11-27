@@ -103,14 +103,14 @@ function catSetores(todas){if(!catOk())return [];var c=MD.d.cat,g={};
 function catSaiu(){var c=MD.d&&MD.d.cat;return c&&c.x?Object.keys(c.x).sort():[]}
 function fundOf(tk){var f=MD.d&&MD.d.fund;if(!f||!f.d||!f.d[tk])return null;var o={};f.cols.forEach(function(c,i){var v=f.d[tk][i];o[c]=v===0&&c!=='dy'?null:v});
   var b=MD.d.bal&&MD.d.bal[tk];if(o.divpl==null&&b&&b.divb>0&&b.pl>0)o.divpl=b.divb/b.pl;return o}
-function livePx(tk){var q=S.quotes[tk],m=MKT.q[tk],a=q&&q.src==='auto'&&q.price>0?{p:q.price,pct:q.prev?(q.price/q.prev-1)*100:null,at:q.at||0}:null,b=m&&m.price>0?{p:m.price,pct:m.pct,at:m.at||0}:null;var r=a&&b?(b.at>a.at?b:a):a||b;var hh=MD.d&&MD.d.hist&&MD.d.hist[tk],lc=hh&&hh.last>0?hh.last:0;if(r){r.sus=(a&&b&&Math.abs(a.p/b.p-1)>.05&&Math.abs(a.at-b.at)<30*60000)?'duas fontes de preço diferem '+pf.format(Math.abs(a.p/b.p-1)*100)+'%':(lc&&Math.abs(r.p/lc-1)>.35)?'muito diferente do último fechamento ('+pf.format((r.p/lc-1)*100)+'%)':''}
-  if(r&&r.pct!=null&&tk.charAt(0)!=='^'&&dzero(!isBR(tk),r.at))r={p:r.p,pct:0,pr:r.pct,at:r.at,sus:r.sus};return r}
+/* um preço só em todo o app (E1, 1.82.0): a regra inteira está em pxPick() (js/precos.js); aqui só fica o nome antigo, usado por todas as abas */
+function livePx(tk){return pxPick(tk)}
 /* um preço só em todo o app: o mais recente entre o que o app buscou e o que o robô trouxe na faixa vale para todas as abas */
 var TPTS=0;
 function tapeMerge(){var t=MD.d&&MD.d.tape;if(!t||!t.it||t.ts===TPTS)return;TPTS=t.ts;var at=t.ts*1000,ch=0;
   t.it.forEach(function(x){var l=x[0];if(!tpStk(x)||!(x[1]>0))return;var q=S.quotes[l];
-    if(q&&q.src==='auto'){if((q.at||0)<at){S.quotes[l]={price:x[1],prev:x[2],at:at,src:'auto'};ch=1}}
-    else if(!q){var m=MKT.q[l];if(!m||(m.at||0)<at)MKT.q[l]={price:x[1],pct:(x[1]/x[2]-1)*100,cur:x[3],name:m&&m.name||'',at:at}}});
+    if(q&&q.src==='auto'){if(pxEff(pxInfo(l,q.price,q.at))<=at-PXEST){pxPut(l,'S',{price:x[1],prev:x[2],at:at},'robo',at,1);ch=1}}
+    else if(!q){var m=MKT.q[l];pxPut(l,'M',{price:x[1],pct:(x[1]/x[2]-1)*100,cur:x[3],name:m&&m.name||'',at:at},'robo',at,1)}});
   if(ch)save()}
 function tapeIdx(lbl){var t=MD.d&&MD.d.tape;if(!t||!t.it)return null;for(var i=0;i<t.it.length;i++)if(t.it[i][0]===lbl)return {v:t.it[i][1],p:(t.it[i][1]/t.it[i][2]-1)*100,at:t.ts*1000};return null}
 function mdStk(tk,rg){
