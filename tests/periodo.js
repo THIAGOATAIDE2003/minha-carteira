@@ -1,5 +1,5 @@
 /* Testes do "gráfico abre sempre no 1D" (G1, 1.83.4, js/periodo.js): ações e índices abrem no 1D, sem lembrar a escolha; sem pontos do dia abre no 1M com uma linha
-   (nunca gráfico vazio); fora do pregão o rótulo é "pregão de DD/MM"; CDI, Selic, IPCA e minério sem botões 1D e 5D. Na 1.83.3 os casos P1 a P7 FALHAM.
+   (nunca gráfico vazio); fora do pregão o rótulo é "último pregão, DD/MM"; CDI, Selic, IPCA e minério sem botões 1D e 5D. Na 1.83.3 os casos P1 a P7 FALHAM.
    Uso: node tests/periodo.js            node tests/periodo.js --mutantes       node tests/periodo.js --gravar (SÓ na árvore ANTERIOR, 1.83.3: fixa o que não pode mudar)
    Tudo sintético (ações inventadas ALFA3, BETA3, USAX; índices com números inventados); nenhum dado real. */
 const path = require('path'), fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
@@ -49,7 +49,7 @@ const MUTANTES = {
   'troca-para-1M-sem-a-marca': ['js/periodo.js', '&&!STK.auto){STK.auto=1;', '){STK.auto=1;'],
   'marca-1D-mas-desenha-1M': ['js/periodo.js', "STK.auto=1;STK.rng='1mo';return true", 'STK.auto=1;return true'],
   'hoje-no-fim-de-semana': ['js/periodo.js', "if(d===Math.floor((Date.now()/1000+off)/86400))return per;", 'return per;'],
-  'rotulo-pregao-nao-chega-ao-cabecalho': ['js/grafico.js', "RGL[rg]||(/^pregão de \\d\\d\\/\\d\\d$/.test(rg)?rg:'')", "RGL[rg]||''"],
+  'rotulo-pregao-nao-chega-ao-cabecalho': ['js/grafico.js', "RGL[rg]||(/^último pregão, \\d\\d\\/\\d\\d$/.test(rg)?rg:'')", "RGL[rg]||''"],
   'esconde-o-1D-onde-ha-arquivo': ['js/periodo.js', 'function pdSemIntra(x){return !!x&&(', 'function pdSemIntra(x){return !!x||('],
   'mostra-o-1D-no-CDI': ['js/periodo.js', ".concat(pdSemIntra(x)?['nointra']:[])", '.concat([])'],
   'ipca-abre-no-1M': ['js/periodo.js', "(x.src==='ipca'?'1y':'1mo')", "'1mo'"],
@@ -111,24 +111,24 @@ async function principal(b) {
       document.querySelector('#stk-b [data-rng="1d"]').click(); idxRender(); var i2 = { rng: STK.rng };
       return { a: a, a2: a2, i: i, i2: i2, ls: __lsKeys() === k0 };
     }, [T1130, D]);
-    ok('P5 ação sem pontos do dia: abre no 1M com a linha "Sem pontos de hoje; mostrando 1 mês." e gráfico (nunca vazio)', r.a.rng === '1mo' && r.a.on === '1mo' && r.a.svg === 1 && /Sem pontos de hoje; mostrando 1 mês\./.test(r.a.txt), r.a);
+    ok('P5 ação sem pontos do dia: abre no 1M com a linha "Ainda sem negociações hoje; mostrando o último mês." e gráfico (nunca vazio)', r.a.rng === '1mo' && r.a.on === '1mo' && r.a.svg === 1 && /Ainda sem negociações hoje; mostrando o último mês\./.test(r.a.txt), r.a);
     ok('P5 tocar no 1D mostra a mensagem do 1D e NÃO volta sozinho para o 1M', r.a2.rng === '1d' && /Ainda não há pontos/.test(r.a2.txt) && !r.a2.nota, r.a2);
-    ok('P5 índice com símbolo sem pontos: mesma regra (1M, linha, gráfico); tocar no 1D não volta sozinho', r.i.rng === '1mo' && r.i.on === '1mo' && r.i.svg === 1 && /Sem pontos de hoje; mostrando 1 mês\./.test(r.i.txt) && r.i2.rng === '1d', r);
+    ok('P5 índice com símbolo sem pontos: mesma regra (1M, linha, gráfico); tocar no 1D não volta sozinho', r.i.rng === '1mo' && r.i.on === '1mo' && r.i.svg === 1 && /Ainda sem negociações hoje; mostrando o último mês\./.test(r.i.txt) && r.i2.rng === '1d', r);
     ok('P5 nenhuma chave nova no localStorage', r.ls, r);
   });
-  /* P6: fora do pregão o rótulo é "pregão de DD/MM" */
+  /* P6: fora do pregão o rótulo é "último pregão, DD/MM" */
   await sec('P6 pregão', async () => {
     const f = async (dia, hh, off, pontosDia) => await p.evaluate(([ts, a]) => { __R(ts); __intra(a.sym, __pts(a.dia, a.hh, 18, 17, 17.8), 16.54, a.off); __stkOpen(a.tk, 17.8); return __gdl(); }, [T1130, { sym: off === -18000 ? 'USAX' : 'ALFA3.SA', tk: off === -18000 ? 'USAX' : 'ALFA3', dia: pontosDia, hh: hh, off: off }]);
     ok('P6 durante o pregão o rótulo continua "hoje"', /hoje/.test(await f('', '13:00', -10800, '2026-11-27') || ''), 1);
     await p.clock.setFixedTime(new Date(T('10:00', '2026-11-28')));
     const sab = await f('', '13:00', -10800, '2026-11-27'), us = await f('', '15:00', -18000, '2026-11-27');
-    ok('P6 sábado: último pregão BR com o rótulo "pregão de 27/11" (e não "hoje")', /pregão de 27\/11/.test(sab || '') && !/hoje/.test(sab || ''), sab);
-    ok('P6 sábado: último pregão EUA (Nova York) com "pregão de 27/11"', /pregão de 27\/11/.test(us || '') && !/hoje/.test(us || ''), us);
+    ok('P6 sábado: último pregão BR com o rótulo "último pregão, 27/11" (e não "hoje")', /último pregão, 27\/11/.test(sab || '') && !/hoje/.test(sab || ''), sab);
+    ok('P6 sábado: último pregão EUA (Nova York) com "último pregão, 27/11"', /último pregão, 27\/11/.test(us || '') && !/hoje/.test(us || ''), us);
     await p.clock.setFixedTime(new Date(T('11:30')));
     const velho = await f('', '13:00', -10800, '2026-11-24');
-    ok('P6 arquivo velho (cache de 3 dias atrás): "pregão de 24/11", nunca "hoje"', /pregão de 24\/11/.test(velho || '') && !/hoje/.test(velho || ''), velho);
+    ok('P6 arquivo velho (cache de 3 dias atrás): "último pregão, 24/11", nunca "hoje"', /último pregão, 24\/11/.test(velho || '') && !/hoje/.test(velho || ''), velho);
     const idx = await p.evaluate(([ts, pts, D]) => { __R(ts); __intra('^BVSP', __pts('2026-11-26', '13:00', 18, 17, 17.8), 16.5); __idxOpen('ibov', D, '^BVSP'); return __gdl(); }, [T1130, pts, D]);
-    ok('P6 índice com último ponto de ontem: "pregão de 26/11"', /pregão de 26\/11/.test(idx || ''), idx);
+    ok('P6 índice com último ponto de ontem: "último pregão, 26/11"', /último pregão, 26\/11/.test(idx || ''), idx);
   });
   /* P7: "Tentar de novo" volta ao 1D */
   await sec('P7 tentar de novo', async () => {
