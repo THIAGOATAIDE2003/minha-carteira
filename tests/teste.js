@@ -466,7 +466,7 @@ function contasAMao(F, P) {
     /* 1D/5D com pontos de 5 minutos de mentira (arquivos do robô) e a carteira ao longo do dia */
     const g2 = await pg.evaluate(() => { var now = Math.floor(Date.now() / 1000), p5 = []; for (var i = 0; i < 40; i++) p5.push([now - (40 - i) * 300, 20 + i * .05]);
       var mk = function (prev) { return { d: { cur: 'BRL', off: -10800, at: now, prev: prev, p: p5 }, at: Date.now() }; };
-      FIN['intra/TEST3.SA'] = mk(19.5); stkOpen('TEST3'); document.querySelector('[data-rng="1d"]').click(); var r = { um: document.querySelectorAll('#stk-b .gch svg').length, prev: /antes do fechamento/.test(document.getElementById('stk-b').textContent) };
+      FIN['intra/TEST3.SA'] = mk(19.5); stkOpen('TEST3'); document.querySelector('[data-rng="1d"]').click(); var r = { um: document.querySelectorAll('#stk-b .gch svg').length, prev: /fechamento anterior/.test(document.getElementById('stk-b').textContent) };
       document.querySelector('[data-rng="5d"]').click(); r.cinco = document.querySelectorAll('#stk-b .gch svg').length; stkClose();
       compute().held.forEach(function (x) { FIN['intra/' + ySym(x.p.ticker)] = mk(19.5); }); heroOpen('dia'); r.dia = document.querySelectorAll('#stk-b .gch svg').length; stkClose();
       FIN['intra/TEST3.SA'] = { d: null, at: Date.now() }; stkOpen('TEST3'); document.querySelector('[data-rng="1d"]').click(); r.sem = /Ainda não há pontos/.test(document.getElementById('stk-b').textContent); stkClose(); return r; });

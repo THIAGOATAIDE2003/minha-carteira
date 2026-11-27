@@ -4,12 +4,14 @@ function rgCut(hist,rg){if(rg!=='ytd'||!hist||hist.length<2)return hist;var j=ne
 function gWhen(at,tk){if(!at)return '';var d=new Date(at),m=Math.round((Date.now()-at)/60000),us=tk&&!isBR(tk),open=tk&&tk.charAt(0)!=='^'&&(us?(function(){var n=nyNow();return !!n&&usBDay(n.d)&&n.min>=570&&n.min<960})():mktOpen()),old=open&&m>20,t=d.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})+', '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' BRT';
   return t+(old?' · atrasado ('+(m>=120?Math.round(m/60)+' h':m+' min')+')':m>=0&&m<180?' · atualizado há '+(m<1?'menos de 1':m)+' min':'')}
 /* cabeçalho: nome, preço grande, variação (valor e %) em cor, seta e período, data e hora da cotação */
+/* linha de hora: o ⓘ fica colado à última palavra (sobem e descem juntos), nunca sozinho numa linha */
+function gwTxt(w,x){if(!x)return esc(w);var i=w.lastIndexOf(' ')+1;return esc(w.slice(0,i))+'<span class="gwx" style="white-space:nowrap">'+esc(w.slice(i))+x+'</span>'}
 function gHead(name,sub,priceTxt,abs,pct,rg,absTxt,when,whenX){
   var up=pct==null?null:pct>=0,c=up==null?'':pct===0?'':up?'gain':'loss',sg=function(v){return v<0?'-':v>0?'+':''};
   return '<p class="muted small" style="margin:0 0 4px">'+esc(name||'')+(sub?' · '+esc(sub):'')+'</p><div class="gh"><b class="num">'+priceTxt+'</b></div>'+
     (pct==null&&abs!=null?'<div class="gdl '+(abs===0?'':abs>0?'gain':'loss')+'">'+sg(abs)+pf.format(Math.abs(abs))+' '+(abs===0?'':'<span class="arr">'+(abs>0?'↑':'↓')+'</span> ')+esc(RGL[rg]||'')+'</div>':'')+
     (pct!=null?'<div class="gdl '+c+'">'+(abs!=null?sg(abs)+pf.format(Math.abs(abs))+' ':'')+'('+(abs==null?sg(pct):'')+pf.format(Math.abs(pct))+'%) '+(pct===0?'':'<span class="arr">'+(up?'↑':'↓')+'</span> ')+esc(RGL[rg]||'')+'</div>':'')+
-    (when?'<p class="small gwh '+(/atrasado/i.test(when)?'stale':'muted')+'">'+esc(when)+(whenX||'')+'</p>':'');
+    (when?'<p class="small gwh '+(/atrasado/i.test(when)?'stale':'muted')+'">'+gwTxt(when,whenX)+'</p>':'');
 }
 /* botões: 1D 5D 1M 6M YTD + Mais */
 function rngBar(cur,skip){
@@ -53,7 +55,7 @@ function lineChart(hist,cur,pm,fmt,o){o=o||{};var gid='skg'+(++GID);
     '<line x1="0" x2="'+W+'" y1="'+(H-.5)+'" y2="'+(H-.5)+'" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke"/>'+
     xt.map(function(t){return '<line x1="'+x(t.i)+'" x2="'+x(t.i)+'" y1="'+(H-6)+'" y2="'+H+'" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke"/>'}).join('')+'</svg></div>'+
     '<div class="gx">'+xt.map(function(t){var pc=(t.i+.5)/n*100;return '<span style="left:'+pc.toFixed(1)+'%"'+(pc>86?' class="r"':pc<10?' class="l"':'')+'>'+esc(t.l)+'</span>'}).join('')+'</div></div></div>'+
-    (o.prev?'<div class="spkl" style="color:var(--muted)"><span class="lg"><i class="d"></i>antes do fechamento: '+esc(F.format(o.prev))+'</span>'+(hasX?'<span class="lg"><i class="d" style="border-style:solid;border-color:var(--muted)"></i>cinza: pré e pós-mercado</span>':'')+'</div>':'')+(pm?'<div class="spkl" style="color:var(--muted)"><span class="lg"><i class="d" style="border-color:var(--c2)"></i>seu preço médio</span></div>':'');
+    (o.prev?'<div class="spkl" style="color:var(--muted)"><span class="lg"><i class="d"></i>'+(o.fa?'fechamento anterior: ':'antes do fechamento: ')+esc(F.format(o.prev))+'</span>'+(hasX?'<span class="lg"><i class="d" style="border-style:solid;border-color:var(--muted)"></i>cinza: pré e pós-mercado</span>':'')+'</div>':'')+(pm?'<div class="spkl" style="color:var(--muted)"><span class="lg"><i class="d" style="border-color:var(--c2)"></i>seu preço médio</span></div>':'');
 }
 /* dados finos do robô (repositório privado, pasta dados/): um arquivo por ativo, baixado só quando precisa */
 var FIN={};
