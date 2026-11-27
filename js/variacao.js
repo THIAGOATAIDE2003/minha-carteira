@@ -1,9 +1,9 @@
 /* ===== 1.83.2: variação do dia com UMA base só =====
    Faixa preta, cartão do Mercado, página (1D) e "Fech. ant." mostram o mesmo número, com base no fechamento diário do pregão anterior
    (nunca o último ponto de 5 min de ontem, que deixa o leilão de fechamento de fora). Só B3 (.SA, ^BVSP) e ações/ETFs dos EUA;
-   dólar, euro, commodities, bitcoin e juros ficam como estavam. Nada roda ao carregar. Ordem das fontes: 1) a da faixa (livePx / idxVal);
+   dólar e euro (cambio.js), bitcoin e juros ficam como estavam; 1.83.8: commodities (futuros XX=F) entram na regra, só na página. Nada roda ao carregar. Ordem das fontes: 1) a da faixa (livePx / idxVal);
    2) última barra diária com dia anterior ao do pregão mostrado; 3) nada ("Variação do dia indisponível"). */
-function vdEscopo(sym){return typeof sym==='string'&&(sym==='^BVSP'||/\.SA$/.test(sym)||/^[A-Z][A-Z0-9]{0,4}([.-][A-Z])?$/.test(sym))}
+function vdEscopo(sym){return typeof sym==='string'&&(sym==='^BVSP'||/\.SA$/.test(sym)||/^[A-Z][A-Z0-9]{0,4}([.-][A-Z])?$/.test(sym)||/^[A-Z]{2,3}=F$/.test(sym))}
 /* dia do pregão mostrado no gráfico (número do dia no fuso do mercado); sem gráfico, hoje */
 function vdDiaSessao(fv,fo){var h=fv&&fv.hist,off=fo&&fo.off!=null?fo.off:-10800,t=Date.now(),i;
   if(h&&h.length){t=h[h.length-1].t;for(i=h.length-1;i>=0;i--)if(!h[i].x){t=h[i].t;break}}
