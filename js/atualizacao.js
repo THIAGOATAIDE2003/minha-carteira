@@ -173,7 +173,7 @@ function usRefresh(R){if(!S.keys.finnhub)return Promise.resolve();USR.at=Date.no
       return getJSON('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(o.tk)+'&token='+encodeURIComponent(S.keys.finnhub)).then(function(d){if(!d||!(d.c>0))return;
         var pc=d.dp!=null?d.dp:(d.pc>0?(d.c/d.pc-1)*100:null),now=Date.now();
         if(o.ik){MKT.idx[o.ik]={v:d.c,p:pc};return}
-        var m0=MKT.q[o.tk];MKT.q[o.tk]={price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now}}).catch(function(){})})},Promise.resolve());
+        var m0=MKT.q[o.tk];pxPut(o.tk,'M',{price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now},'finnhub',d.t>0&&d.t*1000<=now?d.t*1000:now,!(d.t>0))}).catch(function(){})})},Promise.resolve());
   }}
 function doRefresh(silent){
   var st=$('status'),R=compute();

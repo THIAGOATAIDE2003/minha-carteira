@@ -33,6 +33,7 @@ const MUTANTES = {
   'pagina-sem-icone-de-explicacao': ['js/acao-pagina.js', "(lv1&&lv1.at?'<p class=\"small\" style=\"margin:-4px 0 6px\">'+bal(", "(0?'<p class=\"small\" style=\"margin:-4px 0 6px\">'+bal("],
   'formato-guardado-muda': ['js/precos.js', "MKT.q[tk]={price:pr,pct:q.pct,cur:q.cur,name:q.name||'',at:q.at||t||Date.now()};", "MKT.q[tk]={price:pr,pct:q.pct,cur:q.cur,name:q.name||'',at:q.at||t||Date.now(),via:via};"],
   'arquivo-fora-do-cache': ['sw.js', "'js/precos.js',", ''],
+  'finnhub-fora-da-carteira-grava-direto': ['js/atualizacao.js', "pxPut(o.tk,'M',{price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now},'finnhub',d.t>0&&d.t*1000<=now?d.t*1000:now,!(d.t>0))}", "MKT.q[o.tk]={price:d.c,pct:pc,cur:'USD',name:m0&&m0.name||'',at:now}}"],
   'sem-aviso-duas-fontes': ['js/precos.js', "Math.abs(a.p/b.p-1)>.05&&Math.abs(a.at-b.at)<30*60000", 'false']
 };
 const PRE = () => {
@@ -45,7 +46,7 @@ const PRE = () => {
 };
 
 async function sintetico(b) {
-  const ctx = await b.newContext({ viewport: { width: 360, height: 740 } }), p = await ctx.newPage(), erros = [], rede = [];
+  const ctx = await b.newContext({ viewport: { width: 360, height: 740 }, timezoneId: 'America/Sao_Paulo', locale: 'pt-BR' }), p = await ctx.newPage(), erros = [], rede = [];
   p.on('pageerror', e => erros.push(e.message)); p.on('request', r => { if (!/^(file|data):/.test(r.url()) && /brapi|finnhub|workers\.dev|yahoo/.test(r.url())) rede.push(r.url()); });
   await ctx.route(u => !/^(file|data):/.test(u.toString()), r => r.abort());
   await p.addInitScript(() => { window.__APORTE_TESTE__ = true; });
@@ -122,6 +123,15 @@ async function sintetico(b) {
       MKT.q.NEWO3 = { price: 10.2, pct: 2, cur: 'BRL', name: '', at: tf }; PXM.NEWO3m = 0; PXM.NEWO3 = { p: 10.5, t: tv, via: 'brapi', est: false }; var r = livePx('NEWO3'); return { p: r && r.p, fa: r && r.fase, fv: pxFase('NEWO3', tv), ff: pxFase('NEWO3', tf) }; }, [T('17:55', '2026-11-25'), T('17:44', '2026-11-25'), T('17:55', '2026-11-25')]);
     ok('T1.6b meio de pregão de ontem (velho) não vence o fechamento, mesmo com hora de mercado maior', W.fv === 'velho' && W.ff === 'fechamento' && W.p === 10.2, W);
   });
+  await sec('T1.15 Finnhub das ações dos EUA fora da carteira', async () => {
+    await hora('14:30');
+    const F = await E(async ([ts, t1, t2]) => { __R([['IBOV', 176000, 170000, 'BRL', 'i', 'ibov'], ['VT', 100.5, 99, 'USD', 's', '']], ts); S.watch = ['VT']; S.keys.finnhub = 'k'; tapeMerge();
+      __B({ 'finnhub.io': { c: 101.2, dp: 2.2, pc: 99, t: t1 / 1000 } }); await usRefresh(compute()); const a = livePx('VT'), fa = __faixa('VT');
+      __B({ 'finnhub.io': { c: 101.9, dp: 2.9, pc: 99, t: t2 / 1000 } }); await usRefresh(compute()); const b = livePx('VT');
+      return { a: a && a.p, fa: fa && fa.v, b: b && b.p, via: b && b.via, ks: Object.keys(MKT.q.VT).sort().join() }; }, [T('14:22'), T('14:03'), T('14:28')]);
+    ok('T1.15 Finnhub com negócio das 14:03 buscado às 14:30 NÃO passa por cima do robô das 14:22 (ficam 100,50 na página e na faixa)', F.a === 100.5 && F.fa === 100.5, F);
+    ok('T1.15 Finnhub com negócio das 14:28 passa o robô (101,90, fonte finnhub) e o formato guardado não muda', F.b === 101.9 && F.via === 'finnhub' && F.ks === 'at,cur,name,pct,price', F);
+  });
   /* ---------- hora no futuro, variação do dia zerada, preço velho, fonte etiquetada ---------- */
   await sec('hora no futuro, variação do dia zerada, preço velho, fonte e', async () => {
   await p.clock.setFixedTime(new Date(T('14:30')));
@@ -160,6 +170,7 @@ async function sintetico(b) {
   const sw = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8'), ix = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8'), pj = fs.existsSync(path.join(RAIZ, 'js', 'precos.js')) ? fs.readFileSync(path.join(RAIZ, 'js', 'precos.js'), 'utf8') : '';
   ok("T1.14 js/precos.js está no cache offline (sw.js) e no index.html, depois de atualizacao.js", /'js\/precos\.js'/.test(sw) && ix.indexOf('js/atualizacao.js') < ix.indexOf('js/precos.js') && ix.indexOf('js/precos.js') > 0);
   ok('T1.14 js/precos.js tem menos de 25 KB, não faz rede e não escreve HTML', pj.length < 25000 && !/fetch\(|XMLHttpRequest|sendBeacon|innerHTML|insertAdjacentHTML/.test(pj), pj.length);
+  { const ls = fs.readdirSync(path.join(RAIZ, 'js')).filter(f => f !== 'precos.js').map(f => fs.readFileSync(path.join(RAIZ, 'js', f), 'utf8')).join('\n'), dir = ls.match(/(MKT\.q|S\.quotes)\[[^\]]*\]\s*=[^=]/g) || []; ok('T1.14 só sobra 1 gravação direta fora da porta única (a cotação digitada à mão, src manual); nenhuma automática', dir.length <= 1 && dir.every(d => /S\.quotes/.test(d)), dir); }
   ok('T1.14 nenhuma chamada de rede fora do app (o teste não deixou nada sair)', rede.length === 0, rede.slice(0, 3));
   ok('Nenhum erro de JavaScript na página', erros.length === 0, erros.slice(0, 3));
   });
