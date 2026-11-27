@@ -1,0 +1,51 @@
+{
+ "fn": {
+  "finView": "63feba64f664d919",
+  "finStat": "6a7b0eb6121f7635",
+  "finBase": "2b9bf9e41b5f38a2",
+  "finLast": "b2e3b4cb75164b17",
+  "finTail": "52982e47da3cbeee",
+  "finGet": "8327d55f90909e36",
+  "heroIntra": "decea44682a6913b",
+  "livePx": "37e29d5b0b761247",
+  "pxPick": "82201124286596f0",
+  "tapeItems": "da4d64780cfddf8a",
+  "tapeIdx": "b58e2ced588910b1",
+  "idxVal": "61beb2887129b792",
+  "idxVal0": "7b71a9e0cbbbdd14",
+  "compute": "79096b881f3a4256",
+  "opData": "9e54e5e4be571bf9",
+  "dzero": "73b3c69a48a10f3c",
+  "pxIdxPick": "14becdaadbb192e1",
+  "lineChart": "b5b54ba3a54edf14",
+  "gHead": "e494d5ee0264bea6",
+  "gStats": "52491a4aca8957fb"
+ },
+ "pag": {
+  "usd": "ab67c74f2a63f6e5",
+  "eur": "059950dde6a13d44",
+  "btc": "bdddef8922856bbe",
+  "brent": "034100569a7286d8",
+  "tnx": "2cb3893278e8b516"
+ },
+ "per": {
+  "ibov 5d": "04fd6b596ccd1c33",
+  "alfa 5d": "234a7ea4e3c48791",
+  "ibov 1mo": "8d57bc0664209c28",
+  "alfa 1mo": "ca0b470c4fe4c582",
+  "ibov 6mo": "ab85029607c7b5da",
+  "alfa 6mo": "4055b176fc5ab783",
+  "ibov ytd": "addc42bcc734cae9",
+  "alfa ytd": "ca199750ff67b645",
+  "ibov 1y": "153e469c0369a3ae",
+  "alfa 1y": "abb578d6a4da9497",
+  "ibov 5y": "eca32456e326829c",
+  "alfa 5y": "0a4f285606fae4c6",
+  "ibov max": "121c1ee98bcc19db",
+  "alfa max": "2d91b81b1489bc65",
+  "ibov yr": "6bad9f43d84f944a",
+  "alfa yr": "f41c42a879a85736"
+ },
+ "compute": "7d5a38a039f52766",
+ "inicio": "7b3459d353e7dc56"
+}

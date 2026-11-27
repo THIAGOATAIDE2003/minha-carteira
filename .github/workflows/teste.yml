@@ -25,6 +25,7 @@ jobs:
       - run: node tests/avisos.js
       - run: node tests/precos.js --sem-dados
       - run: node tests/e2.js
+      - run: node tests/variacao.js --sem-dados
       - run: node tests/macro.js
       - run: node tests/parecer.js
       - run: node tests/banco.js
