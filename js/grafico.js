@@ -6,11 +6,13 @@ function gWhen(at,tk){if(!at)return '';var d=new Date(at),m=Math.round((Date.now
 /* cabeçalho: nome, preço grande, variação (valor e %) em cor, seta e período, data e hora da cotação */
 /* linha de hora: o ⓘ fica colado à última palavra (sobem e descem juntos), nunca sozinho numa linha */
 function gwTxt(w,x){if(!x)return esc(w);var i=w.lastIndexOf(' ')+1;return esc(w.slice(0,i))+'<span class="gwx" style="white-space:nowrap">'+esc(w.slice(i))+x+'</span>'}
+/* rótulo do período no cabeçalho: os da tabela RGL ou "pregão de DD/MM" (periodo.js) */
+function gRg(rg){return RGL[rg]||(/^pregão de \d\d\/\d\d$/.test(rg)?rg:'')}
 function gHead(name,sub,priceTxt,abs,pct,rg,absTxt,when,whenX){
   var up=pct==null?null:pct>=0,c=up==null?'':pct===0?'':up?'gain':'loss',sg=function(v){return v<0?'-':v>0?'+':''};
   return '<p class="muted small" style="margin:0 0 4px">'+esc(name||'')+(sub?' · '+esc(sub):'')+'</p><div class="gh"><b class="num">'+priceTxt+'</b></div>'+
-    (pct==null&&abs!=null?'<div class="gdl '+(abs===0?'':abs>0?'gain':'loss')+'">'+sg(abs)+pf.format(Math.abs(abs))+' '+(abs===0?'':'<span class="arr">'+(abs>0?'↑':'↓')+'</span> ')+esc(RGL[rg]||'')+'</div>':'')+
-    (pct!=null?'<div class="gdl '+c+'">'+(abs!=null?sg(abs)+pf.format(Math.abs(abs))+' ':'')+'('+(abs==null?sg(pct):'')+pf.format(Math.abs(pct))+'%) '+(pct===0?'':'<span class="arr">'+(up?'↑':'↓')+'</span> ')+esc(RGL[rg]||'')+'</div>':'')+
+    (pct==null&&abs!=null?'<div class="gdl '+(abs===0?'':abs>0?'gain':'loss')+'">'+sg(abs)+pf.format(Math.abs(abs))+' '+(abs===0?'':'<span class="arr">'+(abs>0?'↑':'↓')+'</span> ')+esc(gRg(rg))+'</div>':'')+
+    (pct!=null?'<div class="gdl '+c+'">'+(abs!=null?sg(abs)+pf.format(Math.abs(abs))+' ':'')+'('+(abs==null?sg(pct):'')+pf.format(Math.abs(pct))+'%) '+(pct===0?'':'<span class="arr">'+(up?'↑':'↓')+'</span> ')+esc(gRg(rg))+'</div>':'')+
     (when?'<p class="small gwh '+(/atrasado/i.test(when)?'stale':'muted')+'">'+gwTxt(when,whenX)+'</p>':'');
 }
 /* botões: 1D 5D 1M 6M YTD + Mais */

@@ -127,10 +127,10 @@ function mdStk(tk,rg){
     divs:(h.div||[]).slice(-8).reverse().map(function(x){return {label:'Provento',exDate:new Date(x[0]*864e5).toISOString().slice(0,10),rate:x[1]}})};
 }
 /* página da ação */
-var STK={tk:'',rng:'1y',d:null,busy:false,err:''},STKC={};
-function stkOpen(tk){if(typeof THE!=='undefined')THE=null;STK={tk:tk,rng:STK.rng||'1y',d:null,busy:false,err:''};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=tk;stkLoad()}
+var STK={tk:'',rng:'1d',d:null,busy:false,err:''},STKC={};
+function stkOpen(tk){if(typeof THE!=='undefined')THE=null;STK={tk:tk,rng:'1d',d:null,busy:false,err:''};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=tk;stkLoad()}
 /* página de um índice (dados do robô diário: Yahoo para bolsas e moedas, Banco Central para CDI e IPCA) */
-function idxOpen(k){var x=idxDef(k);if(x&&(x.src==='fut'||FUTX[k])){try{futLoad()}catch(e){}}STK={tk:'',idx:k,rng:STK.rng&&STK.rng!=='2y'?STK.rng:'1y',d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=x?x.n:k;idxRender();if(!MD.d||!MD.d.idx)loadMD(true)}
+function idxOpen(k){var x=idxDef(k);if(x&&(x.src==='fut'||FUTX[k])){try{futLoad()}catch(e){}}STK={tk:'',idx:k,rng:pdPadrao(x),d:null};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=x?x.n:k;idxRender();if(!MD.d||!MD.d.idx)loadMD(true)}
 function idxRender(){
   var b=$('stk-b'),k=STK.idx,x=idxDef(k),D=MD.d&&MD.d.idx&&MD.d.idx[k],rg=STK.rng;if(!b||!x)return;
   var rate=x.src==='cdi'||x.src==='ipca'||x.src==='selic'||x.k==='tnx',sym=D&&D.sym||'',same=!D||x.src==='usd'||x.src==='fx'||sym===x.s||sym===x.s+'.SA';
@@ -145,13 +145,13 @@ function idxRender(){
   var y1=(D.d||[]).map(function(p){return p[1]}),hi=Math.max.apply(null,y1),lo=Math.min.apply(null,y1);
   var at=function(daysAgo){var t=Date.now()/864e5-daysAgo,a=(daysAgo>370?D.w:D.d)||[];for(var i=a.length-1;i>=0;i--)if(a[i][0]<=t)return a[i][1];return null};
   var v1=at(365),v5=at(1790),chg=function(a){return a==null||!last?'—':((last/a-1)>=0?'+':'−')+pf.format(Math.abs((last/a-1)*100))+'%'};
-  var fv=finView(sym,rg,true),fo=null,fmsg='';if(fv){if(fv.st==='ok'){hist=fv.hist;fo=fv.o;if(!rate&&same&&o&&isFinite(o.v))hist=finTail(hist,o.v,Date.now(),fo)}else{fmsg=fv.msg;hist=rg==='5d'?hist.slice(-6):[]}}
+  var fv=finView(sym,rg,true),fo=null,fmsg='';if(pdAuto(fv,rg))return idxRender();if(fv){if(fv.st==='ok'){hist=fv.hist;fo=fv.o;if(!rate&&same&&o&&isFinite(o.v))hist=finTail(hist,o.v,Date.now(),fo)}else{fmsg=fv.msg;hist=rg==='5d'?hist.slice(-6):[]}}
   hist=rgCut(hist,STK.rng);ch=hist.length>1?(rate?hist[hist.length-1].c-hist[0].c:finLast(hist)/((fo&&fo.prev)||finBase(hist))-1):null;
   var pAbs=ch==null?null:rate?ch:finLast(hist)-((fo&&fo.prev)||finBase(hist)),pPct=ch==null?null:rate?(hist[0].c?ch/hist[0].c*100:null):ch*100,per=rg==='yr'||ch==null?'1d':rg;
   if(ch==null||rg==='yr'){pPct=dp;pAbs=dp!=null&&last!=null?last-last/(1+dp/100):null}
   var vd=vdPagIdx(rg,rate,same,sym,fv,fo,x,last,D,dp);if(vd){pAbs=vd.abs;pPct=vd.pct;fo=vd.fo}
-  var st=finStat(rate?'':sym),h='<div class="gcard">'+vdPon(vd,gHead(x.t,'',last!=null?fmt(last):'—',pAbs,pPct,per,'',o&&o.at?gWhen(o.at):(MD.d&&MD.d.at?gWhen(MD.d.at):'')))+whyHtml(k,dp,x.n)+
-    rngBar(rg,rate?['yr','max']:[])+((rg==='yr'&&!rate)?annHtml(annRets(hist,null)):(fmsg?'<p class="muted small" style="margin:12px 0">'+esc(fmsg)+(rg==='5d'?' Por enquanto, os fechamentos dos últimos dias.':'')+'</p>':'')+(fmsg&&rg!=='5d'?'':lineChart(hist,'BRL',null,fmt,fo)))+(rate?'':gStats([['Abertura',st&&st.o!=null?pf.format(st.o):null],['Alta',st&&st.h!=null?pf.format(st.h):null],['Baixa',st&&st.l!=null?pf.format(st.l):null],['Fech. ant.',vdAnt(vd,st)],['Alt 52 sem',pf.format(hi)],['Bai 52 sem',pf.format(lo)]]))+'</div>';
+  var st=finStat(rate?'':sym),h='<div class="gcard">'+vdPon(vd,gHead(x.t,'',last!=null?fmt(last):'—',pAbs,pPct,pdRg(per,fv,rg),'',o&&o.at?gWhen(o.at):(MD.d&&MD.d.at?gWhen(MD.d.at):'')))+whyHtml(k,dp,x.n)+
+    rngBar(rg,pdSkip(x,rate))+pdNota()+((rg==='yr'&&!rate)?annHtml(annRets(hist,null)):(fmsg?'<p class="muted small" style="margin:12px 0'+pdMin(fv)+'">'+esc(fmsg)+(rg==='5d'?' Por enquanto, os fechamentos dos últimos dias.':'')+'</p>':'')+(fmsg&&rg!=='5d'?'':lineChart(hist,'BRL',null,fmt,fo)))+(rate?'':gStats([['Abertura',st&&st.o!=null?pf.format(st.o):null],['Alta',st&&st.h!=null?pf.format(st.h):null],['Baixa',st&&st.l!=null?pf.format(st.l):null],['Fech. ant.',vdAnt(vd,st)],['Alt 52 sem',pf.format(hi)],['Bai 52 sem',pf.format(lo)]]))+'</div>';
   var rows=rate?[['Agora',last!=null?fmt(last):'—'],['Há 1 ano',v1!=null?fmt(v1):'—'],['Há 5 anos',v5!=null?fmt(v5):'—'],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)]]
     .concat(k==='cdi'&&D.acc12!=null?[['Rendeu em 12 meses',pf.format(D.acc12)+'%']]:[]).concat(k==='ipca'&&D.mes!=null?[['Último mês',pf.format(D.mes)+'%']]:[])
     :[['Em 12 meses',chg(v1)],['Em 5 anos',chg(v5)],['Máxima (1 ano)',fmt(hi)],['Mínima (1 ano)',fmt(lo)],['Distância da máxima',last&&hi?'−'+pf.format(Math.abs((last/hi-1)*100))+'%':'—']];
@@ -160,7 +160,6 @@ function idxRender(){
     '<p class="note">'+(rate?(k==='cdi'?'CDI em % ao ano, do Banco Central. É o juro que os bancos cobram entre si e fica sempre um pouco abaixo da Selic; é ele que rende CDB, LCI e LCA.':k==='selic'?'Selic meta em % ao ano, do Banco Central. É a taxa básica de juros, definida pelo Copom a cada 45 dias; o CDI anda colado nela, uns 0,10 ponto abaixo.':'IPCA acumulado em 12 meses, do Banco Central (IBGE).'):(same?'Histórico do Yahoo Finance'+(sym?' ('+esc(sym)+')':'')+', atualizado pelo robô diário; o valor de agora vem das APIs do app.':'Gráfico do próprio índice ('+esc(sym)+', Yahoo Finance) pelo fechamento mais recente; a variação de hoje vem do '+esc(x.s)+', que acompanha o índice.'))+'</p>';
   setHtml(b,h);
 }
-function rgEff(){return STK.rng==='yr'||STK.rng==='max'?'5y':STK.rng==='ytd'?'1y':STK.rng==='1d'||STK.rng==='5d'?'1mo':STK.rng}
 /* valorização ano a ano: do último preço do ano anterior ao último do ano (o ano atual vai até hoje) */
 function annRets(hist,live){var by={},ys=[];hist.forEach(function(p){var y=new Date(p.t).getUTCFullYear();if(!by[y]){by[y]=[];ys.push(y)}by[y].push(p)});ys.sort();
   var cy=new Date().getFullYear(),out=[];
