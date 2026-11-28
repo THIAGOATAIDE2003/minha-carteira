@@ -187,3 +187,4 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 #ajseg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;overflow:visible;padding:2px 0 10px}
 #ajseg button{flex:none;white-space:normal;padding:9px 4px;font-size:14.5px;line-height:1.2;border-radius:10px}
 .hcq{font-weight:500;font-size:13px;color:var(--hero-muted);margin-right:2px}
+.vrrec{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}.vrrec summary{min-height:44px;align-items:center;justify-content:space-between;gap:6px}.vrrec[open] summary{margin-bottom:6px}
