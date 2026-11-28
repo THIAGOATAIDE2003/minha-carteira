@@ -1,0 +1,21 @@
+{
+ "T": {
+  "resumo": "9d4bbfe0",
+  "ativos": "2d328e84",
+  "proventos": "65fd9aef",
+  "mercado": "d51a6fdc",
+  "cambio": "1505",
+  "imposto": "c9d4fda7",
+  "ajustes": "1505"
+ },
+ "lsOrc": "17dcb778",
+ "org": {
+  ".orgl": "block/0px 0px 12px/0px/0px none rgb(231, 238, 246)/normal/normal/normal/outside none none/0 1 auto",
+  ".orgr": "flex/0px/10px 0px/1px solid rgb(33, 48, 65)/space-between/center/10px/outside none none/0 1 auto",
+  ".orgr label": "flex/0px/0px/0px none rgb(231, 238, 246)/normal/center/10px/outside none none/1 1 0%",
+  ".orgm": "flex/0px/0px/0px none rgb(231, 238, 246)/normal/normal/6px/outside none none/0 1 auto",
+  ".orgm button": "block/0px/1px 6px/1px solid rgb(33, 48, 65)/normal/normal/normal/outside none none/0 1 auto"
+ },
+ "orgHtml": "836e4a06",
+ "keys": "minha-carteira-v1,minha-carteira-v1-erros,minha-carteira-v1-ntseen"
+}

@@ -11,7 +11,7 @@ function renderBody(){
   try{tapeMerge()}catch(e){}
   CMEMO=null;var R=compute();CMEMO=R;
   try{renderTape()}catch(e){}
-  renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderPerf(R);try{renderRisk(R)}catch(e){}try{if(CARV==='plano'&&!PL.busy)renderPlano()}catch(e){}renderMkt();renderTrades();renderFx();renderEvo();renderIR();try{renderOrc()}catch(e){}if(!($('apotab').contains(document.activeElement)))renderApo();
+  renderBanner();if(!($('metasbox')&&$('metasbox').contains(document.activeElement)))renderSummary(R);renderPositions(R);renderPerf(R);try{renderRisk(R)}catch(e){}try{if(CARV==='plano'&&!PL.busy)renderPlano()}catch(e){}renderMkt();renderTrades();renderFx();renderEvo();renderIR();if(!($('apotab').contains(document.activeElement)))renderApo();
   pvRedraw();
   if(document.activeElement!==$('c-fx'))$('c-fx').value=S.fx&&S.fx.rate&&S.fx.src!=='auto'?String(S.fx.rate).replace('.',','):'';
   $('c-fx').placeholder=S.fx&&S.fx.src==='auto'?String(S.fx.rate).replace('.',','):(MK.fxLatest?String(MK.fxLatest).replace('.',','):'5,35');
