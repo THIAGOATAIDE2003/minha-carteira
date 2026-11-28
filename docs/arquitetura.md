@@ -235,3 +235,6 @@ Só observa, não muda nenhum número nem comportamento. Carrega logo antes de `
 - Guarda as últimas 20 aberturas na chave NOVA `minha-carteira-v1-tempos`, gravada só quando o app vai para segundo plano (`visibilitychange`/`pagehide`); nenhuma outra chave é tocada.
 - Quadro `#tmbox` em Ajustes > Dados: linhas em português, botões "Copiar resumo" e "Limpar medições". Redesenhado por clique/`requestAnimationFrame` só se visível; nunca de dentro do `render()`.
 - Teste: `node tests/tempos.js` (`--mutantes`).
+
+## U1 — nomes claros, toque de 44 px e setas ▲/▼ (1.84.0)
+Só texto e CSS. Mercado: Minha lista (antes Acompanhando; chave do `BALT` acompanha), Banco Central (antes BC), Ideias e análise (antes Análise); Mercado › Índices: botão/título "Cotações" (chave `BALT` 'Cotações'); Carteira: "Próximo aporte"; ícone do "Mais" = três pontos. `style-extras.css` (fim): `min-height:44px` nos botões de seção/período e área de toque invisível de 44 px (`::after`) em ⓘ, sino, ✕ e pílula de sincronização. Cabeçalho de gráfico (`grafico.js`) usa ▲/▼ (`.gdl .arr` 11 px); `↑/↓/⇅` de ordenar colunas e nas tabelas de sensibilidade não mudam. Teste: `node tests/ux-u1.js` (`--mutantes`). `mercado-setores.js` ≤ 25.600 bytes.

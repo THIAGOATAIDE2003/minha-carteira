@@ -216,7 +216,7 @@ async function sintetico(b) {
     const so = window.opData, r = __r({ W: [__o('AAA3')], D: [__o('BBB3')] }); r.n = 5; let chamadas = 0; window.opData = function () { chamadas++; return r; }; const fonte = typeof opData().n; chamadas = 0;
     MKV = 'ana'; ANV = 'opp'; const c0 = chamadas; renderMkt(); const mk = [].slice.call(document.querySelectorAll('#mkseg button')).map(b => b.innerHTML), an = anSeg(); window.opData = so;
     return { mk: mk, an: /Ideias<\/button>/.test(an) && !/mkb/.test(an), mkb: document.querySelectorAll('.mkb').length, chamou: chamadas > c0, bell: !!$('bellb'), fonte: fonte, css: [].slice.call(document.styleSheets).some(s => { try { return [].slice.call(s.cssRules).some(x => /\.mkb/.test(x.cssText)); } catch (e) { return false; } }) }; });
-  ok('A7 uma só bolinha vermelha: botões "Análise" e "Ideias" sem número, #bellb existe, opData().n continua existindo, o cálculo (e o registro diário) continua sendo chamado ao desenhar', A13.mk.indexOf('Análise') >= 0 && A13.mk.every(h => !/<i/.test(h)) && A13.an && A13.mkb === 0 && A13.chamou && A13.bell && A13.fonte === 'number' && !A13.css, A13);
+  ok('A7 uma só bolinha vermelha: botões "Análise" e "Ideias" sem número, #bellb existe, opData().n continua existindo, o cálculo (e o registro diário) continua sendo chamado ao desenhar', A13.mk.indexOf('Ideias e análise') >= 0 && A13.mk.every(h => !/<i/.test(h)) && A13.an && A13.mkb === 0 && A13.chamou && A13.bell && A13.fonte === 'number' && !A13.css, A13);
   /* ---------- A8 aviso antigo, A10 sem push, A13 sw/CSP ---------- */
   const A14 = await E(() => {
     const o = {}; OPC = { k: 'a', r: { W: [{ tk: 'COM3', fx: { ok: true } }], M: [{ tk: 'MIN3', fx: { ok: true } }], D: [{ tk: 'IDE3', fx: { ok: true } }, { tk: 'BAN3', fx: { ok: false, banco: true } }] } };
@@ -299,7 +299,7 @@ async function real(b) {
   console.log('   fotos reais 24→26/11 sem estrela:', JSON.stringify(R4.semEstrela), '· com estrela:', JSON.stringify(R4.comEstrela), '· Ideias 24:', R4.d24, '· 26:', R4.d26);
   /* A7 com dados reais: sem número nos botões, mesmo com opData().n > 0 */
   const R5 = await E(() => { MKV = 'ana'; ANV = 'opp'; OPC = { k: '', r: null }; const n = opData().n; renderMkt(); return { n: n, mkb: document.querySelectorAll('.mkb').length, btn: [].slice.call(document.querySelectorAll('#mkseg button,#anseg button')).map(b => b.textContent.trim()).join('|') }; });
-  ok('A7 dados reais: opData().n > 0 e mesmo assim nenhum número vermelho nos botões Análise e Ideias', R5.n > 0 && R5.mkb === 0 && /Análise/.test(R5.btn) && /Ideias\|Comparar\|Ranking/.test(R5.btn), R5);
+  ok('A7 dados reais: opData().n > 0 e mesmo assim nenhum número vermelho nos botões Análise e Ideias', R5.n > 0 && R5.mkb === 0 && /Ideias e análise/.test(R5.btn) && /Ideias\|Comparar\|Ranking/.test(R5.btn), R5);
   ok('Dados reais: nenhum erro de JavaScript', pg.__erros.length === 0, pg.__erros.slice(0, 3));
   await pg.context().close();
 }

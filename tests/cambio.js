@@ -58,7 +58,7 @@ async function principal(b) {
   /* K1/K5: faixa = cartão = página; "Fech. ant." */
   await sec('K1', async () => {
     await base(); const r = await p.evaluate(() => { var o = __nums(); o.pagU = __pag('usd', 'BRL=X'); __fecha(); o.pagE = __pag('eur', 'EURBRL=X'); __fecha(); return o; });
-    const eu = pct(5.5445, 5.7413), ee = pct(6.0675, 6.3014), pg = t => { var m = t.match(/\((\d+,\d+)%\)\s*([↑↓])/); return m ? (m[2] === '↓' ? -1 : 1) * parseFloat(m[1].replace(',', '.')) : null; };
+    const eu = pct(5.5445, 5.7413), ee = pct(6.0675, 6.3014), pg = t => { var m = t.match(/\((\d+,\d+)%\)\s*([▲▼])/); return m ? (m[2] === '▼' ? -1 : 1) * parseFloat(m[1].replace(',', '.')) : null; };
     ok('K1 dólar: faixa = cartão = página = −3,43%', perto(r.faixaDÓLAR, eu) && perto(r.cartaoUsd, eu) && perto(pg(r.pagU), eu), [r.faixaDÓLAR, r.cartaoUsd, pg(r.pagU), eu]);
     ok('K1 euro: faixa = cartão = página = −3,71%', perto(r.faixaEURO, ee) && perto(r.cartaoEur, ee) && perto(pg(r.pagE), ee), [r.faixaEURO, r.cartaoEur, pg(r.pagE), ee]);
     ok('K5 "Fech. ant." e a linha pontilhada do dólar 5,7413 e do euro 6,3014', /fechamento anterior: R\$ 5,7413/.test(r.pagU) && /Fech\. ant\.5,74/.test(r.pagU) && /fechamento anterior: R\$ 6,3014/.test(r.pagE) && /Fech\. ant\.6,30/.test(r.pagE), [r.pagU.slice(0, 300), r.pagE.slice(0, 300)]);
@@ -99,7 +99,7 @@ async function principal(b) {
   /* K8: heroCam 1D usa a mesma base */
   await sec('K8 gráfico do Início', async () => {
     await base(); const r = await p.evaluate(() => { var o = {}; ['usd', 'luc'].forEach(function (cv) { STK = { tk: '', hero: 'cam', rng: '1d', d: null, cv: cv }; $('stk').hidden = false; heroRender(); o[cv] = __txt(); __fecha(); }); return o; });
-    ok('K8 gráfico do dólar no Início: −3,43% (mesma base) e linha em 5,7413', /\(3,43%\)\s*↓/.test(r.usd) && /R\$ 5,7413/.test(r.usd), r.usd.slice(0, 220));
+    ok('K8 gráfico do dólar no Início: −3,43% (mesma base) e linha em 5,7413', /\(3,43%\)\s*▼/.test(r.usd) && /R\$ 5,7413/.test(r.usd), r.usd.slice(0, 220));
   });
   /* K10: o arquivo é pedido uma vez só (sem laço) */
   await sec('K10 prefetch', async () => {

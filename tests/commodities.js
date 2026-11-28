@@ -46,7 +46,7 @@ const CM = [
   { k: 'corn', s: 'ZC=F', tp: null, v: 4.45, pv: 4.4, f5: 4.43 }, { k: 'natgas', s: 'NG=F', tp: null, v: 3.2, pv: 3.35, f5: 3.3 }];
 const pf2 = n => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pct = (a, b) => (a / b - 1) * 100, perto = (a, b) => a != null && Math.abs(a - b) < 0.011;
-const pg = t => { var m = t.match(/\((\d+,\d+)%\)\s*([↑↓])/); return m ? (m[2] === '↓' ? -1 : 1) * parseFloat(m[1].replace(',', '.')) : null; };
+const pg = t => { var m = t.match(/\((\d+,\d+)%\)\s*([▲▼])/); return m ? (m[2] === '▼' ? -1 : 1) * parseFloat(m[1].replace(',', '.')) : null; };
 /* monta o cenário: hoje = dia (número), anterior = dia do pregão anterior, hh = hora de Brasília do "agora" */
 function cenario(cm, dias, opc) {
   opc = opc || {}; const tapeIt = [], daily = {}, arq = [], dh = dias.hoje, dp = dias.ant, ts = dias.ts, base = dh * 86400;
