@@ -16,7 +16,7 @@ function showTab(n){
   if(n==='mercado'){loadMkt();loadMD()}
 }
 BOOT=true;
-Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.addEventListener('click',function(){try{location.hash=b.dataset.go}catch(e){}showTab(b.dataset.go)})});
+Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.addEventListener('click',function(){try{vlHash(b.dataset.go)}catch(e){}showTab(b.dataset.go)})});
 window.addEventListener('hashchange',function(){showTab((location.hash||'').replace('#',''))});
 showTab((location.hash||'').replace('#',''));
 var fixedMsg=sanitize();

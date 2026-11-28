@@ -104,5 +104,5 @@ function avCiclo(force){var now=Date.now(),r=null,R;if(AV.busy||(!force&&!AV.md)
     AV.ok=1;AV.at=now;AV.why='';avGravar(R.st);try{ntBadge()}catch(e){}var d=$('nd');if(d&&!d.hidden)ndRender()}
   catch(e){AV.ok=0;AV.why='erro'}finally{AV.busy=0}}
 /* toque na linha agrupada: Mercado → Análise → Ideias → Ideias novas */
-function avIdeias(){MKV='ana';ANV='opp';OPV='gar';try{localStorage.setItem(LS+'-mkv',MKV);localStorage.setItem(LS+'-anv',ANV);localStorage.setItem(LS+'-opv',OPV)}catch(e){}try{location.hash='mercado'}catch(e){}showTab('mercado');renderMkt()}
+function avIdeias(){MKV='ana';ANV='opp';OPV='gar';try{localStorage.setItem(LS+'-mkv',MKV);localStorage.setItem(LS+'-anv',ANV);localStorage.setItem(LS+'-opv',OPV)}catch(e){}try{vlHash('mercado')}catch(e){}showTab('mercado');renderMkt()}
 document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('[data-ndi]');if(!t)return;ndClose();setTimeout(function(){try{avIdeias()}catch(x){}},260)});
