@@ -183,3 +183,6 @@ img,svg{-webkit-user-drag:none;user-drag:none}
 .rng button{min-width:44px}
 .bal,.shx,.bell,.pill[data-goto]{position:relative}
 .bal::after,.shx::after,.bell::after,.pill[data-goto]::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%)}
+/* U1.1: Ajustes como as outras barras de seção (grade de 3 colunas, nada fora da tela) */
+#ajseg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;overflow:visible;padding:2px 0 10px}
+#ajseg button{flex:none;white-space:normal;padding:9px 4px;font-size:14.5px;line-height:1.2;border-radius:10px}

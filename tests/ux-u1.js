@@ -13,6 +13,10 @@ const MUTANTES = {
   'balt-sem-Cotacoes': ['js/ui.js', "'Cotações':", "'Cotacoes':"],
   'sem-44px': ['style-extras.css', '.rng button{min-height:44px}', '.rng button{min-height:30px}'],
   'sem-area-invisivel': ['style-extras.css', '.bal::after,', '.balx::after,'],
+  'ajustes-rola': ['style-extras.css', '#ajseg{display:grid;', '#ajseg{display:flex;'],
+  'organizar-antigo': ['js/organizar.js', "'Mercado → Ideias e análise'", "'Mercado → Análise'"],
+  'bc-sigla': ['js/bc.js', 'previsão do Banco Central.', 'previsão do BC.'],
+  'foto-antiga': ['js/foto.js', 'Mercado → Ideias e análise).', 'Mercado → Ideias).'],
   'aporte-curto': ['index.html', 'data-cv="apo">Próximo aporte<', 'data-cv="apo">Aporte<'],
   'icone-antigo': ['index.html', '<circle cx="5" cy="12" r="1.9" fill="currentColor"/>', '<circle cx="5" cy="12" r="0"/>'],
 };
@@ -42,6 +46,15 @@ async function principal(b) {
   ok('U1 BALT: chaves novas existem, antigas saíram (o ⓘ acompanha o título)', r.balt[0] === 'string' && r.balt[1] === 'string' && r.balt[2] === 'undefined' && r.balt[3] === 'undefined', r.balt);
   ok('U1 Minha lista: título novo', r.h2min.some(t => /^Minha lista/.test(t)), r.h2min);
   ok('U1 botão de período com 44 px de altura', r.rng >= 44, r.rng);
+  const aj = [];
+  for (const fs_ of ['100%', '130%']) aj.push(await p.evaluate(async f => { document.documentElement.style.fontSize = f; showTab('ajustes'); await new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); });
+    var W = document.documentElement.clientWidth, bs = [].slice.call(document.querySelectorAll('#ajseg button')); document.documentElement.style.fontSize = '';
+    return { f: f, n: bs.length, fora: bs.filter(function (e) { var q = e.getBoundingClientRect(); return q.right > W + 1 || q.left < -1 || e.scrollWidth > e.clientWidth + 1 || q.height < 44; }).map(function (e) { return e.textContent.trim(); }), sobra: document.documentElement.scrollWidth > W + 1 }; }, fs_));
+  aj.forEach(a => ok('U1.1 Ajustes (' + a.f + ', 360 px): 5 chips inteiros, 44 px, sem rolar nem estourar', a.n === 5 && a.fora.length === 0 && !a.sobra, a));
+  ok('U1.1 Organizar abas: barra #anseg chamada "Mercado → Ideias e análise"; Mercado → Índices e Ideias ficam', /'#anseg','Mercado → Ideias e análise'/.test(ler('js/organizar.js')) && /'#ixseg','Mercado → Índices'/.test(ler('js/organizar.js')) && !/Mercado → Análise'/.test(ler('js/organizar.js')), 0);
+  ok('U1.1 foto das ideias manda abrir "Mercado → Ideias e análise"', /abra Mercado → Ideias e análise\)/.test(ler('js/foto.js')), 0);
+  const bcs = ler('js/bc.js').split('\n').filter(l => !/^\s*\/\*/.test(l)).join('\n').replace(/\/\*[^]*?\*\//g, '');
+  ok('U1.1 bc.js: nenhuma frase de tela com a sigla "BC" solta', !/(do|o|no|para o|previsão do) BC\b/.test(bcs.replace(/BC\.[a-z]+/g, '')) && !/Site do BC/.test(bcs), (bcs.match(/.{20}\bBC\b.{10}/g) || []).slice(0, 4));
   const g = ler('js/grafico.js'), bc = ler('js/bc.js');
   ok('U1 cabeçalho de gráfico usa ▲/▼ e não ↑/↓', /'▲':'▼'/.test(g) && !/class="arr">'\+\([^)]*'↑'/.test(g) && !/\?'↑':'↓'/.test(g), 0);
   ok('U1 título do BC sem sigla', /<h2>Banco Central<\/h2>/.test(bc) && !/Banco Central \(BC\)/.test(bc), 0);
