@@ -107,60 +107,10 @@ input,textarea,select,[contenteditable="true"]{-webkit-user-select:text;user-sel
 img,svg{-webkit-user-drag:none;user-drag:none}
 @media print{body *{display:none!important}body::after{content:"Impressão bloqueada";display:block;padding:40px;font:16px system-ui}}
 
-/* Orçamento (1.47.0) */
-.orcm{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}.orcm b{font-size:16px}#maisseg{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#maisseg::-webkit-scrollbar{display:none}#maisseg button{flex:none;white-space:nowrap}.orcm button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;width:38px;height:38px;font-size:20px;line-height:1}
-.orh{text-align:center}.orh>b{display:block;font-size:30px;margin:2px 0 12px}
-.orn{display:flex;gap:6px;justify-content:space-between;margin-top:10px}.orn>div{flex:1;text-align:center}.orn small{display:block;color:var(--muted);font-size:12px}.orn .num{font-size:15px;font-weight:600}
-.orb{height:10px;border-radius:99px;background:var(--tint);overflow:hidden;margin:6px 0}.orb i{display:block;height:100%;border-radius:99px}.orb i.ok{background:var(--gain)}.orb i.warn{background:var(--c2)}.orb i.bad{background:var(--loss)}
-.orm{margin:4px 0 10px;font-size:14px}.warnc{color:var(--c2)}
-.orlb{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;font-size:14px}.orin{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:15px;min-width:0}.orlb .orin{width:44%;text-align:right}
-.orsub{margin:14px 0 4px;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}.orsub .num{margin-left:auto;font-weight:500}
-.orl{list-style:none;margin:4px 0;padding:0}.orl li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}.orl li span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.orx{border:0;background:none;color:var(--muted);font-size:15px;padding:4px 6px}
-.orr{display:flex;gap:8px;margin-top:8px}.orr .orin:first-child{flex:1}.orr .orv{width:92px;text-align:right}
-
-/* Orçamento: % do salário e valor do mês nos fixos */
-.orm2{width:96px;text-align:right;padding:7px 9px}.orl li small{font-size:12px}
-.orbig{text-align:center;margin:2px 0 6px;font-size:15px}.orbig b{font-size:30px}
-.orsk{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--tint);margin:8px 0 10px}.orsk i{display:block;height:100%}
-.orsk .fx,.ord.fx{background:var(--c2)}.orsk .vr,.ord.vr{background:var(--accent)}.orsk .ap,.ord.ap{background:var(--gain)}.orsk .sb,.ord.sb{background:var(--muted)}
-.orsk .rs,.ord.rs{background:var(--accent);opacity:.45}
-.ord{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
-
-/* Orçamento: envelopes */
-.ore{border-top:1px solid var(--line);padding:12px 0 6px}.ore:first-of-type{border-top:0}
-.oreh{display:flex;align-items:center;gap:8px;font-size:15px}.oreh b{flex:1;min-width:0}.oreh b small{font-weight:400;font-size:12px;margin-left:4px}.oreh .num small{font-size:12px}
-.ore .orr{margin-top:8px}.ore select.orin{flex:1}.ore .orgo{flex:1;white-space:nowrap}.ore .orr .orin:not(.orv){flex:1}
-.ord2{margin:8px 0 0}.ord2 summary{cursor:pointer;color:var(--muted);font-size:13px}.orlim{margin-top:6px}
-
-/* Orçamento: análise */
-.orsw,.orsw2{display:flex;gap:8px;margin:0 0 10px}.orsw button,.orsw2 button{flex:1;white-space:nowrap}
-.orb i.ac{background:var(--accent)}.orrk{margin:8px 0}.orrh{display:flex;gap:8px;align-items:baseline;font-size:14px}.orrh span:first-child{flex:1;min-width:0}.orcm button:disabled{opacity:.35}
 /* todas as sub-abas no mesmo formato: grade de 3 colunas, quebrando em linhas (sem rolar para o lado) */
 #carseg:not([hidden]),#mkseg:not([hidden]),#maisseg:not([hidden]),.seg.anseg:not([hidden]),.seg.stseg:not([hidden]){display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;overflow:visible!important}
 #carseg button,#mkseg button,#maisseg button,.anseg button,.stseg button{flex:none!important;white-space:normal!important;padding:9px 4px!important;font-size:14.5px!important;letter-spacing:0!important;line-height:1.2}
 #carseg[hidden],#mkseg[hidden],#maisseg[hidden],.seg.anseg[hidden],.seg.stseg[hidden]{display:none!important}
-/* ===== Orçamento: visual novo ===== */
-.orhd{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:6px 8px 0;margin:0 0 12px}
-.orhd .orcm{margin:0;padding:4px 0}.orhd .orcm b{font-size:18px;letter-spacing:-.01em}
-.orhd .orcm button{width:38px;height:38px;border-radius:50%;font-size:22px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
-.ortabs{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);margin:4px -8px 0}
-.ortabs button{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;padding:11px 0 9px;font-size:15px;font-weight:600;color:var(--muted)}
-.ortabs button[aria-pressed="true"]{color:var(--fg);border-bottom-color:var(--accent)}
-.orhero{padding:18px 16px 14px}.orhl{text-align:center;font-size:13px;color:var(--muted);letter-spacing:.02em;text-transform:uppercase}
-.orhn{display:block;text-align:center;font-size:38px;line-height:1.1;margin:6px 0 2px;letter-spacing:-.02em}
-.orhs{text-align:center;color:var(--muted);font-size:14px;margin:0 0 12px}
-.orhero .orsk{height:16px;margin:6px 0 12px}
-.orf{list-style:none;margin:0;padding:0}.orf li{display:flex;align-items:center;gap:8px;padding:10px 4px;border-top:1px solid var(--line);font-size:15px;cursor:pointer;border-radius:8px}
-.orf li:active{background:var(--tint)}.orf li>span:first-child{flex:1;min-width:0}.orf li small{display:block;color:var(--muted);font-size:12px;margin:1px 0 0 18px}
-.orf li b{min-width:44px;text-align:right;font-weight:600}
-.orf .orfs{border-top:2px solid var(--line);font-weight:700;cursor:default}.orf .orfs:active{background:none}
-.ord.en{background:var(--fg);opacity:.5}
-.orme{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:14px}.orme .orb{margin:6px 0 4px}.orme small{font-size:13px}
-.orsh{display:flex;align-items:baseline;gap:8px;margin:0 0 6px}.orsh h2{margin:0;flex:1;display:flex;align-items:center;gap:6px}
-.orsv{display:flex;align-items:baseline;gap:6px}.orsv b{font-size:16px}.orsv small{color:var(--muted);font-size:13px;min-width:34px;text-align:right}
-.orq{border:1px solid var(--accent)}.orq .orqb{width:100%;margin-top:10px;padding:12px;font-weight:700;font-size:16px}
-.orq select.orin{flex:1}.orq .orr .orin:not(.orv):not(select){flex:1;min-width:0}
-.panel[id^="or-s-"],.orsh[id^="or-s-"]{scroll-margin-top:12px}
 /* Organizar abas (1.59.0) */
 .seg,.cchips,.opseg{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .orgl{list-style:none;margin:0 0 12px;padding:0}.orgr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.orgr label{display:flex;align-items:center;gap:10px;font-size:15px;flex:1;min-width:0}.orgm{display:flex;gap:6px}.orgm button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;width:38px;height:36px;font-size:14px}.orgm button:disabled{opacity:.3}

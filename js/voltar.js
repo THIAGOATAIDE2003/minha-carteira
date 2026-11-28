@@ -5,7 +5,7 @@
 var VL={P:[],CV:{},Q:[],D:0,busy:0,tm:0,sc:0,TD:0,cur:'resumo',PH:null,AT:0,SA:0},VLI=['mk','tp','nt','stk','assist','evsheet','orgsh','nd'];
 var VLC={stk:function(){stkClose()},nt:function(){ntClose()},nd:function(){ndClose()},assist:function(){asClose()},pf:function(){pfClose()},pv:function(){pvClose()},
   mk:'#mk [data-mk="close"]',tp:'#tp [data-tpe="close"]',evsheet:'#evsheet [data-evf="close"]',orgsh:'#orgsh [data-orgx="close"]'};
-function vlTab(h){h=String(h||'').replace('#','');if(/^(cambio|ajustes|imposto|orcamento|mais)$/.test(h))return 'mais';
+function vlTab(h){h=String(h||'').replace('#','');if(/^(cambio|ajustes|imposto|mais)$/.test(h))return 'mais';
   if(/^(evolucao|aporte|desempenho|risco|plano|lancamentos|extrato|ativos)$/.test(h))return 'ativos';return /^(proventos|mercado)$/.test(h)?h:'resumo'}
 function vlAb(){var r=[],i,e;for(i=0;i<VLI.length;i++){e=document.getElementById(VLI[i]);if(e&&!e.hidden)r.push(VLI[i])}
   if(document.getElementById('pfsheet'))r.push('pf');if(document.querySelector('#divtab .sheet:not([hidden])'))r.push('pv');return r}
