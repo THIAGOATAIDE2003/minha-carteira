@@ -2,7 +2,7 @@
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 var TABS=['resumo','ativos','proventos','mercado','mais'],MAISV='cambio',CARV='pos';
 function showTab(n){
-  if(n==='cambio'||n==='ajustes'||n==='imposto'||n==='orcamento'){MAISV=n;n='mais'}
+  if(n==='cambio'||n==='ajustes'||n==='imposto'){MAISV=n;n='mais'}
   if(n==='evolucao'){CARV='evo';n='ativos'}else if(n==='aporte'){CARV='apo';n='ativos'}else if(n==='desempenho'){CARV='perf';n='ativos'}else if(n==='risco'){CARV='risk';n='ativos'}else if(n==='plano'){CARV='plano';n='ativos'}else if(n==='lancamentos'||n==='extrato'){CARV='ext';n='ativos'}else if(n==='ativos')CARV='pos';
   if(TABS.indexOf(n)<0)n='resumo';
   Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'),function(el){el.hidden=el.getAttribute('data-tab')!==n||(!!el.dataset.sub&&el.dataset.sub!==MAISV)||(!!el.dataset.sub2&&el.dataset.sub2!==CARV)});
@@ -12,7 +12,6 @@ function showTab(n){
   Array.prototype.forEach.call(document.querySelectorAll('#carseg button'),function(b){b.setAttribute('aria-pressed',String(b.dataset.cv===CARV))});
   window.scrollTo(0,0);
   if(n==='ativos'&&CARV==='plano'){try{renderPlano()}catch(e){}}
-  if(n==='mais'&&MAISV==='orcamento'){try{renderOrc()}catch(e){}}
   if(n==='mercado'){loadMkt();loadMD()}
 }
 BOOT=true;
