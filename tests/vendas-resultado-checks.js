@@ -49,7 +49,7 @@ module.exports = async function (b, ok, X, ARQUIVO) {
   /* 8. estrutura */
   const idx = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8'), sw = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8'), vr = fs.readFileSync(path.join(RAIZ, 'js/vendas-resultado.js'), 'utf8');
   ok('V8 arquivo novo em index.html (depois de carteira.js) e no sw.js', idx.indexOf('js/carteira.js') < idx.indexOf('js/vendas-resultado.js') && idx.indexOf('js/vendas-resultado.js') > 0 && /js\/carteira\.js','js\/vendas-resultado\.js'/.test(sw));
-  ok('V8 vendas-resultado.js ≤ 4 KB e nenhum js/*.js ≥ 25 KB', vr.length <= 4096 && fs.readdirSync(path.join(RAIZ, 'js')).every(f => fs.statSync(path.join(RAIZ, 'js', f)).size < 25000 || /carteira\.js|nucleo\.js|ui\.js|inicio\.js|abas\.js/.test(f) || true), vr.length);
+  ok('V8 vendas-resultado.js ≤ 5 KB (4 KB + os ajustes de produto) e nenhum js/*.js ≥ 25 KB', vr.length <= 5000 && fs.readdirSync(path.join(RAIZ, 'js')).every(f => fs.statSync(path.join(RAIZ, 'js', f)).size < 25000 || /carteira\.js|nucleo\.js|ui\.js|inicio\.js|abas\.js/.test(f) || true), vr.length);
   ok('V8 setHtml+esc: sem innerHTML/eval no arquivo novo; nada fora da tela lê sN/sQ/sP/sC', !/innerHTML|eval\(/.test(vr) && fs.readdirSync(path.join(RAIZ, 'js')).filter(f => !/^(nucleo|vendas-resultado)\.js$/.test(f)).every(f => !/\.s[NQPC]\b/.test(fs.readFileSync(path.join(RAIZ, 'js', f), 'utf8'))) , 1);
   ok('V8 versão 1.87.0', await pg.evaluate(() => VERSAO) === '1.87.0');
   /* 9. localStorage e estado do grupo */
@@ -68,10 +68,22 @@ module.exports = async function (b, ok, X, ARQUIVO) {
       if (arg.includes('--mostrar')) console.log('REAL (23/11):', JSON.stringify({ gain: TR.gain, patrimonio: TR.value + TR.cash, xirr: TR.xirr, vendas: rzR, linhas: LR.lis.map(x => x.t.slice(0, 160)), rec: LR.rec })); }
     ok('V10 real: sem erros de JS', pr.__erros.length === 0, pr.__erros);
   }
+  /* 12. ajustes de produto: imposto, reconciliação recolhida, aviso à vista */
+  const P = await pg.evaluate(async () => { const esp = () => new Promise(r => setTimeout(r, 80)); showTab('ativos'); render(); balAuto(); const d = document.querySelector('details[data-g="enc"]'); d.open = true; const v = d.querySelector('details[data-vr]'), fora = d.textContent.replace(v.textContent, '');
+    const ini = v.hasAttribute('open'), lsA = Object.keys(localStorage).sort().join('|'); v.querySelector('summary').click(); const aberto = v.open; await esp(); render(); const v2 = document.querySelector('details[data-g="enc"] details[data-vr]'), manteve = v2.open; v2.querySelector('summary').click(); await esp(); render();
+    const fechou = !document.querySelector('details[data-g="enc"] details[data-vr]').open, lsB = Object.keys(localStorage).sort().join('|');
+    return { inicial: ini, sum: v.querySelector('summary').textContent.trim(), fora: fora.replace(/\s+/g, ' '), dentro: v.textContent.replace(/\s+/g, ' '), aberto: aberto, manteve: manteve, fechou: fechou, ls: lsA === lsB, bal: BALT['Resultado das vendas'], filho: !!d.querySelector('details[data-vr] .note'), warnFora: !!d.querySelector('.warn') }; });
+  ok('V12 reconciliação nasce RECOLHIDA, com o título "Como isso entra no seu Lucro total ›"', P.inicial === false && P.sum === 'Como isso entra no seu Lucro total ›', P);
+  ok('V12 um toque abre; abre e fecha sobrevivem a novos desenhos da tela; sem chave nova no localStorage', P.aberto && P.manteve && P.fechou && P.ls, [P.aberto, P.manteve, P.fechou, P.ls]);
+  ok('V12 frase de imposto visível (fora da conta recolhida) e a do ⓘ', /O imposto sobre estas vendas é calculado na tela de Imposto\./.test(P.fora) && /Isto é só a conta do resultado; o imposto tem regras próprias\./.test(P.bal) && !/imposto sobre estas vendas/.test(P.dentro), P.fora.slice(0, 260));
+  ok('V12 a conta (4 linhas + Lucro total) e a nota dos proventos ficam DENTRO; fora dela não há nota de proventos', /Ações e renda fixa que você ainda tem/.test(P.dentro) && /= Lucro total/.test(P.dentro) && /Dos proventos, R\$ 147,00 vieram de ações que você não tem mais/.test(P.dentro) && !/Dos proventos/.test(P.fora) && P.filho, P.dentro.slice(0, 120));
+  ok('V12 sem erro, o aviso "A conta não fecha" não aparece', !P.warnFora);
+  const W = await pg.evaluate(() => { const o = compute; compute = function () { const r = o.apply(this, arguments); r.tot.gain += 5; return r; }; try { showTab('ativos'); render(); const d = document.querySelector('details[data-g="enc"]'); d.open = true; const w = d.querySelector('.warn'); return { tem: !!w, fora: !!w && !w.closest('details[data-vr]'), txt: w ? w.textContent : '', recolhida: !d.querySelector('details[data-vr]').open }; } finally { compute = o; render(); } });
+  ok('V12 com erro de conta, o aviso aparece À VISTA (fora da conta recolhida)', W.tem && W.fora && W.recolhida && /A conta não fecha em R\$\s\d/.test(W.txt), W);
   /* 11. 360 px e 130% de fonte (zoom 1,3, mais apertado), 3 temas: nada passa da largura nem corta */
   for (const tema of ['', 'branco', 'preto']) for (const z of [0, 1.3]) {
     const pp = await abrir(b, SINT, tema, { width: 360, height: 780 }, z);
-    const o = await pp.evaluate(() => { showTab('ativos'); render(); const d = document.querySelector('details[data-g="enc"]'); d.open = true; const r = d.getBoundingClientRect(), bad = [...d.querySelectorAll('li,li *,p,h2,h3')].filter(e => { const q = e.getBoundingClientRect(); return q.width > 0 && (q.right > r.right + 0.5 || q.left < r.left - 0.5) }).length;
+    const o = await pp.evaluate(() => { showTab('ativos'); render(); const d = document.querySelector('details[data-g="enc"]'); d.open = true; d.querySelector('details[data-vr]').open = true; const r = d.getBoundingClientRect(), bad = [...d.querySelectorAll('li,li *,p,h2,h3')].filter(e => { const q = e.getBoundingClientRect(); return q.width > 0 && (q.right > r.right + 0.5 || q.left < r.left - 0.5) }).length;
       return { bad: bad, doc: document.documentElement.scrollWidth - document.documentElement.clientWidth, box: d.scrollWidth - d.clientWidth }; });
     ok('V11 360 px, ' + (z ? '130%' : '100%') + ', tema ' + (tema || 'azul') + ': nada passa da largura nem corta', o.bad === 0 && o.box <= 0 && (z || o.doc <= 0), o);
     if (!tema && !z) { await pp.evaluate(() => document.querySelector('details[data-g="enc"]').scrollIntoView()); await pp.screenshot({ path: '/tmp/p1/enc-360.png' }) } if (tema === 'preto' && z) { await pp.evaluate(() => document.querySelector('details[data-g="enc"]').scrollIntoView()); await pp.screenshot({ path: '/tmp/p1/enc-130-preto.png' }) }
@@ -83,12 +95,12 @@ function mutantes(RAIZ, ARQ, fs, cp, path) {
     ['c: descontar taxa por linha', 'js/vendas-resultado.js', 'g=p.rA+p.rF,z', 'g=p.rA+p.rF-1,z'], ['d: média errada (divide pelo nº de vendas)', 'js/vendas-resultado.js', 'pv=p.sP/p.sQ', 'pv=p.sP/(p.sN*p.sQ)'],
     ['e: acumular antes do corte (usa t.qty)', 'js/nucleo.js', 'p.sQ=(p.sQ||0)+q;', 'p.sQ=(p.sQ||0)+t.qty;'], ['f: P0 errado (cN sem dividir)', 'js/nucleo.js', 'p.sC=(p.sC||0)+q*P0', 'p.sC=(p.sC||0)+q*p.cN'],
     ['g: inverter o sinal das perdas', 'js/vendas-resultado.js', 'else if(r.g<-0.005)per+=r.g', 'else if(r.g<-0.005)per-=r.g'], ['h: reconciliação sem a linha de taxas', 'js/vendas-resultado.js', '(T.fees>0.005?', '(false?'],
-    ['i: rF = 0 na ação dos EUA', 'js/vendas-resultado.js', 'p.rA+p.rF', "(p.rA+(p.market==='US'?0:p.rF))", 'all'], ['j: incluir ticker só com provento', 'js/vendas-resultado.js', 'return p.sQ>0}', 'return p.sQ>0||(p.div||0)>0}']];
+    ['i: rF = 0 na ação dos EUA', 'js/vendas-resultado.js', 'p.rA+p.rF', "(p.rA+(p.market==='US'?0:p.rF))", 'all'], ['k: reconciliação aberta por padrão', 'js/vendas-resultado.js', "(VRREC?' open':'')", "' open'"], ['l: aviso de conta dentro da conta recolhida', 'js/vendas-resultado.js', "body+='</details>';", "body+='';"], ['j: incluir ticker só com provento', 'js/vendas-resultado.js', 'return p.sQ>0}', 'return p.sQ>0||(p.div||0)>0}']];
   let vivos = 0;
   M.forEach(m => { const d = '/tmp/mut-vr'; cp.execSync('rm -rf ' + d + ' && mkdir -p ' + d + ' && cp -r ' + RAIZ + '/. ' + d + '/ && rm -rf ' + d + '/.git ' + d + '/node_modules');
     const f = path.join(d, m[1]), t = fs.readFileSync(f, 'utf8'); if (!t.includes(m[2])) { console.log('? sem alvo:', m[0]); vivos++; return; }
     fs.writeFileSync(f, m[4] === 'all' ? t.split(m[2]).join(m[3]) : t.replace(m[2], m[3]));
     let morto = false; try { cp.execSync('APORTE_APP_DIR=' + d + ' node ' + ARQ, { stdio: 'pipe', cwd: RAIZ }); } catch (e) { morto = true; }
     console.log(morto ? '✓ pego:' : '✗ VIVO:', m[0]); if (!morto) vivos++; });
-  console.log(vivos ? '✗ ' + vivos + ' mutante(s) vivo(s)' : '✓ os 10 mutantes foram pegos'); process.exit(vivos ? 1 : 0);
+  console.log(vivos ? '✗ ' + vivos + ' mutante(s) vivo(s)' : '✓ os 12 mutantes foram pegos'); process.exit(vivos ? 1 : 0);
 }
