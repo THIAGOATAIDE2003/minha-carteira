@@ -178,7 +178,7 @@ function atvTable(R){
     (has.BR&&has.US?'<div class="chips atf">'+[['all','Todos'],['BR','Ações'],['US','ETFs Intern.']].map(function(f){return '<button type="button" data-atf="'+f[0]+'" aria-pressed="'+(ATF===f[0])+'">'+f[1]+'</button>'}).join('')+'</div>':'')+
     '<div class="atsc"><div class="atr ahd">'+hd('n','Ativo','a1')+hd('q','Quant.')+hd('t','Total')+hd('d',dl.t==='hoje'?'Hoje':'Dia')+hd('tg','Total R$')+hd('pm','Preço médio')+hd('px','Preço atual')+hd('v','Valor')+'</div>'+
     vis.map(function(r){var F=F2(r),qt=num(r.q,r.us?4:0),qs=num(r.q,r.us?2:0),vk=r.v>=1e3?'R$ '+num(r.v/1e3,1)+' mil':brl.format(r.v);
-      return '<div class="atr"><button type="button" class="a1" data-stk="'+esc(r.tk)+'" aria-label="Abrir análise de '+esc(r.tk)+'">'+tkLogo(r.tk,r.us)+'<span class="an"><b>'+esc(r.tk)+'</b><small>'+vk+'</small>'+(r.us&&isFinite(r.vU)?'<small>'+usdK(r.vU)+'</small>':'')+'</span></button>'+
+      return '<div class="atr"><button type="button" class="a1" data-stk="'+esc(r.tk)+'" aria-label="Abrir análise de '+esc(r.tk)+'">'+tkLogo(r.tk,r.us)+'<span class="an"><b>'+esc(r.tk)+'</b><small>'+vk+'</small>'+(r.us&&isFinite(r.vU)?'<small class="du">'+usdK(r.vU)+'</small>':'')+'</span></button>'+
         '<span class="aq">'+qs+'</span>'+
         vpill(r.t,r.tk+': '+sgn(r.tg)+' desde a compra ('+qt+(r.us?' cotas':' ações')+', preço médio '+F.format(r.pm)+', agora '+F.format(r.x.P1)+(r.us?'; em reais pelo dólar de hoje, sem câmbio. Em dólar: '+sgU(r.tgU):'')+').')+
         vpill(r.d,r.tk+(dl.t==='hoje'?' hoje':' no último pregão ('+dl.d+')')+': '+(r.dg!=null?sgn(r.dg)+(r.us&&r.dgU!=null?' · em dólar '+sgU(r.dgU):'')+' (de '+F.format(r.prev)+' para '+F.format(r.x.P1)+')':'sem dado')+'.')+

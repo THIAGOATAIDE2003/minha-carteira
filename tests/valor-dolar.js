@@ -14,7 +14,7 @@ async function abrir(b, o) { o = o || {}; const pg = await b.newPage({ viewport:
   if (o.tema) ls['minha-carteira-v1-tema'] = o.tema;
   await pg.addInitScript(x => { window.__APORTE_TESTE__ = true; if (!sessionStorage.getItem('ok')) { localStorage.clear(); for (const k in x) localStorage.setItem(k, x[k]); sessionStorage.setItem('ok', '1'); } }, ls);
   await pg.goto(APP); await pg.waitForFunction(() => window.__aporte, null, { timeout: 15000 }); await pg.waitForTimeout(500);
-  if (o.zoom) await pg.evaluate(z => { document.documentElement.style.zoom = z; }, o.zoom); if (o.fonte) await pg.evaluate(f => { document.documentElement.style.fontSize = f; }, o.fonte); return pg; }
+  if (o.zoom) await pg.evaluate(z => { document.documentElement.style.zoom = z; }, o.zoom); if (o.larga) await pg.addStyleTag({ content: ".atv *{font-family:'DejaVu Sans',Verdana,sans-serif!important}" }); if (o.fonte) await pg.evaluate(f => { document.documentElement.style.fontSize = f; }, o.fonte); return pg; }
 const SNAP = () => { const R = compute(), t = {}; Object.keys(R.tot).forEach(k => { if (typeof R.tot[k] === 'number' || R.tot[k] == null) t[k] = R.tot[k]; });
   showTab('ativos'); ATF = 'all'; render(); const sec = document.getElementById('positions'), rows = [...sec.querySelectorAll('.atr:not(.ahd)')];
   return { tot: t, held: R.held.map(x => x.p.ticker + ':' + x.p.qty + ':' + x.p.cN + ':' + x.v).sort(), closed: R.closed.map(x => (x.p || x).ticker).sort(), ls: Object.keys(localStorage).sort().join('|'),
