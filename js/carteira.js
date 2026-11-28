@@ -16,7 +16,7 @@ function hojeHtml(R){var T=R.tot,h='';
   return h}
 function investHtml(R){var T=R.tot,h='',ct=T.rfC;R.held.forEach(function(x){ct+=x.p.cB});if(!R.held.length&&!T.rfC)return '';var dA=ct-T.contrib;
     h+='<div class="panel"><h2>Quanto você investiu</h2><ul class="calc">'+
-      '<li><span>Valor investido<br><span class="muted small">o que você pagou pelo que tem hoje (preço médio × quantidade), como no Nubank e no Inter</span></span><span class="num">'+brl.format(ct)+'</span></li>'+
+      '<li><span>Valor investido<br><span class="muted small">o que você pagou pelo que tem hoje (preço médio × quantidade), como no Nubank e no Inter. O VT conta pelo dólar do dia da compra; no Início, "Custo dos ativos" conta o VT pelo dólar de hoje, por isso os dois números são diferentes. O que já foi vendido não entra.</span></span><span class="num">'+brl.format(ct)+'</span></li>'+
       '<li><span>Aplicado do seu bolso<br><span class="muted small">dinheiro novo que saiu da sua conta para investir, menos o que você retirou</span></span><span class="num">'+brl.format(T.contrib)+'</span></li>'+
       '<li class="tot"><span>Diferença</span><span class="num">'+brl.format(Math.abs(dA))+'</span></li></ul>'+
       '<p class="note exp">'+(dA>=0?'O valor investido é maior porque parte das compras foi paga com lucro de vendas e com proventos, e não com dinheiro novo do seu bolso.':'O valor investido é menor porque parte do dinheiro aplicado ainda está parada, ou foi perdida em vendas com prejuízo.')+' O lucro total é calculado sobre o aplicado do seu bolso.</p></div>'
