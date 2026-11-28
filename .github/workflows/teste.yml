@@ -36,6 +36,7 @@ jobs:
       - run: node tests/ux-u1.js
       - run: node tests/voltar.js
       - run: node tests/ux-valor.js
+      - run: node tests/vendas-resultado.js
       - run: node tests/macro.js
       - run: node tests/parecer.js
       - run: node tests/banco.js

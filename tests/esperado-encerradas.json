@@ -1,0 +1,117 @@
+{
+ "sint": {
+  "tot": {
+   "outs": 0,
+   "value": 9774,
+   "cost": 7700,
+   "uA": 1450,
+   "uF": 623.9999999999999,
+   "rA": 820,
+   "rF": 240,
+   "div": 259,
+   "bought": 17603,
+   "proceeds": 11254,
+   "contrib": 16014,
+   "cash": 9665,
+   "rfV": 500,
+   "rfC": 500,
+   "rfU": 0,
+   "rfR": 40,
+   "fees": 8,
+   "gain": 3425,
+   "check": 3425,
+   "xirr": 0.3153424265884398,
+   "simple": 0.21387535906082178,
+   "days": 522,
+   "fxNow": 5.8
+  },
+  "pos": {
+   "KEEP3": {
+    "qty": 50,
+    "cN": 1000,
+    "cB": 1000,
+    "rA": 0,
+    "rF": 0,
+    "div": 12
+   },
+   "MULT3": {
+    "qty": 20,
+    "cN": 600,
+    "cB": 600,
+    "rA": 200,
+    "rF": 0,
+    "div": 100
+   },
+   "PARC3": {
+    "qty": 120,
+    "cN": 1800,
+    "cB": 1800,
+    "rA": 240,
+    "rF": 0,
+    "div": 0
+   },
+   "PARP3": {
+    "qty": 80,
+    "cN": 800,
+    "cB": 800,
+    "rA": -40,
+    "rF": 0,
+    "div": 0
+   },
+   "USAX": {
+    "qty": 6,
+    "cN": 600,
+    "cB": 3000,
+    "rA": 400,
+    "rF": 240,
+    "div": 0
+   },
+   "CORT3": {
+    "qty": 0,
+    "cN": 0,
+    "cB": 0,
+    "rA": 20,
+    "rF": 0,
+    "div": 0
+   },
+   "ENCG3": {
+    "qty": 0,
+    "cN": 0,
+    "cB": 0,
+    "rA": 500,
+    "rF": 0,
+    "div": 30
+   },
+   "ENCP3": {
+    "qty": 0,
+    "cN": 0,
+    "cB": 0,
+    "rA": -500,
+    "rF": 0,
+    "div": 40
+   },
+   "SODV3": {
+    "qty": 0,
+    "cN": 0,
+    "cB": 0,
+    "rA": 0,
+    "rF": 0,
+    "div": 77
+   }
+  },
+  "held": [
+   "KEEP3",
+   "MULT3",
+   "PARC3",
+   "PARP3",
+   "USAX"
+  ],
+  "closed": [
+   "CORT3",
+   "ENCG3",
+   "ENCP3",
+   "SODV3"
+  ],
+  "ls": "minha-carteira-v1|minha-carteira-v1-erros|minha-carteira-v1-ntseen"
+ }
+}

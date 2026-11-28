@@ -1,7 +1,7 @@
 /* Aporte · js/nucleo.js — estado, ajudantes, câmbio, XIRR e compute() (as contas da carteira).
    Faz parte do app dividido em vários arquivos (veja a ordem em index.html): todos compartilham as mesmas variáveis e funções. */
 /* Versão do app: sobe a cada mudança que o usuário vê (veja CLAUDE.md). O sw.js usa este número no nome do cache offline. */
-var VERSAO='1.86.1';
+var VERSAO='1.87.0';
 /* Enquanto os arquivos de js/ ainda estão carregando, render() não faz nada (senão chamaria funções de arquivos que ainda não chegaram). abas.js liga isto no fim. */
 var BOOT=false;
 window.addEventListener('error',function(e){var s=document.getElementById('status');if(s){s.className='msg err';s.textContent='Erro na página: '+e.message}logErro('erro de código',e.message+(e.filename?' ('+String(e.filename).split('/').pop()+':'+e.lineno+')':''))});
@@ -129,6 +129,7 @@ function computeRaw(){
       if(q>p.qty+1e-9){warns.push('Venda de '+t.ticker+' em '+fmtDate(t.date)+' maior que a quantidade que você tinha. Conferi só até o que havia em carteira.');q=p.qty}
       if(q<=0)return;
       var P0=p.cN/p.qty,F0=p.cB/p.cN,prop=q/p.qty;
+      p.sN=(p.sN||0)+1;p.sQ=(p.sQ||0)+q;p.sP=(p.sP||0)+q*t.price;p.sC=(p.sC||0)+q*P0;
       var sp=ePx(t);fees+=(t.taxa||0)*q/t.qty;p.rA+=q*(t.price-P0)*F0;p.rF+=q*t.price*(F-F0);
       p.cN-=p.cN*prop;p.cB-=p.cB*prop;p.qty-=q;
       if(p.qty<1e-9){p.qty=0;p.cN=0;p.cB=0}

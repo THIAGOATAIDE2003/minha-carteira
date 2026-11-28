@@ -79,7 +79,7 @@ document.addEventListener('change',function(e){var t=e.target,k=t&&t.getAttribut
 function perfHtml(R){
   var T=R.tot,h='',bm=cdiBench(R),nBR=R.held.some(function(x){return x.p.market==='BR'}),nUS=R.held.some(function(x){return x.p.market==='US'});
   var pz=T.uA+T.rfU,rz=T.rA+T.rF+T.rfR;
-  var VZ=valoriz(R),fxp=pz+T.uF-VZ.pv;var wfi=[['Preço das ações que você tem',VZ.pv]];if(nUS||Math.abs(fxp)>0.005)wfi.push(['Dólar (sobre o VT que você tem)',fxp]);wfi.push(['Vendas já feitas',rz],['Proventos recebidos',T.div]);if(T.fees>0.005)wfi.push(['Taxas da B3 pagas nas notas',-T.fees]);
+  var VZ=valoriz(R),fxp=pz+T.uF-VZ.pv;var wfi=[['Preço das ações que você tem',VZ.pv]];if(nUS||Math.abs(fxp)>0.005)wfi.push(['Dólar (sobre o VT que você tem)',fxp]);wfi.push(['Resultado das vendas',rz],['Proventos recebidos',T.div]);if(T.fees>0.005)wfi.push(['Taxas da B3 pagas nas notas',-T.fees]);
   var wmx=Math.max.apply(null,wfi.map(function(w){return Math.abs(w[1])}))||1;
   h+='<div class="panel"><h2>Tudo que você já '+(T.gain>=0?'lucrou':'perdeu')+'</h2><p class="note" style="margin:-6px 0 12px">Se vendesse tudo hoje, juntando preço, dólar, vendas e proventos.</p><ul class="calc wf">'+
     wfi.map(function(w){var hk=w[0].indexOf('Preço das')===0?'val':w[0].indexOf('Dólar')===0?'cam':'';return '<li'+(hk?' class="hcl" data-hero="'+hk+'" role="button" tabindex="0"':'')+'><span>'+w[0]+(hk?' ›':'')+'</span><span class="num '+cls(w[1])+'">'+sgn(w[1])+'</span><span class="trk"><i class="'+(w[1]>=0?'g':'l')+'" style="width:'+Math.max(1.5,Math.abs(w[1])/wmx*100).toFixed(1)+'%"></i></span></li>'}).join('')+
@@ -154,12 +154,8 @@ function renderPositions(R){
     '<p><b>IR:</b> sobre o rendimento, pela tabela regressiva: 22,5% até 180 dias, 20% até 360, 17,5% até 720 e 15% depois. LCI e LCA são isentas.</p>'+
     '<p><b>Líquido:</b> aplicado + rendimento − IOF − IR. É o que cai na conta se resgatar hoje. Pode diferir alguns centavos do banco por arredondamento do CDI.</p>'+
     (CDI.err?'<p class="msg err">'+esc(CDI.err)+'</p>':'')+'</div></details>',[T.rfU,T.rfC?T.rfU/T.rfC:null],'rf');
-  if(R.closed.length||rfc.length){
-    var rows=R.closed.map(function(p){return {n:p.ticker,g:p.rA+p.rF+(p.div||0),v:p.rA+p.rF,d:p.div||0,rf:0}}).concat(rfc.map(function(c){return {n:c.t.ticker,g:c.realized,rf:1}}));
-    rows.sort(function(a,b){return b.g-a.g});
-    h+=grp('Encerradas',rows.length+' posições já vendidas: lucro das vendas + proventos',null,'<ul class="calc" style="margin-top:10px">'+rows.map(function(r){
-      return '<li><span><b>'+esc(r.n)+'</b>'+(r.rf?' <span class="tag">Renda fixa</span>':'')+(r.rf?'':'<br><span class="muted small">Vendas '+sgn(r.v)+(r.d?' · proventos '+brl.format(r.d):'')+'</span>')+'</span><span class="num '+cls(r.g)+'">'+sgn(r.g)+'</span></li>'}).join('')+'</ul>',[sum(rows,function(r){return r.g}),null],'enc');
-  }
+  var VR=vendasRes(R,rfc);
+  if(VR)h+=grp('Resultado das vendas',VR.sub,null,VR.body,[VR.tot,null],'enc');
   setHtml(el,h);
 }
 
