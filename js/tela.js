@@ -184,12 +184,12 @@ document.addEventListener('click',function(e){
   var gb=t.closest&&t.closest('.spkbtn');if(gb)t=gb;
   var gg=t.closest&&t.closest('.hcg[data-goto]');if(gg)t=gg;
   if(false){}
-  else if(t.id==='goimp'){try{location.hash='ajustes'}catch(e){}showTab('ajustes');$('k-gh').scrollIntoView();$('k-gh').focus()}
+  else if(t.id==='goimp'){try{vlHash('ajustes')}catch(e){}showTab('ajustes');$('k-gh').scrollIntoView();$('k-gh').focus()}
   else if(t.id==='sync-now'){ghSync(true)}
   else if(t.dataset&&t.dataset.dvy){DVY=t.dataset.dvy;render()}
   else if(t.dataset&&t.dataset.trf){TRF=t.dataset.trf;renderTrades()}
   else if(t.dataset&&t.dataset.edit){startEdit(t.dataset.edit)}
-  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':t.dataset.cv==='apo'?'aporte':t.dataset.cv==='perf'?'desempenho':t.dataset.cv==='risk'?'risco':t.dataset.cv==='plano'?'plano':t.dataset.cv==='ext'?'extrato':'ativos';try{location.hash=hv}catch(e){}showTab(hv)}
+  else if(t.dataset&&t.dataset.cv){var hv=t.dataset.cv==='evo'?'evolucao':t.dataset.cv==='apo'?'aporte':t.dataset.cv==='perf'?'desempenho':t.dataset.cv==='risk'?'risco':t.dataset.cv==='plano'?'plano':t.dataset.cv==='ext'?'extrato':'ativos';try{vlHash(hv)}catch(e){}showTab(hv)}
   else if(t.closest&&t.closest('[data-evt]')){var cb=t.closest('[data-evt]');[].forEach.call(document.querySelectorAll('[data-evt]'),function(x){x.setAttribute('aria-pressed',String(x===cb))})}
   else if(t.closest&&t.closest('[data-evf]')){var ac=t.closest('[data-evf]').getAttribute('data-evf'),sh=$('evsheet');
     if(ac==='open'&&sh){sh.hidden=false;document.body.style.overflow='hidden'}
@@ -203,8 +203,8 @@ document.addEventListener('click',function(e){
   else if(t.id==='al-save'){alvSave()}
   else if(t.id==='al-pf'){var a=pfAlvo();if(a){['BR','US','RF'].forEach(function(k){var i=$('al-'+k);if(i)i.value=String(a[k])});var m=$('al-msg');if(m){m.className='msg';m.textContent='Preenchi com o seu perfil. Toque em Salvar divisão.'}}}
   else if(t.id==='mt-save'){metasSave()}else if(t.id==='mt-reset'){metasSave(true)}
-  else if(t.dataset&&t.dataset.mais){try{location.hash=t.dataset.mais}catch(e){}showTab(t.dataset.mais)}
-  else if(t.dataset&&t.dataset.goto){try{location.hash=t.dataset.goto}catch(e){}showTab(t.dataset.goto)}
+  else if(t.dataset&&t.dataset.mais){try{vlHash(t.dataset.mais)}catch(e){}showTab(t.dataset.mais)}
+  else if(t.dataset&&t.dataset.goto){try{vlHash(t.dataset.goto)}catch(e){}showTab(t.dataset.goto)}
   else if(t.dataset&&t.dataset.rfok){
     var rid=t.dataset.rfok,ap=S.trades.filter(function(x){return x.id===rid})[0],dd=$('rfd-'+rid).value,vv=parseNum($('rfv-'+rid).value);
     if(!ap||!dd||!(vv>0)||dd<ap.date){warnIn('Confira a data e o valor do resgate.');return}
