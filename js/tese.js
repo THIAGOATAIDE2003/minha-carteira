@@ -14,7 +14,7 @@ function thChk(tk){var L=[],F=isBR(tk)?fundOf(tk):null,q=isBR(tk)?cvmQ(tk):null,
   return L}
 /* Tese de quem compra (1.61.0): escrita pela IA do robô (res.tese[tk], refeita a cada ~3 semanas), aparece acima da tese do próprio usuário */
 function thAuto(tk){if(!isBR(tk))return '';var A=MD.d&&MD.d.res&&MD.d.res.tese&&MD.d.res.tese[tk],a=A&&A.ai,tt='Tese de quem compra '+bal('Escrita pela IA do robô com os números da empresa e o que se sabe do negócio: por que alguém compraria a ação e o que poderia dar errado. É a tese de quem compra, não a sua, e não é recomendação. A sua fica logo abaixo.');
-  if(!a)return '<div class="panel"><h2>'+tt+'</h2><p class="muted">A tese automática deste papel ainda não foi escrita. O robô escreve primeiro para as suas ações e as de Acompanhando, depois para as 50 maiores, e refaz a cada 3 semanas.</p></div>';
+  if(!a)return '<div class="panel"><h2>'+tt+'</h2><p class="muted">A tese automática deste papel ainda não foi escrita. O robô escreve primeiro para as suas ações e as da Minha lista, depois para as 50 maiores, e refaz a cada 3 semanas.</p></div>';
   var ls=function(t,x){x=(x||[]).filter(Boolean);return x.length?'<h3 class="rkh3">'+t+'</h3><ul class="thq">'+x.map(function(y){return '<li>'+esc(y)+'</li>'}).join('')+'</ul>':''};
   return '<div class="panel"><div class="grp"><h2>'+tt+'</h2><span class="det">'+rsWhen(A.at)+'</span></div>'+
     (a.negocio?'<p class="anv" style="margin:6px 0">'+esc(a.negocio)+'</p>':'')+ls('Por que alguém compra',a.tese)+

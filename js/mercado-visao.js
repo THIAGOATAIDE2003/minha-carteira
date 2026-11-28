@@ -6,7 +6,7 @@ var FUTL=[['ES=F','S&P 500'],['NQ=F','Nasdaq'],['YM=F','Dow Jones'],['RTY=F','Ru
 function fgZ(v){return v<25?['Medo extremo','var(--loss)']:v<45?['Medo','#e8a05a']:v<56?['Neutro','var(--muted)']:v<76?['Ganância','#8fd08a']:['Ganância extrema','var(--gain)']}
 function fgArc(a,b,col){var R=100,r=70,c=function(t,q){var x=Math.PI*(1-t/100);return [120+q*Math.cos(x),115-q*Math.sin(x)]},p1=c(a,R),p2=c(b,R),p3=c(b,r),p4=c(a,r),f=function(n){return n.toFixed(1)};
   return '<path d="M'+f(p1[0])+' '+f(p1[1])+' A'+R+' '+R+' 0 0 1 '+f(p2[0])+' '+f(p2[1])+' L'+f(p3[0])+' '+f(p3[1])+' A'+r+' '+r+' 0 0 0 '+f(p4[0])+' '+f(p4[1])+' Z" fill="'+col+'" opacity=".85"/>'}
-/* preço de entrada na lista Acompanhando: preço justo do app menos 20% de margem; cache curto por ação */
+/* preço de entrada na Minha lista: preço justo do app menos 20% de margem; cache curto por ação */
 var ENTR={};
 function entradaTxt(tk){var c=ENTR[tk],lv=livePx(tk),P=lv&&lv.p;if(!(P>0)||!isBR(tk))return '';
   if(!c||Date.now()-c.at>10*60000){var al=null;try{var o=opEval(tk);if(o&&o.V&&o.V.med>0)al=Math.round(o.V.med*0.8*100)/100}catch(e){}c=ENTR[tk]={al:al,at:Date.now()}}
