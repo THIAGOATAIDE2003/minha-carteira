@@ -7,7 +7,7 @@ function fotoKey(){return LS+'-foto'}
 /* aviso discreto em Ajustes (#fotost): nada de falha silenciosa */
 function fotoStLer(){try{return JSON.parse(localStorage.getItem(fotoKey()+'-st')||'null')}catch(e){return null}}
 function fotoDmy(d){var a=String(d||'').split('-');return a.length===3?a[2]+'/'+a[1]:''}
-function fotoTxt(){var s=fotoStLer();if(!s)return 'Foto diária das ideias: ainda não gravada (abra Mercado → Ideias).';
+function fotoTxt(){var s=fotoStLer();if(!s)return 'Foto diária das ideias: ainda não gravada (abra Mercado → Ideias e análise).';
   return s.ok?'Última foto: '+fotoDmy(s.dia)+' ✓':'Foto não gravada: '+s.motivo+' ('+fotoDmy(s.dia)+')'}
 function fotoMostra(){try{var e=document.getElementById('fotost');if(e)e.textContent=fotoTxt()}catch(x){}}
 function fotoSt(ok,motivo,dia){var ant=fotoStLer();if(ok&&ant&&ant.ok&&ant.dia===dia)return;if(!ok&&ant&&!ant.ok&&ant.motivo===motivo&&ant.dia===dia)return;try{localStorage.setItem(fotoKey()+'-st',JSON.stringify({ok:ok,dia:dia,motivo:motivo||''}))}catch(e){}fotoMostra()}
