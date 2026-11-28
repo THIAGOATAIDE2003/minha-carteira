@@ -4,8 +4,8 @@ var VRREC=false;document.addEventListener('toggle',function(e){var d=e.target;if
 function vrQ(n){return String(+(+n).toFixed(4)).replace('.',',')}
 function vrRow(p){
   var us=p.market==='US',m=function(v){return us?usd.format(v):brl.format(v)},g=p.rA+p.rF,z=Math.abs(g)<0.005,n=p.sN||1,pv=p.sP/p.sQ,pg=p.sC/p.sQ,full=p.qty<1e-9;
-  return '<li><span><b>'+esc(p.ticker)+'</b> <span class="tag">'+(full?'Vendida por completo':'Vendida em parte · ainda tenho '+vrQ(p.qty))+'</span>'+
-    '<br><span class="muted small">Vendi '+vrQ(p.sQ)+(p.sQ===1?' ação':' ações')+(n>1?' (em '+n+' vendas)':'')+' a '+m(pv)+' em média.</span>'+
+  return '<li><span><b>'+esc(p.ticker)+'</b> <span class="tag">'+(full?'Vendida por completo':'Vendida em parte')+'</span>'+
+    '<br><span class="muted small">'+(full?'':'Ainda tenho '+vrQ(p.qty)+'. ')+'Vendi '+vrQ(p.sQ)+(p.sQ===1?' unidade':' unidades')+(n>1?' (em '+n+' vendas)':'')+' a '+m(pv)+' em média.</span>'+
     '<br><span class="muted small">Eu tinha pago '+m(pg)+' em média. Resultado: '+(z?'ficou no zero a zero':g>0?'ganho de '+brl.format(g):'perda de '+brl.format(-g))+'.</span>'+
     (us?'<br><span class="muted small">Em reais: '+sgn(p.rA)+' do preço da ação e '+sgn(p.rF)+' do dólar.</span>':'')+'</span><span class="num '+cls(g)+'">'+sgn(g)+'</span></li>';
 }
@@ -16,10 +16,10 @@ function vendasRes(R,rfc){
   rows.sort(function(a,b){return b.g-a.g});
   var gan=0,per=0,rz=T.rA+T.rF+T.rfR,pz=T.uA+T.uF+T.rfU,vd=R.closed.map(function(x){return x.p||x}).filter(function(p){return (p.div||0)>0.005});
   rows.forEach(function(r){if(r.g>0.005)gan+=r.g;else if(r.g<-0.005)per+=r.g});
-  var body='<p class="note" style="margin:10px 0">Aqui entra só o que você ganhou ou perdeu ao vender. Dividendos não entram (ficam em Proventos). Os valores são antes das taxas da B3. O imposto sobre estas vendas é calculado na tela de Imposto. '+bal(VR_PM,'<span class="bi">i</span>','Preço médio')+' <span class="muted small">preço médio</span></p>'+
+  var body='<p class="note" style="margin:10px 0">Só o ganho ou a perda de vender. Dividendos não entram (ficam em Proventos), então uma ação pode ter perda aqui e lucro no total. Valores antes das taxas da B3. O imposto é calculado na tela de Imposto. '+bal(VR_PM,'<span class="bi">i</span>','Preço médio')+' <span class="muted small">preço médio</span></p>'+
     '<ul class="calc">'+rows.map(function(r){return r.h}).join('')+
     '<li><span>Ganhos nas vendas</span><span class="num '+cls(gan)+'">'+sgn(gan)+'</span></li><li><span>Perdas nas vendas</span><span class="num '+cls(per)+'">'+sgn(per)+'</span></li><li class="tot"><span>= Resultado das vendas</span><span class="num '+cls(rz)+'">'+sgn(rz)+'</span></li></ul>'+
-    '<details class="vrrec" data-vr="1"'+(VRREC?' open':'')+'><summary>Como isso entra no seu Lucro total ›</summary><ul class="calc">'+
+    '<details class="vrrec" data-vr="1"'+(VRREC?' open':'')+'><summary>Como isso entra no seu Lucro total</summary><ul class="calc">'+
     '<li><span>Ações e renda fixa que você ainda tem</span><span class="num '+cls(pz)+'">'+sgn(pz)+'</span></li>'+
     '<li><span>+ Resultado das vendas</span><span class="num '+cls(rz)+'">'+sgn(rz)+'</span></li>'+
     '<li><span>+ Proventos recebidos</span><span class="num '+cls(T.div)+'">'+sgn(T.div)+'</span></li>'+
@@ -29,5 +29,5 @@ function vendasRes(R,rfc){
     body+='<p class="note" style="margin-top:8px">Dos proventos, '+brl.format(dv)+' vieram de ações que você não tem mais ('+vd.slice(0,5).map(function(p){return esc(p.ticker)+' '+brl.format(p.div)}).join(', ')+(vd.length>5?' e mais '+(vd.length-5):'')+'). Eles não entram nas vendas: estão em Proventos e já fazem parte do Lucro total.</p>'}
   body+='</details>';
   var soma=pz+rz+T.div-T.fees;if(Math.abs(soma-T.gain)>0.01)body+='<p class="warn">A conta não fecha em '+brl.format(Math.abs(soma-T.gain))+'. Revise os lançamentos.</p>';
-  return {sub:rows.length+' com venda · só o ganho ou a perda de vender',body:body,tot:rz};
+  return {sub:rows.length+' com venda',body:body,tot:rz};
 }
