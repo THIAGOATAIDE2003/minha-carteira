@@ -30,7 +30,7 @@ module.exports = async function (b, ok, X, ARQ) {
   /* 5. 360 px, zoom 1,3, fonte 130%, 3 temas */
   for (const tema of ['', 'branco', 'preto']) for (const [z, f] of [[0, ''], [1.3, ''], [0, '130%']]) {
     const p = await abrir(b, { tema: tema, zoom: z, fonte: f }), r = await lerCom(p);
-    ok('V5 360 px, ' + (z ? 'zoom 1,3' : f ? 'fonte 130%' : '100%') + ', tema ' + (tema || 'azul') + ': nada estoura; "US$ 500 mil" sem reticências; linhas em reais com a mesma altura', r.w <= (z ? 3 : 0) && Object.keys(r.rows).every(k => r.rows[k].ok) && r.rows.ABCD3.h === r.rows.EFGH3.h && r.rows.VTX.h > r.rows.ABCD3.h, [r.w, Object.keys(r.rows).filter(k => !r.rows[k].ok), r.rows.ABCD3.h, r.rows.VTX.h]);
+    ok('V5 360 px, ' + (z ? 'zoom 1,3' : f ? 'fonte 130%' : '100%') + ', tema ' + (tema || 'azul') + ': nada estoura; "US$ 500 mil" sem reticências; linhas em reais com a mesma altura', (z ? r.w1 <= r.w0 : r.w <= 0) && Object.keys(r.rows).every(k => r.rows[k].ok) && r.rows.ABCD3.h === r.rows.EFGH3.h && r.rows.VTX.h > r.rows.ABCD3.h, [r.w, Object.keys(r.rows).filter(k => !r.rows[k].ok), r.rows.ABCD3.h, r.rows.VTX.h]);
     if (!tema && !z && !f) await p.screenshot({ path: '/tmp/p1/vd-360.png' }); if (tema === 'preto' && f) await p.screenshot({ path: '/tmp/p1/vd-130-preto.png' }); await p.close();
   }
   ok('V0 versão 1.87.1, arquivo novo no index.html e no sw.js, sem erro de JS', await pg.evaluate(() => VERSAO) === '1.87.1' && /js\/valor-dolar\.js/.test(fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8')) && /js\/valor-dolar\.js/.test(fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8')) && pg.__erros.length === 0 && pn.__erros.length === 0, [pg.__erros, pn.__erros]);
