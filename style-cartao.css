@@ -49,3 +49,4 @@
 .metzb[aria-pressed="true"]{border:2px solid var(--fg);font-weight:700}
 .metl{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:2px 10px;padding:3px 0;font-size:14px}.metl>span{min-width:0}.metv{text-align:right}.metl.st{display:block}.metl.st .metv{display:block;text-align:left}
 .metg{margin-top:8px;padding-top:6px;border-top:1px solid var(--line)}.metg>b{display:block;margin:6px 0 2px;font-size:13px;color:var(--muted)}
+.opent{margin:-2px 0 8px}.opent small.ent{font-size:13px}

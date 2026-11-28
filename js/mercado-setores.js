@@ -59,8 +59,8 @@ function renderMkt0(){
   var el=$('mkttab');if(!el)return;var I=MKT.idx,f0=fxToday(),fxp=S.fx&&S.fx.prev&&S.fx.rate?(S.fx.rate/S.fx.prev-1)*100:null;
   var q0=$('mk-q')?$('mk-q').value:'',sel=idxSel();
   try{opData()}catch(e){}/* o número vermelho saiu (E8); o cálculo e o registro diário das ideias continuam como antes */
-  var h='<div class="seg" id="mkseg">'+[['min','Minha lista'],['idx','Índices'],['bc','Banco Central'],['ana','Ideias e análise']].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
-  if(MKV!=='bc')h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice, moeda ou ação':MKV==='ana'?'Buscar ação (sigla ou nome)':'Buscar ação: sigla ou nome (ex.: magalu)')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
+  var h='<div class="seg" id="mkseg">'+[['idx','Índices'],['bc','Banco Central'],['ana','Ideias e análise']].map(function(v){return '<button type="button" data-mkv="'+v[0]+'" aria-pressed="'+(MKV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
+  if(MKV!=='bc')h+='<div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="mk-q" type="search" placeholder="'+(MKV==='idx'?'Buscar índice, moeda ou ação':'Buscar ação (sigla ou nome)')+'" autocomplete="off" value="'+esc(q0)+'"></div><div id="mk-res" class="panel mkrp" hidden></div>';
   if(MKV==='idx'){
   h+='<div class="seg" id="ixseg">'+[['lista','Cotações'],['fg','Medo e Ganância']].map(function(v){return '<button type="button" data-ixv="'+v[0]+'" aria-pressed="'+(IXV===v[0])+'">'+v[1]+'</button>'}).join('')+'</div>';
   if(IXV==='fg'){try{h+=fgHtml()||'<div class="panel"><p class="muted" style="margin:0">Carregando o índice Medo e Ganância...</p></div>'}catch(e){}}else{
@@ -70,13 +70,7 @@ function renderMkt0(){
 (MKED?'<p class="note">Toque no ✕ para tirar. Para colocar outro, procure na busca acima.</p>':'')+'</div>';
   h+='<p class="note exp" style="margin:0 4px">Ibovespa e IFIX vêm do brapi, S&P 500 e Nasdaq do Finnhub (pelos ETFs SPY e QQQ), dólar, euro e bitcoin da AwesomeAPI, CDI do Banco Central. Toque numa ação para ver gráfico e indicadores. A lista de acompanhamento fica salva na nuvem.</p>';
   }
-  }else if(MKV==='bc'){h+=bcHtml()}else if(MKV==='ana'){h+=anaHtml()}else{
-  var W=wlist();
-  h+='<div class="panel"><div class="grp"><h2>Minha lista '+bal('Ações que você está de olho para comprar, mesmo sem ter. Embaixo de cada uma aparece o preço de entrada: o preço justo calculado pelo app menos 20% de margem de segurança. Quando a cotação chega nele, aparece "chegou no ponto". É uma referência para estudar, não uma ordem de compra.')+'</h2><span class="det">'+W.length+' ações</span></div>'+
-(W.length?'<ul class="wl">'+W.map(function(tk){var q=MKT.q[tk];return '<li><button type="button" class="wtk" data-stk="'+esc(tk)+'"><b>'+esc(tk)+'</b><small>'+(function(){var F=fundOf(tk);return F?'P/L '+(F.pl!=null?num(F.pl,1):'—')+' · P/VP '+(F.pvp!=null?num(F.pvp,2):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):esc(q&&q.name||(isBR(tk)?'Brasil':'EUA'))})()+'</small>'+entradaTxt(tk)+'</button><span class="wpx">'+(q?'<span>'+(q.cur==='USD'?usd:brl).format(q.price)+'</span><span class="num small '+cls(q.pct)+'">'+sg0(q.pct)+pf.format(Math.abs(q.pct||0))+'%</span>':'<span class="muted">—</span>')+'</span><button type="button" class="wx" data-wdel="'+esc(tk)+'" aria-label="Parar de acompanhar '+esc(tk)+'">✕</button></li>'}).join('')+'</ul>':'<p class="muted small">Adicione ações que você quer vigiar, mesmo sem ter. Ex.: PETR4, VALE3, WEGE3, AAPL.</p>')+
-'<form class="wadd" id="wadd"><input id="w-tk" placeholder="Código da ação" maxlength="12" autocomplete="off"><button class="btn" type="submit">Adicionar</button></form>'+
-(MKT.err?'<p class="warn" style="margin-top:8px">'+esc(MKT.err)+'</p>':'')+'</div>';
-  }
+  }else if(MKV==='bc'){h+=bcHtml()}else{h+=anaHtml()}
   setHtml(el,h);
   ['anseg','cchips'].forEach(function(id){var r=id==='anseg'?$(id):el.querySelector('.cchips'),a=r&&r.querySelector('[aria-pressed=true]');if(a)r.scrollLeft=Math.max(0,a.offsetLeft-(r.clientWidth-a.offsetWidth)/2)});
 }

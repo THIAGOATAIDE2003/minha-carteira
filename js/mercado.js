@@ -114,8 +114,8 @@ function mkSearch(q){
   setHtml(el,h?'<ul class="mkres">'+h+'</ul>':'<p class="muted small" style="padding:8px 2px">Nada encontrado.</p>');el.hidden=false}
 function idxCard(lbl,o,fmt){return '<div class="idx"><small>'+lbl+'</small><b>'+(o&&isFinite(o.v)?fmt(o.v):'—')+'</b>'+(o&&isFinite(o.p)?'<span class="num '+cls(o.p)+'">'+sg0(o.p)+pf.format(Math.abs(o.p))+'%</span>':'<span class="small muted">sem dado</span>')+'</div>'}
 /* Mercado em 3 partes: Minhas ações, Índices e Análise */
-var MKV='min',SCR='dy',CMP=null;
-try{var mv0=localStorage.getItem(LS+'-mkv');if(mv0==='min'||mv0==='idx'||mv0==='ana'||mv0==='bc')MKV=mv0}catch(e){}
+var MKV='ana',SCR='dy',CMP=null;
+try{var mv0=localStorage.getItem(LS+'-mkv');if(mv0==='idx'||mv0==='ana'||mv0==='bc')MKV=mv0}catch(e){}
 function tkRow(tk,us,sub){var lv=livePx(tk),q=MKT.q[tk],p=lv?lv.p:q&&q.price,pc=lv&&lv.pct!=null?lv.pct:q&&q.pct,F=us?usd:brl;
   return '<li><button type="button" class="wtk wtk2" data-stk="'+esc(tk)+'">'+tkLogo(tk,us)+'<span class="an"><b>'+esc(tk)+'</b><small>'+sub+'</small></span></button><span class="wpx">'+(p?'<span>'+F.format(p)+'</span><span class="num small '+cls(pc||0)+'">'+(pc!=null?sg0(pc)+pf.format(Math.abs(pc))+'%':'')+'</span>':'<span class="muted">—</span>')+'</span>'}
 function fundSub(tk){var F=fundOf(tk);return F?'P/L '+(F.pl!=null?num(F.pl,1):'—')+' · P/VP '+(F.pvp!=null?num(F.pvp,2):'—')+' · DY '+(F.dy!=null?pf.format(F.dy)+'%':'—'):''}
