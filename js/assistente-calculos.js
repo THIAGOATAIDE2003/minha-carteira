@@ -30,19 +30,19 @@ function asCenario(q){var n=asNorm(q);if(!ASCEN_RE.test(n))return '';
   L+='Suposições: todas as ações do Brasil variam o mesmo percentual (beta 1); o preço do ativo em dólar só muda se a bolsa dos EUA for citada; renda fixa e caixa não mudam; dividendos, impostos e spread de câmbio ficam fora. Com o dólar caindo, ativos em dólar valem MENOS em reais. '+sens;
   return L}
 
-/* ---------- 2. motor de aporte (splitNeed, aba Aporte) ---------- */
+/* ---------- 2. motor de aporte (splitNeed, aba Próximo aporte) ---------- */
 var ASAPO_RE=/aport|alocar|alocac|rebalanc|onde (invest|coloc|aplic)|investir r\$|colocar r\$|dividir r\$|proxim[oa] (compra|aporte)/;
 function asAporte(q){var n=asNorm(q);if(!ASAPO_RE.test(n)||typeof splitNeed!=='function')return '';
   var R=compute(),T=R.tot,cur={BR:0,US:0,RF:T.rfV||0};R.held.forEach(function(x){if(x.p.market==='US')cur.US+=x.v;else cur.BR+=x.v});
   var tot=cur.BR+cur.US+cur.RF;if(!tot)return '';
   var A=S.alvos&&S.alvos.classes,pa=null;try{pa=pfAlvo()}catch(e){}
-  var tg=A||pa,org=A?'alvo salvo na aba Aporte':'perfil do investidor (não há alvo salvo na aba Aporte)';
-  if(!tg)return 'MOTOR DE APORTE: o app não tem divisão ideal (preencha o perfil ou salve o alvo na aba Aporte); não calcule a divisão por conta própria.';
+  var tg=A||pa,org=A?'alvo salvo na aba Próximo aporte':'perfil do investidor (não há alvo salvo na aba Próximo aporte)';
+  if(!tg)return 'MOTOR DE APORTE: o app não tem divisão ideal (preencha o perfil ou salve o alvo na aba Próximo aporte); não calcule a divisão por conta própria.';
   var sc=(tg.BR||0)+(tg.US||0)+(tg.RF||0);if(!(sc>0))return '';tg={BR:(tg.BR||0)/sc*100,US:(tg.US||0)/sc*100,RF:(tg.RF||0)/sc*100};
   var m=/r\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?/.exec(n),v=m?parseFloat(m[1].replace(/\./g,'')+(m[2]?'.'+m[2]:'')):0,vo='valor da pergunta';
   if(!(v>0)){v=+(S.perfil&&S.perfil.ap)||0;vo='aporte mensal do perfil';if(!(v>0))return 'MOTOR DE APORTE: a pergunta não traz o valor do aporte e o perfil não tem aporte mensal; peça o valor.'}
   var d=splitNeed(cur,tg,v),ta=tot+v,p1=function(x){return num(x,1)+'%'};
-  return 'MOTOR DE APORTE DO APP (conta matemática da aba Aporte: só compras, aproxima a divisão ideal; NÃO é recomendação de investimento e não avalia preço, qualidade nem risco dos ativos). Divisão ideal [origem: '+org+']: Brasil '+p1(tg.BR)+' · exterior '+p1(tg.US)+' · renda fixa '+p1(tg.RF)+'. Divisão atual: Brasil '+p1(cur.BR/tot*100)+' · exterior '+p1(cur.US/tot*100)+' · renda fixa '+p1(cur.RF/tot*100)+'. Para aportar '+asR(v)+' ['+vo+'] a divisão matemática é: Brasil '+asR(d.BR)+', exterior '+asR(d.US)+', renda fixa '+asR(d.RF)+'; depois do aporte: Brasil '+p1((cur.BR+d.BR)/ta*100)+', exterior '+p1((cur.US+d.US)/ta*100)+', renda fixa '+p1((cur.RF+d.RF)/ta*100)+'. A divisão por ação dentro do Brasil não está aqui (a aba Aporte faz). Renda fixa guardada fora do app não aparece nessas contas. Se sugerir algo diferente desta divisão, diga o motivo e deixe claro que é opinião sua, não a conta do app.'}
+  return 'MOTOR DE APORTE DO APP (conta matemática da aba Próximo aporte: só compras, aproxima a divisão ideal; NÃO é recomendação de investimento e não avalia preço, qualidade nem risco dos ativos). Divisão ideal [origem: '+org+']: Brasil '+p1(tg.BR)+' · exterior '+p1(tg.US)+' · renda fixa '+p1(tg.RF)+'. Divisão atual: Brasil '+p1(cur.BR/tot*100)+' · exterior '+p1(cur.US/tot*100)+' · renda fixa '+p1(cur.RF/tot*100)+'. Para aportar '+asR(v)+' ['+vo+'] a divisão matemática é: Brasil '+asR(d.BR)+', exterior '+asR(d.US)+', renda fixa '+asR(d.RF)+'; depois do aporte: Brasil '+p1((cur.BR+d.BR)/ta*100)+', exterior '+p1((cur.US+d.US)/ta*100)+', renda fixa '+p1((cur.RF+d.RF)/ta*100)+'. A divisão por ação dentro do Brasil não está aqui (a aba Próximo aporte faz). Renda fixa guardada fora do app não aparece nessas contas. Se sugerir algo diferente desta divisão, diga o motivo e deixe claro que é opinião sua, não a conta do app.'}
 
 /* marca na rota os blocos de cálculo que a pergunta pede (usado pelas rotas do Gemini e da Groq) */
 function asXt(q,o){var n=asNorm(q);if(ASCEN_RE.test(n))o.cen=1;if(ASAPO_RE.test(n))o.apo=1;return o}

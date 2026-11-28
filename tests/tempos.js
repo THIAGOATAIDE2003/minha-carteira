@@ -4,7 +4,7 @@
 const path = require('path'), fs = require('fs'), cp = require('child_process');
 const { chromium } = require('playwright');
 const RAIZ = process.env.APORTE_APP_DIR || path.resolve(__dirname, '..'), APP = 'file://' + path.join(RAIZ, 'index.html');
-const arg = process.argv;
+const arg = process.argv, VER = (fs.readFileSync(path.join(RAIZ, 'js/nucleo.js'), 'utf8').match(/VERSAO='([^']+)'/) || [])[1];
 let falhas = 0, total = 0;
 const ok = (nome, cond, extra) => { total++; if (!cond) { falhas++; console.log('✗', nome, extra === undefined ? '' : JSON.stringify(extra).slice(0, 600)); } };
 const MUTANTES = {
@@ -61,7 +61,7 @@ async function principal(b) {
       var novas = Object.keys(localStorage).filter(function (k) { return !(k in outras); });
       return { antes: antes, n: dep && dep.length, mudou: mudou, novas: novas, ultimo: dep && dep[dep.length - 1] && dep[dep.length - 1].v }; });
     ok('T4 nada é gravado durante o uso (só ao sair do app)', r.antes === null, r.antes);
-    ok('T4 ao sair grava no máximo as últimas 20 aberturas', r.n === 20 && r.ultimo === '1.83.9', r);
+    ok('T4 ao sair grava no máximo as últimas 20 aberturas', r.n === 20 && r.ultimo === VER, r);
     ok('T4 nenhuma chave existente mudou; a única chave nova é minha-carteira-v1-tempos', r.mudou.length === 0 && r.novas.length === 1 && r.novas[0] === 'minha-carteira-v1-tempos', r);
   });
   await sec('T5 copiar e limpar', async () => {
@@ -69,7 +69,7 @@ async function principal(b) {
       Object.defineProperty(document, 'hidden', { value: false, configurable: true }); showTab('ajustes'); document.body.click(); await new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); });
       document.getElementById('tm-copia').click(); await new Promise(function (r) { setTimeout(r, 50); }); var msg = document.getElementById('tm-msg').textContent;
       document.getElementById('tm-limpa').click(); return { txt: guardado, msg: msg, chave: localStorage.getItem(TMK), rn: TM.rn, th: TMH.length, msg2: document.getElementById('tm-msg').textContent }; });
-    ok('T5 "Copiar resumo" copia o texto com versão, esqueleto, tela pronta e redesenhos', /Aporte 1\.83\.9/.test(r.txt) && /Esqueleto da tela/.test(r.txt) && /Tela pronta/.test(r.txt) && /Redesenhos/.test(r.txt) && r.msg === 'Copiado', [r.txt.slice(0, 200), r.msg]);
+    ok('T5 "Copiar resumo" copia o texto com versão, esqueleto, tela pronta e redesenhos', r.txt.indexOf('Aporte ' + VER) === 0 && /Esqueleto da tela/.test(r.txt) && /Tela pronta/.test(r.txt) && /Redesenhos/.test(r.txt) && r.msg === 'Copiado', [r.txt.slice(0, 200), r.msg]);
     ok('T5 "Limpar medições" apaga a chave e zera os contadores', r.chave === null && r.rn === 0 && r.th === 0 && /apagadas/.test(r.msg2), r);
   });
   await sec('T6 sem rede e sem temporizador', async () => {
