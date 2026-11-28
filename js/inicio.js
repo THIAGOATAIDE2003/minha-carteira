@@ -49,9 +49,9 @@ function renderSummary(R){
     luc:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 12h6"/></svg>',
     dia:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
   var cards=[
-    card(IC.pat,'Patrimônio total','Quanto vale tudo que você tem hoje. A porcentagem compara com o valor investido (o que você pagou, com o VT pelo dólar de hoje), só pelo preço.',
-      '<div class="hcm"><b class="num">'+brl.format(T.value+T.cash)+'</b>'+(ctp?'<span class="num '+cls(pv)+'">'+pct(pv/ctp)+' '+arrow(pv)+'</span>':'')+'</div>',
-      '<div class="hcl" data-hero="inv" role="button" tabindex="0"><small>Valor investido ›</small><span class="num">'+brl.format(ctp)+'</span></div><button type="button" class="evolink" data-goto="evolucao">Ver evolução</button>','pat'),
+    card(IC.pat,'Patrimônio total','Quanto vale tudo o que você tem hoje: os ativos mais o saldo parado, que é o dinheiro de vendas e proventos que ainda não foi reaplicado. A porcentagem mede só os ativos, só pelo preço: compara o valor de hoje com o que você pagou por eles. Ela não conta o saldo parado, as vendas já feitas, os proventos, nem o que o dólar mexeu no VT desde a compra. Tudo isso entra no Lucro total. Para ver as vendas e o saldo parado: Carteira → Desempenho.',
+      '<div class="hcm"><b class="num">'+brl.format(T.value+T.cash)+'</b>'+(ctp?'<span class="num '+cls(pv)+'">'+(T.cash>0.005?'<span class="hcq">ativos</span> ':'')+pct(pv/ctp)+' '+arrow(pv)+'</span>':'')+'</div>',
+      (T.cash>0.005?'<div><small>Ativos</small><span class="num">'+brl.format(T.value)+'</span></div><div><small>Saldo parado</small><span class="num">'+brl.format(T.cash)+'</span></div>':'')+'<div class="hcl" data-hero="inv" role="button" tabindex="0"><small>Custo dos ativos ›</small><span class="num">'+brl.format(ctp)+'</span></div><button type="button" class="evolink" data-goto="evolucao">Ver evolução</button>','pat'),
     card(IC.val,'Valorização','Quanto o preço de tudo que você tem subiu ou caiu desde a compra (ganho de capital), mais os proventos que você já recebeu. Sem câmbio e sem vendas: esses ficam em Carteira → Desempenho.',
       '<div class="hcm"><b class="num '+cls(VZ.g)+'">'+sgn(VZ.g)+'</b><span class="num '+cls(VZ.g)+'">'+pct(VZ.p)+' '+arrow(VZ.g)+'</span></div>',
       '<div class="hcl" data-hero="val" role="button" tabindex="0"><small>Ganho de capital ›</small><span class="num">'+sgn(VZ.pv)+'</span></div><div><small>Proventos recebidos</small><span class="num">'+brl.format(VZ.div)+'</span></div>','val'),
@@ -65,7 +65,7 @@ function renderSummary(R){
       (dc!=null?'<div class="hcm"><b class="num '+cls(dc)+'">'+sgn(dc)+'</b><span class="num '+cls(dc)+'">'+pct(fxr/fp-1)+' '+arrow(dc)+'</span></div>':'<div class="hcm"><b class="num muted">—</b></div>'),
       (fxr?'<div class="hcl" data-hero="cam" role="button" tabindex="0"><small>Dólar agora ›</small><span class="num">R$ '+num(fxr,4)+'</span></div>':'')+'<div class="hcl" data-hero="cam" role="button" tabindex="0"><small>Lucro do câmbio ›</small><span class="num '+cls(fxp2)+'">'+sgn(fxp2)+'</span></div>','cam'))}
   var VL=null;try{VL=vendaCalc(R)}catch(e){}
-  var lucC=card(IC.luc,T.gain>=0?'Lucro total':'Prejuízo total','Quanto a carteira ganhou (ou perdeu): preço das ações, dólar, vendas já feitas e proventos, menos as taxas de corretagem. Ainda NÃO desconta o que você pagaria para vender (spread do dólar, IOF e imposto de renda): isso aparece na linha Líquido se vender hoje, igual a Carteira → Desempenho → Se vendesse tudo hoje. A porcentagem é sobre o que saiu do seu bolso.',
+  var lucC=card(IC.luc,T.gain>=0?'Lucro total':'Prejuízo total','Quanto a carteira ganhou (ou perdeu): preço das ações, dólar, vendas já feitas e proventos, menos as taxas de corretagem. Ainda NÃO desconta o que você pagaria para vender (spread do dólar, IOF e imposto de renda): isso aparece na linha Líquido se vender hoje, igual a Carteira → Desempenho → Se vendesse tudo hoje. As vendas que você já fez entram nesta conta; o resultado de cada uma está em Carteira → Desempenho, em "Vendas já feitas" e "Encerradas". A porcentagem é sobre o que saiu do seu bolso.',
     '<div class="hcm"><b class="num '+cls(T.gain)+'">'+sgn(T.gain)+'</b><span class="num '+cls(T.gain)+'">'+pct(T.simple)+' '+arrow(T.gain)+'</span></div>',
     (VL?'<div><small>Líquido se vender hoje</small><span class="num '+cls(VL.lucro)+'">'+sgn(VL.lucro)+'</span></div>':'')+'<div><small>Anualizada</small><span class="num '+(T.xirr==null?'muted':cls(T.xirr))+'">'+(T.xirr==null?'—':pct(T.xirr))+'</span></div><button type="button" class="evolink" data-goto="desempenho">Ver detalhes</button>','luc').replace('data-hero="luc"','data-goto="desempenho"');
   cards=[cards[0],cards[2],cards[1],lucC].concat(cards.slice(3));
@@ -83,7 +83,7 @@ var HCI=0;
 document.addEventListener('scroll',function(e){var hc=e.target;if(!hc||hc.id!=='hcards')return;var i=Math.round(hc.scrollLeft/Math.max(1,hc.clientWidth));if(i!==HCI){HCI=i;[].forEach.call(document.querySelectorAll('.hdots i'),function(d){d.classList.toggle('on',+d.getAttribute('data-hci')===i)})}},true);
 
 /* toque nos números do Início: gráfico com períodos (evolução mensal) */
-var HERON={luc:'Lucro total',inv:'Valor investido',cam:'Câmbio',pat:'Patrimônio total',val:'Valorização (ganho de capital)',dia:'Variação de hoje'};
+var HERON={luc:'Lucro total',inv:'Custo dos ativos',cam:'Câmbio',pat:'Patrimônio total',val:'Valorização (ganho de capital)',dia:'Variação de hoje'};
 function heroOpen(k){STK={tk:'',hero:k,rng:k==='cam'?'1y':'1d',d:null,cv:'luc'};$('stk').hidden=false;document.body.style.overflow='hidden';$('stk-h').textContent=HERON[k]||'';heroRender()}
 function heroRender(){
   var b=$('stk-b'),k=STK.hero;if(!b)return;
@@ -96,7 +96,7 @@ function heroRender(){
   var hist=rgCut(all.filter(function(p){return p.t>=t0}),rg);if(hist.length<2&&all.length>1)hist=all.slice(-2);
   var ch=hist.length>1?hist[hist.length-1].c-hist[0].c:null,base=hist.length>1?hist[0].c:0,pc=ch!=null&&base>0&&(k==='pat'||k==='inv')?ch/base*100:null,last=hist.length?hist[hist.length-1].c:0;
   setHtml(b,gHead(HERON[k],'',brl.format(last),ch,pc,rg,ch!=null?(ch>=0?'+':'−')+brl.format(Math.abs(ch)):'','')+rngBar(rg,['yr'])+pdNota()+lineChart(hist,'BRL',null)+
-    (k==='luc'?'<p class="note">Quanto você ganhou ou perdeu no total, em fim de mês (o último é hoje): patrimônio menos tudo que você colocou, juntando preço, dólar, vendas e proventos. Se ele cai, veja o que mudou: toque em Preço ou em Dólar na lista.</p>':k==='inv'?'<p class="note">Quanto você pagou pelo que tem hoje, em fim de mês (o último é hoje). Sobe quando você aporta e também quando o dólar sobe, porque o custo do VT é contado pelo dólar da data. Por isso ele mexe sem você ter comprado nada.</p>':'<p class="note">Pontos de fim de mês (o último é hoje), pela mesma conta da Evolução. Só preço: sem câmbio de vendas e sem proventos.</p>'));
+    (k==='luc'?'<p class="note">Quanto você ganhou ou perdeu no total, em fim de mês (o último é hoje): patrimônio menos tudo que você colocou, juntando preço, dólar, vendas e proventos. Se ele cai, veja o que mudou: toque em Preço ou em Dólar na lista.</p>':k==='inv'?'<p class="note">Quanto você pagou pelo que ainda tem, em fim de mês (o último ponto é hoje, com o VT pelo dólar de hoje). O que você já vendeu não entra. Sobe quando você aporta e também quando o dólar sobe, porque o custo do VT é contado pelo dólar. Não é o dinheiro que saiu do seu bolso: isso está em Carteira → Ativos, em "Quanto você investiu".</p>':'<p class="note">Pontos de fim de mês (o último é hoje), pela mesma conta da Evolução. Só preço: sem câmbio de vendas e sem proventos.</p>'));
 }
 
 /* carteira ao longo do dia/5 dias: soma de quantidade × pontos de 5 minutos (EUA pelo dólar de hoje, como no cartão de hoje) */
@@ -109,7 +109,7 @@ function heroInv(b){
   var hist=v.hist.map(function(p){return {t:p.t,c:fixo+U*p.c}}),prev=rg==='1d'&&v.o&&v.o.prev?fixo+U*v.o.prev:hist[0].c,last=hist[hist.length-1].c,ch=last-prev;
   setHtml(b,gHead(HERON.inv,'',brl.format(last),ch,prev>0?ch/prev*100:null,pdRg(rg,v,rg),(ch>=0?'+':'−')+brl.format(Math.abs(ch)),gWhen(Date.now()))+rngBar(rg,['yr'])+
     lineChart(hist,'BRL',null,null,{intra:1,d1:rg==='1d',prev:rg==='1d'?prev:null})+
-    '<p class="note">No dia, só o custo do VT se mexe, porque ele é contado pelo dólar. O que você pagou em reais nas ações do Brasil e na renda fixa fica parado. Pontos de 5 minutos do dólar.</p>')}
+    '<p class="note">Custo dos ativos: quanto você pagou pelo que ainda tem. No dia, só o custo do VT se mexe, porque ele é contado pelo dólar. O que você pagou em reais nas ações do Brasil e na renda fixa fica parado. Pontos de 5 minutos do dólar.</p>')}
 function heroIntra(b,k){
   var R=compute(),T=R.tot,rg=STK.rng,hs=R.held.filter(function(x){return x.p.qty>0}),lista=[],falta=0,sem=0,nb=0,C=rg==='1d'?vdCart(hs,T.fxNow):null,vr=null;
   hs.forEach(function(x){var tk=x.p.ticker,c=FIN['intra/'+ySym(tk)],v=finView(ySym(tk),rg==='5d'?'5d':'1d'),ci=C&&C[tk],f=x.p.market==='US'?T.fxNow:1;if(v&&v.st==='load')falta++;else if(!v||v.st!=='ok')sem++;else if(C&&!ci)nb++;
