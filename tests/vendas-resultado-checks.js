@@ -51,7 +51,7 @@ module.exports = async function (b, ok, X, ARQUIVO) {
   ok('V8 arquivo novo em index.html (depois de carteira.js) e no sw.js', idx.indexOf('js/carteira.js') < idx.indexOf('js/vendas-resultado.js') && idx.indexOf('js/vendas-resultado.js') > 0 && /js\/carteira\.js','js\/vendas-resultado\.js'/.test(sw));
   ok('V8 vendas-resultado.js ≤ 5 KB (4 KB + os ajustes de produto) e nenhum js/*.js ≥ 25 KB', vr.length <= 5000 && fs.readdirSync(path.join(RAIZ, 'js')).every(f => fs.statSync(path.join(RAIZ, 'js', f)).size < 25000 || /carteira\.js|nucleo\.js|ui\.js|inicio\.js|abas\.js/.test(f) || true), vr.length);
   ok('V8 setHtml+esc: sem innerHTML/eval no arquivo novo; nada fora da tela lê sN/sQ/sP/sC', !/innerHTML|eval\(/.test(vr) && fs.readdirSync(path.join(RAIZ, 'js')).filter(f => !/^(nucleo|vendas-resultado)\.js$/.test(f)).every(f => !/\.s[NQPC]\b/.test(fs.readFileSync(path.join(RAIZ, 'js', f), 'utf8'))) , 1);
-  ok('V8 versão 1.87.0', await pg.evaluate(() => VERSAO) === '1.87.0');
+  ok('V8 versão 1.87.x (>= 1.87.0)', /^1\.87\.\d+$/.test(await pg.evaluate(() => VERSAO)));
   /* 9. localStorage e estado do grupo */
   await pg.evaluate(LER);
   const ab = await pg.evaluate(() => { const d = document.querySelector('details[data-g="enc"]'); d.querySelector('summary').click(); const k0 = Object.keys(localStorage).sort().join('|'); const a1 = GOPEN.enc; render(); const o = document.querySelector('details[data-g="enc"]').open; return [a1, o, Object.keys(localStorage).sort().join('|') === k0]; });

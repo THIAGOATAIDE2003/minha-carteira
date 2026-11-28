@@ -167,18 +167,18 @@ function sgU(n){return (n>0.005?'+':n<-0.005?'−':'')+usd.format(Math.abs(n))}
 function atvTable(R){
   var T=R.tot,fx=T.fxNow||1,dl=dayLbl(),rows=R.held.map(function(x){var us=x.p.market==='US',F=us?fx:1,pm=x.p.cN/x.p.qty,q=S.quotes[x.p.ticker];
     var tg=(x.P1-pm)*x.p.qty*F,dd=q&&q.prev&&q.src==='auto'?(dzero(us,q.at)?0:(q.price-q.prev)*x.p.qty*F):null;
-    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,pm:pm,px:x.P1,t:pm?x.P1/pm-1:null,tg:tg,tgU:us?(x.P1-pm)*x.p.qty:null,dgU:us&&dd!=null?(dzero(us,q.at)?0:(q.price-q.prev)*x.p.qty):null,d:dd!=null?(dzero(us,q.at)?0:q.price/q.prev-1):null,dg:dd,prev:q&&q.prev}});
+    return {x:x,tk:x.p.ticker,us:us,q:x.p.qty,v:x.p.qty*x.P1*F,vU:us?x.p.qty*x.P1:null,pm:pm,px:x.P1,t:pm?x.P1/pm-1:null,tg:tg,tgU:us?(x.P1-pm)*x.p.qty:null,dgU:us&&dd!=null?(dzero(us,q.at)?0:(q.price-q.prev)*x.p.qty):null,d:dd!=null?(dzero(us,q.at)?0:q.price/q.prev-1):null,dg:dd,prev:q&&q.prev}});
   var has={BR:rows.some(function(r){return !r.us}),US:rows.some(function(r){return r.us})};if(ATF!=='all'&&!has[ATF])ATF='all';
   var vis=rows.filter(function(r){return ATF==='all'||(ATF==='US')===r.us});
   vis.sort(function(a,b){var k=ASRT.k,A=k==='n'?a.tk:a[k],B=k==='n'?b.tk:b[k];if(A==null)return 1;if(B==null)return -1;return (A<B?-1:A>B?1:0)*ASRT.d});
   var tv=vis.reduce(function(s,r){return s+r.v},0),tc=vis.reduce(function(s,r){return s+r.v-r.tg},0),tgt=tv-tc,tdd=vis.reduce(function(s,r){return s+(r.dg||0)},0),tdp=vis.reduce(function(s,r){return s+(r.dg!=null?r.v-r.dg:0)},0);
-  var F2=function(r){return r.us?usd:brl},hd=function(k,l,cl){return '<button type="button" class="ath'+(cl?' '+cl:'')+'" data-asrt="'+k+'">'+l+' <i>'+(ASRT.k===k?(ASRT.d<0?'↓':'↑'):'⇅')+'</i></button>'};
-  var h='<div class="panel atv"><div class="grp"><div><h2>Ativos</h2><span class="det">'+brl.format(tv)+' em '+vis.length+(vis.length>1?' ativos':' ativo')+'</span></div><div class="gr">'+
+  var vU=vis.reduce(function(s,r){return s+(r.us&&isFinite(r.vU)?r.vU:0)},0),F2=function(r){return r.us?usd:brl},hd=function(k,l,cl){return '<button type="button" class="ath'+(cl?' '+cl:'')+'" data-asrt="'+k+'">'+l+' <i>'+(ASRT.k===k?(ASRT.d<0?'↓':'↑'):'⇅')+'</i></button>'};
+  var h='<div class="panel atv"><div class="grp"><div><h2>Ativos</h2><span class="det">'+brl.format(tv)+' em '+vis.length+(vis.length>1?' ativos':' ativo')+'</span>'+(vU>0&&isFinite(vU)?'<span class="det" style="display:block">Nos EUA: '+usdK(vU)+'</span>':'')+'</div><div class="gr">'+
       vpill(tc?tgt/tc:null,'Desde a compra, só pelo preço: '+sgn(tgt)+'. O VT entra pelo dólar de hoje, sem o câmbio.')+(tdp?vpill(tdd/tdp,(dl.t==='hoje'?'Hoje':'No último pregão ('+dl.d+')')+': '+sgn(tdd)+'.'):'')+'</div></div>'+
     (has.BR&&has.US?'<div class="chips atf">'+[['all','Todos'],['BR','Ações'],['US','ETFs Intern.']].map(function(f){return '<button type="button" data-atf="'+f[0]+'" aria-pressed="'+(ATF===f[0])+'">'+f[1]+'</button>'}).join('')+'</div>':'')+
     '<div class="atsc"><div class="atr ahd">'+hd('n','Ativo','a1')+hd('q','Quant.')+hd('t','Total')+hd('d',dl.t==='hoje'?'Hoje':'Dia')+hd('tg','Total R$')+hd('pm','Preço médio')+hd('px','Preço atual')+hd('v','Valor')+'</div>'+
     vis.map(function(r){var F=F2(r),qt=num(r.q,r.us?4:0),qs=num(r.q,r.us?2:0),vk=r.v>=1e3?'R$ '+num(r.v/1e3,1)+' mil':brl.format(r.v);
-      return '<div class="atr"><button type="button" class="a1" data-stk="'+esc(r.tk)+'" aria-label="Abrir análise de '+esc(r.tk)+'">'+tkLogo(r.tk,r.us)+'<span class="an"><b>'+esc(r.tk)+'</b><small>'+vk+'</small></span></button>'+
+      return '<div class="atr"><button type="button" class="a1" data-stk="'+esc(r.tk)+'" aria-label="Abrir análise de '+esc(r.tk)+'">'+tkLogo(r.tk,r.us)+'<span class="an"><b>'+esc(r.tk)+'</b><small>'+vk+'</small>'+(r.us&&isFinite(r.vU)?'<small>'+usdK(r.vU)+'</small>':'')+'</span></button>'+
         '<span class="aq">'+qs+'</span>'+
         vpill(r.t,r.tk+': '+sgn(r.tg)+' desde a compra ('+qt+(r.us?' cotas':' ações')+', preço médio '+F.format(r.pm)+', agora '+F.format(r.x.P1)+(r.us?'; em reais pelo dólar de hoje, sem câmbio. Em dólar: '+sgU(r.tgU):'')+').')+
         vpill(r.d,r.tk+(dl.t==='hoje'?' hoje':' no último pregão ('+dl.d+')')+': '+(r.dg!=null?sgn(r.dg)+(r.us&&r.dgU!=null?' · em dólar '+sgU(r.dgU):'')+' (de '+F.format(r.prev)+' para '+F.format(r.x.P1)+')':'sem dado')+'.')+

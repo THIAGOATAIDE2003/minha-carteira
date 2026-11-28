@@ -1,0 +1,69 @@
+{
+ "sint": {
+  "tot": {
+   "outs": 0,
+   "value": 10044492.02,
+   "cost": 9508000,
+   "uA": -848665.5,
+   "uF": 1385157.5199999996,
+   "rA": 0,
+   "rF": 0,
+   "div": 0,
+   "bought": 9508000,
+   "proceeds": 0,
+   "contrib": 9508000,
+   "cash": 0,
+   "rfV": 0,
+   "rfC": 0,
+   "rfU": 0,
+   "rfR": 0,
+   "fees": 0,
+   "gain": 536492.0199999996,
+   "check": 536492.0199999996,
+   "xirr": 0.03920419276135101,
+   "simple": 0.05642532814472019,
+   "days": 522,
+   "fxNow": 5.8
+  },
+  "held": [
+   "ABCD3:100:1000:1200",
+   "BIGX:1000:900000:2900000",
+   "EFGH3:50:1000:900",
+   "MILX:1000:1000000:7134000",
+   "SMLX:2:200:1432.02",
+   "VTX:10:1000:6960"
+  ],
+  "closed": [],
+  "ls": "minha-carteira-v1|minha-carteira-v1-erros|minha-carteira-v1-ntseen",
+  "brRows": [
+   "<div class=\"atr\"><button type=\"button\" class=\"a1\" data-stk=\"ABCD3\" aria-label=\"Abrir análise de ABCD3\"><span class=\"tlg\"><span>AB</span><img alt=\"\" loading=\"lazy\" src=\"https://icons.brapi.dev/icons/ABCD3.svg\"></span><span class=\"an\"><b>ABCD3</b><small>R$ 1,2 mil</small></span></button><span class=\"aq\">100</span><button type=\"button\" class=\"bal\" data-bal=\"ABCD3: +R$&nbsp;200,00 desde a compra (100 ações, preço médio R$&nbsp;10,00, agora R$&nbsp;12,00).\" aria-label=\"Explicação\"><span class=\"vpl g\">+20,00% <i>▲</i></span></button><span class=\"vpl n\">—</span><span class=\"av gain\">+R$&nbsp;200,00</span><span class=\"av\">R$&nbsp;10,00</span><span class=\"av\">R$&nbsp;12,00</span><span class=\"av\">R$&nbsp;1.200,00</span></div>",
+   "<div class=\"atr\"><button type=\"button\" class=\"a1\" data-stk=\"EFGH3\" aria-label=\"Abrir análise de EFGH3\"><span class=\"tlg\"><span>EF</span><img alt=\"\" loading=\"lazy\" src=\"https://icons.brapi.dev/icons/EFGH3.svg\"></span><span class=\"an\"><b>EFGH3</b><small>R$&nbsp;900,00</small></span></button><span class=\"aq\">50</span><button type=\"button\" class=\"bal\" data-bal=\"EFGH3: −R$&nbsp;100,00 desde a compra (50 ações, preço médio R$&nbsp;20,00, agora R$&nbsp;18,00).\" aria-label=\"Explicação\"><span class=\"vpl l\">−10,00% <i>▼</i></span></button><span class=\"vpl n\">—</span><span class=\"av loss\">−R$&nbsp;100,00</span><span class=\"av\">R$&nbsp;20,00</span><span class=\"av\">R$&nbsp;18,00</span><span class=\"av\">R$&nbsp;900,00</span></div>"
+  ],
+  "aria": [
+   "Explicação",
+   "Abrir análise de MILX",
+   "Explicação",
+   "Abrir análise de BIGX",
+   "Explicação",
+   "Abrir análise de VTX",
+   "Explicação",
+   "Abrir análise de SMLX",
+   "Explicação",
+   "Abrir análise de ABCD3",
+   "Explicação",
+   "Abrir análise de EFGH3",
+   "Explicação"
+  ],
+  "nhd": 1,
+  "cols": [
+   "Ativo ⇅",
+   "Quant. ⇅",
+   "Total ⇅",
+   "Hoje ⇅",
+   "Total R$ ⇅",
+   "Preço médio ⇅",
+   "Preço atual ⇅",
+   "Valor ↓"
+  ]
+ }
+}
